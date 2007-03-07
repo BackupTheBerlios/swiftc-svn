@@ -1,0 +1,30 @@
+Swift is a compiler for a programming language with the same name.
+Current backend is for amd64 Linux systems.
+However you can compiler and run swift on other archs as well.
+
+
+REQUIREMENTS
+- bison
+- flex
+- cmake
+- yasm (to assemble the output file)
+- gcc
+
+
+INSTALLING
+
+$ cmake .
+$ make
+
+You can now symlink the executable to /usr/bin.
+For example:
+$ su
+$ ln -s /home/username/swiftc/swift /usr/bin/.
+
+If you use KDE you can get syntax highlighting with proper symlinking.
+For example:
+$ cd contrib
+$ su
+$ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepart/syntax/.
+
+The last command depends on your Linux distro and/or KDE verions, of course.
