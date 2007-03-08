@@ -1,6 +1,6 @@
 Swift is a compiler for a programming language with the same name.
 Current backend is for amd64 Linux systems.
-However you can compiler and run swift on other archs as well.
+However you can compile and run swift on other archs as well.
 
 
 REQUIREMENTS
@@ -28,3 +28,32 @@ $ su
 $ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepart/syntax/.
 
 The last command depends on your Linux distro and/or KDE verions, of course.
+
+
+CODING CONVENTIONS
+- configure your editor to replace 1 Tab with 4 spaces
+- '{' and '}' in a new line
+- members end with '_'
+- members and functions with lower camel case (lowerCamelCaseLooksLikeThis)
+- classes / structs with upper camel case (UpperCamelCaseLooksLikeThis)
+- since the project is in a very early alpha stadium I don't want to bother with getters and setters.
+    So use public members or structs.
+- surround operators with spaces except where it makes sense.
+- do init lists like in the example below.
+- divide several classes in one file with:
+
+//------------------------------------------------------------------------------
+
+Example:
+
+struct MyTestClass : public BaseClass
+{
+    int publicMember_;
+
+    MyTestClass(float f, int publicMember)
+        : BaseClass(f)
+        , publicMember_(publicMember)
+    {
+        std::cout << "hello" << std::endl;
+    }
+};
