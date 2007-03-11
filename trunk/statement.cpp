@@ -36,7 +36,11 @@ bool Declaration::analyze()
     }
 
     // everything ok. so insert the local
-    symtab.insert( new Local(type_, id_, line_, 0) );
+    Local* local = new Local(type_, id_, line_, 0);
+    symtab.insert(local);
+
+    // do the first revision.
+    symtab.newRevision(local);
 
     return true;
 }

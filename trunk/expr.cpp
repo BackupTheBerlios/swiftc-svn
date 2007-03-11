@@ -166,7 +166,11 @@ bool UnExpr::analyze()
 
 void UnExpr::genAlc()
 {
-    place_ = symtab.newTemp(type_);
+    Local* tmp = symtab.newTemp(type_);
+    // do the first revision
+    Local* rev = symtab.newRevision(tmp);
+    place_ = rev;
+
     instrlist.append( new UnInstr(kind_, this, op_) );
 }
 
@@ -239,7 +243,11 @@ bool BinExpr::analyze()
 
 void BinExpr::genAlc()
 {
-    place_ = symtab.newTemp(type_);
+    Local* tmp = symtab.newTemp(type_);
+    // do the first revision
+    Local* rev = symtab.newRevision(tmp);
+    place_ = rev;
+
     instrlist.append( new BinInstr(kind_, this, op1_, op2_) );
 }
 
@@ -281,7 +289,11 @@ bool AssignExpr::analyze()
 
 void AssignExpr::genAlc()
 {
-    place_ = result_->place_;
+    swiftAssert( typeid(*result_->place_) == typeid(Local), "TODO: What if it is not a Local*?" );
+
+    Local* local = (Local*) result_->place_;
+    // do next revision
+    place_ = symtab.newRevision(local);
     instrlist.append( new AssignInstr(kind_, this, expr_) );
 }
 
@@ -305,7 +317,17 @@ bool Id::analyze()
 
 void Id::genAlc()
 {
-    place_ = symtab.lookupVar(id_);
+    SymTabEntry* entry = symtab.lookupVar(id_);
+
+    // check whether we already have a revised variable
+    if (entry->revision_ == -1)
+    {
+        place_ = entry;
+        return;
+    }
+    // else
+    swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
+    place_ = symtab.lookupLastRevision((Local*) entry);
 }
 
 //------------------------------------------------------------------------------

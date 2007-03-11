@@ -84,7 +84,7 @@ struct Id : public Expr
 
     std::string toString() const
     {
-        return *id_;
+        return *place_->id_;
     }
 
     bool analyze();

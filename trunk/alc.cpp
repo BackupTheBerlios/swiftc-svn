@@ -94,7 +94,7 @@ void MethodTagInstr::leave()
 std::string AssignInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << c_ << expr_->toString();
+    oss << result_->toString() << "\t" << c_ << " " << expr_->toString();
 
     return oss.str();
 }
@@ -109,7 +109,7 @@ void AssignInstr::genCode(std::ofstream& ofs)
 std::string UnInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << " = " << c_ << op_->toString();
+    oss << result_->toString() << "\t= " << c_ << op_->toString();
 
     return oss.str();
 }
@@ -124,7 +124,7 @@ void UnInstr::genCode(std::ofstream& ofs)
 std::string BinInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << " = " << op1_->toString() << " " << c_ << " " << op2_->toString();
+    oss << result_->toString() << "\t= " << op1_->toString() << " " << c_ << " " << op2_->toString();
 
     return oss.str();
 }

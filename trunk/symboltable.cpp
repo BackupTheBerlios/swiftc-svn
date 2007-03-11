@@ -213,6 +213,52 @@ void SymbolTable::leaveMethod()
 
 // -----------------------------------------------------------------------------
 
+Local* SymbolTable::newTemp(Type* type)
+{
+    static long counter = 0;
+
+    ostringstream oss;
+    // '@' is a magic char used to start new temps
+    oss << "@" << counter;
+    string* str = new string( oss.str() );
+
+    Local* local = new Local(type, str, -1, method_);
+    insert(local);
+
+    ++counter;
+
+    return local;
+}
+
+Local* SymbolTable::newRevision(Local* local)
+{
+    // check whether we already have a revised variable
+    if (local->revision_ == -1)
+    {
+        string origninalId = local->extractOriginalId();
+        local = (Local*) lookupVar(&origninalId);
+
+        swiftAssert( typeid(*local) == typeid(Local), "This is not a Local!");
+    }
+
+    // increment -> we generate a new revision
+    ++local->revision_;
+    // if a phi-function must be added above this shall be revision 0
+
+    ostringstream oss;
+    // '!' is a magic char used to divide the orignal name by the revision number
+    oss << *local->id_ << "!" << local->revision_;
+
+    string* str = new string( oss.str() );
+    Local* revisedLocal = new Local(local->type_, str, -1, method_);
+    revisedLocal->revision_ = -1; // mark as revised variable
+    insert(revisedLocal);
+
+    return revisedLocal;
+}
+
+// -----------------------------------------------------------------------------
+
 SymTabEntry* SymbolTable::lookupVar(string* id)
 {
     {
@@ -279,20 +325,16 @@ Class* SymbolTable::lookupClass(string* id)
     return 0;
 }
 
-Local* SymbolTable::newTemp(Type* type)
+SymTabEntry* SymbolTable::lookupLastRevision(Local* local)
 {
-    static long counter = 0;
+    swiftAssert(local->revision_ != -1, "an original variable must be given to this method");
 
     ostringstream oss;
-    oss << "@" << counter;
-    string* str = new string( oss.str() );
+    oss << *local->id_ << "!" << local->revision_;
+    string str = oss.str();
+    SymTabEntry* entry = lookupVar( &str );
 
-    Local* local = new Local(type, str, -1, method_);
-    insert(local);
-
-    ++counter;
-
-    return local;
+    return entry;
 }
 
 } // namespace swift

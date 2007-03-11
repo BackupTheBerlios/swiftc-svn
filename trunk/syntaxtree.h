@@ -3,7 +3,6 @@
 
 #include <map>
 #include <string>
-#include <typeinfo>
 #include <vector>
 
 #include "tokens.h"
@@ -46,11 +45,21 @@ struct Node
 struct SymTabEntry : public Node
 {
     std::string* id_;
+    /**
+     * used to count the revision of this variable for SSA form <br>
+     * 0 -> no revision created so far
+     * -1 -> this is allready a revision
+     */
+    int revision_;
 
     SymTabEntry(std::string* id, int line = -1, Node* parent = 0)
         : Node(line, parent)
         , id_(id)
+//         , assigned_(true) // do an new revision for the first assignment
+        , revision_(0) // start with revision 0
     {}
+
+    std::string extractOriginalId();
 };
 
 //------------------------------------------------------------------------------

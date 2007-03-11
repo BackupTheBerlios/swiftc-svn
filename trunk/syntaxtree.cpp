@@ -9,6 +9,19 @@
 namespace swift
 {
 
+//------------------------------------------------------------------------------
+
+std::string SymTabEntry::extractOriginalId() {
+    swiftAssert( revision_ == -1, "This is not a revised variable" );
+
+    // reverse search should usually be faster
+    size_t index = id_->find_last_of('!');
+
+    return id_->substr(0, index);
+}
+
+//------------------------------------------------------------------------------
+
 std::string Module::toString() const
 {
 /*    std::ostringstream oss;
@@ -20,6 +33,8 @@ std::string Module::toString() const
 
     return *id_;
 }
+
+//------------------------------------------------------------------------------
 
 bool Module::analyze()
 {
@@ -35,5 +50,3 @@ bool Module::analyze()
 }
 
 } // namespace swift
-
-#undef SWIFT_TO_STRING_ERROR
