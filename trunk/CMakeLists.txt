@@ -28,7 +28,6 @@ ADD_EXECUTABLE(swift
     parser.tab.hpp
     lex.yy.cpp
 
-    alc.cpp
     assert.cpp
     compiler.cpp
     error.cpp
@@ -36,7 +35,7 @@ ADD_EXECUTABLE(swift
     syntaxtree.cpp
     class.cpp
     expr.cpp
-#     regmgr.cpp
+    ssa.cpp
     statement.cpp
     type.cpp
 

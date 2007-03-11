@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "alc.h"
+#include "ssa.h"
 #include "assert.h"
 #include "error.h"
 #include "type.h"

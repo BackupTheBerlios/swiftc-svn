@@ -1,5 +1,5 @@
-#ifndef SWIFT_ALC_H
-#define SWIFT_ALC_H
+#ifndef SWIFT_SSA_H
+#define SWIFT_SSA_H
 
 #include <fstream>
 
@@ -221,4 +221,4 @@ extern InstrList instrlist;
 
 } // namespace swift
 
-#endif // SWIFT_ALC_H
+#endif // SWIFT_SSA_H

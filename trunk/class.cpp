@@ -2,8 +2,8 @@
 
 #include <sstream>
 
-#include "alc.h"
 #include "assert.h"
+#include "ssa.h"
 #include "statement.h"
 #include "symboltable.h"
 

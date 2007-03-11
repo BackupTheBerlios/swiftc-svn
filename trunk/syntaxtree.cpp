@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "assert.h"
-#include "alc.h"
+#include "ssa.h"
 
 namespace swift
 {
