@@ -222,7 +222,7 @@ Local* SymbolTable::newTemp(Type* type)
     oss << "@" << counter;
     string* str = new string( oss.str() );
 
-    Local* local = new Local(type, str, -1, method_);
+    Local* local = new Local(type, str, Node::NO_LINE, method_);
     insert(local);
 
     ++counter;
@@ -233,7 +233,7 @@ Local* SymbolTable::newTemp(Type* type)
 Local* SymbolTable::newRevision(Local* local)
 {
     // check whether we already have a revised variable
-    if (local->revision_ == -1)
+    if (local->revision_ == SymTabEntry::REVISED_VAR)
     {
         string origninalId = local->extractOriginalId();
         local = (Local*) lookupVar(&origninalId);
@@ -243,15 +243,15 @@ Local* SymbolTable::newRevision(Local* local)
 
     // increment -> we generate a new revision
     ++local->revision_;
-    // if a phi-function must be added above this shall be revision 0
+    // if a phi-function must be added above, this shall be revision 0
 
     ostringstream oss;
     // '!' is a magic char used to divide the orignal name by the revision number
     oss << *local->id_ << "!" << local->revision_;
 
     string* str = new string( oss.str() );
-    Local* revisedLocal = new Local(local->type_, str, -1, method_);
-    revisedLocal->revision_ = -1; // mark as revised variable
+    Local* revisedLocal = new Local(local->type_, str, Node::NO_LINE, method_);
+    revisedLocal->revision_ = SymTabEntry::REVISED_VAR; // mark as revised variable
     insert(revisedLocal);
 
     return revisedLocal;
@@ -327,7 +327,7 @@ Class* SymbolTable::lookupClass(string* id)
 
 SymTabEntry* SymbolTable::lookupLastRevision(Local* local)
 {
-    swiftAssert(local->revision_ != -1, "an original variable must be given to this method");
+    swiftAssert(local->revision_ != SymTabEntry::REVISED_VAR, "an original variable must be given to this method");
 
     ostringstream oss;
     oss << *local->id_ << "!" << local->revision_;

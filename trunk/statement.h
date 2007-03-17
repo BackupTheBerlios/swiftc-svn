@@ -29,7 +29,7 @@ struct Declaration : public Statement
     Type*           type_;
     std::string*    id_;
 
-    Declaration(Type* type, std::string* id, int line = -1)
+    Declaration(Type* type, std::string* id, int line = NO_LINE)
         : Statement(line)
         , type_(type)
         , id_(id)
@@ -46,7 +46,7 @@ struct ExprStatement : public Statement
 {
     Expr* expr_;
 
-    ExprStatement(Expr* expr, int line = -1)
+    ExprStatement(Expr* expr, int line = NO_LINE)
         : Statement(line)
         , expr_(expr)
     {}

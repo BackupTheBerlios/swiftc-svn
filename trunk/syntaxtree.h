@@ -27,11 +27,15 @@ struct StringPtrCmp
 
 struct Node
 {
+    enum {
+        NO_LINE = -1 /// if this node does not map to a line number -1 is used
+    };
+    /// the line number which this node is mapped to
     int line_;
     /// NULL if root
     Node*   parent_;
 
-    Node(int line = -1, Node* parent = 0)
+    Node(int line = NO_LINE, Node* parent = 0)
         : line_(line)
         , parent_(parent)
     {}
@@ -44,18 +48,21 @@ struct Node
 
 struct SymTabEntry : public Node
 {
+    enum {
+        REVISED_VAR = -1 /// if revision == -1 this var is already a revised one
+    };
+
     std::string* id_;
     /**
      * used to count the revision of this variable for SSA form <br>
-     * 0 -> no revision created so far
-     * -1 -> this is allready a revision
+     * 0 -> first revision, only used for phi-functions <br>
+     * -1 -> this is already a revision <br>
      */
     int revision_;
 
-    SymTabEntry(std::string* id, int line = -1, Node* parent = 0)
+    SymTabEntry(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Node(line, parent)
         , id_(id)
-//         , assigned_(true) // do an new revision for the first assignment
         , revision_(0) // start with revision 0
     {}
 
@@ -89,7 +96,7 @@ struct Module : public SymTabEntry
 
     ClassMap    classes_;
 
-    Module(std::string* id, int line = -1, Node* parent = 0)
+    Module(std::string* id, int line = NO_LINE, Node* parent = 0)
         : SymTabEntry(id, line, parent)
     {}
     ~Module()

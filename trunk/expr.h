@@ -57,7 +57,7 @@ struct Literal : public Expr
         double      real64_;
     };
 
-    Literal(int kind, int line = -1)
+    Literal(int kind, int line = NO_LINE)
         : Expr(line)
         , kind_(kind)
     {}
@@ -73,7 +73,7 @@ struct Id : public Expr
 {
     std::string* id_;
 
-    Id(std::string* id, int line = -1)
+    Id(std::string* id, int line = NO_LINE)
         : Expr(line)
         , id_(id)
     {}
@@ -102,7 +102,7 @@ struct UnExpr : public Expr
 
     Expr* op_;
 
-    UnExpr(int kind, Expr* op, int line = -1)
+    UnExpr(int kind, Expr* op, int line = NO_LINE)
         : Expr(line)
         , kind_(kind)
         , op_(op)
@@ -129,7 +129,7 @@ struct BinExpr : public Expr
     Expr* op1_;
     Expr* op2_;
 
-    BinExpr(int kind, Expr* op1, Expr* op2, int line = -1)
+    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE)
         : Expr(line)
         , kind_(kind)
         , op1_(op1)
@@ -160,7 +160,7 @@ struct AssignExpr : public Expr
     Expr* result_;
     Expr* expr_;
 
-    AssignExpr(int kind, Expr* result, Expr* expr, int line = -1)
+    AssignExpr(int kind, Expr* result, Expr* expr, int line = NO_LINE)
         : Expr(line)
         , kind_(kind)
         , result_(result)
@@ -185,7 +185,7 @@ struct Arg : public Node
     Expr*   expr_;
     Arg*    next_;
 
-    Arg(Expr* expr, Arg* next = 0, int line = -1)
+    Arg(Expr* expr, Arg* next = 0, int line = NO_LINE)
         : Node(line)
         , expr_(expr)
         , next_(next)
@@ -208,7 +208,7 @@ struct FunctionCall : public Expr
     std::string* id_;
     Arg* args_;
 
-    FunctionCall(std::string* id, Arg* args, int line = -1)
+    FunctionCall(std::string* id, Arg* args, int line = NO_LINE)
         : Expr(line)
         , id_(id)
         , args_(args)

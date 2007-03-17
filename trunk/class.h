@@ -57,7 +57,7 @@ struct Class : public Definition
     MethodMap       methods_;
     MemberVarMap    memberVars_;
 
-    Class(std::string* id, int line = -1, Node* parent = 0)
+    Class(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Definition(id, line, parent)
     {}
     ~Class()
@@ -79,7 +79,7 @@ struct MemberVar : public ClassMember
 {
     Type*           type_;
 
-    MemberVar(Type* type, std::string* id, int line = -1, Node* parent = 0)
+    MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , type_(type)
     {}
@@ -97,10 +97,7 @@ struct Parameter : public SymTabEntry
     Type*           type_;
     Parameter*      next_;
 
-/*    Parameter()
-        : SymTabEntry(-1)
-    {}*/
-    Parameter(int parameterQualifier, Type* type, std::string* id, int line = -1, Node* parent = 0)
+    Parameter(int parameterQualifier, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
         : SymTabEntry(id, line, parent)
         , parameterQualifier_(parameterQualifier)
         , type_(type)
@@ -124,7 +121,7 @@ struct Method : public ClassMember
     std::vector<Parameter*> params_;
     LocalMap                locals_;
 
-    Method(int methodQualifier, Type* returnType, std::string* id, int line = -1, Node* parent = 0)
+    Method(int methodQualifier, Type* returnType, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
         , returnType_(returnType)

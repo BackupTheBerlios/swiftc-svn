@@ -167,9 +167,8 @@ bool UnExpr::analyze()
 void UnExpr::genAlc()
 {
     Local* tmp = symtab.newTemp(type_);
-    // do the first revision
-    Local* rev = symtab.newRevision(tmp);
-    place_ = rev;
+    // no revision necessary, temps occur only once
+    place_ = tmp;
 
     instrlist.append( new UnInstr(kind_, this, op_) );
 }
@@ -244,9 +243,8 @@ bool BinExpr::analyze()
 void BinExpr::genAlc()
 {
     Local* tmp = symtab.newTemp(type_);
-    // do the first revision
-    Local* rev = symtab.newRevision(tmp);
-    place_ = rev;
+    // no revision necessary, temps occur only once
+    place_ = tmp;
 
     instrlist.append( new BinInstr(kind_, this, op1_, op2_) );
 }
@@ -320,7 +318,7 @@ void Id::genAlc()
     SymTabEntry* entry = symtab.lookupVar(id_);
 
     // check whether we already have a revised variable
-    if (entry->revision_ == -1)
+    if (entry->revision_ == SymTabEntry::REVISED_VAR)
     {
         place_ = entry;
         return;

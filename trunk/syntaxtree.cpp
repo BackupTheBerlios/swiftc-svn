@@ -12,7 +12,7 @@ namespace swift
 //------------------------------------------------------------------------------
 
 std::string SymTabEntry::extractOriginalId() {
-    swiftAssert( revision_ == -1, "This is not a revised variable" );
+    swiftAssert( revision_ == REVISED_VAR, "This is not a revised variable" );
 
     // reverse search should usually be faster
     size_t index = id_->find_last_of('!');

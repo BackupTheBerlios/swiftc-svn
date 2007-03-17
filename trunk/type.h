@@ -27,7 +27,7 @@ struct Type : public Node
     BaseType*   baseType_;
     int         pointerCount_;
 
-    Type(int typeQualifier, BaseType* baseType, int pointerCount, int line = -1)
+    Type(int typeQualifier, BaseType* baseType, int pointerCount, int line = NO_LINE)
         : Node(line)
         , typeQualifier_(typeQualifier)
         , baseType_(baseType)
@@ -57,7 +57,7 @@ struct SimpleType : public BaseType
 {
     int kind_;
 
-    SimpleType(int kind, int line = -1)
+    SimpleType(int kind, int line = NO_LINE)
         : BaseType(line)
         , kind_(kind)
     {}
@@ -78,7 +78,7 @@ struct Container : public BaseType
     Type*   type_;
     Expr*   expr_;
 
-    Container(int kind, Type* type, Expr* expr, int line = -1)
+    Container(int kind, Type* type, Expr* expr, int line = NO_LINE)
         : BaseType(line)
         , kind_(kind)
         , type_(type)
@@ -101,7 +101,7 @@ struct UserType : public BaseType
 {
     std::string* id_;
 
-    UserType(std::string* id, int line = -1)
+    UserType(std::string* id, int line = NO_LINE)
         : BaseType(line)
         , id_(id)
     {}
