@@ -117,13 +117,12 @@ bool Literal::analyze()
             swiftAssert(false, "illegal switch-case-value");
     }
 
-
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void Literal::genAlc()
+void Literal::genSSA()
 {
     place_ = 0;
 }
@@ -159,12 +158,12 @@ bool UnExpr::analyze()
         --type_->pointerCount_;
     }
 
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void UnExpr::genAlc()
+void UnExpr::genSSA()
 {
     Local* tmp = symtab.newTemp(type_);
     // no revision necessary, temps occur only once
@@ -235,12 +234,12 @@ bool BinExpr::analyze()
 
     lvalue_ = false;
 
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void BinExpr::genAlc()
+void BinExpr::genSSA()
 {
     Local* tmp = symtab.newTemp(type_);
     // no revision necessary, temps occur only once
@@ -280,12 +279,12 @@ bool AssignExpr::analyze()
 
     lvalue_ = false;
 
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void AssignExpr::genAlc()
+void AssignExpr::genSSA()
 {
     swiftAssert( typeid(*result_->place_) == typeid(Local), "TODO: What if it is not a Local*?" );
 
@@ -308,12 +307,12 @@ bool Id::analyze()
         return false;
     }
 
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void Id::genAlc()
+void Id::genSSA()
 {
     SymTabEntry* entry = symtab.lookupVar(id_);
 
@@ -355,12 +354,12 @@ bool FunctionCall::analyze()
 
     std::cout << "not yet implemented" << std::endl;
 
-    genAlc();
+    genSSA();
 
     return true;
 }
 
-void FunctionCall::genAlc()
+void FunctionCall::genSSA()
 {
     std::cout << "not yet implemented" << std::endl;
 //     place_ = new std::string("TODO");

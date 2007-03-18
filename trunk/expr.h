@@ -24,7 +24,7 @@ struct Expr : public Node
     ~Expr();
 
     virtual bool analyze() = 0;
-    virtual void genAlc() = 0;
+    virtual void genSSA() = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ struct Literal : public Expr
 
     std::string toString() const;
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ struct Id : public Expr
     }
 
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ struct UnExpr : public Expr
 
     std::string toString() const;
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ struct BinExpr : public Expr
     std::string getOpString() const;
     std::string toString() const;
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ struct AssignExpr : public Expr
 
     std::string toString() const;
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -198,7 +198,7 @@ struct Arg : public Node
     }
 
     std::string toString() const { return std::string(""); }
-    void genAlc();
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -221,7 +221,7 @@ struct FunctionCall : public Expr
 
     std::string toString() const;
     bool analyze();
-    void genAlc();
+    void genSSA();
 };
 
 } // namespace swift
