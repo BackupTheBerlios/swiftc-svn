@@ -14,16 +14,10 @@ template<class T>
 class List
 {
 public:
-    class Node
+    struct Node
     {
-//     friend List<T>::insert(Node*, Node*);
-
-    public:
-
         Node* next_;
         Node* prev_;
-
-    public:
 
         T value_;
 
@@ -44,8 +38,8 @@ public:
 
 private:
 
-    size_t size_;
-    Node* sentinel_;
+    size_t  size_;
+    Node*   sentinel_;
 
 public:
 

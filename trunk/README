@@ -2,6 +2,7 @@ Swift is a compiler for a programming language with the same name.
 Current backend is for amd64 Linux systems.
 However you can compile and run swift on other archs as well.
 
+//------------------------------------------------------------------------------
 
 REQUIREMENTS
 - bison
@@ -10,6 +11,7 @@ REQUIREMENTS
 - yasm (to assemble the output file)
 - gcc
 
+//------------------------------------------------------------------------------
 
 INSTALLING
 
@@ -29,6 +31,7 @@ $ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepar
 
 The last command depends on your Linux distro and/or KDE verions, of course.
 
+//------------------------------------------------------------------------------
 
 CODING CONVENTIONS
 
@@ -61,14 +64,27 @@ struct MyTestClass : public BaseClass
     }
 };
 
+//------------------------------------------------------------------------------
+
 VARIABLE NAMES
 
-in order to provide consisting variable naming here a list of variable names which should be used:
+in order to provide consistent variable naming here a list of variable names which should be used:
 
-iterator iter
-identifiere id
-ostringstream oss
-expression expr
+iterator        iter
+identifiere     id
+ostringstream   oss
+expression      expr
+register        reg
 
+//------------------------------------------------------------------------------
 
+SOURCE TREE
 
+utils/
+    -> all things not directly related to compilers like data structures go here
+fe/ -> front end
+    all lexer, parser, syntaxtree related stuff goes here
+im/ -> intermediate
+    all ssa, back end independent related stuff like optimizations goes here
+be/ -> back end
+    -> register allocators, code generators go here
