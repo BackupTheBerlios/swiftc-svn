@@ -5,9 +5,6 @@
 
 #ifdef SWIFT_DEBUG
 
-namespace swift
-{
-
 bool customAssert(int line, const char* filename, const char* functionName, const char* description, bool& always)
 {
     std::cout << "Assertion: " << filename << " " << line << ": " << std::endl << functionName << std::endl;
@@ -35,7 +32,5 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
         }
     } while (true);
 }
-
-} // namespace swift
 
 #endif // swift_DEBUG

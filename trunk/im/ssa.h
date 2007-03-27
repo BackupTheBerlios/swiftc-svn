@@ -3,11 +3,9 @@
 
 #include <fstream>
 
-#include "list.h"
-#include "symboltable.h"
+#include "../utils/list.h"
 
-namespace swift
-{
+#include "../fe/symboltable.h"
 
 // forward declarations
 struct Expr;
@@ -218,7 +216,5 @@ struct BinInstr : public ExprInstr
 
 typedef List<InstrBase*> InstrList;
 extern InstrList instrlist;
-
-} // namespace swift
 
 #endif // SWIFT_SSA_H

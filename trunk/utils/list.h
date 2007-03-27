@@ -7,9 +7,6 @@
 
 // Because std::list sucks here my own implementation
 
-namespace swift
-{
-
 /**
  *  A circular doubly linked list
  */
@@ -248,7 +245,5 @@ public:
         return size_;
     }
 };
-
-} // namespace swift
 
 #endif // SWIFT_LIST_H

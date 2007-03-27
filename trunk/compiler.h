@@ -1,12 +1,9 @@
 #ifndef SWIFT_COMPILER_H
 #define SWIFT_COMPILER_H
 
-#include "parser.h"
-#include "syntaxtree.h"
-#include "symboltable.h"
-
-namespace swift
-{
+#include "fe/parser.h"
+#include "fe/syntaxtree.h"
+#include "fe/symboltable.h"
 
 // forward declarations
 struct Class;
@@ -27,7 +24,5 @@ struct Compiler
 
     std::string toString();
 };
-
-} // namespace swift
 
 #endif // SWIFT_COMPILER_H

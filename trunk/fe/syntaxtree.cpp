@@ -3,11 +3,9 @@
 #include <iostream>
 #include <sstream>
 
-#include "assert.h"
-#include "ssa.h"
+#include "../utils/assert.h"
 
-namespace swift
-{
+#include "../im/ssa.h"
 
 //------------------------------------------------------------------------------
 
@@ -48,5 +46,3 @@ bool Module::analyze()
 
     return true;
 }
-
-} // namespace swift

@@ -2,10 +2,8 @@
 
 #include <sstream>
 
-#include "expr.h"
-#include "symboltable.h"
-
-namespace swift {
+#include "../fe/expr.h"
+#include "../fe/symboltable.h"
 
 InstrList instrlist;
 
@@ -133,7 +131,3 @@ void BinInstr::genCode(std::ofstream& ofs)
 {
     ofs << "bi" << std::endl;
 };
-
-//------------------------------------------------------------------------------
-
-} // namespace swift

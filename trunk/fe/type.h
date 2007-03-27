@@ -3,8 +3,6 @@
 
 #include "syntaxtree.h"
 
-namespace swift {
-
 // forward declarations
 struct Expr;
 
@@ -120,7 +118,5 @@ struct UserType : public BaseType
         return *id_;
     }
 };
-
-} // namespace swift
 
 #endif // SWIFT_TYPE_H

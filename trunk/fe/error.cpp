@@ -2,9 +2,6 @@
 
 #include <cstdio>
 
-namespace swift
-{
-
 ErrorHandler error;
 
 void ErrorHandler::setFilename(const char* filename)
@@ -38,6 +35,4 @@ void warningf(int line, const char* fs, ...)
     vfprintf(stderr, fs, argptr);
     va_end(argptr);
     fprintf(stderr, "\n");
-}
-
 }

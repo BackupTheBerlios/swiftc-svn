@@ -3,8 +3,6 @@
 
 #include "syntaxtree.h"
 
-namespace swift {
-
 // forward declarations
 struct Expr;
 
@@ -223,7 +221,5 @@ struct FunctionCall : public Expr
     bool analyze();
     void genSSA();
 };
-
-} // namespace swift
 
 #endif // SWIFT_EXPR_H

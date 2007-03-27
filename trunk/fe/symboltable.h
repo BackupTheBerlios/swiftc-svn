@@ -10,9 +10,6 @@
 #include "class.h"
 #include "type.h"
 
-namespace swift
-{
-
 struct SymbolTable
 {
     Module* rootModule_;
@@ -70,7 +67,5 @@ struct SymbolTable
 
 typedef SymbolTable SymTab;
 extern SymTab symtab;
-
-} // namespace swift
 
 #endif // SWIFT_SYMBOLTABLE_H

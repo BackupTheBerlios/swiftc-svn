@@ -3,12 +3,10 @@
 
 #include <vector>
 
-#include "error.h"
-#include "lexer.h"
-#include "parser.h"
+#include "fe/error.h"
+#include "fe/lexer.h"
+#include "fe/parser.h"
 #include "compiler.h"
-
-using namespace swift;
 
 FILE* file;
 

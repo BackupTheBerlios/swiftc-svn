@@ -7,9 +7,6 @@
 
 #include "tokens.h"
 
-namespace swift
-{
-
 // forward declaration
 struct Class;
 
@@ -118,7 +115,5 @@ struct SyntaxTree
 //------------------------------------------------------------------------------
 
 #define SWIFT_TO_STRING_ERROR default: swiftAssert(false, "illegal case value"); return "";
-
-} // namespace swift
 
 #endif // SWIFT_SYNTAXTREE_H

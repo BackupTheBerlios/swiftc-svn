@@ -3,13 +3,12 @@
 #include <iostream>
 #include <sstream>
 
-#include "assert.h"
+#include "../utils/assert.h"
+
 #include "error.h"
 #include "expr.h"
 #include "symboltable.h"
 
-
-namespace swift {
 
 std::string Type::toString() const
 {
@@ -255,5 +254,3 @@ std::string Container::toString() const
 
     return oss.str();
 }
-
-} // namespace swift

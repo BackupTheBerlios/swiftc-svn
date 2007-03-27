@@ -11,12 +11,8 @@
 #include "statement.h"
 #include "expr.h"
 
-swift::SyntaxTree*  syntaxTree_;
+SyntaxTree*  syntaxTree_;
 int pointerCount_;
-
-using swift::symtab;
-using swift::currentLine;
-using swift::getKeyLine;
 
 %}
 
@@ -26,22 +22,22 @@ using swift::getKeyLine;
 
     std::string*        id_;
 
-    swift::Module*      module_;
-    swift::Definition*  definition_;
+    Module*      module_;
+    Definition*  definition_;
 
-    swift::Class*       class_;
-    swift::ClassMember* classMember_;
-    swift::MemberVar*   memberVar_;
-    swift::Method*      method_;
-    swift::Parameter*   parameter_;
+    Class*       class_;
+    ClassMember* classMember_;
+    MemberVar*   memberVar_;
+    Method*      method_;
+    Parameter*   parameter_;
 
-    swift::Type*        type_;
-    swift::BaseType*    baseType_;
+    Type*        type_;
+    BaseType*    baseType_;
 
-    swift::Expr*        expr_;
-    swift::Arg*         arg_;
+    Expr*        expr_;
+    Arg*         arg_;
 
-    swift::Statement*   statement_;
+    Statement*   statement_;
 };
 
 /*
@@ -130,7 +126,7 @@ using swift::getKeyLine;
 
 module
     :   {
-            $$ = new swift::Module(new std::string("default"), currentLine);
+            $$ = new Module(new std::string("default"), currentLine);
             symtab.insert($$);
         }
         definitions
@@ -156,7 +152,7 @@ definitions
 class_definition
     : CLASS ID
         {
-            $$ = new swift::Class($2, currentLine);
+            $$ = new Class($2, currentLine);
             symtab.insert($<class_>$);
         }
         class_body END
@@ -166,7 +162,7 @@ class_definition
         }
     | CLASS ID
         {
-            $$ = new swift::Class($2, currentLine);
+            $$ = new Class($2, currentLine);
             symtab.insert($<class_>$);
         }
         '{' template_list '}' class_body END
@@ -205,7 +201,7 @@ class_member
 method
     : method_qualifier /**/ ID
         {
-            $$ = new swift::Method( $1, 0, $2, getKeyLine() );
+            $$ = new Method( $1, 0, $2, getKeyLine() );
             symtab.insert($$);
         }
         '(' parameter_list')' statement_list END
@@ -215,7 +211,7 @@ method
         }
     | method_qualifier type ID
         {
-            $$ = new swift::Method( $1, $2, $3, getKeyLine() );
+            $$ = new Method( $1, $2, $3, getKeyLine() );
             symtab.insert($$);
         }
         '(' parameter_list')' statement_list END
@@ -234,12 +230,12 @@ parameter_list
 parameter
     : /* default is IN */ type ID
         {
-            $$ = new swift::Parameter(IN, $1, $2, currentLine);
+            $$ = new Parameter(IN, $1, $2, currentLine);
             symtab.insert($$);
         }
     | parameter_qualifier type ID
         {
-            $$ = new swift::Parameter($1, $2, $3, currentLine);
+            $$ = new Parameter($1, $2, $3, currentLine);
             symtab.insert($$);
         }
     ;
@@ -253,7 +249,7 @@ parameter
 member_var
     : type ID ';'
         {
-            $$ = new swift::MemberVar($1, $2, currentLine);
+            $$ = new MemberVar($1, $2, currentLine);
             symtab.insert($$);
         }
     ;
@@ -270,8 +266,8 @@ statement_list
     ;
 
 statement
-    : expr ';' opt_semis    { $$ = new swift::ExprStatement($1, currentLine); }
-    | type ID ';'           { $$ = new swift::Declaration($1, $2, getKeyLine()); }
+    : expr ';' opt_semis    { $$ = new ExprStatement($1, currentLine); }
+    | type ID ';'           { $$ = new Declaration($1, $2, getKeyLine()); }
     ;
 
 /*
@@ -282,17 +278,17 @@ statement
 
 expr
     : assign_expr               { $$ = $1; }
-    | expr ',' assign_expr      { $$ = new swift::BinExpr(',', $1, $3, currentLine); }
+    | expr ',' assign_expr      { $$ = new BinExpr(',', $1, $3, currentLine); }
     ;
 
 assign_expr
     : add_expr                  { $$ = $1; }
-    | assign_expr '=' add_expr  { $$ = new swift::AssignExpr('=', $1, $3, currentLine); }
+    | assign_expr '=' add_expr  { $$ = new AssignExpr('=', $1, $3, currentLine); }
     ;
 
 /*
     : rel_expr                  { $$ = $1; }
-    | assign_expr '=' rel_expr  { $$ = new swift::AssignExpr($1, $3, currentLine); }
+    | assign_expr '=' rel_expr  { $$ = new AssignExpr($1, $3, currentLine); }
     ;
 
 rel_expr
@@ -305,22 +301,22 @@ rel_expr
 
 add_expr
     : mul_expr              { $$ = $1; }
-    | add_expr '+' mul_expr { $$ = new swift::BinExpr('+', $1, $3, currentLine); }
-    | add_expr '-' mul_expr { $$ = new swift::BinExpr('-', $1, $3, currentLine); }
+    | add_expr '+' mul_expr { $$ = new BinExpr('+', $1, $3, currentLine); }
+    | add_expr '-' mul_expr { $$ = new BinExpr('-', $1, $3, currentLine); }
     ;
 
 mul_expr:
       un_expr               { $$ = $1; }
-    | mul_expr '*' un_expr  { $$ = new swift::BinExpr('*', $1, $3, currentLine); }
-    | mul_expr '/' un_expr  { $$ = new swift::BinExpr('/', $1, $3, currentLine); }
+    | mul_expr '*' un_expr  { $$ = new BinExpr('*', $1, $3, currentLine); }
+    | mul_expr '/' un_expr  { $$ = new BinExpr('/', $1, $3, currentLine); }
     ;
 
 un_expr
     : postfix_expr          { $$ = $1; }
-    | '^' un_expr           { $$ = new swift::UnExpr('^', $2, currentLine); }
-    | '&' un_expr           { $$ = new swift::UnExpr('&', $2, currentLine); }
-    | '-' un_expr           { $$ = new swift::UnExpr('-', $2, currentLine); }
-    | '+' un_expr           { $$ = new swift::UnExpr('+', $2, currentLine); }
+    | '^' un_expr           { $$ = new UnExpr('^', $2, currentLine); }
+    | '&' un_expr           { $$ = new UnExpr('&', $2, currentLine); }
+    | '-' un_expr           { $$ = new UnExpr('-', $2, currentLine); }
+    | '+' un_expr           { $$ = new UnExpr('+', $2, currentLine); }
     ;
 
 postfix_expr
@@ -331,7 +327,7 @@ postfix_expr
     ;
 
 primary_expr
-    : ID            { $$ = new swift::Id($1, getKeyLine()); }
+    : ID            { $$ = new Id($1, getKeyLine()); }
     | L_INDEX       { $$ = $1; }
     | L_INT         { $$ = $1; }
     | L_INT8        { $$ = $1; }
@@ -354,8 +350,8 @@ primary_expr
     ;
 
 arg_list
-    : assign_expr                   { $$ = new swift::Arg($1,  0, currentLine); }
-    | assign_expr ',' arg_list      { $$ = new swift::Arg($1, $3, currentLine); }
+    : assign_expr                   { $$ = new Arg($1,  0, currentLine); }
+    | assign_expr ',' arg_list      { $$ = new Arg($1, $3, currentLine); }
     ;
 
 opt_semis
@@ -376,18 +372,18 @@ parameter_qualifier
     ;
 
 type
-    : type_qualifier  base_type { pointerCount_ = 0; } pointer  { $$ = new swift::Type($1,  $2, pointerCount_, currentLine); }
-    | /*default VAR*/ base_type { pointerCount_ = 0; } pointer  { $$ = new swift::Type(VAR, $1, pointerCount_, currentLine); }
+    : type_qualifier  base_type { pointerCount_ = 0; } pointer  { $$ = new Type($1,  $2, pointerCount_, currentLine); }
+    | /*default VAR*/ base_type { pointerCount_ = 0; } pointer  { $$ = new Type(VAR, $1, pointerCount_, currentLine); }
     ;
 
 base_type
-    : simple_type                   { $$ = new swift::SimpleType($1, currentLine); }
-    | ARRAY '{' type '}'            { $$ = new swift::Container(ARRAY, $3,  0, currentLine); }
-    | SIMD  '{' type '}'            { $$ = new swift::Container(SIMD,  $3,  0, currentLine); }
-    | ARRAY '{' type ',' expr '}'   { $$ = new swift::Container(ARRAY, $3, $5, currentLine); }
-    | SIMD  '{' type ',' expr '}'   { $$ = new swift::Container(SIMD,  $3, $5, currentLine); }
-    | ID                            { $$ = new swift::UserType($1/*, 0*/, currentLine); }
-    | ID  '{' template_arg_list '}' { $$ = new swift::UserType($1/*, $3*/, currentLine); }
+    : simple_type                   { $$ = new SimpleType($1, currentLine); }
+    | ARRAY '{' type '}'            { $$ = new Container(ARRAY, $3,  0, currentLine); }
+    | SIMD  '{' type '}'            { $$ = new Container(SIMD,  $3,  0, currentLine); }
+    | ARRAY '{' type ',' expr '}'   { $$ = new Container(ARRAY, $3, $5, currentLine); }
+    | SIMD  '{' type ',' expr '}'   { $$ = new Container(SIMD,  $3, $5, currentLine); }
+    | ID                            { $$ = new UserType($1/*, 0*/, currentLine); }
+    | ID  '{' template_arg_list '}' { $$ = new UserType($1/*, $3*/, currentLine); }
     ;
 
 pointer
@@ -453,11 +449,11 @@ simple_type
 
 void yyerror(char *s)
 {
-    swift::errorf(currentLine, s);
+    errorf(currentLine, s);
     exit(0);
 }
 
-void parserInit(swift::SyntaxTree* syntaxTree)
+void parserInit(SyntaxTree* syntaxTree)
 {
     syntaxTree_  = syntaxTree;
 }

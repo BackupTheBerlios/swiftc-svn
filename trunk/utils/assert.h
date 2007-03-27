@@ -3,9 +3,6 @@
 
 #ifdef SWIFT_DEBUG
 
-namespace swift
-{
-
 /**
     * This is the assert function. It is used by the tgtAssert macro.
     * @param line          line number
@@ -16,8 +13,6 @@ namespace swift
     * @return              true if a breakpoint should be thrown
 */
 bool customAssert(int line, const char* filename, const char* functionName, const char* description, bool& always);
-
-} // namespace swift
 
 /*
     * SWIFT_THROW_BREAKPOINT activates a Breakpoint in debug mode.
@@ -47,7 +42,7 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
         if ( !(bool(e)) ) { \
             static bool always = false; \
             if (!always) \
-                if (swift::customAssert(__LINE__, __FILE__, __PRETTY_FUNCTION__, (description), always)) \
+                if (customAssert(__LINE__, __FILE__, __PRETTY_FUNCTION__, (description), always)) \
                     SWIFT_THROW_BREAKPOINT; \
         }
 #else // __GNUC__
@@ -55,7 +50,7 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
         if ( !(bool(e)) ) { \
             static bool always = false; \
             if (!always) \
-                if (swift::customAssert(__LINE__, __FILE__, __FUNCTION__, (description), always)) \
+                if (customAssert(__LINE__, __FILE__, __FUNCTION__, (description), always)) \
                     SWIFT_THROW_BREAKPOINT; \
         }
 #endif // __GNUC__

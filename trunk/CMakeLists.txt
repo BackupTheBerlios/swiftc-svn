@@ -10,34 +10,36 @@ ENDIF (BUILD_RELEASE)
 
 # call bison
 ADD_CUSTOM_COMMAND(
-    OUTPUT  parser.tab.cpp parser.tab.hpp
-    COMMAND bison -t -d -v -o parser.tab.cpp parser.y
-    DEPENDS parser.y
+    OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp
+    COMMAND bison -t -d -v -o fe/parser.tab.cpp fe/parser.y
+    DEPENDS fe/parser.y
 )
 
 #call flex
 ADD_CUSTOM_COMMAND(
-    OUTPUT  lex.yy.cpp
-    COMMAND flex -o lex.yy.cpp lexer.l
-    DEPENDS lexer.l
+    OUTPUT  fe/lex.yy.cpp
+    COMMAND flex -o fe/lex.yy.cpp fe/lexer.l
+    DEPENDS fe/lexer.l
 )
 
 
 ADD_EXECUTABLE(swift
-    parser.tab.cpp
-    parser.tab.hpp
-    lex.yy.cpp
+    utils/assert.cpp
 
-    assert.cpp
+    fe/lex.yy.cpp
+    fe/parser.tab.cpp
+    fe/parser.tab.hpp
+
+    fe/class.cpp
+    fe/error.cpp
+    fe/expr.cpp
+    fe/statement.cpp
+    fe/symboltable.cpp
+    fe/syntaxtree.cpp
+    fe/type.cpp
+
+    im/ssa.cpp
+
     compiler.cpp
-    error.cpp
-    symboltable.cpp
-    syntaxtree.cpp
-    class.cpp
-    expr.cpp
-    ssa.cpp
-    statement.cpp
-    type.cpp
-
     main.cpp
 )

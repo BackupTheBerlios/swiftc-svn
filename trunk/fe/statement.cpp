@@ -7,8 +7,6 @@
 #include "symboltable.h"
 #include "type.h"
 
-namespace swift {
-
 Declaration::~Declaration()
 {
     delete type_;
@@ -56,5 +54,3 @@ bool ExprStatement::analyze()
 {
     return expr_->analyze();
 }
-
-} // namespace swift

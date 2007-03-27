@@ -4,15 +4,13 @@
 #include <sstream>
 #include <algorithm>
 
-#include "assert.h"
+#include "../utils/assert.h"
+
 #include "error.h"
 #include "syntaxtree.h"
 #include "class.h"
 
 using namespace std;
-
-namespace swift
-{
 
 SymTab symtab;
 
@@ -336,5 +334,3 @@ SymTabEntry* SymbolTable::lookupLastRevision(Local* local)
 
     return entry;
 }
-
-} // namespace swift

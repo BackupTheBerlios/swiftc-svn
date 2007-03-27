@@ -6,8 +6,6 @@
 
 #include "syntaxtree.h"
 
-namespace swift {
-
 // forward declarations
 struct Type;
 
@@ -133,7 +131,5 @@ struct Method : public ClassMember
     std::string toString() const;
     bool analyze();
 };
-
-} // namespace swift
 
 #endif // SWIFT_CLASS_H

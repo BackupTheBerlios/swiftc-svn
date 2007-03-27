@@ -4,11 +4,8 @@
 #include <fstream>
 #include <typeinfo>
 
-#include "ssa.h"
-#include "assert.h"
-
-namespace swift
-{
+#include "im/ssa.h"
+#include "utils/assert.h"
 
 bool Compiler::parse()
 {
@@ -105,5 +102,3 @@ std::string Compiler::toString()
 {
     return syntaxTree_.rootModule_->toString();
 }
-
-} // namespace swift

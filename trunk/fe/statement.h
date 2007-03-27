@@ -3,8 +3,6 @@
 
 #include "syntaxtree.h"
 
-namespace swift {
-
 struct Statement : public Node
 {
     Statement* next_;
@@ -55,7 +53,5 @@ struct ExprStatement : public Statement
     std::string toString() const { return std::string(""); }
     bool analyze();
 };
-
-} // namespace swift
 
 #endif // SWIFT_STATEMENT_H

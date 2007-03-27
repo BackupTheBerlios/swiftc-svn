@@ -3,10 +3,8 @@
 
 FILE* lexerInit(const char* filename);
 
-namespace swift {
-    extern int currentLine;
-    extern int getKeyLine();
-}
+extern int currentLine;
+extern int getKeyLine();
 
 extern "C" int yylex(void);
 void yyerror(char *);

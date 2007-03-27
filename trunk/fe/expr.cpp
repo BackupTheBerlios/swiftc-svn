@@ -4,13 +4,13 @@
 #include <iostream>
 #include <sstream>
 
-#include "ssa.h"
-#include "assert.h"
+#include "../utils/assert.h"
+
 #include "error.h"
 #include "type.h"
 #include "symboltable.h"
 
-namespace swift {
+#include "../im/ssa.h"
 
 /*
     - every expr has to set its type, containing of
@@ -364,5 +364,3 @@ void FunctionCall::genSSA()
     std::cout << "not yet implemented" << std::endl;
 //     place_ = new std::string("TODO");
 };
-
-} // namespace swift

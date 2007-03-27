@@ -2,12 +2,12 @@
 
 #include <sstream>
 
-#include "assert.h"
-#include "ssa.h"
+#include "../utils/assert.h"
+
 #include "statement.h"
 #include "symboltable.h"
 
-namespace swift {
+#include "../im/ssa.h"
 
 bool Class::analyze()
 {
@@ -133,5 +133,3 @@ std::string MemberVar::toString() const
 
     return oss.str();
 }
-
-} // namespace swift
