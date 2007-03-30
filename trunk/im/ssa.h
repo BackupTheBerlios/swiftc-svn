@@ -3,12 +3,11 @@
 
 #include <fstream>
 
-#include "../utils/list.h"
-
-#include "../fe/symboltable.h"
+#include "utils/list.h"
+#include "pseudoreg.h"
 
 // forward declarations
-struct Expr;
+struct PseudoReg;
 
 //------------------------------------------------------------------------------
 
@@ -20,74 +19,17 @@ struct InstrBase
 };
 
 //------------------------------------------------------------------------------
-//TagInstr----------------------------------------------------------------------
+//PseudoRegInstr---------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-struct TagInstr : public InstrBase
-{
-    std::string* id_;
-    bool enter_;
-
-    TagInstr(std::string* id, bool enter)
-        : id_(id)
-        , enter_(enter)
-    {}
-
-    /// calls the appropriate enter method of the symtab
-    virtual void enter() = 0;
-    /// calls the appropriate leave method of the symtab
-    virtual void leave() = 0;
-};
-
-//------------------------------------------------------------------------------
-
-struct ModuleTagInstr : public TagInstr
-{
-    ModuleTagInstr(std::string* id, bool enter)
-        : TagInstr(id, enter)
-    {}
-
-    std::string toString() const;
-    void enter();
-    void leave();
-};
-
-//------------------------------------------------------------------------------
-
-struct ClassTagInstr : public TagInstr
-{
-    ClassTagInstr(std::string* id, bool enter)
-        : TagInstr(id, enter)
-    {}
-
-    std::string toString() const;
-    void enter();
-    void leave();
-};
-
-//------------------------------------------------------------------------------
-
-struct MethodTagInstr : public TagInstr
-{
-    MethodTagInstr(std::string* id, bool enter)
-        : TagInstr(id, enter)
-    {}
-
-    std::string toString() const;
-    void enter();
-    void leave();
-};
-
-//------------------------------------------------------------------------------
-//ExprInstr---------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-struct ExprInstr : public InstrBase
+struct PseudoRegInstr : public InstrBase
 {
     virtual void genCode(std::ofstream& ofs) = 0;
 };
 
-struct AssignInstr : public ExprInstr
+//------------------------------------------------------------------------------
+
+struct AssignInstr : public PseudoRegInstr
 {
     union
     {
@@ -95,13 +37,13 @@ struct AssignInstr : public ExprInstr
         char c_;
     };
 
-    Expr* result_;
-    Expr* expr_;
+    PseudoReg* result_;
+    PseudoReg* reg_;
 
-    AssignInstr(int kind, Expr* result, Expr* expr)
+    AssignInstr(int kind, PseudoReg* result, PseudoReg* reg)
         : kind_(kind)
         , result_(result)
-        , expr_(expr)
+        , reg_(reg)
     {}
 
     std::string toString() const;
@@ -113,7 +55,7 @@ struct AssignInstr : public ExprInstr
 /**
  *
  */
-struct UnInstr : public ExprInstr
+struct UnInstr : public PseudoRegInstr
 {
     union
     {
@@ -121,10 +63,10 @@ struct UnInstr : public ExprInstr
         char c_;
     };
 
-    Expr* result_;
-    Expr* op_;
+    PseudoReg* result_;
+    PseudoReg* op_;
 
-    UnInstr(int kind, Expr* result, Expr* op)
+    UnInstr(int kind, PseudoReg* result, PseudoReg* op)
         : kind_(kind)
         , result_(result)
         , op_(op)
@@ -158,7 +100,7 @@ struct UnInstr : public ExprInstr
  *  result = op1 <= op2 <br>
  *  result = op1 >= op2 <br>
 */
-struct BinInstr : public ExprInstr
+struct BinInstr : public PseudoRegInstr
 {
     union
     {
@@ -166,11 +108,11 @@ struct BinInstr : public ExprInstr
         char c_;
     };
 
-    Expr* result_;
-    Expr* op1_;
-    Expr* op2_;
+    PseudoReg* result_;
+    PseudoReg* op1_;
+    PseudoReg* op2_;
 
-    BinInstr(int kind, Expr* result, Expr* op1, Expr* op2)
+    BinInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2)
         : kind_(kind)
         , result_(result)
         , op1_(op1)
@@ -198,23 +140,20 @@ struct BinInstr : public ExprInstr
 // };
 
 /**
- *  result =  expr <br>
- *  result <- expr <br>
- *  result <-> expr <br>
+ *  result =  PseudoReg <br>
+ *  result <- PseudoReg <br>
+ *  result <-> PseudoReg <br>
  *  <br>
- *  result += expr <br>
- *  result -= expr <br>
- *  result *= expr <br>
- *  result /= expr <br>
- *  result %= expr <br>
+ *  result += PseudoReg <br>
+ *  result -= PseudoReg <br>
+ *  result *= PseudoReg <br>
+ *  result /= PseudoReg <br>
+ *  result %= PseudoReg <br>
  *
- *  result and= expr <br>
- *  result or=  expr <br>
- *  result xor= expr <br>
+ *  result and= PseudoReg <br>
+ *  result or=  PseudoReg <br>
+ *  result xor= PseudoReg <br>
 */
 
-
-typedef List<InstrBase*> InstrList;
-extern InstrList instrlist;
 
 #endif // SWIFT_SSA_H

@@ -2,97 +2,15 @@
 
 #include <sstream>
 
-#include "../fe/expr.h"
-#include "../fe/symboltable.h"
+#include "fe/expr.h"
+#include "fe/symboltable.h"
 
-InstrList instrlist;
-
-// -----------------------------------------------------------------------------
-
-std::string ModuleTagInstr::toString() const
-{
-    std::ostringstream oss;
-
-    if (enter_)
-        oss << "enter ";
-    else
-        oss << "leave ";
-
-    oss << "module " << *id_;
-
-    return oss.str();
-}
-
-void ModuleTagInstr::enter()
-{
-    symtab.enterModule(/*id_*/);
-}
-
-void ModuleTagInstr::leave()
-{
-    symtab.leaveModule();
-}
-
-// -----------------------------------------------------------------------------
-
-std::string ClassTagInstr::toString() const
-{
-    std::ostringstream oss;
-
-    if (enter_)
-        oss << "enter ";
-    else
-        oss << "leave ";
-
-    oss << "class " << *id_;
-
-    return oss.str();
-}
-
-void ClassTagInstr::enter()
-{
-    symtab.enterClass(id_);
-}
-
-void ClassTagInstr::leave()
-{
-    symtab.leaveClass();
-}
-
-// -----------------------------------------------------------------------------
-
-std::string MethodTagInstr::toString() const
-{
-    std::ostringstream oss;
-
-    if (enter_)
-        oss << "enter ";
-    else
-        oss << "leave ";
-
-    oss << "method " << *id_;
-
-    return oss.str();
-}
-
-void MethodTagInstr::enter()
-{
-    symtab.enterMethod(id_);
-}
-
-void MethodTagInstr::leave()
-{
-    symtab.leaveMethod();
-}
-
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 
 std::string AssignInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << "\t" << c_ << " " << expr_->toString();
+    oss << result_->toString() << "\t" << c_ << " " << reg_->toString();
 
     return oss.str();
 }

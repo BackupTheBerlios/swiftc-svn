@@ -4,13 +4,15 @@
 #include <iostream>
 #include <sstream>
 
-#include "../utils/assert.h"
+#include "utils/assert.h"
 
 #include "error.h"
 #include "type.h"
 #include "symboltable.h"
 
-#include "../im/ssa.h"
+#include "im/pseudoreg.h"
+#include "im/scopetable.h"
+#include "im/ssa.h"
 
 /*
     - every expr has to set its type, containing of
@@ -22,6 +24,84 @@
     - return true if everything is ok
     - return false otherwise
 */
+
+//------------------------------------------------------------------------------
+/// Helper
+PseudoReg::RegType int2RegType(int i)
+{
+    switch (i)
+    {
+        case   INDEX:
+        case L_INDEX:
+            return PseudoReg::R_INDEX;
+
+        case   INT:
+        case L_INT:
+            return PseudoReg::R_INT;
+        case   INT8:
+        case L_INT8:
+            return PseudoReg::R_INT8;
+        case   INT16:
+        case L_INT16:
+            return PseudoReg::R_INT16;
+        case   INT32:
+        case L_INT32:
+            return PseudoReg::R_INT32;
+        case   INT64:
+        case L_INT64:
+            return PseudoReg::R_INT64;
+        case   SAT8:
+        case L_SAT8:
+            return PseudoReg::R_SAT8;
+        case   SAT16:
+        case L_SAT16:
+            return PseudoReg::R_SAT16;
+
+        case   UINT:
+        case L_UINT:
+            return PseudoReg::R_UINT;
+        case   UINT8:
+        case L_UINT8:
+            return PseudoReg::R_UINT8;
+        case   UINT16:
+        case L_UINT16:
+            return PseudoReg::R_UINT16;
+        case   UINT32:
+        case L_UINT32:
+            return PseudoReg::R_UINT32;
+        case   UINT64:
+        case L_UINT64:
+            return PseudoReg::R_UINT64;
+        case   USAT8:
+        case L_USAT8:
+            return PseudoReg::R_USAT8;
+        case   USAT16:
+        case L_USAT16:
+            return PseudoReg::R_USAT16;
+
+        case   REAL:
+        case L_REAL:
+            return PseudoReg::R_REAL;
+        case   REAL32:
+        case L_REAL32:
+            return PseudoReg::R_REAL32;
+        case   REAL64:
+        case L_REAL64:
+            return PseudoReg::R_REAL64;
+
+        default:
+            swiftAssert(false, "illegal switch-case-value");
+            return PseudoReg::R_INDEX; // avoid warning here
+    }
+}
+
+std::string* extractOriginalId(std::string* id) {
+    // reverse search should usually be faster
+    size_t index = id->find_last_of('!');
+    swiftAssert( index == std::string::npos, "This is not a revised variable" );
+
+    return new std::string(id->substr(0, index));
+}
 
 //------------------------------------------------------------------------------
 
@@ -124,21 +204,56 @@ bool Literal::analyze()
 
 void Literal::genSSA()
 {
-    place_ = 0;
+    PseudoReg::RegType reg = int2RegType(kind_);
+    PseudoReg::Value value;
+
+    switch (kind_)
+    {
+        case L_INDEX:  value.index_     = index_;      break;
+
+        case L_INT:     value.int_      = int_;     break;
+        case L_INT8:    value.int8_     = int8_;    break;
+        case L_INT16:   value.int16_    = int16_;   break;
+        case L_INT32:   value.int32_    = int32_;   break;
+        case L_INT64:   value.int64_    = int64_;   break;
+        case L_SAT8:    value.sat8_     = sat8_;    break;
+        case L_SAT16:   value.sat16_    = sat16_;   break;
+
+        case L_UINT:    value.uint_     = uint_;    break;
+        case L_UINT8:   value.uint8_    = uint8_;   break;
+        case L_UINT16:  value.uint16_   = uint16_;  break;
+        case L_UINT32:  value.uint32_   = uint32_;  break;
+        case L_UINT64:  value.uint64_   = uint64_;  break;
+        case L_USAT8:   value.usat8_    = usat8_;   break;
+        case L_USAT16:  value.usat16_   = usat16_;  break;
+
+        case L_REAL:    value.real_     = real_;    break;
+        case L_REAL32:  value.real32_   = real32_;  break;
+        case L_REAL64:  value.real64_   = real64_;  break;
+
+        default:
+            swiftAssert(false, "illegal switch-case-value");
+    }
+
+
+    reg_ = new PseudoReg(0, reg);
+    reg_->value_ = value;
 }
 
 //------------------------------------------------------------------------------
-
-std::string UnExpr::toString() const
-{
-    return *place_->id_;
-}
 
 bool UnExpr::analyze()
 {
     // return false when syntax is wrong
     if ( !op_->analyze() )
         return false;
+
+    // check type
+    if ( typeid(*op_->type_->baseType_) != typeid(SimpleType) )
+    {
+        errorf(op_->line_, "unary operator used with wrong type");
+        return false;
+    }
 
     // TODO VAR CST DEF
 
@@ -165,11 +280,11 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-    Local* tmp = symtab.newTemp(type_);
+    swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
     // no revision necessary, temps occur only once
-    place_ = tmp;
+    reg_ = scopetab.newTemp( int2RegType( ((SimpleType*) type_->baseType_)->kind_) );
 
-    instrlist.append( new UnInstr(kind_, this, op_) );
+    scopetab.appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -197,11 +312,6 @@ std::string BinExpr::getOpString() const
     return oss.str();
 }
 
-std::string BinExpr::toString() const
-{
-    return *place_->id_;
-}
-
 bool BinExpr::analyze()
 {
     // return false when syntax is wrong
@@ -210,6 +320,7 @@ bool BinExpr::analyze()
 
     if (kind_ == ',')
     {
+        // FIXME remove comma operator
         type_ = op2_->type_->clone();
         lvalue_ = op2_->lvalue_;
 
@@ -228,6 +339,13 @@ bool BinExpr::analyze()
         return false;
     }
 
+    // check type
+    if ( typeid(*op1_) != typeid(SimpleType) )
+    {
+        errorf(op1_->line_, "unary operator used with wrong type");
+        return false;
+    }
+
     type_ = op1_->type_->clone();
     // init typeQualifier_ with compatible qualifier
     type_->typeQualifier_ = Type::fitQualifier(op1_->type_, op2_->type_);
@@ -241,19 +359,15 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-    Local* tmp = symtab.newTemp(type_);
-    // no revision necessary, temps occur only once
-    place_ = tmp;
+    swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
 
-    instrlist.append( new BinInstr(kind_, this, op1_, op2_) );
+    // no revision necessary, temps occur only once
+    reg_ = scopetab.newTemp( int2RegType(((SimpleType*) type_->baseType_)->kind_) );
+
+    scopetab.appendInstr( new BinInstr(kind_, reg_, op1_->reg_, op2_->reg_) );
 }
 
 //------------------------------------------------------------------------------
-
-std::string AssignExpr::toString() const
-{
-    return *place_->id_;
-}
 
 bool AssignExpr::analyze()
 {
@@ -286,12 +400,21 @@ bool AssignExpr::analyze()
 
 void AssignExpr::genSSA()
 {
-    swiftAssert( typeid(*result_->place_) == typeid(Local), "TODO: What if it is not a Local*?" );
+    // take id of the swift symtab and extract original name
+    std::string* id = extractOriginalId(result_->reg_->id_);
+    SymTabEntry* entry = symtab.lookupVar(id);
 
-    Local* local = (Local*) result_->place_;
+    // cast to local
+    swiftAssert( typeid(*entry) == typeid(Local), "TODO: What if it is not a Local*?" );
+    Local* local = (Local*) entry;
+
+    swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
+
     // do next revision
-    place_ = symtab.newRevision(local);
-    instrlist.append( new AssignInstr(kind_, this, expr_) );
+    ++local->revision_;
+    reg_ = scopetab.newRevision( int2RegType(((SimpleType*) local->type_->baseType_)->kind_), id,  local->revision_);
+
+    scopetab.appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -315,43 +438,15 @@ bool Id::analyze()
 void Id::genSSA()
 {
     SymTabEntry* entry = symtab.lookupVar(id_);
-
-    // check whether we already have a revised variable
-    if (entry->revision_ == SymTabEntry::REVISED_VAR)
-    {
-        place_ = entry;
-        return;
-    }
-    // else
     swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
-    place_ = symtab.lookupLastRevision((Local*) entry);
+
+    reg_ = scopetab.lookupReg(id_, entry->revision_);
 }
 
 //------------------------------------------------------------------------------
 
-std::string FunctionCall::toString() const
-{
-//     std::ostringstream oss;
-//
-//     oss << *id_ << '(';
-//
-//     for (Arg* iter = args_; iter != 0; iter = iter->next_) {
-//         oss << iter->expr_->toString();
-//
-//         if (iter->next_)
-//             oss << ", ";
-//     }
-//
-//     oss << ')';
-    std::cout << "TODO" << std::endl;
-
-    return std::string("TODO");
-}
-
 bool FunctionCall::analyze()
 {
-//     place_ = new std::string("TODO");
-
     std::cout << "not yet implemented" << std::endl;
 
     genSSA();

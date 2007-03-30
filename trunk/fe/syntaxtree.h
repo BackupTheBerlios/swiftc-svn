@@ -5,20 +5,11 @@
 #include <string>
 #include <vector>
 
+#include "utils/stringptrcmp.h"
 #include "tokens.h"
 
 // forward declaration
 struct Class;
-
-//------------------------------------------------------------------------------
-
-struct StringPtrCmp
-{
-    bool operator () (const std::string* str1, const std::string* str2)
-    {
-        return *str1 < *str2;
-    }
-};
 
 //------------------------------------------------------------------------------
 

@@ -1,38 +1,25 @@
 #ifndef SWIFT_PSEUDOREG_H
 #define SWIFT_PSEUDOREG_H
 
-// this should be the only dependency from ../fe/.*
-#include "../fe/tokens.h" // be consistent with these tokens
+#include <string>
+#include <sstream>
+
+// forward declaration
+struct Scope;
 
 // -----------------------------------------------------------------------------
 
 struct PseudoReg
 {
     /// Types of pseudo registers / constants
-    enum Reg
+    enum RegType
     {
-        R_INDEX = INDEX,
-        R_INT   = INT,
-        R_INT8  = INT8,
-        R_INT16 = INT16,
-        R_INT32 = INT32,
-        R_INT64 = INT64,
+        R_INDEX,
+        R_INT,  R_INT8,  R_INT16,  R_INT32,  R_INT64,  R_SAT8,  R_SAT16,
 
-        R_SAT8  = SAT8,
-        R_SAT16 = SAT16,
+        R_UINT, R_UINT8, R_UINT16, R_UINT32, R_UINT64, R_USAT8, R_USAT16,
 
-        R_UINT  = UINT,
-        R_UINT8 = UINT8,
-        R_UINT16= UINT16,
-        R_UINT32= UINT32,
-        R_UINT64= UINT64,
-
-        R_USAT8 = USAT8,
-        R_USAT16= USTA16,
-
-        R_REAL  = REAL,
-        R_REAL32= REAL32,
-        R_REAL64= REAL64,
+        R_REAL, R_REAL32, R_REAL64,
 
         // SIMD registers use the same value but negative
         VR_INDEX = -R_INDEX,
@@ -52,7 +39,7 @@ struct PseudoReg
         VR_UINT64= -R_UINT64,
 
         VR_USAT8 = -R_USAT8,
-        VR_USAT16= -R_USTA16,
+        VR_USAT16= -R_USAT16,
 
         VR_REAL  = -R_REAL,
         VR_REAL32= -R_REAL32,
@@ -66,15 +53,13 @@ struct PseudoReg
         BOTTOM
     };
 
-    Reg reg_;
+    std::string* id_;
+    RegType regType_;
     State state_;
     Scope* scope_;
 
-    /**
-        for constants:
-        (SIMD constant propagation not implemented. necessary?)
-    */
-    union {
+    /// for constants
+    union Value {
         size_t      index_;
 
         int         int_;
@@ -100,13 +85,24 @@ struct PseudoReg
         void*       ptr_;
     };
 
-    PseudoReg(Reg reg)
-        : reg_(reg)
-        : state_(TOP) // TOP is assumed as initial state
+    Value value_;
+
+    PseudoReg(std::string* id, RegType regType)
+        : id_(id)
+        , regType_(regType)
+        , state_(TOP) // TOP is assumed as initial state
         , scope_(0)
     {}
 
-    virtual ~PseudoReg() {}
+    std::string toString() const {
+        if (id_)
+            return *id_;
+        // else
+        std::ostringstream oss;
+
+        // TODO
+        return "";
+    }
 };
 
 #endif // SWIFT_PSEUDOREG_H

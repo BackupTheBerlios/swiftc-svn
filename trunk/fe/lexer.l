@@ -5,7 +5,7 @@
 
 #include <cstdio>
 
-#include "../utils/assert.h"
+#include "utils/assert.h"
 
 #include "error.h"
 #include "lexer.h"

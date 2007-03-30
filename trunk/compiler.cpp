@@ -51,30 +51,30 @@ bool Compiler::genCode()
     // prepare for iteration of the abstract language code (alc):
     symtab.reset();
 
-    for (InstrList::Node* n = instrlist.first(); n != instrlist.sentinel(); n = n->next())
-    {
-        std::cout << n->value_->toString() << std::endl;
-
-        // check whether it is a TagInstr
-        TagInstr* tagInstr = dynamic_cast<TagInstr*>(n->value_);
-        if ( tagInstr )
-        {
-            // update scoping of the symtab
-            TagInstr* tagInstr = (TagInstr*) n->value_;
-
-            if ( tagInstr->enter_ )
-                tagInstr->enter();
-            else
-                tagInstr->leave();
-
-            // everything done with this instruction so process the next one
-            continue;
-        }
-
-        swiftAssert( dynamic_cast<ExprInstr*>(n->value_), "The Instruction found is neither a TagInstr nor a ExprInstr." );
-        ExprInstr* exprInstr = (ExprInstr*) n->value_;
-        exprInstr->genCode(ofs);
-    }
+//     for (InstrList::Node* n = instrlist.first(); n != instrlist.sentinel(); n = n->next())
+//     {
+//         std::cout << n->value_->toString() << std::endl;
+//
+//         // check whether it is a TagInstr
+//         TagInstr* tagInstr = dynamic_cast<TagInstr*>(n->value_);
+//         if ( tagInstr )
+//         {
+//             // update scoping of the symtab
+//             TagInstr* tagInstr = (TagInstr*) n->value_;
+//
+//             if ( tagInstr->enter_ )
+//                 tagInstr->enter();
+//             else
+//                 tagInstr->leave();
+//
+//             // everything done with this instruction so process the next one
+//             continue;
+//         }
+//
+//         swiftAssert( dynamic_cast<ExprInstr*>(n->value_), "The Instruction found is neither a TagInstr nor a ExprInstr." );
+//         ExprInstr* exprInstr = (ExprInstr*) n->value_;
+//         exprInstr->genCode(ofs);
+//     }
 
     // stream ending code to file
     ofs << "\n; ending code\n";

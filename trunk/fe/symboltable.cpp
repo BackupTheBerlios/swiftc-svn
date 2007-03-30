@@ -4,7 +4,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "../utils/assert.h"
+#include "utils/assert.h"
 
 #include "error.h"
 #include "syntaxtree.h"
@@ -211,52 +211,6 @@ void SymbolTable::leaveMethod()
 
 // -----------------------------------------------------------------------------
 
-Local* SymbolTable::newTemp(Type* type)
-{
-    static long counter = 0;
-
-    ostringstream oss;
-    // '@' is a magic char used to start new temps
-    oss << "@" << counter;
-    string* str = new string( oss.str() );
-
-    Local* local = new Local(type, str, Node::NO_LINE, method_);
-    insert(local);
-
-    ++counter;
-
-    return local;
-}
-
-Local* SymbolTable::newRevision(Local* local)
-{
-    // check whether we already have a revised variable
-    if (local->revision_ == SymTabEntry::REVISED_VAR)
-    {
-        string origninalId = local->extractOriginalId();
-        local = (Local*) lookupVar(&origninalId);
-
-        swiftAssert( typeid(*local) == typeid(Local), "This is not a Local!");
-    }
-
-    // increment -> we generate a new revision
-    ++local->revision_;
-    // if a phi-function must be added above, this shall be revision 0
-
-    ostringstream oss;
-    // '!' is a magic char used to divide the orignal name by the revision number
-    oss << *local->id_ << "!" << local->revision_;
-
-    string* str = new string( oss.str() );
-    Local* revisedLocal = new Local(local->type_, str, Node::NO_LINE, method_);
-    revisedLocal->revision_ = SymTabEntry::REVISED_VAR; // mark as revised variable
-    insert(revisedLocal);
-
-    return revisedLocal;
-}
-
-// -----------------------------------------------------------------------------
-
 SymTabEntry* SymbolTable::lookupVar(string* id)
 {
     {
@@ -321,16 +275,4 @@ Class* SymbolTable::lookupClass(string* id)
 
     // class not found -- so return NULL
     return 0;
-}
-
-SymTabEntry* SymbolTable::lookupLastRevision(Local* local)
-{
-    swiftAssert(local->revision_ != SymTabEntry::REVISED_VAR, "an original variable must be given to this method");
-
-    ostringstream oss;
-    oss << *local->id_ << "!" << local->revision_;
-    string str = oss.str();
-    SymTabEntry* entry = lookupVar( &str );
-
-    return entry;
 }

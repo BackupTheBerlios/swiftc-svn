@@ -5,14 +5,15 @@
 
 // forward declarations
 struct Expr;
+struct PseudoReg;
 
 //------------------------------------------------------------------------------
 
 struct Expr : public Node
 {
-    bool            lvalue_;
-    Type*           type_;
-    SymTabEntry*    place_;
+    bool        lvalue_;
+    Type*       type_;
+    PseudoReg*  reg_;
 
     Expr(int line)
         : Node(line)
@@ -20,6 +21,8 @@ struct Expr : public Node
         , type_(0)
     {}
     ~Expr();
+
+    std::string toString() const { return ""; }
 
     virtual bool analyze() = 0;
     virtual void genSSA() = 0;
@@ -61,6 +64,7 @@ struct Literal : public Expr
     {}
 
     std::string toString() const;
+
     bool analyze();
     void genSSA();
 };
@@ -80,10 +84,7 @@ struct Id : public Expr
         delete id_;
     }
 
-    std::string toString() const
-    {
-        return *place_->id_;
-    }
+    std::string toString() const { return *id_; }
 
     bool analyze();
     void genSSA();
@@ -110,7 +111,6 @@ struct UnExpr : public Expr
         delete op_;
     }
 
-    std::string toString() const;
     bool analyze();
     void genSSA();
 };
@@ -141,7 +141,6 @@ struct BinExpr : public Expr
 
     std::string getExprName() const;
     std::string getOpString() const;
-    std::string toString() const;
     bool analyze();
     void genSSA();
 };
@@ -170,7 +169,6 @@ struct AssignExpr : public Expr
         delete expr_;
     }
 
-    std::string toString() const;
     bool analyze();
     void genSSA();
 };
@@ -195,7 +193,7 @@ struct Arg : public Node
             delete next_;
     }
 
-    std::string toString() const { return std::string(""); }
+    std::string toString() const { return ""; }
     void genSSA();
 };
 
@@ -217,7 +215,6 @@ struct FunctionCall : public Expr
         delete args_;
     }
 
-    std::string toString() const;
     bool analyze();
     void genSSA();
 };

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "../utils/assert.h"
+#include "utils/assert.h"
 
 #include "error.h"
 #include "expr.h"

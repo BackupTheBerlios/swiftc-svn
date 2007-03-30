@@ -11,8 +11,8 @@
 #include "statement.h"
 #include "expr.h"
 
-SyntaxTree*  syntaxTree_;
-int pointerCount_;
+SyntaxTree*  syntaxTree;
+int pointerCount;
 
 %}
 
@@ -134,7 +134,7 @@ module
             $$ = $<module_>1;
             $$->definitions_ = $2;
             $$->parent_ = 0;
-            syntaxTree_->rootModule_ = $$;
+            syntaxTree->rootModule_ = $$;
         }
     ;
 
@@ -372,8 +372,8 @@ parameter_qualifier
     ;
 
 type
-    : type_qualifier  base_type { pointerCount_ = 0; } pointer  { $$ = new Type($1,  $2, pointerCount_, currentLine); }
-    | /*default VAR*/ base_type { pointerCount_ = 0; } pointer  { $$ = new Type(VAR, $1, pointerCount_, currentLine); }
+    : type_qualifier  base_type { pointerCount = 0; } pointer  { $$ = new Type($1,  $2, pointerCount, currentLine); }
+    | /*default VAR*/ base_type { pointerCount = 0; } pointer  { $$ = new Type(VAR, $1, pointerCount, currentLine); }
     ;
 
 base_type
@@ -388,7 +388,7 @@ base_type
 
 pointer
     : /**/
-    | '^' pointer   { ++pointerCount_; }
+    | '^' pointer   { ++pointerCount; }
     ;
 
 
@@ -455,5 +455,5 @@ void yyerror(char *s)
 
 void parserInit(SyntaxTree* syntaxTree)
 {
-    syntaxTree_  = syntaxTree;
+    syntaxTree  = syntaxTree;
 }

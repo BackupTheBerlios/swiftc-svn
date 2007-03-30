@@ -1,41 +1,107 @@
-#ifndef SWIFT_SYMBOLTABLE_H
-#define SWIFT_SYMBOLTABLE_H
+#ifndef SWIFT_SCOPETABLE_H
+#define SWIFT_SCOPETABLE_H
 
-#include <string>
-#include <vector>
-#include <stack>
 #include <map>
+#include <stack>
 
-#include "syntaxtree.h"
-#include "class.h"
-#include "type.h"
+#include "utils/list.h"
+#include "utils/stringptrcmp.h"
+#include "pseudoreg.h"
+#include "ssa.h"
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Capsulates an abstract scope. Each Scope has its own set of vars/pseudoregs
+ * and can have child scopes. Each scope knows of its parent, its children and
+ * its depth in the scope tree.
+ */
+struct Scope
+{
+    Scope* parent_; /// 0 if root scope
+    size_t depth_; /// depth of this scope in the scope tree
+
+    typedef List<Scope*> ScopeList;
+    ScopeList childScopes_;
+
+    typedef std::map<std::string*, PseudoReg*, StringPtrCmp> RegMap;
+    RegMap regs_;
+
+    typedef List<InstrBase*> InstrList;
+    InstrList instrList_;
+
+    Scope(Scope* parent)
+        : parent_(parent)
+        // 0 if root scope, parent_->depth_ + 1 otherwise
+        , depth_(parent_ ? parent_->depth_ + 1 : 0)
+    {}
+};
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Specialization of a scope. It has in, intout and out goint parameters and,
+ * of course, an identifier.
+*/
+struct Function : public Scope
+{
+    std::string* id_;
+
+    typedef List<PseudoReg*> RegList;
+    RegList in_;
+    RegList inout_;
+    RegList out_;
+
+    Function(Scope* parent, std::string* id)
+        : Scope(parent)
+        , id_(id)
+    {}
+};
+
+// -----------------------------------------------------------------------------
 
 struct ScopeTable
 {
-    Scope* rootScope_;
+    enum {
+        NO_REVISION = -1
+    };
 
-    /**
-     * Creates a new temporary variable in order to divide expressions
-     * @param type type of the new temp
-     * @return new created Local
-     */
-    Local* newTemp(Type* type);
+    Scope* globalScope_; // for global vars
 
-    /**
-     * Creates a new revision of either an original variable or an already revised one
-     * @param local the original variable
-     * @return the new created revision
-     */
-    Local* newRevision(Local* local);
+    typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
+    FunctionMap functions_; // for all functions
 
-    Type* lookupType(std::string* id);
-    SymTabEntry* lookupVar(std::string* id);
-    Class* lookupClass(std::string* id);
-    /// Use only with original variables
-    SymTabEntry* lookupLastRevision(Local* local);
+    std::stack<Scope*> scopeStack_; // keeps account of current scope;
+
+    void enterScope(Scope* scope)
+    {
+        scopeStack_.push(scope);
+    }
+
+    void leaveScope()
+    {
+        scopeStack_.pop();
+    }
+
+    Scope* currentScope()
+    {
+        return scopeStack_.top();
+    }
+
+    void appendInstr(InstrBase* instr) {
+        currentScope()->instrList_.append(instr);
+    }
+
+    PseudoReg* newTemp(PseudoReg::RegType regType);
+    PseudoReg* newRevision(PseudoReg::RegType regType, std::string* id, int revision);
+    PseudoReg* lookupReg(std::string* id, int revision = NO_REVISION);
+
+private:
+
+    void insert(PseudoReg* reg);
 };
 
 typedef ScopeTable ScopeTab;
-extern SymTab scopetab;
+extern ScopeTab scopetab;
 
-#endif // SWIFT_SYMBOLTABLE_H
+#endif // SWIFT_SCOPETABLE_H

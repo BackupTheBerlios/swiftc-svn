@@ -2,23 +2,23 @@
 
 #include <sstream>
 
-#include "../utils/assert.h"
+#include "utils/assert.h"
 
 #include "statement.h"
 #include "symboltable.h"
 
-#include "../im/ssa.h"
+#include "im/ssa.h"
 
 bool Class::analyze()
 {
     symtab.enterClass(id_);
-    instrlist.append( new ClassTagInstr(id_, true) );
+//     instrlist.append( new ClassTagInstr(id_, true) );
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-    instrlist.append( new ClassTagInstr(id_, false) );
+//     instrlist.append( new ClassTagInstr(id_, false) );
     symtab.leaveClass();
 
     return true;
@@ -95,7 +95,7 @@ bool Method::analyze()
     bool result = true;
 
     symtab.enterMethod(id_);
-    instrlist.append( new MethodTagInstr(id_, true) );
+//     instrlist.append( new MethodTagInstr(id_, true) );
 
     // analyze each parameter
     for (size_t i = 0; i < symtab.method_->params_.size(); ++i)
@@ -105,7 +105,7 @@ bool Method::analyze()
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-    instrlist.append( new MethodTagInstr(id_, false) );
+//     instrlist.append( new MethodTagInstr(id_, false) );
     symtab.leaveMethod();
 
     return result;

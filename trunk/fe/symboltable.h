@@ -44,25 +44,19 @@ struct SymbolTable
     void enterMethod(std::string* id);
     void leaveMethod();
 
-    /**
-     * Creates a new temporary variable in order to divide expressions
-     * @param type type of the new temp
-     * @return new created Local
-     */
-    Local* newTemp(Type* type);
+    /// destroys all contents of this class
+    void destroy();
 
     /**
      * Creates a new revision of either an original variable or an already revised one
      * @param local the original variable
      * @return the new created revision
      */
-    Local* newRevision(Local* local);
+//     Local* newRevision(Local* local);
 
     Type* lookupType(std::string* id);
     SymTabEntry* lookupVar(std::string* id);
     Class* lookupClass(std::string* id);
-    /// Use only with original variables
-    SymTabEntry* lookupLastRevision(Local* local);
 };
 
 typedef SymbolTable SymTab;
