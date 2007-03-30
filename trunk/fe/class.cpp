@@ -7,7 +7,7 @@
 #include "statement.h"
 #include "symboltable.h"
 
-#include "im/ssa.h"
+#include "me/ssa.h"
 
 bool Class::analyze()
 {

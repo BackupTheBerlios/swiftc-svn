@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "utils/assert.h"
-#include "im/ssa.h"
+#include "me/ssa.h"
 
 //------------------------------------------------------------------------------
 

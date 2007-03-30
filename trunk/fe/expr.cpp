@@ -10,9 +10,9 @@
 #include "type.h"
 #include "symboltable.h"
 
-#include "im/pseudoreg.h"
-#include "im/scopetable.h"
-#include "im/ssa.h"
+#include "me/pseudoreg.h"
+#include "me/scopetable.h"
+#include "me/ssa.h"
 
 /*
     - every expr has to set its type, containing of
