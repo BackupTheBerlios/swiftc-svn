@@ -1,6 +1,7 @@
 #ifndef SWIFT_SCOPETABLE_H
 #define SWIFT_SCOPETABLE_H
 
+#include <iostream>
 #include <map>
 #include <stack>
 
@@ -97,6 +98,7 @@ struct ScopeTable
 
     void appendInstr(InstrBase* instr) {
         currentScope()->instrList_.append(instr);
+        std::cout << currentScope()->instrList_.last()->value_->toString() << std::endl;
     }
 
     PseudoReg* newTemp(PseudoReg::RegType regType);

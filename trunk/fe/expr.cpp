@@ -272,7 +272,7 @@ bool BinExpr::analyze()
     }
 
     // check type
-    if ( typeid(*op1_) != typeid(SimpleType) )
+    if ( typeid(*op1_->type_->baseType_) != typeid(SimpleType) )
     {
         errorf(op1_->line_, "unary operator used with wrong type");
         return false;

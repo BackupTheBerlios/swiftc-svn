@@ -1,47 +1,55 @@
-std::string Literal::toString() const
+#include "pseudoreg.h"
+
+#include <iostream>
+#include <cmath> // for fmod
+
+std::string PseudoReg::toString() const
 {
+    if (id_)
+        return *id_;
+    // else
     std::ostringstream oss;
 
     switch (regType_)
     {
-        case L_INT:     oss << int_;                    break;
-        case L_INT8:    oss << int(int8_)   << "b";     break;
-        case L_INT16:   oss << int16_       << "w";     break;
-        case L_INT32:   oss << int32_       << "d";     break;
-        case L_INT64:   oss << int64_       << "q";     break;
-        case L_SAT8:    oss << int(sat8_)   << "sb";    break;
-        case L_SAT16:   oss << sat16_       << "sw";    break;
+        case R_INT:     oss << value_.int_;                    break;
+        case R_INT8:    oss << int(value_.int8_)    << "b";     break;
+        case R_INT16:   oss << value_.int16_        << "w";     break;
+        case R_INT32:   oss << value_.int32_        << "d";     break;
+        case R_INT64:   oss << value_.int64_        << "q";     break;
+        case R_SAT8:    oss << int(value_.sat8_)    << "sb";    break;
+        case R_SAT16:   oss << value_.sat16_        << "sw";    break;
 
-        case L_UINT:    oss << uint_;                   break;
-        case L_UINT8:   oss << int(uint8_)  << "ub";    break;
-        case L_UINT16:  oss << uint16_      << "uw";    break;
-        case L_UINT32:  oss << uint32_      << "ud";    break;
-        case L_UINT64:  oss << uint64_      << "uq";    break;
-        case L_USAT8:   oss << int(usat8_)  << "usb";   break;
-        case L_USAT16:  oss << usat16_      << "usw";   break;
+        case R_UINT:    oss << value_.uint_;                   break;
+        case R_UINT8:   oss << int(value_.uint8_)   << "ub";    break;
+        case R_UINT16:  oss << value_.uint16_       << "uw";    break;
+        case R_UINT32:  oss << value_.uint32_       << "ud";    break;
+        case R_UINT64:  oss << value_.uint64_       << "uq";    break;
+        case R_USAT8:   oss << int(value_.usat8_)   << "usb";   break;
+        case R_USAT16:  oss << value_.usat16_       << "usw";   break;
 
         // hence it is real, real32 or real64
 
-        case L_REAL:
-            oss << real_;
+        case R_REAL:
+            oss << value_.real_;
         break;
-        case L_REAL32:
-            oss << real32_;
-            if ( fmod(real32_, 1.0) == 0.0 )
+        case R_REAL32:
+            oss << value_.real32_;
+            if ( fmod(value_.real32_, 1.0) == 0.0 )
                 oss << ".d";
             else
                 oss << "d";
             break;
-        case L_REAL64:
-            oss << real64_;
-            if ( fmod(real64_, 1.0) == 0.0 )
+        case R_REAL64:
+            oss << value_.real64_;
+            if ( fmod(value_.real64_, 1.0) == 0.0 )
                 oss << ".q";
             else
                 oss << "q"; // FIXME
-                std::cout << "fjkdlfjkdjfdl" << fmod(real64_, 1.0) << std::endl;
+                std::cout << "fjkdlfjkdjfdl" << fmod(value_.real64_, 1.0) << std::endl;
             break;
-
-        SWIFT_TO_STRING_ERROR
+        default:
+            swiftAssert(false, "VR_* not implemented yet");
     }
 
     return oss.str();

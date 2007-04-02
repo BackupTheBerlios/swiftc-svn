@@ -1,5 +1,6 @@
 #include "ssa.h"
 
+#include <iostream>
 #include <sstream>
 
 #include "fe/expr.h"

@@ -50,6 +50,7 @@ ADD_EXECUTABLE (swift
     fe/syntaxtree.cpp
     fe/type.cpp
 
+    me/pseudoreg.cpp
     me/scopetable.cpp
     me/ssa.cpp
 

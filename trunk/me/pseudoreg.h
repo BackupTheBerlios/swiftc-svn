@@ -96,15 +96,7 @@ struct PseudoReg
         , scope_(0)
     {}
 
-    std::string toString() const {
-        if (id_)
-            return *id_;
-        // else
-        std::ostringstream oss;
-
-        // TODO
-        return "";
-    }
+    std::string toString() const;
 };
 
 typedef List<PseudoReg*> RegList;

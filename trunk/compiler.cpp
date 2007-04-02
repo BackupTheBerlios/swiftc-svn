@@ -77,6 +77,7 @@ bool Compiler::genCode()
         swiftAssert( dynamic_cast<PseudoRegInstr*>(n->value_),
             "The Instruction found should be a PseudoRegInstr" );
         PseudoRegInstr* instr = (PseudoRegInstr*) n->value_;
+        std::cout << "fjdklfjdkl" << std::endl;
         instr->genCode(ofs);
     }
 
