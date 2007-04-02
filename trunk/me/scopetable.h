@@ -75,17 +75,17 @@ struct ScopeTable
     ScopeTable()
         : rootScope_( new Scope(0) )
     {
-        scopeStack_.push_back(rootScope_);
+        scopeStack_.push(rootScope_);
     }
 
     Function* insertFunction(std::string* id);
 
-    void enterScope(Scope* scope)
+    void enter(Scope* scope)
     {
         scopeStack_.push(scope);
     }
 
-    void leaveScope()
+    void leave()
     {
         scopeStack_.pop();
     }

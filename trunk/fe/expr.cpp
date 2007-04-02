@@ -26,74 +26,6 @@
 */
 
 //------------------------------------------------------------------------------
-/// Helper
-PseudoReg::RegType int2RegType(int i)
-{
-    switch (i)
-    {
-        case   INDEX:
-        case L_INDEX:
-            return PseudoReg::R_INDEX;
-
-        case   INT:
-        case L_INT:
-            return PseudoReg::R_INT;
-        case   INT8:
-        case L_INT8:
-            return PseudoReg::R_INT8;
-        case   INT16:
-        case L_INT16:
-            return PseudoReg::R_INT16;
-        case   INT32:
-        case L_INT32:
-            return PseudoReg::R_INT32;
-        case   INT64:
-        case L_INT64:
-            return PseudoReg::R_INT64;
-        case   SAT8:
-        case L_SAT8:
-            return PseudoReg::R_SAT8;
-        case   SAT16:
-        case L_SAT16:
-            return PseudoReg::R_SAT16;
-
-        case   UINT:
-        case L_UINT:
-            return PseudoReg::R_UINT;
-        case   UINT8:
-        case L_UINT8:
-            return PseudoReg::R_UINT8;
-        case   UINT16:
-        case L_UINT16:
-            return PseudoReg::R_UINT16;
-        case   UINT32:
-        case L_UINT32:
-            return PseudoReg::R_UINT32;
-        case   UINT64:
-        case L_UINT64:
-            return PseudoReg::R_UINT64;
-        case   USAT8:
-        case L_USAT8:
-            return PseudoReg::R_USAT8;
-        case   USAT16:
-        case L_USAT16:
-            return PseudoReg::R_USAT16;
-
-        case   REAL:
-        case L_REAL:
-            return PseudoReg::R_REAL;
-        case   REAL32:
-        case L_REAL32:
-            return PseudoReg::R_REAL32;
-        case   REAL64:
-        case L_REAL64:
-            return PseudoReg::R_REAL64;
-
-        default:
-            swiftAssert(false, "illegal switch-case-value");
-            return PseudoReg::R_INDEX; // avoid warning here
-    }
-}
 
 std::string* extractOriginalId(std::string* id) {
     // reverse search should usually be faster
@@ -204,7 +136,7 @@ bool Literal::analyze()
 
 void Literal::genSSA()
 {
-    PseudoReg::RegType reg = int2RegType(kind_);
+    PseudoReg::RegType reg = SimpleType::int2RegType(kind_);
     PseudoReg::Value value;
 
     switch (kind_)
@@ -282,7 +214,7 @@ void UnExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
     // no revision necessary, temps occur only once
-    reg_ = scopetab.newTemp( int2RegType( ((SimpleType*) type_->baseType_)->kind_) );
+    reg_ = scopetab.newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
     scopetab.appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
 }
@@ -362,7 +294,7 @@ void BinExpr::genSSA()
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
 
     // no revision necessary, temps occur only once
-    reg_ = scopetab.newTemp( int2RegType(((SimpleType*) type_->baseType_)->kind_) );
+    reg_ = scopetab.newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
     scopetab.appendInstr( new BinInstr(kind_, reg_, op1_->reg_, op2_->reg_) );
 }
@@ -412,7 +344,7 @@ void AssignExpr::genSSA()
 
     // do next revision
     ++local->revision_;
-    reg_ = scopetab.newRevision( int2RegType(((SimpleType*) local->type_->baseType_)->kind_), id,  local->revision_);
+    reg_ = scopetab.newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), id,  local->revision_);
 
     scopetab.appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
@@ -441,6 +373,7 @@ void Id::genSSA()
     swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
 
     reg_ = scopetab.lookupReg(id_, entry->revision_);
+    std::cout << reg_->id_ << std::endl;
 }
 
 //------------------------------------------------------------------------------

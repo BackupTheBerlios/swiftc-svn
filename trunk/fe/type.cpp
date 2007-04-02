@@ -221,6 +221,124 @@ std::string SimpleType::toString() const
     }
 }
 
+PseudoReg::RegType SimpleType::toRegType() const
+{
+    switch (kind_)
+    {
+        case   INDEX:
+            return PseudoReg::R_INDEX;
+
+        case   INT:
+            return PseudoReg::R_INT;
+        case   INT8:
+            return PseudoReg::R_INT8;
+        case   INT16:
+            return PseudoReg::R_INT16;
+        case   INT32:
+            return PseudoReg::R_INT32;
+        case   INT64:
+            return PseudoReg::R_INT64;
+        case   SAT8:
+            return PseudoReg::R_SAT8;
+        case   SAT16:
+            return PseudoReg::R_SAT16;
+
+        case   UINT:
+            return PseudoReg::R_UINT;
+        case   UINT8:
+            return PseudoReg::R_UINT8;
+        case   UINT16:
+            return PseudoReg::R_UINT16;
+        case   UINT32:
+            return PseudoReg::R_UINT32;
+        case   UINT64:
+            return PseudoReg::R_UINT64;
+        case   USAT8:
+            return PseudoReg::R_USAT8;
+        case   USAT16:
+            return PseudoReg::R_USAT16;
+
+        case   REAL:
+            return PseudoReg::R_REAL;
+        case   REAL32:
+            return PseudoReg::R_REAL32;
+        case   REAL64:
+            return PseudoReg::R_REAL64;
+
+        default:
+            swiftAssert(false, "illegal switch-case-value");
+            return PseudoReg::R_INDEX; // avoid warning here
+    }
+}
+
+PseudoReg::RegType SimpleType::int2RegType(int i)
+{
+    switch (i)
+    {
+        case   INDEX:
+        case L_INDEX:
+            return PseudoReg::R_INDEX;
+
+        case   INT:
+        case L_INT:
+            return PseudoReg::R_INT;
+        case   INT8:
+        case L_INT8:
+            return PseudoReg::R_INT8;
+        case   INT16:
+        case L_INT16:
+            return PseudoReg::R_INT16;
+        case   INT32:
+        case L_INT32:
+            return PseudoReg::R_INT32;
+        case   INT64:
+        case L_INT64:
+            return PseudoReg::R_INT64;
+        case   SAT8:
+        case L_SAT8:
+            return PseudoReg::R_SAT8;
+        case   SAT16:
+        case L_SAT16:
+            return PseudoReg::R_SAT16;
+
+        case   UINT:
+        case L_UINT:
+            return PseudoReg::R_UINT;
+        case   UINT8:
+        case L_UINT8:
+            return PseudoReg::R_UINT8;
+        case   UINT16:
+        case L_UINT16:
+            return PseudoReg::R_UINT16;
+        case   UINT32:
+        case L_UINT32:
+            return PseudoReg::R_UINT32;
+        case   UINT64:
+        case L_UINT64:
+            return PseudoReg::R_UINT64;
+        case   USAT8:
+        case L_USAT8:
+            return PseudoReg::R_USAT8;
+        case   USAT16:
+        case L_USAT16:
+            return PseudoReg::R_USAT16;
+
+        case   REAL:
+        case L_REAL:
+            return PseudoReg::R_REAL;
+        case   REAL32:
+        case L_REAL32:
+            return PseudoReg::R_REAL32;
+        case   REAL64:
+        case L_REAL64:
+            return PseudoReg::R_REAL64;
+
+        default:
+            swiftAssert(false, "illegal switch-case-value");
+            return PseudoReg::R_INDEX; // avoid warning here
+    }
+}
+
 //------------------------------------------------------------------------------
 
 Container::~Container()

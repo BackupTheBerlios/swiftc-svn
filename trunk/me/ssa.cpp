@@ -4,6 +4,15 @@
 
 #include "fe/expr.h"
 #include "fe/symboltable.h"
+#include "scopetable.h"
+
+void EnterScopeInstr::updateScoping()
+{
+    if (enter_)
+        scopetab.enter(scope_);
+    else
+        scopetab.leave();
+}
 
 // -----------------------------------------------------------------------------
 

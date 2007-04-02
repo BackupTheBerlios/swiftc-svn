@@ -5,6 +5,7 @@
 #include <typeinfo>
 
 #include "utils/assert.h"
+#include "me/scopetable.h"
 #include "me/ssa.h"
 
 bool Compiler::parse()
@@ -27,13 +28,6 @@ bool Compiler::analyze()
     return result;
 }
 
-// bool Compiler::genCode()
-// {
-//     for (InstrList::reverse_iterator iter = instrlist.rbegin(); iter != instrlist.rend(); ++iter)
-//     {
-//     }
-// }
-
 bool Compiler::genCode()
 {
     // now the syntax tree is not needed anymore
@@ -51,30 +45,40 @@ bool Compiler::genCode()
     // prepare for iteration of the abstract language code (alc):
     symtab.reset();
 
-//     for (InstrList::Node* n = instrlist.first(); n != instrlist.sentinel(); n = n->next())
-//     {
-//         std::cout << n->value_->toString() << std::endl;
-//
-//         // check whether it is a TagInstr
-//         TagInstr* tagInstr = dynamic_cast<TagInstr*>(n->value_);
-//         if ( tagInstr )
-//         {
-//             // update scoping of the symtab
-//             TagInstr* tagInstr = (TagInstr*) n->value_;
-//
-//             if ( tagInstr->enter_ )
-//                 tagInstr->enter();
-//             else
-//                 tagInstr->leave();
-//
-//             // everything done with this instruction so process the next one
-//             continue;
-//         }
-//
-//         swiftAssert( dynamic_cast<ExprInstr*>(n->value_), "The Instruction found is neither a TagInstr nor a ExprInstr." );
-//         ExprInstr* exprInstr = (ExprInstr*) n->value_;
-//         exprInstr->genCode(ofs);
-//     }
+    Scope::InstrList& instrList = scopetab.currentScope()->instrList_;
+    for (Scope::InstrList::Node* n = instrList.first(); n != instrList.sentinel(); n = n->next())
+    {
+        std::cout << n->value_->toString() << std::endl;
+
+        // check whether it is a DummyInstr
+        if ( typeid(*n->value_) == typeid(DummyInstr) )
+        {
+            // this is just a dummy instruction so process the next one
+            continue;
+        }
+
+        // check whether it is a NOPInstr
+        if ( typeid(*n->value_) == typeid(NOPInstr) )
+        {
+            // this is just a "no operation" instruction so process the next one
+            continue;
+        }
+
+        // check whether it is a EnterScopeInstr
+        EnterScopeInstr* enterScopeInstr = dynamic_cast<EnterScopeInstr*>(n->value_);
+        if ( enterScopeInstr )
+        {
+            // update scoping of the scopetab
+            enterScopeInstr->updateScoping();
+            // everything done with this instruction so process the next one
+            continue;
+        }
+
+        swiftAssert( dynamic_cast<PseudoRegInstr*>(n->value_),
+            "The Instruction found should be a PseudoRegInstr" );
+        PseudoRegInstr* instr = (PseudoRegInstr*) n->value_;
+        instr->genCode(ofs);
+    }
 
     // stream ending code to file
     ofs << "\n; ending code\n";

@@ -6,6 +6,7 @@
 #include "expr.h"
 #include "symboltable.h"
 #include "type.h"
+#include "me/scopetable.h"
 
 Declaration::~Declaration()
 {
@@ -36,6 +37,12 @@ bool Declaration::analyze()
     // everything ok. so insert the local
     Local* local = new Local(type_, id_, line_, 0);
     symtab.insert(local);
+
+    swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
+
+    // do first revision
+    ++local->revision_;
+    scopetab.newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), local->id_, local->revision_ );
 
     return true;
 }

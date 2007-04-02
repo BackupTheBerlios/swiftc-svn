@@ -7,6 +7,7 @@
 #include "statement.h"
 #include "symboltable.h"
 
+#include "me/scopetable.h"
 #include "me/ssa.h"
 
 bool Class::analyze()
@@ -94,7 +95,8 @@ bool Method::analyze()
     bool result = true;
 
     symtab.enterMethod(id_);
-//     instrlist.append( new MethodTagInstr(id_, true) );
+    Scope* scope = scopetab.insertFunction(id_);
+    scopetab.enter(scope);
 
     // analyze each parameter
     for (size_t i = 0; i < symtab.method_->params_.size(); ++i)
@@ -104,7 +106,7 @@ bool Method::analyze()
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-//     instrlist.append( new MethodTagInstr(id_, false) );
+    scopetab.leave();
     symtab.leaveMethod();
 
     return result;

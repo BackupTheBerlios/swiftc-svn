@@ -24,7 +24,7 @@ inline void ScopeTable::insert(PseudoReg* reg)
 
 Function* ScopeTable::insertFunction(std::string* id)
 {
-    Function* function = new Function(id);
+    Function* function = new Function(currentScope(), id);
     functions_.insert( std::make_pair(id, function) );
 
     return function;

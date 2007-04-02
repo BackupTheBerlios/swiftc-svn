@@ -11,6 +11,7 @@
 #include "statement.h"
 #include "expr.h"
 
+
 SyntaxTree*  syntaxTree;
 int pointerCount;
 
@@ -453,7 +454,11 @@ void yyerror(char *s)
     exit(0);
 }
 
-void parserInit(SyntaxTree* syntaxTree)
+void parserInit(SyntaxTree* _syntaxTree)
 {
-    syntaxTree  = syntaxTree;
+    syntaxTree  = _syntaxTree;
 }
+
+
+
+

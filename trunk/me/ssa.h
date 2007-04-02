@@ -33,6 +33,21 @@ struct DummyInstr : public InstrBase
 };
 
 //------------------------------------------------------------------------------
+
+struct EnterScopeInstr : public InstrBase
+{
+    Scope* scope_;
+    bool enter_;
+
+    EnterScopeInstr(Scope* scope, bool enter)
+        : scope_(scope)
+        , enter_(enter)
+    {}
+
+    void updateScoping();
+};
+
+//------------------------------------------------------------------------------
 //PseudoRegInstr---------------------------------------------------------------------
 //------------------------------------------------------------------------------
 

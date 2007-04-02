@@ -2,6 +2,7 @@
 #define SWIFT_TYPE_H
 
 #include "syntaxtree.h"
+#include "me/pseudoreg.h"
 
 // forward declarations
 struct Expr;
@@ -64,6 +65,9 @@ struct SimpleType : public BaseType
     {
         return new SimpleType(kind_, line_);
     }
+
+    PseudoReg::RegType toRegType() const;
+    static PseudoReg::RegType int2RegType(int i);
 
     std::string toString() const;
 };
