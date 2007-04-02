@@ -22,6 +22,14 @@ inline void ScopeTable::insert(PseudoReg* reg)
     swiftAssert(p.second, "there is already a reg with this id in the map");
 }
 
+Function* ScopeTable::insertFunction(std::string* id)
+{
+    Function* function = new Function(id);
+    functions_.insert( std::make_pair(id, function) );
+
+    return function;
+}
+
 PseudoReg* ScopeTable::newTemp(PseudoReg::RegType regType)
 {
     static long counter = 0;

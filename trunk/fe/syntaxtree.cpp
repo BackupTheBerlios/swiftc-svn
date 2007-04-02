@@ -35,13 +35,9 @@ std::string Module::toString() const
 
 bool Module::analyze()
 {
-//     instrlist.append( new ModuleTagInstr(id_, true) );
-
     // for each definition
     for (Definition* iter = definitions_; iter != 0; iter = iter->next_)
         iter->analyze();
-
-//     instrlist.append( new ModuleTagInstr(id_, false) );
 
     return true;
 }

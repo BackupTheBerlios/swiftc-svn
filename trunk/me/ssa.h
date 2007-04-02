@@ -11,10 +11,24 @@ struct PseudoReg;
 
 //------------------------------------------------------------------------------
 
+/**
+ * @brief Base class for all instructions
+ */
 struct InstrBase
 {
     virtual ~InstrBase() {}
 
+    virtual std::string toString() const = 0;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Instructions of type DummyInstr mark the bounds of a basic block. So swizzling
+ * around other Instr won't invalidate pointers in basic blocks.
+ */
+struct DummyInstr : public InstrBase
+{
     virtual std::string toString() const = 0;
 };
 
@@ -25,6 +39,43 @@ struct InstrBase
 struct PseudoRegInstr : public InstrBase
 {
     virtual void genCode(std::ofstream& ofs) = 0;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * @brief NOP = No Operation
+ * These instructions can artificially increase the life time of a PseudoReg
+ */
+struct NOPInstr : public PseudoRegInstr
+{
+    PseudoReg* reg_;
+
+    NOPInstr(PseudoReg* reg)
+        : reg_(reg)
+    {}
+    virtual std::string toString() const = 0;
+    /// dummy implementation, NOP does nothing
+    void genCode(std::ofstream& /*ofs*/) {}
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * @brief implements phi functions
+ * These instructions can artificially increase the life time of PseudoReg
+ */
+struct PhiInstr : public PseudoRegInstr
+{
+    PseudoReg* result_;
+    RegList args_;
+
+    PhiInstr(PseudoReg* result)
+        : result_(result)
+    {}
+    virtual std::string toString() const = 0;
+    /// dummy implementation, NOP does nothing
+    void genCode(std::ofstream& /*ofs*/) {}
 };
 
 //------------------------------------------------------------------------------
@@ -88,10 +139,6 @@ struct UnInstr : public PseudoRegInstr
  *  result = op1 and op2 <br>
  *  result = op1 or  op2 <br>
  *  result = op1 xor op2 <br>
- *  <br>
- *  result = op1 l_and op2 <br>
- *  result = op1 l_or  op2 <br>
- *  result = op1 l_xor op2 <br>
  *  <br>
  *  result = op1 == op2 <br>
  *  result = op1 != op2 <br>

@@ -59,38 +59,25 @@
 
     size_t
     ulong
-
-    tgtUNUSED
 */
 
 /**
  * This is needed for .dll or .so support respectively
 */
 
-#ifdef tgtBUILD_DLL
+#ifdef SWIFT_BUILD_DLL
     #ifdef WIN32
-        #define tgtAPI __declspec(dllexport)
-    #else //WIN32 - so it is UNIX -> I assume gcc
-        #define tgtAPI __attribute__ ((externally_visible))
-    #endif //WIN32
-#else //tgtBUILD_DLL
+        #define SWIFT_API __declspec(dllexport)
+    #else // WIN32 - so it is UNIX -> I assume gcc
+        #define SWIFT_API __attribute__ ((externally_visible))
+    #endif // WIN32
+#else // SWIFT_BUILD_DLL
     #ifdef WIN32
-        #define tgtAPI __declspec(dllimport)
-    #else //WIN32 - so it is UNIX -> I assume gcc
-        #define tgtAPI __attribute__ ((externally_visible))
+        #define SWIFT_API __declspec(dllimport)
+    #else // WIN32 - so it is UNIX -> I assume gcc
+        #define SWIFT_API __attribute__ ((externally_visible))
     #endif //WIN32
-#endif //tgtBUILD_DLL
-
-/**
- * With this macro you can get rid of annoying "unused parameter" warnings
-*/
-#ifdef __GNUC__
-    #define simdlUNUSED __attribute__ ((unused))
-#else
-    /// empty macro for unsupported compilers
-    #define simdlUNUSED
-#endif
-
+#endif // SWIFT_BUILD_DLL
 
 // For size_t
 #include <cstddef>

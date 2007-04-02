@@ -12,13 +12,12 @@
 bool Class::analyze()
 {
     symtab.enterClass(id_);
-//     instrlist.append( new ClassTagInstr(id_, true) );
+//     scopetab.registerStruct();
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-//     instrlist.append( new ClassTagInstr(id_, false) );
     symtab.leaveClass();
 
     return true;

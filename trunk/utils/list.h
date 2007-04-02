@@ -238,6 +238,11 @@ public:
     size_t size() {
         return size_;
     }
+
+    bool empty()
+    {
+        return bool(size_);
+    }
 };
 
 #endif // SWIFT_LIST_H

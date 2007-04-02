@@ -4,6 +4,8 @@
 #include <string>
 #include <sstream>
 
+#include "utils/list.h"
+
 // forward declaration
 struct Scope;
 
@@ -104,5 +106,7 @@ struct PseudoReg
         return "";
     }
 };
+
+typedef List<PseudoReg*> RegList;
 
 #endif // SWIFT_PSEUDOREG_H

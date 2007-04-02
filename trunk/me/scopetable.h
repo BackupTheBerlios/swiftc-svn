@@ -9,7 +9,7 @@
 #include "pseudoreg.h"
 #include "ssa.h"
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 /**
  * Capsulates an abstract scope. Each Scope has its own set of vars/pseudoregs
@@ -19,7 +19,7 @@
 struct Scope
 {
     Scope* parent_; /// 0 if root scope
-    size_t depth_; /// depth of this scope in the scope tree
+    size_t depth_;  /// depth of this scope in the scope tree
 
     typedef List<Scope*> ScopeList;
     ScopeList childScopes_;
@@ -37,20 +37,19 @@ struct Scope
     {}
 };
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 /**
- * Specialization of a scope. It has in, intout and out goint parameters and,
- * of course, an identifier.
+ * @brief Specialization of a scope
+ * Function has in, intout and out goint parameters and, of course, an identifier.
 */
 struct Function : public Scope
 {
     std::string* id_;
 
-    typedef List<PseudoReg*> RegList;
-    RegList in_;
-    RegList inout_;
-    RegList out_;
+    RegMap in_;
+    RegMap inout_;
+    RegMap out_;
 
     Function(Scope* parent, std::string* id)
         : Scope(parent)
@@ -58,7 +57,7 @@ struct Function : public Scope
     {}
 };
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 struct ScopeTable
 {
@@ -66,12 +65,20 @@ struct ScopeTable
         NO_REVISION = -1
     };
 
-    Scope* globalScope_; // for global vars
+    Scope* rootScope_;
 
     typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
-    FunctionMap functions_; // for all functions
+    FunctionMap functions_; // all functions
 
     std::stack<Scope*> scopeStack_; // keeps account of current scope;
+
+    ScopeTable()
+        : rootScope_( new Scope(0) )
+    {
+        scopeStack_.push_back(rootScope_);
+    }
+
+    Function* insertFunction(std::string* id);
 
     void enterScope(Scope* scope)
     {

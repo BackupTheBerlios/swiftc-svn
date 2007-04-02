@@ -4,7 +4,7 @@
 #ifdef SWIFT_DEBUG
 
 /**
-    * This is the assert function. It is used by the tgtAssert macro.
+    * This is the assert function. It is used by the swiftAssert macro.
     * @param line          line number
     * @param filename      file name
     * @param functionName  function name
