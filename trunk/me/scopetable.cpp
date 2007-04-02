@@ -53,7 +53,7 @@ PseudoReg* ScopeTable::newRevision(PseudoReg::RegType regType, std::string* id, 
     // '!' is a magic char used to divide the orignal name by the revision number
     oss << *id << "!" << revision;
 
-    PseudoReg* reg = new PseudoReg( new string(oss.str()), regType);
+    PseudoReg* reg = new PseudoReg( new string(oss.str()), regType );
     insert(reg);
 
     return reg;
@@ -61,13 +61,25 @@ PseudoReg* ScopeTable::newRevision(PseudoReg::RegType regType, std::string* id, 
 
 PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
 {
+    std::string lookupId;
+
+    if (revision != NO_REVISION)
+    {
+        ostringstream oss;
+        // '!' is a magic char used to divide the orignal name by the revision number
+        oss << *id << "!" << revision;
+        lookupId = oss.str();
+    }
+    else
+        lookupId = *id;
+
     Scope* scopeIter = currentScope();
 
     // propagate the tree up until a function is found
     while (true)
     {
         Scope::RegMap::iterator regIter
-            = scopeIter->regs_.find(id);
+            = scopeIter->regs_.find(&lookupId);
         if ( regIter != currentScope()->regs_.end() )
             return regIter->second;
 
