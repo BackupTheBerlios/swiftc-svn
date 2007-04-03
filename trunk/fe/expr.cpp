@@ -91,7 +91,9 @@ std::string Literal::toString() const
                 std::cout << "fjkdlfjkdjfdl" << fmod(real64_, 1.0) << std::endl;
             break;
 
-        SWIFT_TO_STRING_ERROR
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 
     return oss.str();

@@ -7,10 +7,10 @@
 
 #include "utils/assert.h"
 
-#include "error.h"
-#include "lexer.h"
-#include "syntaxtree.h"
-#include "expr.h"
+#include "fe/error.h"
+#include "fe/lexer.h"
+#include "fe/syntaxtree.h"
+#include "fe/expr.h"
 
 int keyLine = -1;
 int commentLevel = 0;

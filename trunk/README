@@ -44,6 +44,7 @@ CODING CONVENTIONS
 - members end with '_'
 - members and functions with lower camel case (lowerCamelCaseLooksLikeThis)
 - classes / structs with upper camel case (UpperCamelCaseLooksLikeThis)
+- those few globals which are used usethisstyle
 - since the project is in a very early alpha stadium I don't want to bother with getters and setters.
     So use public members or structs.
 - surround operators with spaces except where it makes sense.

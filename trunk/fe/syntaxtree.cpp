@@ -41,3 +41,18 @@ bool Module::analyze()
 
     return true;
 }
+
+//------------------------------------------------------------------------------
+
+bool SyntaxTree::analyze();
+{
+    symtab.reset();
+    symtab.enterModule();
+
+    bool result = syntaxTree_.rootModule_->analyze();
+
+    symtab.leaveModule();
+
+    return result;
+}
+

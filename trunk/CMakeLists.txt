@@ -16,7 +16,7 @@ ADD_DEFINITIONS (-I.)
 IF (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
         OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp
-        COMMAND bison -d -o fe/parser.tab.cpp fe/parser.y
+        COMMAND bison -p swift -d -o fe/parser.tab.cpp fe/parser.y
         DEPENDS fe/parser.y
     )
 ELSE (BUILD_RELEASE)
@@ -30,7 +30,7 @@ ENDIF (BUILD_RELEASE)
 # call flex
 ADD_CUSTOM_COMMAND (
     OUTPUT  fe/lex.yy.cpp
-    COMMAND flex -o fe/lex.yy.cpp fe/lexer.l
+    COMMAND flex -P swift -o fe/lex.yy.cpp fe/lexer.l
     DEPENDS fe/lexer.l
 )
 

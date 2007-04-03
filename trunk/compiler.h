@@ -13,7 +13,6 @@ struct MemberVar;
 struct Compiler
 {
     FILE*       file_;
-    SyntaxTree  syntaxTree_;
 
     bool parse();
     bool analyze();

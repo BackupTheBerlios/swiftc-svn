@@ -7,7 +7,7 @@
 #include "fe/error.h"
 #include "fe/lexer.h"
 #include "fe/parser.h"
-#include "compiler.h"
+#include "fe/cmdlineparser.h"
 
 FILE* file;
 
@@ -15,31 +15,20 @@ std::string getClass();
 
 int start(int argc, char** argv)
 {
-    FILE* file;
+    // parse the command line
+    CmdLineParser cmdLineParser(argc, argv);
 
-    switch (argc)
-    {
-        case 0:
-        case 1:
-            std::cerr << "error: no input file specified" << std::endl;
-            return -1;
+    if (cmdLineParser.error_)
+        return -1;
 
-        case 2:
-            file = lexerInit(argv[1]);
-            break;
-
-        default:
-            std::cerr << "error: too many arguments" << std::endl;
-            return -1;
-    }
-
+    // try to open the input file and init the lexer
+    FILE* file = lexerInit(argv[1]);
     if (!file)
     {
-        std::cout << "error: failed to open input file" << std::endl;
+        std::cerr << "error: failed to open input file" << std::endl;
         return -1;
     }
 
-    Compiler compiler;
     error.setFilename(argv[1]);
 
     /*
@@ -49,32 +38,37 @@ int start(int argc, char** argv)
         Since not all symbols can be found in the first pass there will be gaps
         in the SymbolTable.
     */
-    if ( !compiler.parse() )
-    {
-        std::cout << "error while parsing... aborting" << std::endl;
-        return -1;
-    }
+    swiftparse(); // call generated parser which on its part calls swiftlex
+    // if there is a parse error continue with 2. anyway
 
     /*
-        2.  Check types of all expressions, fill all gaps in the SymbolTable and evaluate all def-expressions.
+        2.  Check types of all expressions, fill all gaps in the symtab and
+            build single static assignment form if everything is ok
 
         Thus a complete SymbolTable and type consistency is ensured after this pass.
     */
-    if ( !compiler.analyze() )
-        return -1;
+    if ( syntaxtree.analyze() )
+        return -1; // abort on error
+
+    if ( parseerror )
+    {
+        std::cerr << "error while parsing... aborting" << std::endl;
+        return -1; // now abort on a parse error
+    }
+
+    // The Syntaxtree is not needed anymore.
+    syntaxtree.destroy();
+
 
     /*
         find basic blocks and calculate next usage of names
     */
-//     compiler.prepareCodeGen();
+    // TODO
 
     /*
         3.  Go through the Syntaxtree and build single static assignment form
     */
     compiler.genCode();
-
-    // The Syntaxtree is not needed anymore.
-    //delete SyntaxTree;
 
     /*
         4.  Optional pass to optimize the 3 address code.

@@ -101,10 +101,21 @@ struct Module : public SymTabEntry
 struct SyntaxTree
 {
     Module* rootModule_;
+
+    bool analyze();
+
+    /**
+     * Destroy the syntax tree recursivly. Do not delete id_s. They are needed
+     * in the next pass.
+     */
+    void destroy()
+    {
+        delete rootModule_;
+    }
 };
 
 //------------------------------------------------------------------------------
 
-#define SWIFT_TO_STRING_ERROR default: swiftAssert(false, "illegal case value"); return "";
+extern SyntaxTree syntaxtree;
 
 #endif // SWIFT_SYNTAXTREE_H

@@ -1,12 +1,29 @@
 #ifndef SWIFT_PARSER_H
 #define SWIFT_PARSER_H
 
-#include <cstdio>
+// it is important to declare all union members of YYSTYPE here
+struct Type;
+struct BaseType;
 
-struct SyntaxTree;
-struct SymbolTable;
+struct Module;
+struct Definition;
 
-void parserInit(SyntaxTree* syntaxTree);
-int yyparse(void);
+struct Class;
+struct ClassMember;
+struct Parameter;
+struct MemberVar;
+struct Method;
 
-#endif // SWIFT_PARSER_H
+struct Expr;
+struct Arg;
+
+struct Statement;
+
+//------------------------------------------------------------------------------
+
+extern bool parseerror;
+
+// include auto generated parser header for tokens
+#include "parser.tab.hpp"
+
+#endif // SWIFT_TOKENS

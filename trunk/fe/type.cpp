@@ -19,7 +19,9 @@ std::string Type::toString() const
         case VAR: oss << "var "; break;
         case CST: oss << "cst "; break;
         case DEF: oss << "def "; break;
-        SWIFT_TO_STRING_ERROR
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 
     oss << baseType_->toString();
@@ -217,7 +219,9 @@ std::string SimpleType::toString() const
 
         case BOOL:      return "bool";
 
-        SWIFT_TO_STRING_ERROR
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 }
 
@@ -355,8 +359,9 @@ std::string Container::getContainerType() const
             return "array";
         case SIMD:
             return "simd";
-
-        SWIFT_TO_STRING_ERROR
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 }
 

@@ -43,7 +43,10 @@ std::string Parameter::toString() const
         case IN:    oss << "in ";       break;
         case INOUT: oss << "inout ";    break;
         case OUT:   oss << "out ";      break;
-        SWIFT_TO_STRING_ERROR;
+
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 
     oss << type_->toString() << " ";
@@ -70,7 +73,9 @@ std::string Method::toString() const
         case READER:    oss << "reader ";   break;
         case WRITER:    oss << "writer ";   break;
         case ROUTINE:   oss << "routine ";  break;
-        SWIFT_TO_STRING_ERROR;
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
     }
 
     if (returnType_) {

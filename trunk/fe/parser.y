@@ -12,8 +12,8 @@
 #include "expr.h"
 
 
-SyntaxTree*  syntaxTree;
-int pointerCount;
+int pointercount = -1;
+bool parseerror = false;
 
 %}
 
@@ -373,8 +373,8 @@ parameter_qualifier
     ;
 
 type
-    : type_qualifier  base_type { pointerCount = 0; } pointer  { $$ = new Type($1,  $2, pointerCount, currentLine); }
-    | /*default VAR*/ base_type { pointerCount = 0; } pointer  { $$ = new Type(VAR, $1, pointerCount, currentLine); }
+    : type_qualifier  base_type { pointercount = 0; } pointer  { $$ = new Type($1,  $2, pointercount, currentLine); }
+    | /*default VAR*/ base_type { pointercount = 0; } pointer  { $$ = new Type(VAR, $1, pointercount, currentLine); }
     ;
 
 base_type
@@ -389,7 +389,7 @@ base_type
 
 pointer
     : /**/
-    | '^' pointer   { ++pointerCount; }
+    | '^' pointer   { ++pointercount; }
     ;
 
 
@@ -451,14 +451,5 @@ simple_type
 void yyerror(char *s)
 {
     errorf(currentLine, s);
-    exit(0);
+    parseerror = true;
 }
-
-void parserInit(SyntaxTree* _syntaxTree)
-{
-    syntaxTree  = _syntaxTree;
-}
-
-
-
-
