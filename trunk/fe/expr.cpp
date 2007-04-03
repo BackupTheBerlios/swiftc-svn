@@ -6,12 +6,12 @@
 
 #include "utils/assert.h"
 
-#include "error.h"
-#include "type.h"
-#include "symboltable.h"
+#include "fe/error.h"
+#include "fe/type.h"
+#include "fe/symtab.h"
 
 #include "me/pseudoreg.h"
-#include "me/scopetable.h"
+#include "me/scopetab.h"
 #include "me/ssa.h"
 
 /*

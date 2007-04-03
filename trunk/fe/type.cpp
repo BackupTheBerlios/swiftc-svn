@@ -5,9 +5,9 @@
 
 #include "utils/assert.h"
 
-#include "error.h"
-#include "expr.h"
-#include "symboltable.h"
+#include "fe/error.h"
+#include "fe/expr.h"
+#include "fe/symtab.h"
 
 
 std::string Type::toString() const

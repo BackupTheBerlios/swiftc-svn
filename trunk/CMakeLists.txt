@@ -22,7 +22,7 @@ IF (BUILD_RELEASE)
 ELSE (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
         OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp fe/parser.output
-        COMMAND bison -t -d -v -o fe/parser.tab.cpp fe/parser.y
+        COMMAND bison -p swift -t -d -v -o fe/parser.tab.cpp fe/parser.y
         DEPENDS fe/parser.y
     )
 ENDIF (BUILD_RELEASE)
@@ -47,7 +47,7 @@ ADD_EXECUTABLE (swift
     fe/error.cpp
     fe/expr.cpp
     fe/statement.cpp
-    fe/symboltable.cpp
+    fe/symtab.cpp
     fe/syntaxtree.cpp
     fe/type.cpp
 
@@ -55,7 +55,7 @@ ADD_EXECUTABLE (swift
     fe/main.cpp
 
     me/pseudoreg.cpp
-    me/scopetable.cpp
+    me/scopetab.cpp
     me/ssa.cpp
 
 )

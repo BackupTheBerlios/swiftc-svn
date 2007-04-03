@@ -2,11 +2,12 @@
 
 #include <sstream>
 
-#include "error.h"
-#include "expr.h"
-#include "symboltable.h"
-#include "type.h"
-#include "me/scopetable.h"
+#include "fe/error.h"
+#include "fe/expr.h"
+#include "fe/symtab.h"
+#include "fe/type.h"
+
+#include "me/scopetab.h"
 
 Declaration::~Declaration()
 {

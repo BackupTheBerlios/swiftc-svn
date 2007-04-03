@@ -3,9 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "fe/expr.h"
-#include "fe/symboltable.h"
-#include "scopetable.h"
+#include "me/scopetab.h"
 
 void EnterScopeInstr::updateScoping()
 {

@@ -1,4 +1,4 @@
-#include "symboltable.h"
+#include "symtab.h"
 
 #include <iostream>
 #include <sstream>
@@ -6,9 +6,9 @@
 
 #include "utils/assert.h"
 
-#include "error.h"
-#include "syntaxtree.h"
-#include "class.h"
+#include "fe/error.h"
+#include "fe/syntaxtree.h"
+#include "fe/class.h"
 
 using namespace std;
 

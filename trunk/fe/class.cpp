@@ -4,10 +4,10 @@
 
 #include "utils/assert.h"
 
-#include "statement.h"
-#include "symboltable.h"
+#include "fe/statement.h"
+#include "fe/symtab.h"
 
-#include "me/scopetable.h"
+#include "me/scopetab.h"
 #include "me/ssa.h"
 
 bool Class::analyze()

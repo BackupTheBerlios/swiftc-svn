@@ -2,14 +2,14 @@
 
 #include <iostream>
 
-#include "error.h"
-#include "lexer.h"
-#include "symboltable.h"
-#include "syntaxtree.h"
-#include "class.h"
-#include "type.h"
-#include "statement.h"
-#include "expr.h"
+#include "fe/class.h"
+#include "fe/error.h"
+#include "fe/expr.h"
+#include "fe/lexer.h"
+#include "fe/statement.h"
+#include "fe/symtab.h"
+#include "fe/syntaxtree.h"
+#include "fe/type.h"
 
 
 int pointercount = -1;

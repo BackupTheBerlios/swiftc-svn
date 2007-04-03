@@ -1,4 +1,4 @@
-#include "scopetable.h"
+#include "scopetab.h"
 
 #include <iostream>
 #include <sstream>

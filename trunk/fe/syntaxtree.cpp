@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "utils/assert.h"
-#include "fe/symboltable.h"
+#include "fe/symtab.h"
 #include "me/ssa.h"
 
 
