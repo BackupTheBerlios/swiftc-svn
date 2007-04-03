@@ -31,6 +31,10 @@ $ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepar
 
 The last command depends on your Linux distro and/or KDE verions, of course.
 
+If you want to use the memory leak finder copy or symlink utils/leakfinder to
+/usr/bin or another location in your path:
+$ ln -s /home/username/swiftc/utils/leakfinder /usr/bin/.
+
 //------------------------------------------------------------------------------
 
 CODING CONVENTIONS

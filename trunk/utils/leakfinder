@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# usage: leakfinder <EXECUTABLE>
+#
+# currently this script does not find leaks in shared objects
+# in order to use this script copy or symlink it to /usr/bin or another location in your path
+
+cat mem_leaks | addr2line -e $1 | sort | uniq

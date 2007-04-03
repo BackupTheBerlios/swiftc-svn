@@ -1,5 +1,5 @@
-#ifndef SWIFT_MEMORYMANAGER_H
-#define SWIFT_MEMORYMANAGER_H
+#ifndef SWIFT_MEMMGR_H
+#define SWIFT_MEMMGR_H
 
 #if defined(SWIFT_DEBUG) && defined(__GNUC__)
 
@@ -22,7 +22,7 @@ void  operator delete[] (void* p);
  * will be traced after initialization which can be done with the Singleton
  * class.
 */
-class MemoryManager {
+class MemMgr {
 private:
 
     /**
@@ -52,7 +52,7 @@ private:
      * Intern class, which capsulates the values of the inner map.
      * Contains allocinfos, file name and line number
     */
-    class MemoryManagerValue {
+    class MemMgrValue {
     public:
 
         AllocInfo   allocInfo_;
@@ -60,15 +60,15 @@ private:
         uint        callNumber_;
 
         /// default constructor -- does nothing
-        MemoryManagerValue() {}
+        MemMgrValue() {}
 
         /**
-         * Init MemoryManagerValue.
+         * Init MemMgrValue.
          * @param info Allocinfo
          * @param filename file name
          * @param line Zeilennummer
         */
-        MemoryManagerValue(AllocInfo info, void* caller, uint callNumber)
+        MemMgrValue(AllocInfo info, void* caller, uint callNumber)
          :  allocInfo_(info),
             caller_(caller),
             callNumber_(callNumber)
@@ -85,7 +85,7 @@ private:
     };
 
     /// This data structure keeps account
-    typedef std::map<void*, MemoryManagerValue> PtrMap;
+    typedef std::map<void*, MemMgrValue> PtrMap;
 
     static PtrMap           map_;
     static bool             isReady_;
@@ -144,13 +144,13 @@ public:
     /**
      * This class keeps the memory manager from tracing itself
     */
-    class MemoryManagerLock {
+    class MemMgrLock {
     public:
-        MemoryManagerLock() {
-            ++MemoryManager::lock_;
+        MemMgrLock() {
+            ++MemMgr::lock_;
         }
-        ~MemoryManagerLock() {
-            --MemoryManager::lock_;
+        ~MemMgrLock() {
+            --MemMgr::lock_;
         }
     };
 
@@ -182,19 +182,19 @@ private:
 // Macros for easy usage for the debug and release version
 #if defined(SWIFT_DEBUG) && defined(__GNUC__)
     /**
-     * Turn on the MemoryManager
+     * Turn on the MemMgr
     */
-    #define SWIFT_TURN_ON_MEMMGR   SWIFT_::MemoryManager::turnOn();
+    #define SWIFT_TURN_ON_MEMMGR   SWIFT_::MemMgr::turnOn();
 
     /**
-     * Turn off the MemoryManager
+     * Turn off the MemMgr
     */
-    #define SWIFT_TURN_OFF_MEMMGR  SWIFT_::MemoryManager::turnOff();
+    #define SWIFT_TURN_OFF_MEMMGR  SWIFT_::MemMgr::turnOff();
 
     /**
-     * Print the current map of the MemoryManager
+     * Print the current map of the MemMgr
     */
-    #define SWIFT_PRINT_MEM_MAP    SWIFT_::MemoryManager::toString();
+    #define SWIFT_PRINT_MEM_MAP    SWIFT_::MemMgr::toString();
 #else // defined(SWIFT_DEBUG) && defined(__GNUC__)
     //Empty macros in the release version
     #define SWIFT_TURN_ON_MEMMGR
@@ -202,4 +202,4 @@ private:
     #define SWIFT_PRINT_MEM_MAP
 #endif // defined(SWIFT_DEBUG) && defined(__GNUC__)
 
-#endif // SWIFT_MEMORYMANAGER_H
+#endif // SWIFT_MEMMGR_H

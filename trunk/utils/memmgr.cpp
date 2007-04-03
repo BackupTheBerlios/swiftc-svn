@@ -1,13 +1,13 @@
 #if defined(SWIFT_DEBUG) && defined(__GNUC__)
 
-#include "memorymanager.h"
+#include "memmgr.h"
 
 #include <sstream>
 #include <fstream>
 
 #include "assert.h"
 
-std::string MemoryManager::MemoryManagerValue::toString(bool free) const {
+std::string MemMgr::MemMgrValue::toString(bool free) const {
     std::ostringstream oss;
 
     if (!free) {
@@ -47,18 +47,18 @@ std::string MemoryManager::MemoryManagerValue::toString(bool free) const {
     init static stuff
 */
 
-bool    MemoryManager::isReady_                 = false;
-uint    MemoryManager::breakpoints_[10]         = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-uint    MemoryManager::callCounter_             = 0;
-size_t  MemoryManager::breakpointCounter_       = 0;
-MemoryManager::PtrMap   MemoryManager::map_     = PtrMap();
-volatile long           MemoryManager::lock_    = 0;
+bool    MemMgr::isReady_                 = false;
+uint    MemMgr::breakpoints_[10]         = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint    MemMgr::callCounter_             = 0;
+size_t  MemMgr::breakpointCounter_       = 0;
+MemMgr::PtrMap   MemMgr::map_     = PtrMap();
+volatile long           MemMgr::lock_    = 0;
 
-void MemoryManager::init() {
+void MemMgr::init() {
     isReady_ = true;
 }
 
-void MemoryManager::deinit() {
+void MemMgr::deinit() {
     isReady_ = false;
 
     std::ofstream mem_leaks("mem_leaks");
@@ -91,7 +91,7 @@ void MemoryManager::deinit() {
     mem_leaks.close();
 }
 
-std::string MemoryManager::toString() {
+std::string MemMgr::toString() {
     std::ostringstream oss;
     PtrMap::iterator iter = map_.begin();
     while(iter != map_.end()) {
@@ -101,23 +101,23 @@ std::string MemoryManager::toString() {
     return oss.str();
 }
 
-void MemoryManager::add(void* p, AllocInfo info, void* caller)
+void MemMgr::add(void* p, AllocInfo info, void* caller)
 {
     if (!isReady_ || lock_ > 0)
         return;
 
-    volatile MemoryManager::MemoryManagerLock lock;
+    volatile MemMgr::MemMgrLock lock;
 
-    MemoryManagerValue val(info, caller, callCounter_);
+    MemMgrValue val(info, caller, callCounter_);
     map_[p] = val;
 }
 
-bool MemoryManager::remove(void* p, AllocInfo info, void* caller)
+bool MemMgr::remove(void* p, AllocInfo info, void* caller)
 {
     if (!isReady_ || lock_ > 0)
         return true;
 
-    volatile MemoryManagerLock lock;
+    volatile MemMgrLock lock;
 
     PtrMap::iterator iter = map_.find(p);
 
@@ -149,7 +149,7 @@ bool MemoryManager::remove(void* p, AllocInfo info, void* caller)
         std::cout << "ERROR: You called 'new[]' but deleted with 'delete'" << std::endl;
 
     std::cout << "   " << iter->second.toString() << std::endl;
-    std::cout << "   " << MemoryManagerValue(info, caller, callCounter_).toString(true) << std::endl;
+    std::cout << "   " << MemMgrValue(info, caller, callCounter_).toString(true) << std::endl;
 
     map_.erase(iter);
 
@@ -160,53 +160,53 @@ bool MemoryManager::remove(void* p, AllocInfo info, void* caller)
 
 void* operator new(size_t size)
 {
-    ++MemoryManager::callCounter_;
+    ++MemMgr::callCounter_;
 
     void* p = malloc(size);
     // Is here a breakpoint?
-    for (size_t i = 0; i < MemoryManager::breakpointCounter_; ++i) {
-        if (MemoryManager::breakpoints_[i] == MemoryManager::callCounter_) {
+    for (size_t i = 0; i < MemMgr::breakpointCounter_; ++i) {
+        if (MemMgr::breakpoints_[i] == MemMgr::callCounter_) {
             std::cout << "Breakpoint at adress: " << uintptr_t(p) << std::endl;
             SWIFT_THROW_BREAKPOINT;
             break;
         }
     }
 
-    if (MemoryManager::isReady_)
-        MemoryManager::add(p, MemoryManager::NEW, __builtin_return_address(0));
+    if (MemMgr::isReady_)
+        MemMgr::add(p, MemMgr::NEW, __builtin_return_address(0));
 
     return p;
 };
 
 void* operator new[](size_t size)
 {
-  ++MemoryManager::callCounter_;
+  ++MemMgr::callCounter_;
 
     void* p = malloc(size);
     //Has been set a breakpoint here?
-    for (size_t i = 0; i < MemoryManager::breakpointCounter_; ++i) {
-        if (MemoryManager::breakpoints_[i] == MemoryManager::callCounter_) {
+    for (size_t i = 0; i < MemMgr::breakpointCounter_; ++i) {
+        if (MemMgr::breakpoints_[i] == MemMgr::callCounter_) {
             std::cout << "Breakpoint at adress: " << uintptr_t(p) << std::endl;
             SWIFT_THROW_BREAKPOINT;
             break;
         }
     }
 
-    if (MemoryManager::isReady_)
-        MemoryManager::add(p, MemoryManager::ARRAY_NEW, __builtin_return_address(0));
+    if (MemMgr::isReady_)
+        MemMgr::add(p, MemMgr::ARRAY_NEW, __builtin_return_address(0));
 
     return p;
 }
 
 void operator delete(void* p)
 {
-    if (MemoryManager::isReady_) {
+    if (MemMgr::isReady_) {
         if (p == NULL) {
             std::cout << "ERROR. You try to delete a NULL-pointer." << std::endl;
-            std::cout << " in function at address " <<  __builtin_return_address(0) << ". Call #" << MemoryManager::callCounter_ << std::endl;
+            std::cout << " in function at address " <<  __builtin_return_address(0) << ". Call #" << MemMgr::callCounter_ << std::endl;
             return;
         }
-        MemoryManager::remove(p, MemoryManager::NEW,  __builtin_return_address(0));
+        MemMgr::remove(p, MemMgr::NEW,  __builtin_return_address(0));
     }
 
     free(p);
@@ -214,13 +214,13 @@ void operator delete(void* p)
 
 void operator delete[](void* p)
 {
-    if (MemoryManager::isReady_) {
+    if (MemMgr::isReady_) {
         if (p == NULL) {
             std::cout << "ERROR. You try to delete[] a NULL-pointer." << std::endl;
-            std::cout << " in function at address " <<  __builtin_return_address(0) << ". Call #" << MemoryManager::callCounter_ << std::endl;
+            std::cout << " in function at address " <<  __builtin_return_address(0) << ". Call #" << MemMgr::callCounter_ << std::endl;
             return;
         }
-        MemoryManager::remove(p, MemoryManager::ARRAY_NEW,  __builtin_return_address(0));
+        MemMgr::remove(p, MemMgr::ARRAY_NEW,  __builtin_return_address(0));
     }
 
     free(p);

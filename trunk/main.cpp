@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "utils/memmgr.h"
 #include "fe/error.h"
 #include "fe/lexer.h"
 #include "fe/parser.h"
@@ -12,7 +13,7 @@ FILE* file;
 
 std::string getClass();
 
-int main(int argc, char** argv)
+int start(int argc, char** argv)
 {
     FILE* file;
 
@@ -96,3 +97,20 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+int main(int argc, char** argv)
+{
+#ifdef SWIFT_DEBUG
+    // find memory leaks
+    MemMgr::init();
+#endif // SWIFT_DEBUG
+
+    int result = start(argc, argv);
+
+#ifdef SWIFT_DEBUG
+    MemMgr::deinit();
+#endif // SWIFT_DEBUG
+
+    return result;
+}
+
