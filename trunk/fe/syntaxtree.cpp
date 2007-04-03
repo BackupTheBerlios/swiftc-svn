@@ -4,7 +4,11 @@
 #include <sstream>
 
 #include "utils/assert.h"
+#include "fe/symboltable.h"
 #include "me/ssa.h"
+
+
+SyntaxTree syntaxtree;
 
 //------------------------------------------------------------------------------
 
@@ -44,15 +48,14 @@ bool Module::analyze()
 
 //------------------------------------------------------------------------------
 
-bool SyntaxTree::analyze();
+bool SyntaxTree::analyze()
 {
     symtab.reset();
     symtab.enterModule();
 
-    bool result = syntaxTree_.rootModule_->analyze();
+    bool result = rootModule_->analyze();
 
     symtab.leaveModule();
 
     return result;
 }
-

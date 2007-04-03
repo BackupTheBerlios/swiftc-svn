@@ -23,6 +23,8 @@ struct Statement;
 
 extern bool parseerror;
 
+extern "C" int swiftparse();
+
 // include auto generated parser header for tokens
 #include "parser.tab.hpp"
 

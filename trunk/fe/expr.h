@@ -1,7 +1,7 @@
 #ifndef SWIFT_EXPR_H
 #define SWIFT_EXPR_H
 
-#include "syntaxtree.h"
+#include "fe/syntaxtree.h"
 
 // forward declarations
 struct Expr;

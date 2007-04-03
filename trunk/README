@@ -45,8 +45,9 @@ CODING CONVENTIONS
 - members and functions with lower camel case (lowerCamelCaseLooksLikeThis)
 - classes / structs with upper camel case (UpperCamelCaseLooksLikeThis)
 - those few globals which are used usethisstyle
-- since the project is in a very early alpha stadium I don't want to bother with getters and setters.
-    So use public members or structs.
+- since the project is in a very early alpha stadium I don't want to bother with getters and setters
+    -> use public members or structs
+- for the same reason I don't want to bother with namespaces
 - surround operators with spaces except where it makes sense.
 - do init lists like in the example below.
 - divide several classes in one file with:

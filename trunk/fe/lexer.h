@@ -6,7 +6,7 @@ FILE* lexerInit(const char* filename);
 extern int currentLine;
 extern int getKeyLine();
 
-extern "C" int yylex(void);
-void yyerror(char *);
+int swiftlex();
+void swifterror(char *);
 
 #endif // SWIFT_LEXER_H

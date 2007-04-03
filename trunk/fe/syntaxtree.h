@@ -6,7 +6,8 @@
 #include <vector>
 
 #include "utils/stringptrcmp.h"
-#include "tokens.h"
+#include "fe/parser.h"
+
 
 // forward declaration
 struct Class;

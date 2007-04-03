@@ -64,6 +64,8 @@ void MemMgr::deinit() {
     std::ofstream mem_leaks("mem_leaks");
     std::ofstream calls("calls");
 
+    std::cout << "--------------------------------------------------------------------------------" << std::endl;
+
     if (map_.empty()) {
         std::cout << std::endl << std::endl << "No memory leaks detected :)" << std::endl;
         return;

@@ -6,9 +6,9 @@
 #include <stack>
 #include <map>
 
-#include "syntaxtree.h"
-#include "class.h"
-#include "type.h"
+#include "fe/class.h"
+#include "fe/syntaxtree.h"
+#include "fe/type.h"
 
 struct SymbolTable
 {

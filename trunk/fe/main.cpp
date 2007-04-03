@@ -1,17 +1,14 @@
 #include <iostream>
 #include <cstdio>
 
-#include <vector>
-
 #include "utils/memmgr.h"
+
+#include "fe/cmdlineparser.h"
 #include "fe/error.h"
 #include "fe/lexer.h"
 #include "fe/parser.h"
-#include "fe/cmdlineparser.h"
+#include "fe/syntaxtree.h"
 
-FILE* file;
-
-std::string getClass();
 
 int start(int argc, char** argv)
 {
@@ -56,19 +53,15 @@ int start(int argc, char** argv)
         return -1; // now abort on a parse error
     }
 
-    // The Syntaxtree is not needed anymore.
+    // the Syntaxtree is not needed anymore.
     syntaxtree.destroy();
-
+    // close the input file
+    fclose(file);
 
     /*
         find basic blocks and calculate next usage of names
     */
     // TODO
-
-    /*
-        3.  Go through the Syntaxtree and build single static assignment form
-    */
-    compiler.genCode();
 
     /*
         4.  Optional pass to optimize the 3 address code.
@@ -79,13 +72,6 @@ int start(int argc, char** argv)
         5.  Finally write assembly language code.
     */
     //buildAssemblyCode();
-
-//     do
-//     {
-//         yylex();
-//     } while (feof(file) != 0);
-
-    fclose(file);
 
 //     std::cout << compiler.toString() << std::endl;
 

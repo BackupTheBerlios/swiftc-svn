@@ -1,7 +1,8 @@
 #ifndef SWIFT_TYPE_H
 #define SWIFT_TYPE_H
 
-#include "syntaxtree.h"
+#include "fe/syntaxtree.h"
+
 #include "me/pseudoreg.h"
 
 // forward declarations

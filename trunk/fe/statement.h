@@ -1,7 +1,7 @@
 #ifndef SWIFT_STATEMENT_H
 #define SWIFT_STATEMENT_H
 
-#include "syntaxtree.h"
+#include "fe/syntaxtree.h"
 
 struct Statement : public Node
 {

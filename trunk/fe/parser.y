@@ -135,7 +135,7 @@ module
             $$ = $<module_>1;
             $$->definitions_ = $2;
             $$->parent_ = 0;
-            syntaxTree->rootModule_ = $$;
+            syntaxtree.rootModule_ = $$;
         }
     ;
 

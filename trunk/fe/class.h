@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 
-#include "syntaxtree.h"
+#include "fe/syntaxtree.h"
 
 // forward declarations
 struct Type;
