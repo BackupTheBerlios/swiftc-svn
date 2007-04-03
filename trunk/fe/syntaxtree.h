@@ -47,6 +47,10 @@ struct SymTabEntry : public Node
         , id_(id)
         , revision_(0) // start with revision 0
     {}
+    ~SymTabEntry()
+    {
+        delete id_;
+    }
 };
 
 

@@ -20,7 +20,7 @@ struct Expr : public Node
         , lvalue_(false)
         , type_(0)
     {}
-    // do not delete type_ or reg_ here, they are destroyed by other classes
+    ~Expr();
 
     std::string toString() const { return ""; }
 

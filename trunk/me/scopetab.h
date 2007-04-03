@@ -36,7 +36,7 @@ struct Scope
         // 0 if root scope, parent_->depth_ + 1 otherwise
         , depth_(parent_ ? parent_->depth_ + 1 : 0)
     {}
-    ~Scope();
+    virtual ~Scope();
 };
 
 //------------------------------------------------------------------------------

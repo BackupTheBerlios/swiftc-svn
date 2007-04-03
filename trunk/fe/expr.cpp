@@ -27,6 +27,13 @@
 
 //------------------------------------------------------------------------------
 
+Expr::~Expr()
+{
+    delete type_;
+}
+
+//------------------------------------------------------------------------------
+
 std::string* extractOriginalId(std::string* id) {
     // reverse search should usually be faster
     size_t index = id->find_last_of('!');
@@ -127,40 +134,36 @@ bool Literal::analyze()
 
 void Literal::genSSA()
 {
-    PseudoReg::RegType reg = SimpleType::int2RegType(kind_);
-    PseudoReg::Value value;
+    // create appropriate PseudoReg
+    reg_ = new PseudoReg(0, SimpleType::int2RegType(kind_));
 
     switch (kind_)
     {
-        case L_INDEX:  value.index_     = index_;      break;
+        case L_INDEX:   reg_->value_.index_     = index_;      break;
 
-        case L_INT:     value.int_      = int_;     break;
-        case L_INT8:    value.int8_     = int8_;    break;
-        case L_INT16:   value.int16_    = int16_;   break;
-        case L_INT32:   value.int32_    = int32_;   break;
-        case L_INT64:   value.int64_    = int64_;   break;
-        case L_SAT8:    value.sat8_     = sat8_;    break;
-        case L_SAT16:   value.sat16_    = sat16_;   break;
+        case L_INT:     reg_->value_.int_       = int_;     break;
+        case L_INT8:    reg_->value_.int8_      = int8_;    break;
+        case L_INT16:   reg_->value_.int16_     = int16_;   break;
+        case L_INT32:   reg_->value_.int32_     = int32_;   break;
+        case L_INT64:   reg_->value_.int64_     = int64_;   break;
+        case L_SAT8:    reg_->value_.sat8_      = sat8_;    break;
+        case L_SAT16:   reg_->value_.sat16_     = sat16_;   break;
 
-        case L_UINT:    value.uint_     = uint_;    break;
-        case L_UINT8:   value.uint8_    = uint8_;   break;
-        case L_UINT16:  value.uint16_   = uint16_;  break;
-        case L_UINT32:  value.uint32_   = uint32_;  break;
-        case L_UINT64:  value.uint64_   = uint64_;  break;
-        case L_USAT8:   value.usat8_    = usat8_;   break;
-        case L_USAT16:  value.usat16_   = usat16_;  break;
+        case L_UINT:    reg_->value_.uint_      = uint_;    break;
+        case L_UINT8:   reg_->value_.uint8_     = uint8_;   break;
+        case L_UINT16:  reg_->value_.uint16_    = uint16_;  break;
+        case L_UINT32:  reg_->value_.uint32_    = uint32_;  break;
+        case L_UINT64:  reg_->value_.uint64_    = uint64_;  break;
+        case L_USAT8:   reg_->value_.usat8_     = usat8_;   break;
+        case L_USAT16:  reg_->value_.usat16_    = usat16_;  break;
 
-        case L_REAL:    value.real_     = real_;    break;
-        case L_REAL32:  value.real32_   = real32_;  break;
-        case L_REAL64:  value.real64_   = real64_;  break;
+        case L_REAL:    reg_->value_.real_      = real_;    break;
+        case L_REAL32:  reg_->value_.real32_    = real32_;  break;
+        case L_REAL64:  reg_->value_.real64_    = real64_;  break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
-
-
-    reg_ = new PseudoReg(0, reg);
-    reg_->value_ = value;
 }
 
 //------------------------------------------------------------------------------
@@ -337,6 +340,9 @@ void AssignExpr::genSSA()
     ++local->revision_;
     reg_ = scopetab.newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), id,  local->revision_);
 
+    // delete original id now. it is not needed anymore
+    delete id;
+
     scopetab.appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
 
@@ -345,7 +351,7 @@ void AssignExpr::genSSA()
 bool Id::analyze()
 {
     lvalue_ = true;
-    type_ = symtab.lookupType(id_);
+    type_ = symtab.lookupType(id_)->clone();
 
     if (type_ == 0)
     {

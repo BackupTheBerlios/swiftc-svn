@@ -9,7 +9,7 @@ ELSE (BUILD_RELEASE)
 ENDIF (BUILD_RELEASE)
 
 # add . as include path
-ADD_DEFINITIONS (-I.)
+INCLUDE_DIRECTORIES(.)
 
 
 # call bison

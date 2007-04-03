@@ -42,7 +42,8 @@ int start(int argc, char** argv)
         in the SymbolTable.
     */
     swiftparse(); // call generated parser which on its part calls swiftlex
-    // if there is a parse error continue with 2. anyway
+    if ( parseerror )
+        return -1; // abort on a parse error
 
     /*
         2.  Check types of all expressions, fill all gaps in the symtab and
@@ -52,9 +53,6 @@ int start(int argc, char** argv)
     */
     if ( !syntaxtree.analyze() )
         return -1; // abort on error
-
-    if ( parseerror )
-        return -1; // now abort on a parse error
 
     /*
         clean up front-end

@@ -31,7 +31,8 @@ Scope::~Scope()
 
 Function::~Function()
 {
-    delete id_;
+// this is currenty deleted by SymTabEntry
+//     delete id_;
 }
 
 // -----------------------------------------------------------------------------

@@ -88,6 +88,7 @@ struct PhiInstr : public PseudoRegInstr
     PhiInstr(PseudoReg* result)
         : result_(result)
     {}
+
     virtual std::string toString() const = 0;
     /// dummy implementation, NOP does nothing
     void genCode(std::ofstream& /*ofs*/) {}
@@ -111,6 +112,13 @@ struct AssignInstr : public PseudoRegInstr
         , result_(result)
         , reg_(reg)
     {}
+    ~AssignInstr()
+    {
+        swiftAssert( result_->id_, "this can't be a constant" );
+        // only delete constants, they are not in maps
+        if (!reg_->id_)
+            delete reg_;
+    }
 
     std::string toString() const;
     void genCode(std::ofstream& ofs);
@@ -137,6 +145,13 @@ struct UnInstr : public PseudoRegInstr
         , result_(result)
         , op_(op)
     {}
+    ~UnInstr()
+    {
+        swiftAssert( result_->id_, "this can't be a constant" );
+        // only delete constants, they are not in maps
+        if (!op_->id_)
+            delete op_;
+    }
 
     std::string toString() const;
     void genCode(std::ofstream& ofs);
@@ -180,6 +195,15 @@ struct BinInstr : public PseudoRegInstr
         , op1_(op1)
         , op2_(op2)
     {}
+    ~BinInstr()
+    {
+        swiftAssert( result_->id_, "this can't be a constant" );
+        // only delete constants, they are not in maps
+        if (!op1_->id_)
+            delete op1_;
+        if (!op2_->id_)
+            delete op2_;
+    }
 
     std::string toString() const;
     void genCode(std::ofstream& ofs);
