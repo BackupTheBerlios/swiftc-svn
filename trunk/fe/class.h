@@ -4,7 +4,9 @@
 #include <vector>
 #include <map>
 
+#include "fe/module.h"
 #include "fe/syntaxtree.h"
+
 
 // forward declarations
 struct Type;
@@ -13,12 +15,14 @@ struct Type;
 
 struct Local : public SymTabEntry
 {
+    /// it is important that every local gets is own copy of type_
     Type* type_;
 
     Local(Type* type, std::string* id, int line, Node* parent = 0)
         : SymTabEntry(id, line, parent)
         , type_(type)
     {}
+    ~Local();
 
     std::string toString() const
     {
@@ -47,22 +51,18 @@ struct ClassMember : public SymTabEntry
 
 struct Class : public Definition
 {
-    typedef std::map<std::string*, Method*, StringPtrCmp>       MethodMap;
-    typedef std::map<std::string*, MemberVar*, StringPtrCmp>    MemberVarMap;
+    typedef std::map<std::string*, Method*, StringPtrCmp> MethodMap;
+    typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
     ClassMember* classMember_;
 
-    MethodMap       methods_;
-    MemberVarMap    memberVars_;
+    MethodMap methods_;
+    MemberVarMap memberVars_;
 
     Class(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Definition(id, line, parent)
     {}
-    ~Class()
-    {
-        delete id_;
-        delete classMember_;
-    }
+    ~Class();
 
     std::string toString() const
     {
@@ -109,22 +109,23 @@ struct Parameter : public SymTabEntry
 
 struct Method : public ClassMember
 {
-    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
+    int methodQualifier_;
+    Type* returnType_;
 
-    int             methodQualifier_;
-    Type*           returnType_;
-
-    Statement*      statements_;
+    Statement* statements_;
 
     std::vector<Parameter*> params_;
-    LocalMap                locals_;
+
+    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
+    LocalMap locals_;
 
     Method(int methodQualifier, Type* returnType, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
         , returnType_(returnType)
     {
-        params_.reserve(10); // should be enough for most methods
+        // should be enough for most methods
+        params_.reserve(10);
     }
     ~Method();
 

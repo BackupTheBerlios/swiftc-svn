@@ -14,10 +14,11 @@ struct ErrorHandler
     ErrorHandler()
         : filename_(0)
     {}
-    ~ErrorHandler()
+
+    void destroy()
     {
         if (filename_)
-            delete filename_;
+            delete[] filename_;
     }
 
     void setFilename(const char* filename);

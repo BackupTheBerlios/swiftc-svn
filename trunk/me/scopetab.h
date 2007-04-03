@@ -36,6 +36,7 @@ struct Scope
         // 0 if root scope, parent_->depth_ + 1 otherwise
         , depth_(parent_ ? parent_->depth_ + 1 : 0)
     {}
+    ~Scope();
 };
 
 //------------------------------------------------------------------------------
@@ -56,6 +57,7 @@ struct Function : public Scope
         : Scope(parent)
         , id_(id)
     {}
+    ~Function();
 };
 
 //------------------------------------------------------------------------------
@@ -73,9 +75,9 @@ struct ScopeTable
 
     std::stack<Scope*> scopeStack_; // keeps account of current scope;
 
-    ScopeTable()
-        : rootScope_( new Scope(0) )
+    void init()
     {
+        rootScope_ = new Scope(0);
         scopeStack_.push(rootScope_);
     }
 
@@ -104,6 +106,8 @@ struct ScopeTable
     PseudoReg* newTemp(PseudoReg::RegType regType);
     PseudoReg* newRevision(PseudoReg::RegType regType, std::string* id, int revision);
     PseudoReg* lookupReg(std::string* id, int revision = NO_REVISION);
+
+    void destroy();
 
 private:
 

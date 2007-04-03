@@ -12,6 +12,30 @@ ScopeTab scopetab;
 
 // -----------------------------------------------------------------------------
 
+Scope::~Scope()
+{
+    // delete all child scopes
+    for (ScopeList::Node* iter = childScopes_.first(); iter != childScopes_.sentinel(); iter = iter->next())
+        delete iter->value_;
+
+    // delete all instructions
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+        delete iter->value_;
+
+    // delete all pseudo regs
+    for (RegMap::iterator iter = regs_.begin(); iter != regs_.end(); ++iter)
+        delete iter->second;
+}
+
+// -----------------------------------------------------------------------------
+
+Function::~Function()
+{
+    delete id_;
+}
+
+// -----------------------------------------------------------------------------
+
 inline void ScopeTable::insert(PseudoReg* reg)
 {
     swiftAssert(reg->id_, "no id in this reg");
@@ -91,3 +115,12 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
 
     return 0;
 }
+
+void ScopeTab::destroy()
+{
+    delete rootScope_;
+
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+        delete iter->second;
+}
+

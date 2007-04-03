@@ -95,6 +95,7 @@ struct PseudoReg
         , state_(TOP) // TOP is assumed as initial state
         , scope_(0)
     {}
+    ~PseudoReg();
 
     std::string toString() const;
 };

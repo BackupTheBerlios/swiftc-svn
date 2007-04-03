@@ -9,6 +9,8 @@
 #include "fe/parser.h"
 #include "fe/syntaxtree.h"
 
+#include "me/scopetab.h"
+
 
 int start(int argc, char** argv)
 {
@@ -26,7 +28,11 @@ int start(int argc, char** argv)
         return -1;
     }
 
+    /*
+        init globals
+    */
     error.setFilename(argv[1]);
+    scopetab.init();
 
     /*
         1.  Parse the input file, build a syntax tree
@@ -44,18 +50,17 @@ int start(int argc, char** argv)
 
         Thus a complete SymbolTable and type consistency is ensured after this pass.
     */
-    if ( syntaxtree.analyze() )
+    if ( !syntaxtree.analyze() )
         return -1; // abort on error
 
     if ( parseerror )
-    {
-        std::cerr << "error while parsing... aborting" << std::endl;
         return -1; // now abort on a parse error
-    }
 
-    // the Syntaxtree is not needed anymore.
+    /*
+        clean up front-end
+    */
     syntaxtree.destroy();
-    // close the input file
+    error.destroy();
     fclose(file);
 
     /*
@@ -74,6 +79,11 @@ int start(int argc, char** argv)
     //buildAssemblyCode();
 
 //     std::cout << compiler.toString() << std::endl;
+
+    /*
+        clean up middle-end
+    */
+    scopetab.destroy();
 
     return 0;
 }

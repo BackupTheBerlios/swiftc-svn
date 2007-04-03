@@ -10,6 +10,21 @@
 #include "me/scopetab.h"
 #include "me/ssa.h"
 
+
+//------------------------------------------------------------------------------
+
+Local::~Local()
+{
+    delete type_;
+};
+
+//------------------------------------------------------------------------------
+
+Class::~Class()
+{
+    delete classMember_;
+}
+
 bool Class::analyze()
 {
     symtab.enterClass(id_);
@@ -24,12 +39,10 @@ bool Class::analyze()
     return true;
 }
 
-//------------------------------------------------------------------------------
-
 Parameter::~Parameter()
 {
     delete type_;
-    delete id_;
+
     if (next_)
         delete next_;
 }
@@ -60,8 +73,15 @@ std::string Parameter::toString() const
 Method::~Method()
 {
     delete returnType_;
-    delete id_;
     delete statements_;
+
+    // delete each parameter
+    for (size_t i = 0; i < params_.size(); ++i)
+        delete params_[i];
+
+    // delete each method
+    for (LocalMap::iterator iter = locals_.begin(); iter != locals_.end(); ++iter)
+        delete iter->second;
 }
 
 std::string Method::toString() const
@@ -117,13 +137,11 @@ bool Method::analyze()
     return result;
 }
 
-
 //------------------------------------------------------------------------------
 
 MemberVar::~MemberVar()
 {
     delete type_;
-    delete id_;
 }
 
 bool MemberVar::analyze()

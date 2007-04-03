@@ -3,6 +3,12 @@
 #include <iostream>
 #include <cmath> // for fmod
 
+
+PseudoReg::~PseudoReg()
+{
+    delete id_;
+}
+
 std::string PseudoReg::toString() const
 {
     if (id_)

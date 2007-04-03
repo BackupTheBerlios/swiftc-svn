@@ -20,7 +20,7 @@ struct Expr : public Node
         , lvalue_(false)
         , type_(0)
     {}
-    ~Expr();
+    // do not delete type_ or reg_ here, they are destroyed by other classes
 
     std::string toString() const { return ""; }
 
@@ -211,7 +211,6 @@ struct FunctionCall : public Expr
     {}
     ~FunctionCall()
     {
-        delete id_;
         delete args_;
     }
 

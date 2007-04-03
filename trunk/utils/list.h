@@ -24,6 +24,11 @@ public:
         Node(const T& t = T())
             : value_(t)
         {}
+        ~Node()
+        {
+            if (next_)
+                delete next_;
+        }
 
         Node* next()
         {
@@ -50,6 +55,13 @@ public:
         sentinel_->next_ = sentinel_;
 
         size_ = 0;
+    }
+
+    ~List()
+    {
+        // mark end of destruction
+        sentinel_->prev_->next_ = 0;
+        delete sentinel_;
     }
 
     /**

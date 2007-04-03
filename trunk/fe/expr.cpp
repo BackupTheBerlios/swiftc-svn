@@ -37,17 +37,6 @@ std::string* extractOriginalId(std::string* id) {
 
 //------------------------------------------------------------------------------
 
-Expr::~Expr()
-{
-    if (type_)
-    {
-        delete type_;
-        type_ = 0;
-    }
-}
-
-//------------------------------------------------------------------------------
-
 std::string Literal::toString() const
 {
     std::ostringstream oss;

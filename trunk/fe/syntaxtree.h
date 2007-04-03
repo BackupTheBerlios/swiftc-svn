@@ -1,11 +1,8 @@
 #ifndef SWIFT_SYNTAXTREE_H
 #define SWIFT_SYNTAXTREE_H
 
-#include <map>
 #include <string>
-#include <vector>
 
-#include "utils/stringptrcmp.h"
 #include "fe/parser.h"
 
 
@@ -28,7 +25,7 @@ struct Node
         : line_(line)
         , parent_(parent)
     {}
-    virtual ~Node() {};
+    virtual ~Node() {}
 
     virtual std::string toString() const = 0;
 };
@@ -37,10 +34,6 @@ struct Node
 
 struct SymTabEntry : public Node
 {
-    enum {
-        REVISED_VAR = -1 /// if revision == -1 this var is already a revised one
-    };
-
     std::string* id_;
     /**
      * used to count the revision of this variable for SSA form <br>
@@ -54,48 +47,8 @@ struct SymTabEntry : public Node
         , id_(id)
         , revision_(0) // start with revision 0
     {}
-
-    std::string extractOriginalId();
 };
 
-//------------------------------------------------------------------------------
-
-struct Definition : public SymTabEntry
-{
-    Definition* next_;
-
-    Definition(std::string* id, int line, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-        , next_(0)
-    {}
-    ~Definition()
-    {
-        delete next_;
-    }
-    virtual bool analyze() = 0;
-};
-
-//------------------------------------------------------------------------------
-
-struct Module : public SymTabEntry
-{
-    typedef std::map<std::string*, Class*, StringPtrCmp> ClassMap;
-
-    Definition* definitions_;
-
-    ClassMap    classes_;
-
-    Module(std::string* id, int line = NO_LINE, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-    {}
-    ~Module()
-    {
-        delete definitions_;
-    }
-
-    std::string toString() const;
-    bool analyze();
-};
 
 //------------------------------------------------------------------------------
 
@@ -109,10 +62,7 @@ struct SyntaxTree
      * Destroy the syntax tree recursivly. Do not delete id_s. They are needed
      * in the next pass.
      */
-    void destroy()
-    {
-        delete rootModule_;
-    }
+    void destroy();
 };
 
 //------------------------------------------------------------------------------
