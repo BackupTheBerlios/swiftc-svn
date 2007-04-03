@@ -36,7 +36,7 @@ Expr::~Expr()
 
 std::string* extractOriginalId(std::string* id) {
     // reverse search should usually be faster
-    size_t index = id->find_last_of('!');
+    size_t index = id->find_last_of('#');
     swiftAssert( index != std::string::npos, "This is not a revised variable" );
 
     return new std::string(id->substr(0, index));

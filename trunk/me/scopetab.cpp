@@ -60,8 +60,11 @@ PseudoReg* ScopeTable::newTemp(PseudoReg::RegType regType)
     static long counter = 0;
 
     ostringstream oss;
-    // '@' is a magic char used to start new temps
-    oss << "@" << counter;
+    /*
+        '?' is a magic char used to start new temps
+        because it is a vaild beginning char for labels in nasm/yasm
+    */
+    oss << "?" << counter;
     string* str = new string( oss.str() );
 
     PseudoReg* reg = new PseudoReg(str, regType);
@@ -75,8 +78,8 @@ PseudoReg* ScopeTable::newTemp(PseudoReg::RegType regType)
 PseudoReg* ScopeTable::newRevision(PseudoReg::RegType regType, std::string* id, int revision)
 {
     ostringstream oss;
-    // '!' is a magic char used to divide the orignal name by the revision number
-    oss << *id << "!" << revision;
+    // '#' is a magic char used to divide the orignal name by the revision number
+    oss << *id << '#' << revision;
 
     PseudoReg* reg = new PseudoReg( new string(oss.str()), regType );
     insert(reg);
@@ -91,8 +94,8 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
     if (revision != NO_REVISION)
     {
         ostringstream oss;
-        // '!' is a magic char used to divide the orignal name by the revision number
-        oss << *id << "!" << revision;
+        // '#' is a magic char used to divide the orignal name by the revision number
+        oss << *id << '#' << revision;
         lookupId = oss.str();
     }
     else
