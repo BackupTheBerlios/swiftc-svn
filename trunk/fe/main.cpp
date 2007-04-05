@@ -7,6 +7,7 @@
 #include "fe/error.h"
 #include "fe/lexer.h"
 #include "fe/parser.h"
+#include "fe/symtab.h"
 #include "fe/syntaxtree.h"
 
 #include "me/scopetab.h"
@@ -31,8 +32,10 @@ int start(int argc, char** argv)
     /*
         init globals
     */
-    error.setFilename(argv[1]);
-    scopetab.init();
+    syntaxtree = new SyntaxTree();
+    symtab = new SymTab();
+    error = new ErrorHandler(cmdLineParser.filename_);
+    scopetab = new ScopeTab();
 
     /*
         1.  Parse the input file, build a syntax tree
@@ -51,14 +54,15 @@ int start(int argc, char** argv)
 
         Thus a complete SymbolTable and type consistency is ensured after this pass.
     */
-    if ( !syntaxtree.analyze() )
+    if ( !syntaxtree->analyze() )
         return -1; // abort on error
 
     /*
         clean up front-end
     */
-    syntaxtree.destroy();
-    error.destroy();
+    delete syntaxtree;
+    delete symtab;
+    delete error;
     fclose(file);
 
     /*
@@ -81,7 +85,9 @@ int start(int argc, char** argv)
     /*
         clean up middle-end
     */
-    scopetab.destroy();
+    scopetab->dump(); // print to cmdline
+
+    delete scopetab;
 
     return 0;
 }

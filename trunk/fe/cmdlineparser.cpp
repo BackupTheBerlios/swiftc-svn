@@ -16,7 +16,7 @@ CmdLineParser::CmdLineParser(int argc, char** argv)
             return;
 
         case 2:
-            filename_ = argv[2];
+            filename_ = argv[1];
             break;
 
         default:

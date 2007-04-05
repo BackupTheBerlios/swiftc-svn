@@ -27,14 +27,14 @@ Class::~Class()
 
 bool Class::analyze()
 {
-    symtab.enterClass(id_);
-//     scopetab.registerStruct();
+    symtab->enterClass(id_);
+//     scopetab->registerStruct();
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-    symtab.leaveClass();
+    symtab->leaveClass();
 
     return true;
 }
@@ -119,20 +119,20 @@ bool Method::analyze()
 {
     bool result = true;
 
-    symtab.enterMethod(id_);
-    Scope* scope = scopetab.insertFunction(id_);
-    scopetab.enter(scope);
+    symtab->enterMethod(id_);
+    Scope* scope = scopetab->insertFunction(id_);
+    scopetab->enter(scope);
 
     // analyze each parameter
-    for (size_t i = 0; i < symtab.method_->params_.size(); ++i)
-        symtab.method_->params_[i]->type_->validate();
+    for (size_t i = 0; i < symtab->method_->params_.size(); ++i)
+        symtab->method_->params_[i]->type_->validate();
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-    scopetab.leave();
-    symtab.leaveMethod();
+    scopetab->leave();
+    symtab->leaveMethod();
 
     return result;
 }

@@ -37,6 +37,8 @@ struct Scope
         , depth_(parent_ ? parent_->depth_ + 1 : 0)
     {}
     virtual ~Scope();
+
+    virtual void dump();
 };
 
 //------------------------------------------------------------------------------
@@ -57,7 +59,12 @@ struct Function : public Scope
         : Scope(parent)
         , id_(id)
     {}
-    ~Function();
+    ~Function()
+    {
+        delete id_;
+    }
+
+    virtual void dump();
 };
 
 //------------------------------------------------------------------------------
@@ -75,11 +82,12 @@ struct ScopeTable
 
     std::stack<Scope*> scopeStack_; // keeps account of current scope;
 
-    void init()
+    ScopeTable()
+        : rootScope_( new Scope(0) )
     {
-        rootScope_ = new Scope(0);
         scopeStack_.push(rootScope_);
     }
+    ~ScopeTable();
 
     Function* insertFunction(std::string* id);
 
@@ -100,14 +108,13 @@ struct ScopeTable
 
     void appendInstr(InstrBase* instr) {
         currentScope()->instrList_.append(instr);
-        std::cout << currentScope()->instrList_.last()->value_->toString() << std::endl;
     }
 
     PseudoReg* newTemp(PseudoReg::RegType regType);
     PseudoReg* newRevision(PseudoReg::RegType regType, std::string* id, int revision);
     PseudoReg* lookupReg(std::string* id, int revision = NO_REVISION);
 
-    void destroy();
+    void dump();
 
 private:
 
@@ -115,6 +122,6 @@ private:
 };
 
 typedef ScopeTable ScopeTab;
-extern ScopeTab scopetab;
+extern ScopeTab* scopetab;
 
 #endif // SWIFT_SCOPETABLE_H

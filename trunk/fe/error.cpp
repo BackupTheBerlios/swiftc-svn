@@ -2,7 +2,10 @@
 
 #include <cstdio>
 
-ErrorHandler error;
+#include "utils/assert.h"
+
+
+ErrorHandler* error = 0;
 
 void ErrorHandler::setFilename(const char* filename)
 {
@@ -15,7 +18,9 @@ void ErrorHandler::setFilename(const char* filename)
 
 void errorf(int line, const char* fs, ...)
 {
-    fprintf(stderr, "%s:%i: error: ", error.filename_, line);
+    swiftAssert(error, "error is null");
+
+    fprintf(stderr, "%s:%i: error: ", error->filename_, line);
 
     va_list argptr;
     va_start(argptr, fs);
@@ -27,7 +32,9 @@ void errorf(int line, const char* fs, ...)
 
 void warningf(int line, const char* fs, ...)
 {
-    fprintf(stderr, "%s:%i: warning: ", error.filename_, line);
+    swiftAssert(error, "error is null");
+
+    fprintf(stderr, "%s:%i: warning: ", error->filename_, line);
 
     va_list argptr;
     va_start(argptr, fs);

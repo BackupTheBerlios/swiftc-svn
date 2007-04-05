@@ -77,8 +77,8 @@ bool Type::check(Type* t1, Type* t2)
         UserType* u1 = (UserType*) t1->baseType_;
         UserType* u2 = (UserType*) t2->baseType_;
 
-        Class* class1 = symtab.lookupClass(u1->id_);
-        Class* class2 = symtab.lookupClass(u2->id_);
+        Class* class1 = symtab->lookupClass(u1->id_);
+        Class* class2 = symtab->lookupClass(u2->id_);
 
         // both classes must exist
         swiftAssert(class1, "first class not found in the symbol table");
@@ -126,7 +126,7 @@ bool Type::validate()
     if ( typeid(*baseType_) == typeid(UserType) )
     {
         UserType* userType = (UserType*) baseType_;
-        if (symtab.lookupClass( userType->id_ ) == 0)
+        if (symtab->lookupClass( userType->id_ ) == 0)
         {
             errorf( userType->line_, "class '%s' is not defined in this module", userType->id_->c_str() );
             return false;

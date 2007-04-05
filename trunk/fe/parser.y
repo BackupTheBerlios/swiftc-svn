@@ -128,14 +128,14 @@ bool parseerror = false;
 module
     :   {
             $$ = new Module(new std::string("default"), currentLine);
-            symtab.insert($$);
+            symtab->insert($$);
         }
         definitions
         {
             $$ = $<module_>1;
             $$->definitions_ = $2;
             $$->parent_ = 0;
-            syntaxtree.rootModule_ = $$;
+            syntaxtree->rootModule_ = $$;
         }
     ;
 
@@ -154,7 +154,7 @@ class_definition
     : CLASS ID
         {
             $$ = new Class($2, currentLine);
-            symtab.insert($<class_>$);
+            symtab->insert($<class_>$);
         }
         class_body END
         {
@@ -164,7 +164,7 @@ class_definition
     | CLASS ID
         {
             $$ = new Class($2, currentLine);
-            symtab.insert($<class_>$);
+            symtab->insert($<class_>$);
         }
         '{' template_list '}' class_body END
         {
@@ -203,7 +203,7 @@ method
     : method_qualifier /**/ ID
         {
             $$ = new Method( $1, 0, $2, getKeyLine() );
-            symtab.insert($$);
+            symtab->insert($$);
         }
         '(' parameter_list')' statement_list END
         {
@@ -213,7 +213,7 @@ method
     | method_qualifier type ID
         {
             $$ = new Method( $1, $2, $3, getKeyLine() );
-            symtab.insert($$);
+            symtab->insert($$);
         }
         '(' parameter_list')' statement_list END
         {
@@ -232,12 +232,12 @@ parameter
     : /* default is IN */ type ID
         {
             $$ = new Parameter(IN, $1, $2, currentLine);
-            symtab.insert($$);
+            symtab->insert($$);
         }
     | parameter_qualifier type ID
         {
             $$ = new Parameter($1, $2, $3, currentLine);
-            symtab.insert($$);
+            symtab->insert($$);
         }
     ;
 
@@ -251,7 +251,7 @@ member_var
     : type ID ';'
         {
             $$ = new MemberVar($1, $2, currentLine);
-            symtab.insert($$);
+            symtab->insert($$);
         }
     ;
 

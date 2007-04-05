@@ -11,11 +11,11 @@ struct ErrorHandler
 {
     char* filename_;
 
-    ErrorHandler()
-        : filename_(0)
-    {}
-
-    void destroy()
+    ErrorHandler(const char* filename)
+    {
+        setFilename(filename);
+    }
+    ~ErrorHandler()
     {
         if (filename_)
             delete[] filename_;
@@ -24,6 +24,6 @@ struct ErrorHandler
     void setFilename(const char* filename);
 };
 
-extern ErrorHandler error;
+extern ErrorHandler* error;
 
 #endif // SWIFT_ERROR_H

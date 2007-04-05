@@ -208,9 +208,9 @@ void UnExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
     // no revision necessary, temps occur only once
-    reg_ = scopetab.newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    reg_ = scopetab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
-    scopetab.appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
+    scopetab->appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -288,9 +288,9 @@ void BinExpr::genSSA()
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
 
     // no revision necessary, temps occur only once
-    reg_ = scopetab.newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    reg_ = scopetab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
-    scopetab.appendInstr( new BinInstr(kind_, reg_, op1_->reg_, op2_->reg_) );
+    scopetab->appendInstr( new BinInstr(kind_, reg_, op1_->reg_, op2_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -328,7 +328,7 @@ void AssignExpr::genSSA()
 {
     // take id of the swift symtab and extract original name
     std::string* id = extractOriginalId(result_->reg_->id_);
-    SymTabEntry* entry = symtab.lookupVar(id);
+    SymTabEntry* entry = symtab->lookupVar(id);
 
     // cast to local
     swiftAssert( typeid(*entry) == typeid(Local), "TODO: What if it is not a Local*?" );
@@ -338,12 +338,12 @@ void AssignExpr::genSSA()
 
     // do next revision
     ++local->revision_;
-    reg_ = scopetab.newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), id,  local->revision_);
+    reg_ = scopetab->newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), id,  local->revision_);
 
     // delete original id now. it is not needed anymore
     delete id;
 
-    scopetab.appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
+    scopetab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -351,7 +351,7 @@ void AssignExpr::genSSA()
 bool Id::analyze()
 {
     lvalue_ = true;
-    type_ = symtab.lookupType(id_)->clone();
+    type_ = symtab->lookupType(id_)->clone();
 
     if (type_ == 0)
     {
@@ -366,10 +366,10 @@ bool Id::analyze()
 
 void Id::genSSA()
 {
-    SymTabEntry* entry = symtab.lookupVar(id_);
+    SymTabEntry* entry = symtab->lookupVar(id_);
     swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
 
-    reg_ = scopetab.lookupReg(id_, entry->revision_);
+    reg_ = scopetab->lookupReg(id_, entry->revision_);
 }
 
 //------------------------------------------------------------------------------

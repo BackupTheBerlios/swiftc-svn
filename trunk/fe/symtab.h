@@ -44,22 +44,12 @@ struct SymbolTable
     void enterMethod(std::string* id);
     void leaveMethod();
 
-    /// destroys all contents of this class
-    void destroy();
-
-    /**
-     * Creates a new revision of either an original variable or an already revised one
-     * @param local the original variable
-     * @return the new created revision
-     */
-//     Local* newRevision(Local* local);
-
     Type* lookupType(std::string* id);
     SymTabEntry* lookupVar(std::string* id);
     Class* lookupClass(std::string* id);
 };
 
 typedef SymbolTable SymTab;
-extern SymTab symtab;
+extern SymTab* symtab;
 
 #endif // SWIFT_SYMBOLTABLE_H

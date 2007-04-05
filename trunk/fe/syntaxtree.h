@@ -60,17 +60,13 @@ struct SyntaxTree
 {
     Module* rootModule_;
 
-    bool analyze();
+    ~SyntaxTree();
 
-    /**
-     * Destroy the syntax tree recursivly. Do not delete id_s. They are needed
-     * in the next pass.
-     */
-    void destroy();
+    bool analyze();
 };
 
 //------------------------------------------------------------------------------
 
-extern SyntaxTree syntaxtree;
+extern SyntaxTree* syntaxtree;
 
 #endif // SWIFT_SYNTAXTREE_H

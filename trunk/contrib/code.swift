@@ -14,6 +14,11 @@ class Test
         a = b*-c+b*-c;
         a = a +6;
     end
+
+    writer hallo()
+        real r;
+        r = 7.0;
+    end
 end
 
 

@@ -8,7 +8,7 @@
 
 using namespace std;
 
-ScopeTab scopetab;
+ScopeTab* scopetab = 0;
 
 // -----------------------------------------------------------------------------
 
@@ -27,15 +27,43 @@ Scope::~Scope()
         delete iter->second;
 }
 
-// -----------------------------------------------------------------------------
-
-Function::~Function()
+void Scope::dump()
 {
-// this is currenty deleted by SymTabEntry
-//     delete id_;
+    // for all instructions in this scope
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    {
+        for (size_t i = 0; i < depth_ + 1; ++i)
+            std::cout << '\t';
+        std::cout << iter->value_->toString() << std::endl;
+    }
 }
 
 // -----------------------------------------------------------------------------
+
+void Function::dump()
+{
+    for (size_t i = 0; i < depth_; ++i)
+            std::cout << '\t';
+    std::cout << *id_ << std::endl;
+
+    // for all instructions in this scope
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    {
+        for (size_t i = 0; i < depth_ + 1; ++i)
+            std::cout << '\t';
+        std::cout << iter->value_->toString() << std::endl;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+ScopeTable::~ScopeTable()
+{
+    delete rootScope_;
+
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+        delete iter->second;
+}
 
 inline void ScopeTable::insert(PseudoReg* reg)
 {
@@ -49,7 +77,7 @@ inline void ScopeTable::insert(PseudoReg* reg)
 
 Function* ScopeTable::insertFunction(std::string* id)
 {
-    Function* function = new Function(currentScope(), id);
+    Function* function = new Function( 0, new std::string(*id) );
     functions_.insert( std::make_pair(id, function) );
 
     return function;
@@ -120,11 +148,8 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
     return 0;
 }
 
-void ScopeTab::destroy()
+void ScopeTable::dump()
 {
-    delete rootScope_;
-
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
-        delete iter->second;
+        iter->second->dump();
 }
-

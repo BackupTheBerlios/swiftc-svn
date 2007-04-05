@@ -28,7 +28,7 @@ bool Declaration::analyze()
     {
         UserType* userType = (UserType*) type_->baseType_;
         // it is a user defined type - so check whether it has been defined
-        if (symtab.lookupClass(userType->id_) == 0)
+        if (symtab->lookupClass(userType->id_) == 0)
         {
             errorf( line_, "class '%s' is not defined in this module", type_->baseType_->toString().c_str() );
             return false;
@@ -37,13 +37,13 @@ bool Declaration::analyze()
 
     // everything ok. so insert the local
     Local* local = new Local(type_->clone(), id_, line_, 0);
-    symtab.insert(local);
+    symtab->insert(local);
 
     swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
 
     // do first revision
     ++local->revision_;
-    scopetab.newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), local->id_, local->revision_ );
+    scopetab->newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), local->id_, local->revision_ );
 
     return true;
 }

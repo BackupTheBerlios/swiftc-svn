@@ -8,9 +8,9 @@
 void EnterScopeInstr::updateScoping()
 {
     if (enter_)
-        scopetab.enter(scope_);
+        scopetab->enter(scope_);
     else
-        scopetab.leave();
+        scopetab->leave();
 }
 
 // -----------------------------------------------------------------------------

@@ -11,23 +11,23 @@
 #include "me/ssa.h"
 
 
-SyntaxTree syntaxtree;
+SyntaxTree* syntaxtree = 0;
 
 //------------------------------------------------------------------------------
 
+SyntaxTree::~SyntaxTree()
+{
+    delete rootModule_;
+}
+
 bool SyntaxTree::analyze()
 {
-    symtab.reset();
-    symtab.enterModule();
+    symtab->reset();
+    symtab->enterModule();
 
     bool result = rootModule_->analyze();
 
-    symtab.leaveModule();
+    symtab->leaveModule();
 
     return result;
-}
-
-void SyntaxTree::destroy()
-{
-    delete rootModule_;
 }
