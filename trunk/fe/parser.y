@@ -50,6 +50,7 @@ bool parseerror = false;
 %token <expr_>  L_INT  L_INT8   L_INT16  L_INT32  L_INT64  L_SAT8  L_SAT16
 %token <expr_> L_UINT L_UINT8  L_UINT16 L_UINT32 L_UINT64 L_USAT8 L_USAT16
 %token <expr_> L_REAL L_REAL32 L_REAL64
+%token <expr_> L_TRUE L_FALSE  L_NIL
 
 // types
 %token INDEX
@@ -62,9 +63,6 @@ bool parseerror = false;
 
 // built-in template types
 %token ARRAY SIMD
-
-// special values
-%token TRUE_ FALSE_ NIL
 
 // type qualifier
 %token VAR CST DEF
@@ -97,9 +95,9 @@ bool parseerror = false;
 %token RETURN RESULT BREAK CONTINUE FOR FOR_EACH WHILE DO_WHILE REPEAT
 
 
-%token <integer_>       INTEGER
-%token <float_>         FLOAT
-%token <id_>            ID
+%token <integer_>   INTEGER
+%token <float_>     FLOAT
+%token <id_>        ID
 
 /*
     types
@@ -115,7 +113,7 @@ bool parseerror = false;
 %type <memberVar_>  member_var
 
 %type <module_>     module
-%type <expr_>       expr assign_expr mul_expr add_expr postfix_expr un_expr primary_expr
+%type <expr_>       expr assign_expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <arg_>        arg_list
 
 %type <statement_>  statement_list statement
@@ -283,22 +281,19 @@ expr
     ;
 
 assign_expr
-    : add_expr                  { $$ = $1; }
-    | assign_expr '=' add_expr  { $$ = new AssignExpr('=', $1, $3, currentLine); }
-    ;
-
-/*
     : rel_expr                  { $$ = $1; }
-    | assign_expr '=' rel_expr  { $$ = new AssignExpr($1, $3, currentLine); }
+    | assign_expr '=' rel_expr  { $$ = new AssignExpr('=', $1, $3, currentLine); }
     ;
 
 rel_expr
-    : add_expr
-    | rel_expr '<' add_expr
-    | rel_expr '>' add_expr
-    | rel_expr LE add_expr
-    | rel_expr GE add_expr
-    ;*/
+    : add_expr                  { $$ = $1; }
+    | rel_expr '<' add_expr     { $$ = new BinExpr('<', $1, $3, currentLine); }
+    | rel_expr '>' add_expr     { $$ = new BinExpr('>', $1, $3, currentLine); }
+    | rel_expr LE_OP add_expr   { $$ = new BinExpr(LE_OP, $1, $3, currentLine); }
+    | rel_expr GE_OP add_expr   { $$ = new BinExpr(GE_OP, $1, $3, currentLine); }
+    | rel_expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
+    | rel_expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
+    ;
 
 add_expr
     : mul_expr              { $$ = $1; }
@@ -318,6 +313,7 @@ un_expr
     | '&' un_expr           { $$ = new UnExpr('&', $2, currentLine); }
     | '-' un_expr           { $$ = new UnExpr('-', $2, currentLine); }
     | '+' un_expr           { $$ = new UnExpr('+', $2, currentLine); }
+    | '!' un_expr           { $$ = new UnExpr('!', $2, currentLine); }
     ;
 
 postfix_expr
@@ -347,6 +343,9 @@ primary_expr
     | L_REAL        { $$ = $1; }
     | L_REAL32      { $$ = $1; }
     | L_REAL64      { $$ = $1; }
+    | L_TRUE        { $$ = $1; }
+    | L_FALSE       { $$ = $1; }
+    | L_NIL         { $$ = $1; }
     | '(' expr ')'  { $$ = $2; }
     ;
 

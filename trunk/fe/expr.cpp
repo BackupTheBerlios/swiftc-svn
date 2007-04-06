@@ -50,6 +50,8 @@ std::string Literal::toString() const
 
     switch (kind_)
     {
+        case L_INDEX:   oss << index_       << "x";     break;
+
         case L_INT:     oss << int_;                    break;
         case L_INT8:    oss << int(int8_)   << "b";     break;
         case L_INT16:   oss << int16_       << "w";     break;
@@ -65,6 +67,11 @@ std::string Literal::toString() const
         case L_UINT64:  oss << uint64_      << "uq";    break;
         case L_USAT8:   oss << int(usat8_)  << "usb";   break;
         case L_USAT16:  oss << usat16_      << "usw";   break;
+
+        case L_TRUE:    oss << "true";                  break;
+        case L_FALSE:   oss << "false";                  break;
+
+        case L_NIL:     oss << "nil";                  break;
 
         // hence it is real, real32 or real64
 
@@ -123,6 +130,12 @@ bool Literal::analyze()
         case L_REAL32:  type_ = new Type(DEF, new SimpleType(REAL32), 0); break;
         case L_REAL64:  type_ = new Type(DEF, new SimpleType(REAL64), 0); break;
 
+        case L_TRUE: // like L_FALSE
+        case L_FALSE:   type_ = new Type(DEF, new SimpleType(BOOL),   0); break;
+
+        case L_NIL:
+            std::cout << "TODO" << std::endl;
+
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
@@ -139,7 +152,7 @@ void Literal::genSSA()
 
     switch (kind_)
     {
-        case L_INDEX:   reg_->value_.index_     = index_;      break;
+        case L_INDEX:   reg_->value_.index_     = index_;   break;
 
         case L_INT:     reg_->value_.int_       = int_;     break;
         case L_INT8:    reg_->value_.int8_      = int8_;    break;
@@ -160,6 +173,11 @@ void Literal::genSSA()
         case L_REAL:    reg_->value_.real_      = real_;    break;
         case L_REAL32:  reg_->value_.real32_    = real32_;  break;
         case L_REAL64:  reg_->value_.real64_    = real64_;  break;
+
+        case L_TRUE: // like L_FALSE
+        case L_FALSE:   reg_->value_.bool_      = bool_;    break;
+
+        case L_NIL:     reg_->value_.ptr_       = ptr_;     break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -197,6 +215,15 @@ bool UnExpr::analyze()
         }
 
         --type_->pointerCount_;
+    }
+    else if (c_ == '!')
+    {
+        if (    (typeid(*op_->type_->baseType_) != typeid(SimpleType))
+            ||  (((SimpleType*) op_->type_->baseType_)->kind_ != BOOL) )
+        {
+            errorf(op_->line_, "unary ! not used with a bool");
+            return false;
+        }
     }
 
     genSSA();
@@ -259,6 +286,7 @@ bool BinExpr::analyze()
         return false;
     }
 
+    // check whether both types are compatible
     if ( !Type::check(op1_->type_, op2_->type_) )
     {
         errorf( op1_->line_, "%s used with different types", getExprName().c_str() );
@@ -268,11 +296,28 @@ bool BinExpr::analyze()
     // check type
     if ( typeid(*op1_->type_->baseType_) != typeid(SimpleType) )
     {
-        errorf(op1_->line_, "unary operator used with wrong type");
+        errorf(op1_->line_, "binary operator used with wrong type");
         return false;
     }
 
-    type_ = op1_->type_->clone();
+    // check bool cases
+    if (    kind_ == '<'   || kind_ == '>'
+        ||  kind_ == LE_OP || kind_ == GE_OP
+        ||  kind_ == EQ_OP || kind_ == NE_OP)
+    {
+        type_ = new Type(DEF, new SimpleType(BOOL), 0);
+    }
+    else
+        type_ = op1_->type_->clone();
+
+//             if (    (typeid(*op1_->type_->baseType_) != typeid(SimpleType))
+//             ||  (((SimpleType*) op1_->type_->baseType_)->kind_ != BOOL) )
+//         {
+//             errorf(op1_->line_, "binary boolean operator not used with a bool");
+//             return false;
+//         }
+
+
     // init typeQualifier_ with compatible qualifier
     type_->typeQualifier_ = Type::fitQualifier(op1_->type_, op2_->type_);
 

@@ -229,45 +229,48 @@ PseudoReg::RegType SimpleType::toRegType() const
 {
     switch (kind_)
     {
-        case   INDEX:
+        case INDEX:
             return PseudoReg::R_INDEX;
 
-        case   INT:
+        case INT:
             return PseudoReg::R_INT;
-        case   INT8:
+        case INT8:
             return PseudoReg::R_INT8;
-        case   INT16:
+        case INT16:
             return PseudoReg::R_INT16;
-        case   INT32:
+        case INT32:
             return PseudoReg::R_INT32;
-        case   INT64:
+        case INT64:
             return PseudoReg::R_INT64;
-        case   SAT8:
+        case SAT8:
             return PseudoReg::R_SAT8;
-        case   SAT16:
+        case SAT16:
             return PseudoReg::R_SAT16;
 
-        case   UINT:
+        case UINT:
             return PseudoReg::R_UINT;
-        case   UINT8:
+        case UINT8:
             return PseudoReg::R_UINT8;
-        case   UINT16:
+        case UINT16:
             return PseudoReg::R_UINT16;
-        case   UINT32:
+        case UINT32:
             return PseudoReg::R_UINT32;
-        case   UINT64:
+        case UINT64:
             return PseudoReg::R_UINT64;
-        case   USAT8:
+        case USAT8:
             return PseudoReg::R_USAT8;
-        case   USAT16:
+        case USAT16:
             return PseudoReg::R_USAT16;
 
-        case   REAL:
+        case REAL:
             return PseudoReg::R_REAL;
-        case   REAL32:
+        case REAL32:
             return PseudoReg::R_REAL32;
-        case   REAL64:
+        case REAL64:
             return PseudoReg::R_REAL64;
+
+        case BOOL:
+            return PseudoReg::R_BOOL;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -336,6 +339,11 @@ PseudoReg::RegType SimpleType::int2RegType(int i)
         case   REAL64:
         case L_REAL64:
             return PseudoReg::R_REAL64;
+
+        case   BOOL:
+        case L_TRUE:
+        case L_FALSE:
+            return PseudoReg::R_BOOL;
 
         default:
             swiftAssert(false, "illegal switch-case-value");

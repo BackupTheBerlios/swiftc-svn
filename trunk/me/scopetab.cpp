@@ -1,6 +1,5 @@
 #include "scopetab.h"
 
-#include <iostream>
 #include <sstream>
 #include <algorithm>
 
@@ -27,31 +26,31 @@ Scope::~Scope()
         delete iter->second;
 }
 
-void Scope::dump()
+void Scope::dump(ofstream& ofs)
 {
     // for all instructions in this scope
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         for (size_t i = 0; i < depth_ + 1; ++i)
-            std::cout << '\t';
-        std::cout << iter->value_->toString() << std::endl;
+            ofs << '\t';
+        ofs << iter->value_->toString() << std::endl;
     }
 }
 
 // -----------------------------------------------------------------------------
 
-void Function::dump()
+void Function::dump(ofstream& ofs)
 {
     for (size_t i = 0; i < depth_; ++i)
-            std::cout << '\t';
-    std::cout << *id_ << std::endl;
+            ofs << '\t';
+    ofs << *id_ << std::endl;
 
     // for all instructions in this scope
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         for (size_t i = 0; i < depth_ + 1; ++i)
-            std::cout << '\t';
-        std::cout << iter->value_->toString() << std::endl;
+            ofs << '\t';
+        ofs << iter->value_->toString() << std::endl;
     }
 }
 
@@ -148,8 +147,16 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
     return 0;
 }
 
-void ScopeTable::dump()
+void ScopeTable::dump(const std::string& extension)
 {
+    ostringstream oss;
+    oss << filename_ << extension;
+
+    ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
-        iter->second->dump();
+        iter->second->dump(ofs);
+
+    // finish
+    ofs.close();
 }

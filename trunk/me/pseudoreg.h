@@ -18,10 +18,9 @@ struct PseudoReg
     {
         R_INDEX,
         R_INT,  R_INT8,  R_INT16,  R_INT32,  R_INT64,  R_SAT8,  R_SAT16,
-
         R_UINT, R_UINT8, R_UINT16, R_UINT32, R_UINT64, R_USAT8, R_USAT16,
-
         R_REAL, R_REAL32, R_REAL64,
+        R_BOOL, R_PTR,
 
         // SIMD registers use the same value but negative
         VR_INDEX = -R_INDEX,
@@ -83,6 +82,8 @@ struct PseudoReg
         float       real_;
         float       real32_;
         double      real64_;
+
+        bool        bool_;
 
         void*       ptr_;
     };

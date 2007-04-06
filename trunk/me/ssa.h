@@ -48,12 +48,25 @@ struct EnterScopeInstr : public InstrBase
 };
 
 //------------------------------------------------------------------------------
-//PseudoRegInstr---------------------------------------------------------------------
-//------------------------------------------------------------------------------
 
-struct PseudoRegInstr : public InstrBase
+/**
+ * GenCodeInstr can -- as the name says -- generate code.
+ * Thus genCode is abstract here.
+ */
+struct GenCodeInstr : public InstrBase
 {
     virtual void genCode(std::ofstream& ofs) = 0;
+};
+
+//------------------------------------------------------------------------------
+//CalcInstr---------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+/**
+ * CalcInstr are instructions which calcultate something
+ */
+struct CalcInstr : public GenCodeInstr
+{
 };
 
 //------------------------------------------------------------------------------
@@ -62,7 +75,7 @@ struct PseudoRegInstr : public InstrBase
  * @brief NOP = No Operation
  * These instructions can artificially increase the life time of a PseudoReg
  */
-struct NOPInstr : public PseudoRegInstr
+struct NOPInstr : public CalcInstr
 {
     PseudoReg* reg_;
 
@@ -80,7 +93,7 @@ struct NOPInstr : public PseudoRegInstr
  * @brief implements phi functions
  * These instructions can artificially increase the life time of PseudoReg
  */
-struct PhiInstr : public PseudoRegInstr
+struct PhiInstr : public CalcInstr
 {
     PseudoReg* result_;
     RegList args_;
@@ -96,7 +109,7 @@ struct PhiInstr : public PseudoRegInstr
 
 //------------------------------------------------------------------------------
 
-struct AssignInstr : public PseudoRegInstr
+struct AssignInstr : public CalcInstr
 {
     union
     {
@@ -129,7 +142,7 @@ struct AssignInstr : public PseudoRegInstr
 /**
  *
  */
-struct UnInstr : public PseudoRegInstr
+struct UnInstr : public CalcInstr
 {
     union
     {
@@ -177,7 +190,7 @@ struct UnInstr : public PseudoRegInstr
  *  result = op1 <= op2 <br>
  *  result = op1 >= op2 <br>
 */
-struct BinInstr : public PseudoRegInstr
+struct BinInstr : public CalcInstr
 {
     union
     {
@@ -210,12 +223,31 @@ struct BinInstr : public PseudoRegInstr
 };
 
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
 //BranchInstr-------------------------------------------------------------------
 //------------------------------------------------------------------------------
+
+/**
+ * BranchInstr do not calculate something. They influence the control flow.
+ */
+struct BranchInstr : public InstrBase
+{
+};
+
+//------------------------------------------------------------------------------
+
+struct IfInstr : public BranchInstr
+{
+    PseudoReg* boolReg_;
+
+/*    IfInstr(boolReg_)
+    {}*/
+};
+
+//------------------------------------------------------------------------------
+
+struct IfElseInstr : public BranchInstr
+{
+};
 
 /**
  * if a goto b

@@ -18,6 +18,10 @@ class Test
     writer hallo()
         real r;
         r = 7.0;
+
+        bool b;
+
+        b = r * 5.0 > 7.0;
     end
 end
 

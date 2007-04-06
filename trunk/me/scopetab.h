@@ -1,6 +1,7 @@
 #ifndef SWIFT_SCOPETABLE_H
 #define SWIFT_SCOPETABLE_H
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <stack>
@@ -38,7 +39,7 @@ struct Scope
     {}
     virtual ~Scope();
 
-    virtual void dump();
+    virtual void dump(std::ofstream& ofs);
 };
 
 //------------------------------------------------------------------------------
@@ -64,7 +65,7 @@ struct Function : public Scope
         delete id_;
     }
 
-    virtual void dump();
+    virtual void dump(std::ofstream& ofs);
 };
 
 //------------------------------------------------------------------------------
@@ -75,6 +76,8 @@ struct ScopeTable
         NO_REVISION = -1
     };
 
+    std::string filename_;
+
     Scope* rootScope_;
 
     typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
@@ -82,8 +85,9 @@ struct ScopeTable
 
     std::stack<Scope*> scopeStack_; // keeps account of current scope;
 
-    ScopeTable()
-        : rootScope_( new Scope(0) )
+    ScopeTable(const std::string& filename)
+        : filename_(filename)
+        , rootScope_( new Scope(0) )
     {
         scopeStack_.push(rootScope_);
     }
@@ -114,7 +118,7 @@ struct ScopeTable
     PseudoReg* newRevision(PseudoReg::RegType regType, std::string* id, int revision);
     PseudoReg* lookupReg(std::string* id, int revision = NO_REVISION);
 
-    void dump();
+    void dump(const std::string& extension = ".ssa");
 
 private:
 

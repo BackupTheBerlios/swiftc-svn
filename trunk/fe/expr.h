@@ -13,6 +13,8 @@ struct Expr : public Node
 {
     bool        lvalue_;
     Type*       type_;
+
+    // for genSSA()
     PseudoReg*  reg_;
 
     Expr(int line)
@@ -56,6 +58,10 @@ struct Literal : public Expr
         float       real_;
         float       real32_;
         double      real64_;
+
+        bool        bool_;
+
+        void*       ptr_;
     };
 
     Literal(int kind, int line = NO_LINE)

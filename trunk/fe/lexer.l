@@ -44,7 +44,7 @@ INTEGER     {DIGIT}+
 
 %%
 
-[+\-*/%&|\^=()\[\]{},.;:] { // single character tokens
+[+\-*/%&|\^=()\[\]{},.;:\<>] { // single character tokens
     return yytext[0];
 }
 
@@ -120,10 +120,6 @@ in      { return IN; }
 inout   { return INOUT; }
 out     { return OUT; }
 
-true    { return TRUE_; }
-false   { return FALSE_; }
-nil     { return NIL; }
-
 shl     { return SHL; }
 shr     { return SHR; }
 rol     { return ROL; }
@@ -155,6 +151,10 @@ private     { return PRIVATE; }
 {FLOAT}         { swiftlval.expr_ = new Literal(L_REAL,   currentLine); ((Literal*) swiftlval.expr_)->real_   = strtod(yytext, 0); return L_REAL; }
 {FLOAT}d        { swiftlval.expr_ = new Literal(L_REAL32, currentLine); ((Literal*) swiftlval.expr_)->real32_ = strtod(yytext, 0); return L_REAL32; }
 {FLOAT}q        { swiftlval.expr_ = new Literal(L_REAL64, currentLine); ((Literal*) swiftlval.expr_)->real64_ = strtod(yytext, 0); return L_REAL64; }
+
+true            { swiftlval.expr_ = new Literal(L_TRUE,   currentLine); ((Literal*) swiftlval.expr_)->bool_   = true;   return L_TRUE; }
+false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Literal*) swiftlval.expr_)->bool_   = false;  return L_TRUE; }
+nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Literal*) swiftlval.expr_)->ptr_    = 0;      return L_TRUE; }
 
 {ID} { keyLine = currentLine; swiftlval.id_ = new std::string(yytext); return ID; }
 

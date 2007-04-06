@@ -35,7 +35,7 @@ int start(int argc, char** argv)
     syntaxtree = new SyntaxTree();
     symtab = new SymTab();
     error = new ErrorHandler(cmdLineParser.filename_);
-    scopetab = new ScopeTab();
+    scopetab = new ScopeTab(cmdLineParser.filename_);
 
     /*
         1.  Parse the input file, build a syntax tree
