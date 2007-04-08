@@ -69,9 +69,9 @@ std::string Literal::toString() const
         case L_USAT16:  oss << usat16_      << "usw";   break;
 
         case L_TRUE:    oss << "true";                  break;
-        case L_FALSE:   oss << "false";                  break;
+        case L_FALSE:   oss << "false";                 break;
 
-        case L_NIL:     oss << "nil";                  break;
+        case L_NIL:     oss << "nil";                   break;
 
         // hence it is real, real32 or real64
 
@@ -218,8 +218,7 @@ bool UnExpr::analyze()
     }
     else if (c_ == '!')
     {
-        if (    (typeid(*op_->type_->baseType_) != typeid(SimpleType))
-            ||  (((SimpleType*) op_->type_->baseType_)->kind_ != BOOL) )
+        if ( !op_->type_->isBool() )
         {
             errorf(op_->line_, "unary ! not used with a bool");
             return false;
@@ -335,7 +334,27 @@ void BinExpr::genSSA()
     // no revision necessary, temps occur only once
     reg_ = scopetab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
-    scopetab->appendInstr( new BinInstr(kind_, reg_, op1_->reg_, op2_->reg_) );
+    int kind;
+
+    switch (kind_)
+    {
+        case EQ_OP:
+            kind = BinInstr::EQ;
+            break;
+        case NE_OP:
+            kind = BinInstr::NE;
+            break;
+        case LE_OP:
+            kind = BinInstr::LE;
+            break;
+        case GE_OP:
+            kind = BinInstr::GE;
+            break;
+        default:
+            kind = kind_;
+    }
+
+    scopetab->appendInstr( new BinInstr(kind, reg_, op1_->reg_, op2_->reg_) );
 }
 
 //------------------------------------------------------------------------------

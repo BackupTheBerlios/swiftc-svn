@@ -192,6 +192,15 @@ struct UnInstr : public CalcInstr
 */
 struct BinInstr : public CalcInstr
 {
+    enum
+    {
+        // be sure not do collide with ascii codes
+        EQ = 256,
+        NE,
+        LE,
+        GE
+    };
+
     union
     {
         int kind_;
@@ -238,15 +247,22 @@ struct BranchInstr : public InstrBase
 struct IfInstr : public BranchInstr
 {
     PseudoReg* boolReg_;
+    RegList::Node* destination_;
 
-/*    IfInstr(boolReg_)
-    {}*/
+    IfInstr(PseudoReg* boolReg)
+        : boolReg_(boolReg)
+    {
+        swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a bool pseudo reg");
+    }
 };
 
 //------------------------------------------------------------------------------
 
-struct IfElseInstr : public BranchInstr
+struct GotoInstr : public BranchInstr
 {
+    RegList::Node* destination_;
+
+//     GotoInstr()
 };
 
 /**

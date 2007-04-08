@@ -70,18 +70,28 @@ std::string Parameter::toString() const
 
 //------------------------------------------------------------------------------
 
+SwiftScope::~SwiftScope()
+{
+    // delete each method
+    for (LocalMap::iterator iter = locals_.begin(); iter != locals_.end(); ++iter)
+        delete iter->second;
+
+    // delete each child scope
+    for (ScopeList::Node* iter = scopes_.first(); iter != scopes_.sentinel(); iter = iter->next())
+        delete iter;
+}
+
+//------------------------------------------------------------------------------
+
 Method::~Method()
 {
     delete returnType_;
     delete statements_;
+    delete rootScope_;
 
     // delete each parameter
     for (size_t i = 0; i < params_.size(); ++i)
         delete params_[i];
-
-    // delete each method
-    for (LocalMap::iterator iter = locals_.begin(); iter != locals_.end(); ++iter)
-        delete iter->second;
 }
 
 std::string Method::toString() const

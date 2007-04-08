@@ -105,6 +105,13 @@ bool    { return BOOL; }
 array   { return ARRAY; }
 simd    { return SIMD; }
 
+if       { return IF; }
+else     { return ELSE; }
+elif     { return ELIF; }
+for      { return FOR; }
+while    { return WHILE; }
+do_while { return DO_WHILE; }
+
 scope   { keyLine = currentLine; return SCOPE; }
 class   { keyLine = currentLine; return CLASS; }
 end     { keyLine = currentLine; return END; }

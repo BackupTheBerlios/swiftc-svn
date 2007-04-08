@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 
+#include "utils/list.h"
+
 #include "fe/module.h"
 #include "fe/syntaxtree.h"
 
@@ -107,6 +109,21 @@ struct Parameter : public SymTabEntry
 
 //------------------------------------------------------------------------------
 
+struct SwiftScope
+{
+    SwiftScope* parent_;/// 0 if root
+
+    typedef List<SwiftScope*> ScopeList;
+    ScopeList scopes_;
+
+    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
+    LocalMap locals_;
+
+    ~SwiftScope();
+};
+
+//------------------------------------------------------------------------------
+
 struct Method : public ClassMember
 {
     int methodQualifier_;
@@ -116,8 +133,7 @@ struct Method : public ClassMember
 
     std::vector<Parameter*> params_;
 
-    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
-    LocalMap locals_;
+    SwiftScope* rootScope_;
 
     Method(int methodQualifier, Type* returnType, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)

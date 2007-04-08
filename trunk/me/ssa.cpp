@@ -47,8 +47,26 @@ void UnInstr::genCode(std::ofstream& ofs)
 
 std::string BinInstr::toString() const
 {
+    std::string opString;
+    switch (kind_)
+    {
+        case EQ:
+            opString = "==";
+            break;
+        case NE:
+            opString = "!=";
+            break;
+        case LE:
+            opString = "<=";
+            break;
+        case GE:
+            opString = ">=";
+            break;
+        default:
+            opString = c_;
+    }
     std::ostringstream oss;
-    oss << result_->toString() << "\t= " << op1_->toString() << " " << c_ << " " << op2_->toString();
+    oss << result_->toString() << "\t= " << op1_->toString() << " " << opString << " " << op2_->toString();
 
     return oss.str();
 }

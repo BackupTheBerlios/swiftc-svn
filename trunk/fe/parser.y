@@ -84,16 +84,15 @@ bool parseerror = false;
 
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
 
+// control flow
+%token IF ELSE ELIF FOR WHILE DO_WHILE
+%token RETURN RESULT BREAK CONTINUE
+
 // protection
 %token PUBLIC PROTECTED PACKAGE PRIVATE
 
 // miscellaneous
 %token SCOPE CLASS END
-
-
-// controll commands
-%token RETURN RESULT BREAK CONTINUE FOR FOR_EACH WHILE DO_WHILE REPEAT
-
 
 %token <integer_>   INTEGER
 %token <float_>     FLOAT
@@ -267,6 +266,9 @@ statement_list
 statement
     : expr ';' opt_semis    { $$ = new ExprStatement($1, currentLine); }
     | type ID ';'           { $$ = new Declaration($1, $2, getKeyLine()); }
+    | IF '(' rel_expr ')' statement_list END                     { $$ = new IfElStatement(0,    $3, $5,  0, currentLine); }
+    | IF '(' rel_expr ')' statement_list ELSE statement_list END { $$ = new IfElStatement(ELSE, $3, $5, $7, currentLine); }
+    | IF '(' rel_expr ')' statement_list ELIF statement_list END { $$ = new IfElStatement(ELIF, $3, $5, $7, currentLine); }
     ;
 
 /*

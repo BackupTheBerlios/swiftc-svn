@@ -138,10 +138,14 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
         if ( regIter != currentScope()->regs_.end() )
             return regIter->second;
 
+#ifdef SWIFT_DEBUG
+        bool isFunction = typeid(*scopeIter) == typeid(Function);
+        swiftAssert(!isFunction , "pseudo reg not found");
+        return 0;
+#endif // SWIFT_DEBUG
+
         // not found, so climb up
         scopeIter = scopeIter->parent_;
-//         ( typeid(*iter) == typeid(Function) )
-        // TODO assertions
     }
 
     return 0;
@@ -153,6 +157,7 @@ void ScopeTable::dump(const std::string& extension)
     oss << filename_ << extension;
 
     ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+    ofs << filename_ << extension << ":" << std::endl << std::endl;
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dump(ofs);

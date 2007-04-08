@@ -18,6 +18,9 @@ struct SymbolTable
     Class*  class_;
     Method* method_;
 
+    typedef std::stack<SwiftScope*> ScopeStack;
+    ScopeStack scopeStack_;
+
     SymbolTable()
     {
         reset();
@@ -43,6 +46,8 @@ struct SymbolTable
     void leaveClass();
     void enterMethod(std::string* id);
     void leaveMethod();
+    void enterScope(SwiftScope* scope);
+    void leaveScope();
 
     Type* lookupType(std::string* id);
     SymTabEntry* lookupVar(std::string* id);

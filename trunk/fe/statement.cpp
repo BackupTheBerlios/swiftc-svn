@@ -8,6 +8,7 @@
 #include "fe/type.h"
 
 #include "me/scopetab.h"
+#include "me/ssa.h"
 
 Declaration::~Declaration()
 {
@@ -58,4 +59,61 @@ ExprStatement::~ExprStatement()
 bool ExprStatement::analyze()
 {
     return expr_->analyze();
+}
+
+//------------------------------------------------------------------------------
+
+IfElStatement::~IfElStatement()
+{
+    delete ifBranch_;
+    delete elBranch_;
+}
+
+bool IfElStatement::analyze()
+{
+    bool result = expr_->analyze();
+
+    // check whether expr_ is a bool expr only if analyze resulted true
+    if (result)
+    {
+        if ( !expr_->type_->isBool() )
+        {
+            errorf(line_, "the prefacing expression of an if statement must be a bool expression");
+            result = false;
+        }
+    }
+
+//     // generate IfElInstr if types are correct
+//     if (result)
+//     {
+//         scopetab->appendInstr( new IfInstr(expr_->reg_) );
+//     }
+//
+    scopetab->enterNewScope();
+//     DummyInstr* ifDummy = new DummyInstr();
+//     scopetab->appendInstr(ifDummy);
+
+    // analyze each statement in the if branch and keep acount of the result
+    for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    scopetab->leave();
+
+    if (!elBranch_)
+    {
+        // here is neither an else nor an elif
+        return result;
+    }
+
+    scopetab->enterNewScope();
+//     DummyInstr* elDummy = new DummyInstr();
+//     scopetab->appendInstr(elDummy);
+
+    // analyze each statement in the if branch and keep acount of the result
+    for (Statement* iter = elBranch_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    scopetab->leave();
+
+    return result;
 }

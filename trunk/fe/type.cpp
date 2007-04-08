@@ -181,6 +181,12 @@ int Type::fitQualifier(Type* t1, Type* t2)
     }
 }
 
+bool Type::isBool()
+{
+    return (typeid(*baseType_) == typeid(SimpleType))
+        && (((SimpleType*) baseType_)->kind_ == BOOL);
+}
+
 //------------------------------------------------------------------------------
 
 std::string SimpleType::toString() const

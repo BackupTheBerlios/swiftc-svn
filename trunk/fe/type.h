@@ -49,6 +49,7 @@ struct Type : public Node
     static bool check(Type* t1, Type* t2);
     static int fitQualifier(Type* t1, Type* t2);
     bool validate();
+    bool isBool();
 };
 
 //------------------------------------------------------------------------------

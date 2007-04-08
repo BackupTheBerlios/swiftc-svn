@@ -1,7 +1,13 @@
 #ifndef SWIFT_STATEMENT_H
 #define SWIFT_STATEMENT_H
 
+#include "utils/assert.h"
 #include "fe/syntaxtree.h"
+
+// forward declarations
+struct Expr;
+
+//------------------------------------------------------------------------------
 
 struct Statement : public Node
 {
@@ -51,6 +57,31 @@ struct ExprStatement : public Statement
     ~ExprStatement();
 
     std::string toString() const { return std::string(""); }
+    bool analyze();
+};
+
+/**
+ * @brief Holds either an if, an if-else or an if-elif statement.
+ */
+struct IfElStatement : public Statement
+{
+    int kind_;
+    Expr* expr_;
+    Statement* ifBranch_;
+    Statement* elBranch_;
+
+    IfElStatement(int kind_, Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
+        : Statement(line)
+        , expr_(expr)
+        , ifBranch_(ifBranch)
+        , elBranch_(elBranch)
+    {
+        swiftAssert( kind_ == 0 || kind_ == ELSE || kind_ == ELIF, "kind_ must be 0, ELSE or ELIF" );
+    }
+    ~IfElStatement();
+
+    std::string toString() const { return std::string(""); }
+    /// SSA code will be generated here, too
     bool analyze();
 };
 

@@ -202,11 +202,23 @@ void SymbolTable::enterMethod(std::string* id)
     Class::MethodMap::iterator iter = class_->methods_.find(id);
     swiftAssert(iter != class_->methods_.end(), "method not found");
     method_ = iter->second;
+
+    scopeStack_.push(method_->rootScope_);
 }
 
 void SymbolTable::leaveMethod()
 {
     method_ = 0;
+}
+
+void SymbolTable::enterScope(SwiftScope* scope)
+{
+    scopeStack_.push(scope);
+}
+
+void SymTable::leaveScope()
+{
+    scopeStack_.pop();
 }
 
 // -----------------------------------------------------------------------------
@@ -240,7 +252,7 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
 
 Type* SymbolTable::lookupType(string* id)
 {
-    // FIXME merge this with lookupType
+    // FIXME merge this with lookupVar
     {
         // is it a local?
         Method::LocalMap::iterator iter = method_->locals_.find(id);

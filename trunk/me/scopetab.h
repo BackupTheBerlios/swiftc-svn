@@ -95,6 +95,11 @@ struct ScopeTable
 
     Function* insertFunction(std::string* id);
 
+    void enterNewScope()
+    {
+        scopeStack_.push( new Scope(currentScope()) );
+    }
+
     void enter(Scope* scope)
     {
         scopeStack_.push(scope);

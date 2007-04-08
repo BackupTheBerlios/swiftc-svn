@@ -22,6 +22,23 @@ class Test
         bool b;
 
         b = r * 5.0 > 7.0;
+
+        if (6 == 8)
+            if (true)
+                real r;
+                r  = 6.0;
+
+                if (r > 8.0)
+                    r = 9.0;
+                elif
+                    b = false;
+                end
+            end
+        else
+            bool b;
+            b  = false;
+        end
+
     end
 end
 

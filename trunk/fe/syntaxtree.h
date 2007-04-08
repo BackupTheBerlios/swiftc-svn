@@ -13,7 +13,8 @@ struct Class;
 
 struct Node
 {
-    enum {
+    enum
+    {
         NO_LINE = -1 /// if this node does not map to a line number -1 is used
     };
     /// the line number which this node is mapped to
