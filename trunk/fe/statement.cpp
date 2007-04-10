@@ -1,6 +1,7 @@
 #include "statement.h"
 
 #include <sstream>
+#include <typeinfo>
 
 #include "fe/error.h"
 #include "fe/expr.h"
@@ -89,30 +90,42 @@ bool IfElStatement::analyze()
 //         scopetab->appendInstr( new IfInstr(expr_->reg_) );
 //     }
 //
+    SwiftScope* current = symtab->currentScope();
+
+    SwiftScope* ifScope = new SwiftScope(current);
+    current->childScopes_.append(ifScope);
+    symtab->enterScope(ifScope);
+
     scopetab->enterNewScope();
-//     DummyInstr* ifDummy = new DummyInstr();
-//     scopetab->appendInstr(ifDummy);
+    DummyInstr* ifDummy = new DummyInstr();
+    scopetab->appendInstr(ifDummy);
 
     // analyze each statement in the if branch and keep acount of the result
     for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
 
+    symtab->leaveScope();
     scopetab->leave();
 
     if (!elBranch_)
-    {
         // here is neither an else nor an elif
         return result;
-    }
+
+    return true;
+
+    SwiftScope* elScope = new SwiftScope(current);
+    current->childScopes_.append(elScope);
+    symtab->enterScope(elScope);
 
     scopetab->enterNewScope();
-//     DummyInstr* elDummy = new DummyInstr();
-//     scopetab->appendInstr(elDummy);
+    DummyInstr* elDummy = new DummyInstr();
+    scopetab->appendInstr(elDummy);
 
-    // analyze each statement in the if branch and keep acount of the result
+    // analyze each statement in the else/elif branch and keep acount of the result
     for (Statement* iter = elBranch_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
 
+    symtab->leaveScope();
     scopetab->leave();
 
     return result;

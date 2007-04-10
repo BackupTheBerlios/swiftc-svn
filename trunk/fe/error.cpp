@@ -4,7 +4,6 @@
 
 #include "utils/assert.h"
 
-
 ErrorHandler* error = 0;
 
 void ErrorHandler::setFilename(const char* filename)

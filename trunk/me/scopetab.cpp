@@ -1,7 +1,8 @@
 #include "scopetab.h"
 
-#include <sstream>
 #include <algorithm>
+#include <sstream>
+#include <typeinfo>
 
 #include "utils/assert.h"
 
@@ -35,6 +36,9 @@ void Scope::dump(ofstream& ofs)
             ofs << '\t';
         ofs << iter->value_->toString() << std::endl;
     }
+
+    for (ScopeList::Node* iter = childScopes_.first(); ++iter != childScopes_.sentinel(); iter = iter->next())
+        iter->value_->dump(ofs);
 }
 
 // -----------------------------------------------------------------------------
@@ -141,7 +145,8 @@ PseudoReg* ScopeTable::lookupReg(std::string* id, int revision)
 #ifdef SWIFT_DEBUG
         bool isFunction = typeid(*scopeIter) == typeid(Function);
         swiftAssert(!isFunction , "pseudo reg not found");
-        return 0;
+        if ( isFunction )
+            return 0;
 #endif // SWIFT_DEBUG
 
         // not found, so climb up

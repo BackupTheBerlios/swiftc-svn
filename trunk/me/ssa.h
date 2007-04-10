@@ -29,7 +29,10 @@ struct InstrBase
  */
 struct DummyInstr : public InstrBase
 {
-    virtual std::string toString() const = 0;
+    virtual std::string toString() const
+    {
+        return "dummy";
+    }
 };
 
 //------------------------------------------------------------------------------

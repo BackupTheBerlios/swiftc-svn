@@ -151,8 +151,8 @@ bool SymbolTable::insert(Parameter* parameter)
 
 bool SymbolTable::insert(Local* local)
 {
-    pair<Method::LocalMap::iterator, bool> p
-        = method_->locals_.insert( std::make_pair(local->id_, local) );
+    pair<SwiftScope::LocalMap::iterator, bool> p
+        = currentScope()->locals_.insert( std::make_pair(local->id_, local) );
 
     if ( !p.second )
     {
@@ -216,7 +216,7 @@ void SymbolTable::enterScope(SwiftScope* scope)
     scopeStack_.push(scope);
 }
 
-void SymTable::leaveScope()
+void SymbolTable::leaveScope()
 {
     scopeStack_.pop();
 }
@@ -225,12 +225,10 @@ void SymTable::leaveScope()
 
 SymTabEntry* SymbolTable::lookupVar(string* id)
 {
-    {
-        // is it a local?
-        Method::LocalMap::iterator iter = method_->locals_.find(id);
-        if ( iter != method_->locals_.end() )
-            return iter->second;
-    }
+    // is it a local?
+    Local* local = currentScope()->lookupLocal(id);
+    if (local)
+        return local;
 
     // no - perhaps a parameter?
     for (size_t i = 0; i < method_->params_.size(); ++i)
@@ -245,6 +243,8 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
         if ( iter != class_->memberVars_.end() )
             return iter->second;
 
+        std::cout << "fjdkljfdkl" << std::endl;
+
         // id has not been found -- so return NULL
         return 0;
     }
@@ -253,12 +253,10 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
 Type* SymbolTable::lookupType(string* id)
 {
     // FIXME merge this with lookupVar
-    {
-        // is it a local?
-        Method::LocalMap::iterator iter = method_->locals_.find(id);
-        if ( iter != method_->locals_.end() )
-            return iter->second->type_;
-    }
+    // is it a local?
+    Local* local = currentScope()->lookupLocal(id);
+    if (local)
+        return local->type_;
 
     // no - perhaps a parameter?
     for (size_t i = 0; i < method_->params_.size(); ++i)
@@ -273,6 +271,7 @@ Type* SymbolTable::lookupType(string* id)
         if ( iter != class_->memberVars_.end() )
             return iter->second->type_;
 
+        std::cout << "fjdkljfdkl" << std::endl;
         // id has not been found -- so return NULL
         return 0;
     }

@@ -114,12 +114,18 @@ struct SwiftScope
     SwiftScope* parent_;/// 0 if root
 
     typedef List<SwiftScope*> ScopeList;
-    ScopeList scopes_;
+    ScopeList childScopes_;
 
     typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
     LocalMap locals_;
 
+    SwiftScope(SwiftScope* parent)
+        : parent_(parent)
+    {}
     ~SwiftScope();
+
+    /// Returns the local id, of this or parent scopes. 0 if nothing was found.
+    Local* lookupLocal(std::string* id);
 };
 
 //------------------------------------------------------------------------------
@@ -139,6 +145,7 @@ struct Method : public ClassMember
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
         , returnType_(returnType)
+        , rootScope_( new SwiftScope(0) )
     {
         // should be enough for most methods
         params_.reserve(10);

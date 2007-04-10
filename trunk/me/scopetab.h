@@ -97,7 +97,9 @@ struct ScopeTable
 
     void enterNewScope()
     {
-        scopeStack_.push( new Scope(currentScope()) );
+        Scope* newScope = new Scope( currentScope() );
+        currentScope()->childScopes_.append(newScope);
+        scopeStack_.push( newScope );
     }
 
     void enter(Scope* scope)

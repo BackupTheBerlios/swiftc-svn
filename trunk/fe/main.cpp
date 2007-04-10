@@ -60,8 +60,8 @@ int start(int argc, char** argv)
     /*
         clean up front-end
     */
-    delete syntaxtree;
-    delete symtab;
+//     delete syntaxtree;
+//     delete symtab;
     delete error;
     fclose(file);
 

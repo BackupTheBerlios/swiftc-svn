@@ -12,6 +12,7 @@ struct ErrorHandler
     char* filename_;
 
     ErrorHandler(const char* filename)
+        : filename_(0)
     {
         setFilename(filename);
     }

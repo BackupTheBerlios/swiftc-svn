@@ -77,8 +77,23 @@ SwiftScope::~SwiftScope()
         delete iter->second;
 
     // delete each child scope
-    for (ScopeList::Node* iter = scopes_.first(); iter != scopes_.sentinel(); iter = iter->next())
+    for (ScopeList::Node* iter = childScopes_.first(); iter != childScopes_.sentinel(); iter = iter->next())
         delete iter;
+}
+
+Local* SwiftScope::lookupLocal(std::string* id)
+{
+    LocalMap::iterator iter = locals_.find(id);
+    if ( iter != locals_.end() )
+        return iter->second;
+    else
+    {
+        // try to find in parent scope
+        if (parent_)
+            return parent_->lookupLocal(id);
+        else
+            return 0;
+    }
 }
 
 //------------------------------------------------------------------------------

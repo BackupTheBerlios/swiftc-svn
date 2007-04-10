@@ -49,6 +49,11 @@ struct SymbolTable
     void enterScope(SwiftScope* scope);
     void leaveScope();
 
+    SwiftScope* currentScope()
+    {
+        return scopeStack_.top();
+    }
+
     Type* lookupType(std::string* id);
     SymTabEntry* lookupVar(std::string* id);
     Class* lookupClass(std::string* id);

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <typeinfo>
 
 #include "utils/assert.h"
 
