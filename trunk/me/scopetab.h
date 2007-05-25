@@ -29,7 +29,6 @@ struct Scope
     typedef std::map<std::string*, PseudoReg*, StringPtrCmp> RegMap;
     RegMap regs_;
 
-    typedef List<InstrBase*> InstrList;
     InstrList instrList_;
 
     Scope(Scope* parent)

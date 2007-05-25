@@ -21,17 +21,27 @@ struct InstrBase
     virtual std::string toString() const = 0;
 };
 
+typedef List<InstrBase*> InstrList;
+
 //------------------------------------------------------------------------------
 
 /**
- * Instructions of type DummyInstr mark the bounds of a basic block. So swizzling
+ * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
  * around other Instr won't invalidate pointers in basic blocks.
  */
-struct DummyInstr : public InstrBase
+struct LabelInstr : public InstrBase
 {
+    static int counter_;
+    std::string label_;
+
+    LabelInstr();
+    LabelInstr(const std::string& label)
+        : label_(label)
+    {}
+
     virtual std::string toString() const
     {
-        return "dummy";
+        return label;
     }
 };
 
@@ -197,7 +207,7 @@ struct BinInstr : public CalcInstr
 {
     enum
     {
-        // be sure not do collide with ascii codes
+        // be sure not to collide with ascii codes
         EQ = 256,
         NE,
         LE,
@@ -247,16 +257,19 @@ struct BranchInstr : public InstrBase
 
 //------------------------------------------------------------------------------
 
-struct IfInstr : public BranchInstr
+struct IfInstr : public InstrBase
 {
     PseudoReg* boolReg_;
-    RegList::Node* destination_;
+    LabelInstr* label_;
 
-    IfInstr(PseudoReg* boolReg)
+    IfInstr(PseudoReg* boolReg, LabelInstr* label)
         : boolReg_(boolReg)
+        , label_(label)
     {
-        swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a bool pseudo reg");
+        swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
     }
+
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

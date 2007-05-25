@@ -84,12 +84,14 @@ bool IfElStatement::analyze()
         }
     }
 
-//     // generate IfElInstr if types are correct
-//     if (result)
-//     {
-//         scopetab->appendInstr( new IfInstr(expr_->reg_) );
-//     }
-//
+    LabelInstr* endif = new LabelInstr();
+
+    // generate IfInstr if types are correct
+    if (result)
+    {
+        scopetab->appendInstr( new IfInstr(expr_->reg_, endif) );
+    }
+
     SwiftScope* current = symtab->currentScope();
 
     SwiftScope* ifScope = new SwiftScope(current);

@@ -39,6 +39,9 @@ class Test
             b  = false;
         end
 
+    real u;
+    u = 5.0;
+
     end
 end
 

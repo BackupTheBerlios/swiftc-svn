@@ -5,6 +5,19 @@
 
 #include "me/scopetab.h"
 
+//------------------------------------------------------------------------------
+
+int LabelInstr::counter_ = 0;
+
+LabelInstr::LabelInstr()
+{
+    std::ostringstream oss;
+    oss << "?L" << counter_ << std::endl;
+    lable_ = oss.str();
+}
+
+//------------------------------------------------------------------------------
+
 void EnterScopeInstr::updateScoping()
 {
     if (enter_)
@@ -75,3 +88,13 @@ void BinInstr::genCode(std::ofstream& ofs)
 {
     ofs << "bi" << std::endl;
 };
+
+//------------------------------------------------------------------------------
+
+std::string IfInstr::toString() const
+{
+    std::ostringstream oss;
+    oss << "IF " << boolReg_->toString() <<  " goto " << label->toString();
+
+    return oss.str();
+}
