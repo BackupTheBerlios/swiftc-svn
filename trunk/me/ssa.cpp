@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "me/scopetab.h"
+#include "me/functab.h"
 
 //------------------------------------------------------------------------------
 

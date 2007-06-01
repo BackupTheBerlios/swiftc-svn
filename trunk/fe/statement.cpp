@@ -8,7 +8,7 @@
 #include "fe/symtab.h"
 #include "fe/type.h"
 
-#include "me/scopetab.h"
+#include "me/functab.h"
 #include "me/ssa.h"
 
 Declaration::~Declaration()
@@ -91,9 +91,9 @@ bool IfElStatement::analyze()
         functab->appendInstr(ifLabel);
     }
 
-    SwiftScope* current = symtab->currentScope();
+    Scope* current = symtab->currentScope();
 
-    SwiftScope* ifScope = new SwiftScope(current);
+    Scope* ifScope = new Scope(current);
     current->childScopes_.append(ifScope);
     symtab->enterScope(ifScope);
 
@@ -110,7 +110,7 @@ bool IfElStatement::analyze()
         // here is neither an else nor an elif
         return result;
 
-    SwiftScope* elScope = new SwiftScope(current);
+    Scope* elScope = new Scope(current);
     current->childScopes_.append(elScope);
     symtab->enterScope(elScope);
 

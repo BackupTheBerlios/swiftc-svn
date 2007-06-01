@@ -1,4 +1,4 @@
-#include "scopetab.h"
+#include "functab.h"
 
 #include <algorithm>
 #include <sstream>

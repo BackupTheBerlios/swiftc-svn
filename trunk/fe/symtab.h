@@ -18,7 +18,7 @@ struct SymbolTable
     Class*  class_;
     Method* method_;
 
-    typedef std::stack<SwiftScope*> ScopeStack;
+    typedef std::stack<Scope*> ScopeStack;
     ScopeStack scopeStack_;
 
     SymbolTable()
@@ -47,10 +47,10 @@ struct SymbolTable
     void leaveClass();
     void enterMethod(std::string* id);
     void leaveMethod();
-    void enterScope(SwiftScope* scope);
+    void enterScope(Scope* scope);
     void leaveScope();
 
-    SwiftScope* currentScope()
+    Scope* currentScope()
     {
         return scopeStack_.top();
     }

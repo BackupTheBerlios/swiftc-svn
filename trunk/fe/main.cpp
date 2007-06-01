@@ -10,7 +10,7 @@
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
 
-#include "me/scopetab.h"
+#include "me/functab.h"
 
 
 int start(int argc, char** argv)
@@ -60,9 +60,10 @@ int start(int argc, char** argv)
     /*
         clean up front-end
     */
-//     delete syntaxtree;
-//     delete symtab;
+    delete syntaxtree;
+    delete symtab;
     delete error;
+
     fclose(file);
 
     /*

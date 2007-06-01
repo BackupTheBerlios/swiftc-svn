@@ -8,7 +8,7 @@
 // Because std::list sucks here my own implementation
 
 /**
- *  A circular doubly linked list
+ *  @brief A circular doubly linked list
  */
 template<class T>
 class List

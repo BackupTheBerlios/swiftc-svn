@@ -151,7 +151,7 @@ bool SymbolTable::insert(Parameter* parameter)
 
 bool SymbolTable::insert(Local* local)
 {
-    pair<SwiftScope::LocalMap::iterator, bool> p
+    pair<Scope::LocalMap::iterator, bool> p
         = currentScope()->locals_.insert( std::make_pair(local->id_, local) );
 
     if ( !p.second )
@@ -175,7 +175,7 @@ bool SymbolTable::insert(Local* local)
 
 void SymbolTable::insertLocalByRegNr(Local* local)
 {
-    pair<SwiftScope::RegNrMap::iterator, bool> p
+    pair<Scope::RegNrMap::iterator, bool> p
         = currentScope()->regNrs_.insert( std::make_pair(local->regNr_, local) );
     swiftAssert(p.second, "there is already a local with this regNr in the map");
 }
@@ -218,7 +218,7 @@ void SymbolTable::leaveMethod()
     method_ = 0;
 }
 
-void SymbolTable::enterScope(SwiftScope* scope)
+void SymbolTable::enterScope(Scope* scope)
 {
     scopeStack_.push(scope);
 }

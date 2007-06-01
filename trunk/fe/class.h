@@ -109,11 +109,11 @@ struct Parameter : public SymTabEntry
 
 //------------------------------------------------------------------------------
 
-struct SwiftScope
+struct Scope
 {
-    SwiftScope* parent_;/// 0 if root
+    Scope* parent_;/// 0 if root
 
-    typedef List<SwiftScope*> ScopeList;
+    typedef List<Scope*> ScopeList;
     ScopeList childScopes_;
 
     typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
@@ -122,10 +122,10 @@ struct SwiftScope
     typedef std::map<int, Local*> RegNrMap;
     RegNrMap regNrs_;
 
-    SwiftScope(SwiftScope* parent)
+    Scope(Scope* parent)
         : parent_(parent)
     {}
-    ~SwiftScope();
+    ~Scope();
 
     /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(std::string* id);
@@ -145,13 +145,13 @@ struct Method : public ClassMember
 
     std::vector<Parameter*> params_;
 
-    SwiftScope* rootScope_;
+    Scope* rootScope_;
 
     Method(int methodQualifier, Type* returnType, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
         , returnType_(returnType)
-        , rootScope_( new SwiftScope(0) )
+        , rootScope_( new Scope(0) )
     {
         // should be enough for most methods
         params_.reserve(10);

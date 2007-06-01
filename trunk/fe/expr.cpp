@@ -11,8 +11,8 @@
 #include "fe/type.h"
 #include "fe/symtab.h"
 
+#include "me/functab.h"
 #include "me/pseudoreg.h"
-#include "me/scopetab.h"
 #include "me/ssa.h"
 
 /*

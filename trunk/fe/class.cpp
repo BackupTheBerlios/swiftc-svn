@@ -7,7 +7,7 @@
 #include "fe/statement.h"
 #include "fe/symtab.h"
 
-#include "me/scopetab.h"
+#include "me/functab.h"
 #include "me/ssa.h"
 
 
@@ -69,7 +69,7 @@ std::string Parameter::toString() const
 
 //------------------------------------------------------------------------------
 
-SwiftScope::~SwiftScope()
+Scope::~Scope()
 {
     // delete each method
     for (LocalMap::iterator iter = locals_.begin(); iter != locals_.end(); ++iter)
@@ -77,10 +77,10 @@ SwiftScope::~SwiftScope()
 
     // delete each child scope
     for (ScopeList::Node* iter = childScopes_.first(); iter != childScopes_.sentinel(); iter = iter->next())
-        delete iter;
+        delete iter->value_;
 }
 
-Local* SwiftScope::lookupLocal(std::string* id)
+Local* Scope::lookupLocal(std::string* id)
 {
     LocalMap::iterator iter = locals_.find(id);
     if ( iter != locals_.end() )
@@ -95,7 +95,7 @@ Local* SwiftScope::lookupLocal(std::string* id)
     }
 }
 
-Local* SwiftScope::lookupLocal(int regNr)
+Local* Scope::lookupLocal(int regNr)
 {
     RegNrMap::iterator iter = regNrs_.find(regNr);
     if ( iter != regNrs_.end() )
@@ -110,7 +110,7 @@ Local* SwiftScope::lookupLocal(int regNr)
     }
 }
 
-void SwiftScope::replaceRegNr(int oldNr, int newNr)
+void Scope::replaceRegNr(int oldNr, int newNr)
 {
     RegNrMap::iterator iter = regNrs_.find(oldNr);
     if ( iter != regNrs_.end() )
