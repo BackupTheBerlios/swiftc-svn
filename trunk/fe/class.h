@@ -119,13 +119,19 @@ struct SwiftScope
     typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
     LocalMap locals_;
 
+    typedef std::map<int, Local*> RegNrMap;
+    RegNrMap regNrs_;
+
     SwiftScope(SwiftScope* parent)
         : parent_(parent)
     {}
     ~SwiftScope();
 
-    /// Returns the local id, of this or parent scopes. 0 if nothing was found.
+    /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(std::string* id);
+    /// Returns the local by regNr, of this scope or parent scopes. 0 if nothing was found.
+    Local* lookupLocal(int);
+    void replaceRegNr(int oldNr, int newNr);
 };
 
 //------------------------------------------------------------------------------

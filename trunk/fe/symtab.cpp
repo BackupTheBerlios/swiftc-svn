@@ -173,6 +173,13 @@ bool SymbolTable::insert(Local* local)
     return true;
 }
 
+void SymbolTable::insertLocalByRegNr(Local* local)
+{
+    pair<SwiftScope::RegNrMap::iterator, bool> p
+        = currentScope()->regNrs_.insert( std::make_pair(local->regNr_, local) );
+    swiftAssert(p.second, "there is already a local with this regNr in the map");
+}
+
 // -----------------------------------------------------------------------------
 
 void SymbolTable::enterModule()

@@ -1,5 +1,5 @@
-#ifndef SWIFT_SCOPETABLE_H
-#define SWIFT_SCOPETABLE_H
+#ifndef SWIFT_FUNCTAB_H
+#define SWIFT_FUNCTAB_H
 
 #include <fstream>
 #include <iostream>
@@ -14,124 +14,53 @@
 //------------------------------------------------------------------------------
 
 /**
- * Capsulates an abstract scope. Each Scope has its own set of vars/pseudoregs
- * and can have child scopes. Each scope knows of its parent, its children and
- * its depth in the scope tree.
- */
-struct Scope
-{
-    Scope* parent_; /// 0 if root scope
-    size_t depth_;  /// depth of this scope in the scope tree
-
-    typedef List<Scope*> ScopeList;
-    ScopeList childScopes_;
-
-    typedef std::map<std::string*, PseudoReg*, StringPtrCmp> RegMap;
-    RegMap regs_;
-
-    InstrList instrList_;
-
-    Scope(Scope* parent)
-        : parent_(parent)
-        // 0 if root scope, parent_->depth_ + 1 otherwise
-        , depth_(parent_ ? parent_->depth_ + 1 : 0)
-    {}
-    virtual ~Scope();
-
-    virtual void dump(std::ofstream& ofs);
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * @brief Specialization of a scope
- * Function has in, intout and out goint parameters and, of course, an identifier.
+ * Function has in, inout and out going parameters and, of course, an identifier.
 */
-struct Function : public Scope
+struct Function
 {
     std::string* id_;
+    int counter_;
+    InstrList instrList_;
 
     RegMap in_;
     RegMap inout_;
     RegMap out_;
+    RegMap vars_;
 
-    Function(Scope* parent, std::string* id)
-        : Scope(parent)
-        , id_(id)
+    Function(std::string* id)
+        : id_(id)
+        , counter_(0)
     {}
-    ~Function()
-    {
-        delete id_;
-    }
+    ~Function();
 
-    virtual void dump(std::ofstream& ofs);
+    void dump(std::ofstream& ofs);
 };
 
-//------------------------------------------------------------------------------
-
-struct ScopeTable
+struct FunctionTable
 {
-    enum {
-        NO_REVISION = -1
-    };
+    typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
 
+    FunctionMap functions_;
+    Function* current_;
     std::string filename_;
 
-    Scope* rootScope_;
-
-    typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
-    FunctionMap functions_; // all functions
-
-    std::stack<Scope*> scopeStack_; // keeps account of current scope;
-
-    ScopeTable(const std::string& filename)
+    FunctionTable(const std::string& filename)
         : filename_(filename)
-        , rootScope_( new Scope(0) )
-    {
-        scopeStack_.push(rootScope_);
-    }
-    ~ScopeTable();
+    {}
+    ~FunctionTable();
 
     Function* insertFunction(std::string* id);
 
-    void enterNewScope()
-    {
-        Scope* newScope = new Scope( currentScope() );
-        currentScope()->childScopes_.append(newScope);
-        scopeStack_.push( newScope );
-    }
-
-    void enter(Scope* scope)
-    {
-        scopeStack_.push(scope);
-    }
-
-    void leave()
-    {
-        scopeStack_.pop();
-    }
-
-    Scope* currentScope()
-    {
-        return scopeStack_.top();
-    }
-
-    void appendInstr(InstrBase* instr) {
-        currentScope()->instrList_.append(instr);
-    }
-
+    inline void insert(PseudoReg* reg);
     PseudoReg* newTemp(PseudoReg::RegType regType);
-    PseudoReg* newRevision(PseudoReg::RegType regType, std::string* id, int revision);
-    PseudoReg* lookupReg(std::string* id, int revision = NO_REVISION);
+    PseudoReg* lookupReg(int regNr);
+
+    void appendInstr(InstrBase* instr);
 
     void dump(const std::string& extension = ".ssa");
-
-private:
-
-    void insert(PseudoReg* reg);
 };
 
-typedef ScopeTable ScopeTab;
-extern ScopeTab* scopetab;
+typedef FunctionTable FuncTab;
+extern FuncTab* functab;
 
-#endif // SWIFT_SCOPETABLE_H
+#endif // SWIFT_FUNCTAB_H

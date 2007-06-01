@@ -30,7 +30,7 @@ class Test
 
                 if (r > 8.0)
                     r = 9.0;
-                elif
+                elif (r < 5.0)
                     b = false;
                 end
             end

@@ -28,7 +28,6 @@ Class::~Class()
 bool Class::analyze()
 {
     symtab->enterClass(id_);
-//     scopetab->registerStruct();
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
@@ -96,6 +95,41 @@ Local* SwiftScope::lookupLocal(std::string* id)
     }
 }
 
+Local* SwiftScope::lookupLocal(int regNr)
+{
+    RegNrMap::iterator iter = regNrs_.find(regNr);
+    if ( iter != regNrs_.end() )
+        return iter->second;
+    else
+    {
+        // try to find in parent scope
+        if (parent_)
+            return parent_->lookupLocal(regNr);
+        else
+            return 0;
+    }
+}
+
+void SwiftScope::replaceRegNr(int oldNr, int newNr)
+{
+    RegNrMap::iterator iter = regNrs_.find(oldNr);
+    if ( iter != regNrs_.end() )
+    {
+        Local* local = iter->second;
+        regNrs_.erase(iter);    // remove from map
+        local->regNr_ = newNr;  // update regNr
+        regNrs_[newNr] = local; // put into the map again
+    }
+    else
+    {
+        // try to find in parent scope
+        if (parent_)
+            return parent_->replaceRegNr(oldNr, newNr);
+        else
+            swiftAssert(false, "no regNr found");
+    }
+}
+
 //------------------------------------------------------------------------------
 
 Method::~Method()
@@ -145,8 +179,7 @@ bool Method::analyze()
     bool result = true;
 
     symtab->enterMethod(id_);
-    Scope* scope = scopetab->insertFunction(id_);
-    scopetab->enter(scope);
+    functab->insertFunction(id_);
 
     // analyze each parameter
     for (size_t i = 0; i < symtab->method_->params_.size(); ++i)
@@ -156,7 +189,6 @@ bool Method::analyze()
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         iter->analyze();
 
-    scopetab->leave();
     symtab->leaveMethod();
 
     return result;

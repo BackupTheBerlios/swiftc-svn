@@ -1,6 +1,7 @@
 #ifndef SWIFT_PSEUDOREG_H
 #define SWIFT_PSEUDOREG_H
 
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -13,6 +14,10 @@ struct Scope;
 
 struct PseudoReg
 {
+    enum {
+        LITERAL = -1
+    };
+
     /// Types of pseudo registers / constants
     enum RegType
     {
@@ -54,10 +59,9 @@ struct PseudoReg
         BOTTOM
     };
 
-    std::string* id_;
+    int regNr_;
     RegType regType_;
     State state_;
-    Scope* scope_;
 
     /// for constants
     union Value {
@@ -90,17 +94,15 @@ struct PseudoReg
 
     Value value_;
 
-    PseudoReg(std::string* id, RegType regType)
-        : id_(id)
+    PseudoReg(int regNr, RegType regType)
+        : regNr_(regNr)
         , regType_(regType)
         , state_(TOP) // TOP is assumed as initial state
-        , scope_(0)
     {}
-    ~PseudoReg();
 
     std::string toString() const;
 };
 
-typedef List<PseudoReg*> RegList;
+typedef std::map<int, PseudoReg*> RegMap;
 
 #endif // SWIFT_PSEUDOREG_H

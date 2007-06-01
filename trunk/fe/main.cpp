@@ -35,7 +35,7 @@ int start(int argc, char** argv)
     syntaxtree = new SyntaxTree();
     symtab = new SymTab();
     error = new ErrorHandler(cmdLineParser.filename_);
-    scopetab = new ScopeTab(cmdLineParser.filename_);
+    functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
 
     /*
         1.  Parse the input file, build a syntax tree
@@ -85,9 +85,9 @@ int start(int argc, char** argv)
     /*
         clean up middle-end
     */
-    scopetab->dump(); // print to cmdline
+    functab->dump(); // print to cmdline
 
-    delete scopetab;
+    delete functab;
 
     return 0;
 }

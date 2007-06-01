@@ -37,16 +37,15 @@ struct SymTabEntry : public Node
 {
     std::string* id_;
     /**
-     * used to count the revision of this variable for SSA form <br>
-     * 0 -> first revision, only used for phi-functions <br>
-     * -1 -> this is already a revision <br>
-     */
-    int revision_;
+     * used to keep acount of the current register which holds the value
+     * at the moment when in SSA form
+    */
+    int regNr_;
 
     SymTabEntry(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Node(line, parent)
         , id_(id)
-        , revision_(0) // start with revision 0
+        , regNr_(-1) // start with an invalid value
     {}
     ~SymTabEntry()
     {

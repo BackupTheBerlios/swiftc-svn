@@ -268,7 +268,7 @@ statement
     | type ID ';'           { $$ = new Declaration($1, $2, getKeyLine()); }
     | IF '(' rel_expr ')' statement_list END                     { $$ = new IfElStatement(0,    $3, $5,  0, currentLine); }
     | IF '(' rel_expr ')' statement_list ELSE statement_list END { $$ = new IfElStatement(ELSE, $3, $5, $7, currentLine); }
-    | IF '(' rel_expr ')' statement_list ELIF statement_list END { $$ = new IfElStatement(ELIF, $3, $5, $7, currentLine); }
+    | IF '(' rel_expr ')' statement_list ELIF '(' rel_expr ')' statement_list END { $$ = new IfElStatement(ELIF, $3, $5, $10, currentLine); }
     ;
 
 /*

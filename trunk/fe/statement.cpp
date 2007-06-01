@@ -43,10 +43,6 @@ bool Declaration::analyze()
 
     swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
 
-    // do first revision
-    ++local->revision_;
-    scopetab->newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), local->id_, local->revision_ );
-
     return true;
 }
 
@@ -84,12 +80,15 @@ bool IfElStatement::analyze()
         }
     }
 
-    LabelInstr* endif = new LabelInstr();
+    LabelInstr* ifLabel = new LabelInstr();
+    LabelInstr* elLabel = new LabelInstr();
+    LabelInstr* endifLabel = new LabelInstr();
 
     // generate IfInstr if types are correct
     if (result)
     {
-        scopetab->appendInstr( new IfInstr(expr_->reg_, endif) );
+        functab->appendInstr( new BranchInstr(expr_->reg_, ifLabel, elLabel) );
+        functab->appendInstr(ifLabel);
     }
 
     SwiftScope* current = symtab->currentScope();
@@ -98,37 +97,33 @@ bool IfElStatement::analyze()
     current->childScopes_.append(ifScope);
     symtab->enterScope(ifScope);
 
-    scopetab->enterNewScope();
-    DummyInstr* ifDummy = new DummyInstr();
-    scopetab->appendInstr(ifDummy);
+    // analyze each statement in the if branch and keep acount of the result
+    for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    symtab->leaveScope();
+
+    if (result)
+        functab->appendInstr( new GotoInstr(endifLabel) );
+
+    if (!elBranch_)
+        // here is neither an else nor an elif
+        return result;
+
+    SwiftScope* elScope = new SwiftScope(current);
+    current->childScopes_.append(elScope);
+    symtab->enterScope(elScope);
+
+    functab->appendInstr(elLabel);
 
     // analyze each statement in the if branch and keep acount of the result
     for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
 
     symtab->leaveScope();
-    scopetab->leave();
 
-    if (!elBranch_)
-        // here is neither an else nor an elif
-        return result;
-
-    return true;
-
-    SwiftScope* elScope = new SwiftScope(current);
-    current->childScopes_.append(elScope);
-    symtab->enterScope(elScope);
-
-    scopetab->enterNewScope();
-    DummyInstr* elDummy = new DummyInstr();
-    scopetab->appendInstr(elDummy);
-
-    // analyze each statement in the else/elif branch and keep acount of the result
-    for (Statement* iter = elBranch_; iter != 0; iter = iter->next_)
-        result &= iter->analyze();
-
-    symtab->leaveScope();
-    scopetab->leave();
+    if (result)
+        functab->appendInstr(endifLabel);
 
     return result;
 }

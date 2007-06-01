@@ -41,23 +41,8 @@ struct LabelInstr : public InstrBase
 
     virtual std::string toString() const
     {
-        return label;
+        return label_;
     }
-};
-
-//------------------------------------------------------------------------------
-
-struct EnterScopeInstr : public InstrBase
-{
-    Scope* scope_;
-    bool enter_;
-
-    EnterScopeInstr(Scope* scope, bool enter)
-        : scope_(scope)
-        , enter_(enter)
-    {}
-
-    void updateScoping();
 };
 
 //------------------------------------------------------------------------------
@@ -109,7 +94,7 @@ struct NOPInstr : public CalcInstr
 struct PhiInstr : public CalcInstr
 {
     PseudoReg* result_;
-    RegList args_;
+//     RegList args_;
 
     PhiInstr(PseudoReg* result)
         : result_(result)
@@ -140,10 +125,7 @@ struct AssignInstr : public CalcInstr
     {}
     ~AssignInstr()
     {
-        swiftAssert( result_->id_, "this can't be a constant" );
-        // only delete constants, they are not in maps
-        if (!reg_->id_)
-            delete reg_;
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }
 
     std::string toString() const;
@@ -173,10 +155,7 @@ struct UnInstr : public CalcInstr
     {}
     ~UnInstr()
     {
-        swiftAssert( result_->id_, "this can't be a constant" );
-        // only delete constants, they are not in maps
-        if (!op_->id_)
-            delete op_;
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }
 
     std::string toString() const;
@@ -232,12 +211,7 @@ struct BinInstr : public CalcInstr
     {}
     ~BinInstr()
     {
-        swiftAssert( result_->id_, "this can't be a constant" );
-        // only delete constants, they are not in maps
-        if (!op1_->id_)
-            delete op1_;
-        if (!op2_->id_)
-            delete op2_;
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }
 
     std::string toString() const;
@@ -251,20 +225,29 @@ struct BinInstr : public CalcInstr
 /**
  * BranchInstr do not calculate something. They influence the control flow.
  */
-struct BranchInstr : public InstrBase
+struct GotoInstr : public InstrBase
 {
+    LabelInstr* label_;
+
+    GotoInstr(LabelInstr* label)
+        : label_(label)
+    {}
+
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
 
-struct IfInstr : public InstrBase
+struct BranchInstr : public InstrBase
 {
     PseudoReg* boolReg_;
-    LabelInstr* label_;
+    LabelInstr* trueLabel_;
+    LabelInstr* falseLabel_;
 
-    IfInstr(PseudoReg* boolReg, LabelInstr* label)
+    BranchInstr(PseudoReg* boolReg, LabelInstr* trueLabel, LabelInstr* falseLabel)
         : boolReg_(boolReg)
-        , label_(label)
+        , trueLabel_(trueLabel)
+        , falseLabel_(falseLabel)
     {
         swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
     }
@@ -273,21 +256,6 @@ struct IfInstr : public InstrBase
 };
 
 //------------------------------------------------------------------------------
-
-struct GotoInstr : public BranchInstr
-{
-    RegList::Node* destination_;
-
-//     GotoInstr()
-};
-
-/**
- * if a goto b
-*/
-
-// struct GotoInstr
-// {
-// };
 
 /**
  *  result =  PseudoReg <br>

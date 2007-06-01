@@ -35,16 +35,6 @@ Expr::~Expr()
 
 //------------------------------------------------------------------------------
 
-std::string* extractOriginalId(std::string* id) {
-    // reverse search should usually be faster
-    size_t index = id->find_last_of('#');
-    swiftAssert( index != std::string::npos, "This is not a revised variable" );
-
-    return new std::string(id->substr(0, index));
-}
-
-//------------------------------------------------------------------------------
-
 std::string Literal::toString() const
 {
     std::ostringstream oss;
@@ -149,7 +139,7 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate PseudoReg
-    reg_ = new PseudoReg(0, SimpleType::int2RegType(kind_));
+    reg_ = new PseudoReg(PseudoReg::LITERAL, SimpleType::int2RegType(kind_));
 
     switch (kind_)
     {
@@ -234,10 +224,9 @@ bool UnExpr::analyze()
 void UnExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
-    // no revision necessary, temps occur only once
-    reg_ = scopetab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
-    scopetab->appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
+    reg_ = functab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    functab->appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -332,8 +321,7 @@ void BinExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
 
-    // no revision necessary, temps occur only once
-    reg_ = scopetab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    reg_ = functab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
 
     int kind;
 
@@ -355,7 +343,7 @@ void BinExpr::genSSA()
             kind = kind_;
     }
 
-    scopetab->appendInstr( new BinInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+    functab->appendInstr( new BinInstr(kind, reg_, op1_->reg_, op2_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -391,9 +379,7 @@ bool AssignExpr::analyze()
 
 void AssignExpr::genSSA()
 {
-    // take id of the swift symtab and extract original name
-    std::string* id = extractOriginalId(result_->reg_->id_);
-    SymTabEntry* entry = symtab->lookupVar(id);
+    SymTabEntry* entry = symtab->lookupVar(result_->reg_->regNr_);
 
     // cast to local
     swiftAssert( typeid(*entry) == typeid(Local), "TODO: What if it is not a Local*?" );
@@ -401,14 +387,11 @@ void AssignExpr::genSSA()
 
     swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
 
-    // do next revision
-    ++local->revision_;
-    reg_ = scopetab->newRevision( ((SimpleType*) local->type_->baseType_)->toRegType(), id,  local->revision_);
+    reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType() );
+    // FIXME here is double work: local must be found twice
+    symtab->replaceRegNr(local->regNr_, reg_->regNr_); // keep account of the current regNr
 
-    // delete original id now. it is not needed anymore
-    delete id;
-
-    scopetab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
+    functab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -433,8 +416,16 @@ void Id::genSSA()
 {
     SymTabEntry* entry = symtab->lookupVar(id_);
     swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
+    Local* local = (Local*) entry;
 
-    reg_ = scopetab->lookupReg(id_, entry->revision_);
+    reg_ = functab->lookupReg(entry->regNr_);
+    if (!reg_)
+    {
+        // do the first revision
+        reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType() );
+        local->regNr_ = reg_->regNr_;
+        symtab->insertLocalByRegNr(local);
+    }
 }
 
 //------------------------------------------------------------------------------

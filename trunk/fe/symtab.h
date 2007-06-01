@@ -39,6 +39,7 @@ struct SymbolTable
     bool insert(MemberVar* memberVar);
     bool insert(Parameter* parameter);
     bool insert(Local* local);
+    void insertLocalByRegNr(Local* local);
 
     void enterModule();
     void leaveModule();
@@ -56,6 +57,14 @@ struct SymbolTable
 
     Type* lookupType(std::string* id);
     SymTabEntry* lookupVar(std::string* id);
+    SymTabEntry* lookupVar(int regNr)
+    {
+        return currentScope()->lookupLocal(regNr);
+    }
+    void replaceRegNr(int oldNr, int newNr)
+    {
+        return currentScope()->replaceRegNr(oldNr, newNr);
+    }
     Class* lookupClass(std::string* id);
 };
 

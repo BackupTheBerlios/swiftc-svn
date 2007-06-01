@@ -12,21 +12,13 @@ int LabelInstr::counter_ = 0;
 LabelInstr::LabelInstr()
 {
     std::ostringstream oss;
-    oss << "?L" << counter_ << std::endl;
-    lable_ = oss.str();
+    oss << "?L" << counter_;
+    label_ = oss.str();
+
+    ++counter_;
 }
 
 //------------------------------------------------------------------------------
-
-void EnterScopeInstr::updateScoping()
-{
-    if (enter_)
-        scopetab->enter(scope_);
-    else
-        scopetab->leave();
-}
-
-// -----------------------------------------------------------------------------
 
 std::string AssignInstr::toString() const
 {
@@ -91,10 +83,22 @@ void BinInstr::genCode(std::ofstream& ofs)
 
 //------------------------------------------------------------------------------
 
-std::string IfInstr::toString() const
+std::string GotoInstr::toString() const
 {
     std::ostringstream oss;
-    oss << "IF " << boolReg_->toString() <<  " goto " << label->toString();
+    oss << "GOTO " << label_->toString();
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+std::string BranchInstr::toString() const
+{
+    std::ostringstream oss;
+    oss << "IF " << boolReg_->toString()
+        << " THEN " << trueLabel_->toString()
+        << " ELSE " << falseLabel_->toString();
 
     return oss.str();
 }
