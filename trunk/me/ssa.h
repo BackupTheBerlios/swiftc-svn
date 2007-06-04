@@ -16,6 +16,10 @@ struct PseudoReg;
  */
 struct InstrBase
 {
+    /**
+     * Only LITERAL PseudoRegs must be deleted here. Other (true) PseudoReg
+     * will be deleted by the functab.
+    */
     virtual ~InstrBase() {}
 
     virtual std::string toString() const = 0;
@@ -80,6 +84,11 @@ struct NOPInstr : public CalcInstr
     NOPInstr(PseudoReg* reg)
         : reg_(reg)
     {}
+    ~NOPInstr()
+    {
+//         delete reg_;
+    }
+
     virtual std::string toString() const = 0;
     /// dummy implementation, NOP does nothing
     void genCode(std::ofstream& /*ofs*/) {}
@@ -99,6 +108,11 @@ struct PhiInstr : public CalcInstr
     PhiInstr(PseudoReg* result)
         : result_(result)
     {}
+    ~PhiInstr()
+    {
+//         delete result_;
+    }
+
 
     virtual std::string toString() const = 0;
     /// dummy implementation, NOP does nothing
@@ -126,6 +140,9 @@ struct AssignInstr : public CalcInstr
     ~AssignInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+
+        if (reg_->regNr_ == PseudoReg::LITERAL)
+            delete reg_;
     }
 
     std::string toString() const;
@@ -156,6 +173,9 @@ struct UnInstr : public CalcInstr
     ~UnInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+
+        if (op_->regNr_ == PseudoReg::LITERAL)
+            delete op_;
     }
 
     std::string toString() const;
@@ -212,6 +232,11 @@ struct BinInstr : public CalcInstr
     ~BinInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+
+        if (op1_->regNr_ == PseudoReg::LITERAL)
+            delete op1_;
+        if (op2_->regNr_ == PseudoReg::LITERAL)
+            delete op2_;
     }
 
     std::string toString() const;
@@ -231,7 +256,9 @@ struct GotoInstr : public InstrBase
 
     GotoInstr(LabelInstr* label)
         : label_(label)
-    {}
+    {
+        delete label_;
+    }
 
     virtual std::string toString() const;
 };
@@ -250,6 +277,9 @@ struct BranchInstr : public InstrBase
         , falseLabel_(falseLabel)
     {
         swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
+        delete boolReg_;
+        delete trueLabel_;
+        delete falseLabel_;
     }
 
     virtual std::string toString() const;

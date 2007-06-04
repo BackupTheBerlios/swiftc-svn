@@ -195,7 +195,7 @@ bool UnExpr::analyze()
     lvalue_ = false;
     type_ = op_->type_->clone();
 
-    if      (c_ == '&')
+    if (c_ == '&')
         ++type_->pointerCount_;
     else if (c_ == '^')
     {

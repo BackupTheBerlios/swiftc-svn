@@ -14,6 +14,8 @@ FuncTab* functab = 0;
 
 Function::~Function()
 {
+    delete id_;
+
     // delete all pseudo regs
     for (RegMap::iterator iter = in_    .begin(); iter != in_   .end(); ++iter)
         delete iter->second;
@@ -36,6 +38,7 @@ void Function::dump(ofstream& ofs)
     // for all instructions in this function
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
+        // don't print a tab character if this is a label
         if ( typeid(*iter->value_) != typeid(LabelInstr) )
             ofs << '\t';
         ofs << iter->value_->toString() << std::endl;

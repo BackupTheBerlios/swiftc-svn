@@ -1,8 +1,10 @@
 #ifndef SWIFT_SYNTAXTREE_H
 #define SWIFT_SYNTAXTREE_H
 
+#include <iostream>
 #include <string>
 
+#include "utils/assert.h"
 #include "fe/parser.h"
 
 

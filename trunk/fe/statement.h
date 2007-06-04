@@ -6,6 +6,7 @@
 
 // forward declarations
 struct Expr;
+struct Local;
 
 //------------------------------------------------------------------------------
 
@@ -32,11 +33,13 @@ struct Declaration : public Statement
 {
     Type*           type_;
     std::string*    id_;
+    Local*          local_; // in order to delete those locals again
 
     Declaration(Type* type, std::string* id, int line = NO_LINE)
         : Statement(line)
         , type_(type)
         , id_(id)
+        , local_(0)
     {}
     ~Declaration();
 

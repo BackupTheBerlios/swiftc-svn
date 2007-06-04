@@ -71,10 +71,6 @@ std::string Parameter::toString() const
 
 Scope::~Scope()
 {
-    // delete each method
-    for (LocalMap::iterator iter = locals_.begin(); iter != locals_.end(); ++iter)
-        delete iter->second;
-
     // delete each child scope
     for (ScopeList::Node* iter = childScopes_.first(); iter != childScopes_.sentinel(); iter = iter->next())
         delete iter->value_;
@@ -179,7 +175,7 @@ bool Method::analyze()
     bool result = true;
 
     symtab->enterMethod(id_);
-    functab->insertFunction(id_);
+    functab->insertFunction( new std::string(*id_) );// TODO build a name consisting of module, class name, real name and arg-types
 
     // analyze each parameter
     for (size_t i = 0; i < symtab->method_->params_.size(); ++i)

@@ -14,6 +14,7 @@
 Declaration::~Declaration()
 {
     delete type_;
+    delete local_;
 }
 
 std::string Declaration::toString() const
@@ -38,10 +39,10 @@ bool Declaration::analyze()
     }
 
     // everything ok. so insert the local
-    Local* local = new Local(type_->clone(), id_, line_, 0);
-    symtab->insert(local);
+    local_ = new Local(type_->clone(), id_, line_, 0);
+    symtab->insert(local_);
 
-    swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
+    swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );
 
     return true;
 }
