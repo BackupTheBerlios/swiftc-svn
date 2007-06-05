@@ -179,7 +179,7 @@ private:
 
 #endif // defined(SWIFT_DEBUG) && defined(__GNUC__)
 
-// Macros for easy usage for the debug and release version
+// macros for easy usage for the debug and release version
 #if defined(SWIFT_DEBUG) && defined(__GNUC__)
     /**
      * Turn on the MemMgr

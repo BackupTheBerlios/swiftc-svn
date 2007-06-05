@@ -399,13 +399,15 @@ void AssignExpr::genSSA()
 bool Id::analyze()
 {
     lvalue_ = true;
-    type_ = symtab->lookupType(id_)->clone();
+    type_ = symtab->lookupType(id_);
 
     if (type_ == 0)
     {
         errorf(line_, "'%s' was not declared in this scope", id_->c_str());
         return false;
     }
+
+    type_ = type_->clone();
 
     genSSA();
 

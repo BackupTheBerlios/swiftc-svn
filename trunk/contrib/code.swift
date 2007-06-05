@@ -10,7 +10,6 @@ class Test
         c = -3;
         c = 5 + b;
         c = 5 * 7 + c * c + b;
-
         a = b*-c+b*-c;
         a = a +6;
     end
@@ -30,23 +29,21 @@ class Test
 
                 if (r > 8.0)
                     r = 9.0;
-                elif (r < 5.0)
-                    b = false;
+/*                else
+                    bool z ;
+                    z = false;*/
                 end
+            else
+                b = true;
             end
-        else
-            bool b;
-            b  = false;
-        end
 
+/*         else
+//             bool b;
+//             b  = false;
+//         end*/
+end
     real u;
     u = 5.0;
 
     end
 end
-
-
-class Foo
-    int i;
-end
-

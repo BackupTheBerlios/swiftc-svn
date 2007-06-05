@@ -228,6 +228,15 @@ void SymbolTable::leaveScope()
     scopeStack_.pop();
 }
 
+Scope* SymbolTable::createAndEnterNewScope()
+{
+    Scope* newScope = new Scope( currentScope() );
+    currentScope()->childScopes_.append(newScope);
+    symtab->enterScope(newScope);
+
+    return newScope;
+}
+
 // -----------------------------------------------------------------------------
 
 SymTabEntry* SymbolTable::lookupVar(string* id)
@@ -249,8 +258,6 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
         Class::MemberVarMap::iterator iter = class_->memberVars_.find(id);
         if ( iter != class_->memberVars_.end() )
             return iter->second;
-
-        std::cout << "fjdkljfdkl" << std::endl;
 
         // id has not been found -- so return NULL
         return 0;
@@ -278,7 +285,6 @@ Type* SymbolTable::lookupType(string* id)
         if ( iter != class_->memberVars_.end() )
             return iter->second->type_;
 
-        std::cout << "fjdkljfdkl" << std::endl;
         // id has not been found -- so return NULL
         return 0;
     }

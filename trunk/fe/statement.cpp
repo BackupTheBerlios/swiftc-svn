@@ -63,68 +63,124 @@ bool ExprStatement::analyze()
 
 IfElStatement::~IfElStatement()
 {
+    delete expr_;
     delete ifBranch_;
-    delete elBranch_;
+    if (elBranch_)
+        delete elBranch_;
 }
 
 bool IfElStatement::analyze()
 {
     bool result = expr_->analyze();
 
-    // check whether expr_ is a bool expr only if analyze resulted true
+    // check whether expr_ is a boolean expr only if analyze resulted true
     if (result)
     {
         if ( !expr_->type_->isBool() )
         {
-            errorf(line_, "the prefacing expression of an if statement must be a bool expression");
+            errorf(line_, "the prefacing expression of an if statement must be a boolean expression");
             result = false;
         }
     }
 
-    LabelInstr* ifLabel = new LabelInstr();
-    LabelInstr* elLabel = new LabelInstr();
-    LabelInstr* endifLabel = new LabelInstr();
-
-    // generate IfInstr if types are correct
-    if (result)
-    {
-        functab->appendInstr( new BranchInstr(expr_->reg_, ifLabel, elLabel) );
-        functab->appendInstr(ifLabel);
-    }
-
-    Scope* current = symtab->currentScope();
-
-    Scope* ifScope = new Scope(current);
-    current->childScopes_.append(ifScope);
-    symtab->enterScope(ifScope);
-
-    // analyze each statement in the if branch and keep acount of the result
-    for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
-        result &= iter->analyze();
-
-    symtab->leaveScope();
-
-    if (result)
-        functab->appendInstr( new GotoInstr(endifLabel) );
+    // create labels
+    LabelInstr* trueLabel   = new LabelInstr();
+    LabelInstr* nextLabel   = new LabelInstr();
 
     if (!elBranch_)
-        // here is neither an else nor an elif
-        return result;
+    {
+        /*
+            so here is only a plain if statement
+            generate this SSA code:
 
-    Scope* elScope = new Scope(current);
-    current->childScopes_.append(elScope);
-    symtab->enterScope(elScope);
+            IF expr THEN trueLabel
+            trueLabel:
+                //...
+            nextLabel:
+                //...
+        */
+        if (result)
+        {
+            // generate BranchInstr if types are correct
+            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabel, nextLabel) );
+            functab->appendInstr(trueLabel);
+        }
 
-    functab->appendInstr(elLabel);
+        // update scoping
+        symtab->createAndEnterNewScope();
 
-    // analyze each statement in the if branch and keep acount of the result
-    for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
-        result &= iter->analyze();
+        // analyze each statement in the if branch and keep acount of the result
+        for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
+            result &= iter->analyze();
 
-    symtab->leaveScope();
+        // return to parent scope
+        symtab->leaveScope();
 
-    if (result)
-        functab->appendInstr(endifLabel);
+        // generate instructions as you can see above
+        if (result)
+            functab->appendInstr(nextLabel);
+    }
+    else
+    {
+        /*
+            so we have an if-else-construct
+            generate this SSA code:
+
+            IF expr THEN trueLabel ELSE falseLabel
+            trueLabel:
+                //...
+                GOTO nextLabel
+            falseLabel:
+                //...
+            nextLabel:
+                //...
+        */
+        LabelInstr* falseLabel  = new LabelInstr();
+
+        if (result)
+        {
+            // generate BranchInstr if types are correct
+            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabel, falseLabel) );
+            functab->appendInstr(trueLabel);
+        }
+
+        // update scoping
+        symtab->createAndEnterNewScope();
+
+        // analyze each statement in the if branch and keep acount of the result
+        for (Statement* iter = ifBranch_; iter != 0; iter = iter->next_)
+            result &= iter->analyze();
+
+        // return to parent scope
+        symtab->leaveScope();
+
+        if (result)
+        {
+            // generate instructions as you can see above
+            functab->appendInstr( new GotoInstr(nextLabel) );
+            functab->appendInstr(falseLabel);
+        }
+
+        /*
+            now the else branch
+        */
+
+        // update scoping
+        symtab->createAndEnterNewScope();
+
+        // analyze each statement in the el branch and keep acount of the result
+        for (Statement* iter = elBranch_; iter != 0; iter = iter->next_)
+            result &= iter->analyze();
+
+        // return to parent scope
+        symtab->leaveScope();
+
+        // generate instructions as you can see above
+        if (result)
+        {
+            functab->appendInstr(nextLabel);
+        }
+    }
 
     return result;
 }

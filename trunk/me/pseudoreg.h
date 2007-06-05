@@ -8,7 +8,6 @@
 #include "utils/list.h"
 
 // forward declaration
-struct Scope;
 
 // -----------------------------------------------------------------------------
 
@@ -99,6 +98,11 @@ struct PseudoReg
         , regType_(regType)
         , state_(TOP) // TOP is assumed as initial state
     {}
+
+    bool isLiteral() const
+    {
+        return regNr_ == LITERAL;
+    }
 
     std::string toString() const;
 };

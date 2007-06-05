@@ -50,6 +50,12 @@ struct SymbolTable
     void enterScope(Scope* scope);
     void leaveScope();
 
+    /**
+     * creates a new scope with the current scope as parent one and enters it
+     * @return the new created scope
+    */
+    Scope* createAndEnterNewScope();
+
     Scope* currentScope()
     {
         return scopeStack_.top();

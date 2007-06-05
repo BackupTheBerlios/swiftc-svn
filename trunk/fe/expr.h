@@ -14,7 +14,7 @@ struct Expr : public Node
     bool        lvalue_;
     Type*       type_;
 
-    // for genSSA()
+    /// this var holds the PseudoReg where the result is stored
     PseudoReg*  reg_;
 
     Expr(int line)

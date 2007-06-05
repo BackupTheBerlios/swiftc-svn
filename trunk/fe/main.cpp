@@ -100,6 +100,7 @@ int main(int argc, char** argv)
     MemMgr::init();
 #endif // SWIFT_DEBUG
 
+//     MemMgr::setBreakpoint(673);
     int result = start(argc, argv);
 
 #ifdef SWIFT_DEBUG

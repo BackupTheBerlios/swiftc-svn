@@ -72,12 +72,16 @@ struct IfElStatement : public Statement
     Expr* expr_;
     Statement* ifBranch_;
     Statement* elBranch_;
+//     Scope* ifScope_;
+//     Scope* elScope_;
 
     IfElStatement(int kind_, Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
         : Statement(line)
         , expr_(expr)
         , ifBranch_(ifBranch)
         , elBranch_(elBranch)
+//         , ifScope_(0)
+//         , elScope_(0)
     {
         swiftAssert( kind_ == 0 || kind_ == ELSE || kind_ == ELIF, "kind_ must be 0, ELSE or ELIF" );
     }

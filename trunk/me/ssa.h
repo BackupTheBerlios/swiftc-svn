@@ -141,7 +141,7 @@ struct AssignInstr : public CalcInstr
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
 
-        if (reg_->regNr_ == PseudoReg::LITERAL)
+        if ( reg_->isLiteral() )
             delete reg_;
     }
 
@@ -174,7 +174,7 @@ struct UnInstr : public CalcInstr
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
 
-        if (op_->regNr_ == PseudoReg::LITERAL)
+        if (op_->isLiteral() )
             delete op_;
     }
 
@@ -233,9 +233,9 @@ struct BinInstr : public CalcInstr
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
 
-        if (op1_->regNr_ == PseudoReg::LITERAL)
+        if (op1_->isLiteral() )
             delete op1_;
-        if (op2_->regNr_ == PseudoReg::LITERAL)
+        if (op2_->isLiteral() )
             delete op2_;
     }
 
@@ -252,13 +252,11 @@ struct BinInstr : public CalcInstr
  */
 struct GotoInstr : public InstrBase
 {
-    LabelInstr* label_;
+    LabelInstr* label_;// will be deleted by the functab
 
     GotoInstr(LabelInstr* label)
         : label_(label)
-    {
-        delete label_;
-    }
+    {}
 
     virtual std::string toString() const;
 };
@@ -268,8 +266,8 @@ struct GotoInstr : public InstrBase
 struct BranchInstr : public InstrBase
 {
     PseudoReg* boolReg_;
-    LabelInstr* trueLabel_;
-    LabelInstr* falseLabel_;
+    LabelInstr* trueLabel_; // will be deleted by the functab
+    LabelInstr* falseLabel_;// will be deleted by the functab
 
     BranchInstr(PseudoReg* boolReg, LabelInstr* trueLabel, LabelInstr* falseLabel)
         : boolReg_(boolReg)
@@ -277,9 +275,12 @@ struct BranchInstr : public InstrBase
         , falseLabel_(falseLabel)
     {
         swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
-        delete boolReg_;
-        delete trueLabel_;
-        delete falseLabel_;
+    }
+
+    ~BranchInstr()
+    {
+        if ( boolReg_->isLiteral() )
+            delete boolReg_;
     }
 
     virtual std::string toString() const;

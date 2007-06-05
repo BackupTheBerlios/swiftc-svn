@@ -50,7 +50,7 @@ CODING CONVENTIONS
 - for the same reason I don't want to bother with namespaces
 - surround operators with spaces except where it makes sense.
 - do init lists like in the example below.
-- divide several classes in one file with:
+- divide several classes in one file with '//' and 78 times '-'
 - prefer ++i over i++ because ++i can be faster in some cases
 - use size_t to loop over std::vector or arrays
 
@@ -78,7 +78,7 @@ In order to provide consistent variable naming here a list of variable names
 which should be used:
 
 iterator        iter
-identifiere     id
+identifier      id
 ostringstream   oss
 expression      expr
 register        reg
