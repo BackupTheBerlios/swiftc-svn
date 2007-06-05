@@ -29,18 +29,18 @@ class Test
 
                 if (r > 8.0)
                     r = 9.0;
-/*                else
+                else
                     bool z ;
-                    z = false;*/
+                    z = false;
                 end
             else
                 b = true;
             end
 
-/*         else
-//             bool b;
-//             b  = false;
-//         end*/
+         else
+            bool b;
+            b  = false;
+        end
 end
     real u;
     u = 5.0;
