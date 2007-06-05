@@ -69,7 +69,7 @@ int start(int argc, char** argv)
     /*
         find basic blocks and calculate next usage of names
     */
-    // TODO
+    functab->findBasicBlocks();
 
     /*
         4.  Optional pass to optimize the 3 address code.

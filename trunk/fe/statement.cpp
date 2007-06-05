@@ -168,7 +168,7 @@ bool IfElStatement::analyze()
         // update scoping
         symtab->createAndEnterNewScope();
 
-        // analyze each statement in the el branch and keep acount of the result
+        // analyze each statement in the else branch and keep acount of the result
         for (Statement* iter = elBranch_; iter != 0; iter = iter->next_)
             result &= iter->analyze();
 

@@ -32,6 +32,20 @@ Function::~Function()
 
 }
 
+void Function::findBasicBlocks()
+{
+    // append and prepend artificially a stating and ending label
+    instrList_.append( new LabelInstr() );
+    instrList_.prepend( new LabelInstr() );
+
+    // iterate backwards through the instruction list
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    {
+        if ( typeid(*iter->value_) == typeid(LabelInstr) )
+            std::cout << iter->value_->toString() << std::endl;
+    }
+}
+
 void Function::dump(ofstream& ofs)
 {
     ofs << std::endl << *id_ << ":" << std::endl;
@@ -94,6 +108,12 @@ PseudoReg* FunctionTable::lookupReg(int regNr)
 void FunctionTable::appendInstr(InstrBase* instr)
 {
     current_->instrList_.append(instr);
+}
+
+void FunctionTable::findBasicBlocks()
+{
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+        iter->second->findBasicBlocks();
 }
 
 void FunctionTable::dump(const std::string& extension)

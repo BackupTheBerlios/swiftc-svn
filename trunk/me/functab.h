@@ -8,8 +8,10 @@
 
 #include "utils/list.h"
 #include "utils/stringptrcmp.h"
-#include "pseudoreg.h"
-#include "ssa.h"
+
+#include "me/basicblock.h"
+#include "me/pseudoreg.h"
+#include "me/ssa.h"
 
 //------------------------------------------------------------------------------
 
@@ -27,12 +29,15 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
+    BBList basicBlocks_;
+
     Function(std::string* id)
         : id_(id)
         , counter_(0)
     {}
     ~Function();
 
+    void findBasicBlocks();
     void dump(std::ofstream& ofs);
 };
 
@@ -56,6 +61,7 @@ struct FunctionTable
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
+    void findBasicBlocks();
 
     void dump(const std::string& extension = ".ssa");
 };
