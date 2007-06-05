@@ -31,14 +31,20 @@ struct Function
 
     BBList bbList_;
 
+    typedef std::map<LabelInstr*, BasicBlock*> Label2BBMap;
+    /// with this data structure we can quickly find a BB with a given starting label
+    Label2BBMap label2BB_;
+
     Function(std::string* id)
         : id_(id)
         , counter_(0)
     {}
     ~Function();
 
-    void findBasicBlocks();
-    void dump(std::ofstream& ofs);
+    void calcCFG();
+
+    void dumpSSA(std::ofstream& ofs);
+    void dumpDot(const std::string& baseFilename);
 };
 
 struct FunctionTable
@@ -61,9 +67,10 @@ struct FunctionTable
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
-    void findBasicBlocks();
+    void calcCFG();
 
-    void dump(const std::string& extension = ".ssa");
+    void dumpSSA();
+    void dumpDot();
 };
 
 typedef FunctionTable FuncTab;

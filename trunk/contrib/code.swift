@@ -41,7 +41,7 @@ class Test
             bool b;
             b  = false;
         end
-end
+
     real u;
     u = 5.0;
 

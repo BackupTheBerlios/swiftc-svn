@@ -35,16 +35,16 @@ Function::~Function()
         delete iter->value_;
 }
 
-void Function::findBasicBlocks()
+void Function::calcCFG()
 {
-    // append and prepend artificially a stating and ending label
+    // append and prepend artificially a starting and ending label
     instrList_.append( new LabelInstr() );
     instrList_.prepend( new LabelInstr() );
 
     LabelInstr* end = 0;
     LabelInstr* begin = 0;
 
-    // iterate backwards through the instruction list
+    // iterate over the instruction list and find basic blocks
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
@@ -52,30 +52,118 @@ void Function::findBasicBlocks()
             begin = end;
             end = (LabelInstr*) iter->value_;
 
-            if (begin)
+            if (begin) // we have found the next basic block
             {
-                // we have found the next basic block
-                bbList_.prepend( new BasicBlock(begin, end) );
+                BasicBlock* bb = new BasicBlock(begin, end);
+                label2BB_[begin] = bb; // keep acount of the label and the basic block in the map
+                bbList_.append( bb );
             }
         }
+
+#ifdef SWIFT_DEBUG
+        // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
+        if ( typeid(*iter->value_) == typeid(BranchInstr) || typeid(*iter->value_) == typeid(GotoInstr) )
+        {
+            swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
+                "BranchInstr or GotoInstr is not followed by a LabelInstr");
+        }
+#endif // SWIFT_DEBUG
     }
 
-    std::cout << *id_ << std::endl;
-    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
-        std::cout << '\t' << iter->value_->toString() << std::endl;;
+    /*
+        now we know of all starting labels and their associated basic block
+        so let us calculate the CFG
+    */
+
+    BasicBlock* currentBB = 0;
+
+    // iterate once again over the instruction list
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    {
+        if ( typeid(*iter->value_) == typeid(LabelInstr) )
+            currentBB = label2BB_[ ((LabelInstr*) iter->value_) ]; // we have found a new basic block
+
+        if ( typeid(*iter->value_) == typeid(GotoInstr) )
+        {
+            BasicBlock* succ = label2BB_[ ((GotoInstr*) iter->value_)->label_ ];
+            currentBB->succ_.append(succ);  // append successor
+            succ->pred_.append(succ);       // append predecessor
+        }
+        else if ( typeid(*iter->value_) == typeid(BranchInstr) )
+        {
+            BranchInstr* bi = (BranchInstr*) iter->value_;
+
+            BasicBlock* succ1 = label2BB_[ bi->trueLabel_ ];
+            BasicBlock* succ2 = label2BB_[ bi->falseLabel_ ];
+
+            currentBB->succ_.append(succ1); // append successor
+            currentBB->succ_.append(succ2); // append successor
+
+            succ1->pred_.append(currentBB); // append predecessor
+            succ2->pred_.append(currentBB); // append predecessor
+        }
+    }
 }
 
-void Function::dump(ofstream& ofs)
+void Function::dumpSSA(ofstream& ofs)
 {
-    ofs << std::endl << *id_ << ":" << std::endl;
+    ofs << endl
+        << "--------------------------------------------------------------------------------"
+        << endl;
+    ofs << *id_ << ":" << endl;
+
     // for all instructions in this function
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         // don't print a tab character if this is a label
         if ( typeid(*iter->value_) != typeid(LabelInstr) )
             ofs << '\t';
-        ofs << iter->value_->toString() << std::endl;
+        ofs << iter->value_->toString() << endl;
     }
+
+    // now print the basic blocks of this function
+    ofs << "---" << endl;
+
+    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+        ofs << '\t' << iter->value_->toString() << endl;
+}
+
+void Function::dumpDot(const string& baseFilename)
+{
+    ostringstream oss;
+    oss << baseFilename << '.' << *id_ << ".dot";
+
+    ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+
+    // prepare graphviz dot file
+    ofs << "digraph " << *id_ << " {" << endl;
+
+    // for all instructions in this function
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    {
+        // start a new node if this is a label
+        if ( typeid(*iter->value_) == typeid(LabelInstr) )
+        {
+            // close this node when this is not the first instruction
+            if ( iter != instrList_.first() )
+                ofs << "\"]" << endl;
+
+            ofs << iter->value_->toString() << " [shape=box, label=\"\\" << endl;
+        }
+
+        ofs << '\t' << iter->value_->toString() << "\\n\\" << endl;
+    }
+
+    // close last node
+    ofs << "\"]" << endl << endl;
+
+    // iterate over all basic blocks
+    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+        iter->value_->toDot(ofs); // print connections
+
+    // end graphviz dot file
+    ofs << '}' << endl;
+    ofs.close();
 }
 
 // -----------------------------------------------------------------------------
@@ -86,10 +174,10 @@ FunctionTable::~FunctionTable()
         delete iter->second;
 }
 
-Function* FunctionTable::insertFunction(std::string* id)
+Function* FunctionTable::insertFunction(string* id)
 {
     current_ = new Function(id);
-    functions_.insert( std::make_pair(id, current_) );
+    functions_.insert( make_pair(id, current_) );
 
     return current_;
 }
@@ -99,7 +187,7 @@ inline void FunctionTable::insert(PseudoReg* reg)
     swiftAssert(reg->regNr_ != PseudoReg::LITERAL, "reg is a LITERAL");
 
     pair<RegMap::iterator, bool> p
-        = current_->vars_.insert( std::make_pair(reg->regNr_, reg) );
+        = current_->vars_.insert( make_pair(reg->regNr_, reg) );
 
     swiftAssert(p.second, "there is already a reg with this regNr in the map");
 }
@@ -129,23 +217,29 @@ void FunctionTable::appendInstr(InstrBase* instr)
     current_->instrList_.append(instr);
 }
 
-void FunctionTable::findBasicBlocks()
+void FunctionTable::calcCFG()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
-        iter->second->findBasicBlocks();
+        iter->second->calcCFG();
 }
 
-void FunctionTable::dump(const std::string& extension)
+void FunctionTable::dumpSSA()
 {
     ostringstream oss;
-    oss << filename_ << extension;
+    oss << filename_ << ".ssa";
 
     ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
-    ofs << filename_ << extension << ":" << std::endl << std::endl;
+    ofs << oss.str() << ":" << endl;
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
-        iter->second->dump(ofs);
+        iter->second->dumpSSA(ofs);
 
     // finish
     ofs.close();
+}
+
+void FunctionTable::dumpDot()
+{
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+        iter->second->dumpDot(filename_);
 }

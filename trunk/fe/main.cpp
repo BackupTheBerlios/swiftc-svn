@@ -54,8 +54,7 @@ int start(int argc, char** argv)
 
         Thus a complete SymbolTable and type consistency is ensured after this pass.
     */
-    if ( !syntaxtree->analyze() )
-        return -1; // abort on error
+    bool analyzeResult = syntaxtree->analyze();
 
     /*
         clean up front-end
@@ -66,10 +65,16 @@ int start(int argc, char** argv)
 
     fclose(file);
 
+    if (analyzeResult == false)
+    {
+        std::cerr << "error" << std::endl;
+        return -1; // abort on error
+    }
+
     /*
-        find basic blocks and calculate next usage of names
+        find basic blocks and caculate control flow graph
     */
-    functab->findBasicBlocks();
+    functab->calcCFG();
 
     /*
         4.  Optional pass to optimize the 3 address code.
@@ -86,8 +91,9 @@ int start(int argc, char** argv)
     /*
         clean up middle-end
     */
-    functab->dump(); // print to cmdline
 
+    functab->dumpSSA();
+    functab->dumpDot();
     delete functab;
 
     return 0;

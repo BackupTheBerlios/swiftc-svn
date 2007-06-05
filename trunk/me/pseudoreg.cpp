@@ -10,7 +10,7 @@ std::string PseudoReg::toString() const
 
     if (regNr_ != LITERAL)
     {
-        oss << "?";
+        oss << "tmp";
         oss << regNr_;
     }
     else

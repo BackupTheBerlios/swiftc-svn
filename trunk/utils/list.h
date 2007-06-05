@@ -39,6 +39,16 @@ public:
         {
             return prev_;
         }
+
+        const Node* next() const
+        {
+            return next_;
+        }
+
+        const Node* prev() const
+        {
+            return prev_;
+        }
     };
 
 private:
@@ -243,6 +253,21 @@ public:
     }
 
     Node* last()
+    {
+        return sentinel_->prev_;
+    }
+
+    const Node* sentinel() const
+    {
+        return sentinel_;
+    }
+
+    const Node* first() const
+    {
+        return sentinel_->next_;
+    }
+
+    const Node* last() const
     {
         return sentinel_->prev_;
     }

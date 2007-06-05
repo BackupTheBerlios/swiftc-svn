@@ -9,3 +9,9 @@ std::string BasicBlock::toString() const
 
     return oss.str();
 }
+
+void BasicBlock::toDot(std::ofstream& ofs) const
+{
+    for (const BBList::Node* iter = succ_.first(); iter != succ_.sentinel(); iter = iter->next())
+        ofs << begin_->toString() << " -> " << iter->value_->begin_->toString() << std::endl;
+}
