@@ -55,6 +55,7 @@ ADD_EXECUTABLE (swift
     fe/cmdlineparser.cpp
     fe/main.cpp
 
+    me/basicblock.cpp
     me/functab.cpp
     me/pseudoreg.cpp
     me/ssa.cpp

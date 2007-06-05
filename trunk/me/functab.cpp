@@ -30,6 +30,9 @@ Function::~Function()
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
         delete iter->value_;
 
+    // delete all basic blocks
+    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+        delete iter->value_;
 }
 
 void Function::findBasicBlocks()
@@ -38,12 +41,28 @@ void Function::findBasicBlocks()
     instrList_.append( new LabelInstr() );
     instrList_.prepend( new LabelInstr() );
 
+    LabelInstr* end = 0;
+    LabelInstr* begin = 0;
+
     // iterate backwards through the instruction list
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
-            std::cout << iter->value_->toString() << std::endl;
+        {
+            begin = end;
+            end = (LabelInstr*) iter->value_;
+
+            if (begin)
+            {
+                // we have found the next basic block
+                bbList_.prepend( new BasicBlock(begin, end) );
+            }
+        }
     }
+
+    std::cout << *id_ << std::endl;
+    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+        std::cout << '\t' << iter->value_->toString() << std::endl;;
 }
 
 void Function::dump(ofstream& ofs)

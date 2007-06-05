@@ -29,7 +29,7 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    BBList basicBlocks_;
+    BBList bbList_;
 
     Function(std::string* id)
         : id_(id)
