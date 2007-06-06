@@ -12,6 +12,7 @@
 
 // forward declarations
 struct Type;
+struct LabelInstr;
 
 //------------------------------------------------------------------------------
 
@@ -122,8 +123,11 @@ struct Scope
     typedef std::map<int, Local*> RegNrMap;
     RegNrMap regNrs_;
 
+    LabelInstr* lastLabel_;
+
     Scope(Scope* parent)
         : parent_(parent)
+        , lastLabel_(0)
     {}
     ~Scope();
 

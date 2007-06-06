@@ -48,6 +48,7 @@ void Function::calcCFG()
 
     LabelInstr* end = 0;
     LabelInstr* begin = 0;
+    BasicBlock* lastBB = 0;
 
     // iterate over the instruction list and find basic blocks
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
@@ -62,6 +63,15 @@ void Function::calcCFG()
                 BasicBlock* bb = new BasicBlock(begin, end);
                 label2BB_[begin] = bb; // keep acount of the label and the basic block in the map
                 bbList_.append( bb );
+
+                // connect new found basic block with the last one if it exists
+                if (lastBB)
+                {
+                    lastBB->succ_.append(bb);   // append successor
+                    bb->pred_.append(lastBB);   // append predecessor
+                }
+
+                lastBB = bb;                // now this is the last basic block
             }
         }
 
@@ -96,16 +106,13 @@ void Function::calcCFG()
         }
         else if ( typeid(*iter->value_) == typeid(BranchInstr) )
         {
-            BranchInstr* bi = (BranchInstr*) iter->value_;
-
-            BasicBlock* succ1 = label2BB_[ bi->trueLabel_ ];
-            BasicBlock* succ2 = label2BB_[ bi->falseLabel_ ];
-
-            currentBB->succ_.append(succ1); // append successor
-            currentBB->succ_.append(succ2); // append successor
-
-            succ1->pred_.append(currentBB); // append predecessor
-            succ2->pred_.append(currentBB); // append predecessor
+            /*
+                do not connect the current basic block with the one of the
+                trueLabel since they were already connected in the first pass
+            */
+            BasicBlock* succ = label2BB_[ ((BranchInstr*) iter->value_)->falseLabel_ ];
+            currentBB->succ_.append(succ); // append successor
+            succ->pred_.append(currentBB); // append predecessor
         }
     }
 
@@ -158,16 +165,16 @@ void Function::dumpDot(const string& baseFilename)
         {
             // close this node when this is not the first instruction
             if ( iter != instrList_.first() )
-                ofs << "\"]" << endl;
+                ofs << "\t\"]" << endl << endl;
 
-            ofs << iter->value_->toString() << " [shape=box, label=\"\\" << endl;
+            ofs << '\t' << iter->value_->toString() << " [shape=box, label=\"\\" << endl;
         }
 
-        ofs << '\t' << iter->value_->toString() << "\\n\\" << endl;
+        ofs << "\t\t" << iter->value_->toString() << "\\n\\" << endl;
     }
 
     // close last node
-    ofs << "\"]" << endl << endl;
+    ofs << "\t\"]" << endl << endl;
 
     // iterate over all basic blocks
     for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())

@@ -93,10 +93,11 @@ bool IfElStatement::analyze()
             so here is only a plain if statement
             generate this SSA code:
 
-            IF expr THEN trueLabel
+                IF expr THEN trueLabel
             trueLabel:
                 //...
             nextLabel:
+                // add phi functions here
                 //...
         */
         if (result)
