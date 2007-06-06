@@ -10,7 +10,6 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
-
 //------------------------------------------------------------------------------
 
 Local::~Local()
@@ -176,6 +175,9 @@ bool Method::analyze()
 
     symtab->enterMethod(id_);
     functab->insertFunction( new std::string(*id_) );// TODO build a name consisting of module, class name, real name and arg-types
+
+    // insert the first label since every function must start with one
+    functab->appendInstr( new LabelInstr() );
 
     // analyze each parameter
     for (size_t i = 0; i < symtab->method_->params_.size(); ++i)

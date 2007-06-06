@@ -37,9 +37,14 @@ Function::~Function()
 
 void Function::calcCFG()
 {
-    // append and prepend artificially a starting and ending label
-    instrList_.append( new LabelInstr() );
-    instrList_.prepend( new LabelInstr() );
+    swiftAssert( typeid( *instrList_.first()->value_ ) == typeid(LabelInstr),
+        "first instruction of a function must be a LabelInstr");
+
+    // append and prepend artificially two starting and one ending label
+//     LabelInstr* entryLabel = new LabelInstr();
+    LabelInstr* exitLabel  = new LabelInstr();
+    instrList_.append(exitLabel);           // this will become the EXIT block
+//     instrList_.prepend(entryLabel);         // this will become the ENTRY block
 
     LabelInstr* end = 0;
     LabelInstr* begin = 0;
@@ -103,6 +108,13 @@ void Function::calcCFG()
             succ2->pred_.append(currentBB); // append predecessor
         }
     }
+
+    /*
+        Create the two additional blocks ENTRY and EXIT.
+    */
+//     BasicBlock* entry = label2BB_[entryLabel];
+//     BasicBlock* exit  = label2BB_[exitLabel];
+
 }
 
 void Function::dumpSSA(ofstream& ofs)
