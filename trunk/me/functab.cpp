@@ -62,10 +62,7 @@ void Function::calcCFG()
 
                 // connect new found basic block with the previous one if it exists
                 if (prevBB)
-                {
-                    prevBB->succ_.append(bb);   // append successor
-                    bb->pred_.append(prevBB);   // append predecessor
-                }
+                    prevBB->connectBB(bb);
 
                 prevBB = bb;                    // now this is the previous basic block
             }
@@ -98,8 +95,7 @@ void Function::calcCFG()
         if ( typeid(*iter->value_) == typeid(GotoInstr) )
         {
             BasicBlock* succ = labelNode2BB_[ ((GotoInstr*) iter->value_)->labelNode_ ];
-            currentBB->succ_.append(succ);  // append successor
-            succ->pred_.append(currentBB);  // append predecessor
+            currentBB->connectBB(succ);
         }
         else if ( typeid(*iter->value_) == typeid(BranchInstr) )
         {
@@ -108,8 +104,7 @@ void Function::calcCFG()
                 trueLabel since they were already connected in the first pass
             */
             BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
-            currentBB->succ_.append(succ); // append successor
-            succ->pred_.append(currentBB); // append predecessor
+            currentBB->connectBB(succ);
         }
     }
 
@@ -122,18 +117,15 @@ void Function::calcCFG()
     bbList_.append(exit);
 
     // connect entry with exit
-    entry->succ_.append(exit);
-    exit->pred_.append(entry);
+    entry->connectBB(exit);
 
     // connect entry with first regular basic block
     BasicBlock* firstBB = labelNode2BB_[instrList_.first()];
-    entry->succ_.append(firstBB);
-    firstBB->pred_.append(entry);
+    entry->connectBB(firstBB);
 
     // connect exit with last regular basic block
     BasicBlock* lastBB = prevBB; // prevBB holds the last basic block
-    lastBB->succ_.append(exit);
-    exit->pred_.append(lastBB);
+    lastBB->connectBB(exit);
 }
 
 void Function::dumpSSA(ofstream& ofs)
@@ -189,26 +181,24 @@ void Function::dumpDot(const string& baseFilename)
         ofs << "\"]" << endl << endl;
     }
 
-// use this switch to print predecessors
-#if 0
-    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
-    {
-        // for all predecessors
-        for (const BBList::Node* pred = iter->value_->pred_.first(); pred != iter->value_->pred_.sentinel(); pred = pred->next())
-            ofs << '\t' << iter->value_->toString() << " -> " << pred->value_->toString() << std::endl;
-    }
-#else
     // iterate over all basic blocks in order to print connections
     for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
     {
+
+// use this switch to print predecessors
+#if 0
+        // for all predecessors
+        for (BBSet::iterator pred = iter->value_->pred_.begin(); pred != iter->value_->pred_.end(); ++pred)
+            ofs << iter->value_->toString() << " -> " << (*pred)->toString() << std::endl;
+#else
         // for all successors
-        for (const BBList::Node* succ = iter->value_->succ_.first(); succ != iter->value_->succ_.sentinel(); succ = succ->next())
-            ofs << '\t' << iter->value_->toString() << " -> " << succ->value_->toString() << std::endl;
-    }
+        for (BBSet::iterator succ = iter->value_->succ_.begin(); succ != iter->value_->succ_.end(); ++succ)
+            ofs << iter->value_->toString() << " -> " << (*succ)->toString() << std::endl;
 #endif
+    }
 
     // end graphviz dot file
-    ofs << '}' << endl;
+    ofs << endl << '}' << endl;
     ofs.close();
 }
 

@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include <set>
 
 #include "utils/list.h"
 
@@ -10,11 +11,12 @@
 
 struct BasicBlock;
 typedef List<BasicBlock*> BBList;
+typedef std::set<BasicBlock*> BBSet;
 
 struct BasicBlock
 {
-    BBList pred_;
-    BBList succ_;
+    BBSet pred_;
+    BBSet succ_;
 
     InstrList::Node* begin_;
     InstrList::Node* end_;
@@ -26,6 +28,12 @@ struct BasicBlock
 
     /// returns the title string of this BasicBlock
     std::string toString() const;
+
+    void connectBB(BasicBlock* bb)
+    {
+        this->succ_.insert(bb);
+        bb->pred_.insert(this);
+    }
 };
 
 #endif // SWIFT_BASIC_BLOCK_H

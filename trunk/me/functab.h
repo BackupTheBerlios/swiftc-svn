@@ -49,11 +49,11 @@ struct Function
 
 struct FunctionTable
 {
-    typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
+    std::string filename_;
 
+    typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
     FunctionMap functions_;
     Function*   current_;
-    std::string filename_;
 
     FunctionTable(const std::string& filename)
         : filename_(filename)
