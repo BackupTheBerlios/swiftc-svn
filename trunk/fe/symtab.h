@@ -21,7 +21,10 @@ struct SymbolTable
     typedef std::stack<Scope*> ScopeStack;
     ScopeStack scopeStack_;
 
+    int magicCounter_;
+
     SymbolTable()
+        : magicCounter_(0)
     {
         reset();
     }
@@ -72,6 +75,11 @@ struct SymbolTable
         return currentScope()->replaceRegNr(oldNr, newNr);
     }
     Class* lookupClass(std::string* id);
+
+    int newMagic()
+    {
+        return magicCounter_++;
+    }
 };
 
 typedef SymbolTable SymTab;

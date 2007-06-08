@@ -31,9 +31,9 @@ struct Function
 
     BBList bbList_;
 
-    typedef std::map<LabelInstr*, BasicBlock*> Label2BBMap;
+    typedef std::map<InstrList::Node*, BasicBlock*> LabelNode2BBMap;
     /// with this data structure we can quickly find a BB with a given starting label
-    Label2BBMap label2BB_;
+    LabelNode2BBMap labelNode2BB_;
 
     Function(std::string* id)
         : id_(id)
@@ -52,7 +52,7 @@ struct FunctionTable
     typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
 
     FunctionMap functions_;
-    Function* current_;
+    Function*   current_;
     std::string filename_;
 
     FunctionTable(const std::string& filename)
@@ -63,10 +63,11 @@ struct FunctionTable
     Function* insertFunction(std::string* id);
 
     inline void insert(PseudoReg* reg);
-    PseudoReg* newTemp(PseudoReg::RegType regType);
+    PseudoReg* newTemp(PseudoReg::RegType regType, int magic = PseudoReg::TEMP);
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
+    void appendInstrNode(InstrList::Node* node);
     void calcCFG();
 
     void dumpSSA();

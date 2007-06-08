@@ -187,6 +187,9 @@ bool Method::analyze()
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         iter->analyze();
 
+    // insert the last label since every function must end with one
+    functab->appendInstr( new LabelInstr() );
+
     symtab->leaveMethod();
 
     return result;

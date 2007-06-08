@@ -39,15 +39,17 @@ void Function::calcCFG()
 {
     swiftAssert( typeid( *instrList_.first()->value_ ) == typeid(LabelInstr),
         "first instruction of a function must be a LabelInstr");
+    swiftAssert( typeid( *instrList_.last ()->value_ ) == typeid(LabelInstr),
+        "last instruction of a function must be a LabelInstr");
 
     // append and prepend artificially two starting and one ending label
 //     LabelInstr* entryLabel = new LabelInstr();
-    LabelInstr* exitLabel  = new LabelInstr();
-    instrList_.append(exitLabel);           // this will become the EXIT block
+//     LabelInstr* exitLabel  = new LabelInstr();
+//     instrList_.append(exitLabel);           // this will become the EXIT block
 //     instrList_.prepend(entryLabel);         // this will become the ENTRY block
 
-    LabelInstr* end = 0;
-    LabelInstr* begin = 0;
+    InstrList::Node* end = 0;
+    InstrList::Node* begin = 0;
     BasicBlock* lastBB = 0;
 
     // iterate over the instruction list and find basic blocks
@@ -56,12 +58,12 @@ void Function::calcCFG()
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
         {
             begin = end;
-            end = (LabelInstr*) iter->value_;
+            end = iter;
 
             if (begin) // we have found the next basic block
             {
                 BasicBlock* bb = new BasicBlock(begin, end);
-                label2BB_[begin] = bb; // keep acount of the label and the basic block in the map
+                labelNode2BB_[begin] = bb; // keep acount of the label and the basic block in the map
                 bbList_.append( bb );
 
                 // connect new found basic block with the last one if it exists
@@ -96,11 +98,11 @@ void Function::calcCFG()
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
-            currentBB = label2BB_[ ((LabelInstr*) iter->value_) ]; // we have found a new basic block
+            currentBB = labelNode2BB_[iter]; // we have found a new basic block
 
         if ( typeid(*iter->value_) == typeid(GotoInstr) )
         {
-            BasicBlock* succ = label2BB_[ ((GotoInstr*) iter->value_)->label_ ];
+            BasicBlock* succ = labelNode2BB_[ ((GotoInstr*) iter->value_)->labelNode_ ];
             currentBB->succ_.append(succ);  // append successor
             succ->pred_.append(succ);       // append predecessor
         }
@@ -110,7 +112,7 @@ void Function::calcCFG()
                 do not connect the current basic block with the one of the
                 trueLabel since they were already connected in the first pass
             */
-            BasicBlock* succ = label2BB_[ ((BranchInstr*) iter->value_)->falseLabel_ ];
+            BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
             currentBB->succ_.append(succ); // append successor
             succ->pred_.append(currentBB); // append predecessor
         }
@@ -119,8 +121,8 @@ void Function::calcCFG()
     /*
         Create the two additional blocks ENTRY and EXIT.
     */
-//     BasicBlock* entry = label2BB_[entryLabel];
-//     BasicBlock* exit  = label2BB_[exitLabel];
+//     BasicBlock* entry = labelNode2BB_[entryLabel];
+//     BasicBlock* exit  = labelNode2BB_[exitLabel];
 
 }
 
@@ -211,9 +213,9 @@ inline void FunctionTable::insert(PseudoReg* reg)
     swiftAssert(p.second, "there is already a reg with this regNr in the map");
 }
 
-PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
+PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, int magic)
 {
-    PseudoReg* reg = new PseudoReg(current_->counter_, regType);
+    PseudoReg* reg = new PseudoReg(regType, current_->counter_, magic);
     insert(reg);
 
     ++current_->counter_;
@@ -227,13 +229,20 @@ PseudoReg* FunctionTable::lookupReg(int regNr)
 
     if ( regIter == current_->vars_.end() )
         return 0;
-    else
+    else {
+//         std::cout << regIter->second->magic_ << std::endl;
         return regIter->second;
+    }
 }
 
 void FunctionTable::appendInstr(InstrBase* instr)
 {
     current_->instrList_.append(instr);
+}
+
+void FunctionTable::appendInstrNode(InstrList::Node* node)
+{
+    current_->instrList_.append(node);
 }
 
 void FunctionTable::calcCFG()

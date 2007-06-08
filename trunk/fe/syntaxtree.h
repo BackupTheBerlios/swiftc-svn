@@ -43,11 +43,17 @@ struct SymTabEntry : public Node
      * at the moment when in SSA form
     */
     int regNr_;
+    /**
+     * Magic numbers are used to find out which PseudoRegs belong together
+     * when in SSA form.
+    */
+    int magic_;
 
     SymTabEntry(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Node(line, parent)
         , id_(id)
         , regNr_(-1) // start with an invalid value
+        , magic_(-1)
     {}
     ~SymTabEntry()
     {

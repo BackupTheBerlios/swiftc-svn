@@ -5,7 +5,7 @@
 std::string BasicBlock::toString() const
 {
     std::ostringstream oss;
-    oss << begin_->toString() << " -> " << end_->toString();
+    oss << begin_->value_->toString() << " -> " << end_->value_->toString();
 
     return oss.str();
 }
@@ -13,5 +13,5 @@ std::string BasicBlock::toString() const
 void BasicBlock::toDot(std::ofstream& ofs) const
 {
     for (const BBList::Node* iter = succ_.first(); iter != succ_.sentinel(); iter = iter->next())
-        ofs << '\t' << begin_->toString() << " -> " << iter->value_->begin_->toString() << std::endl;
+        ofs << '\t' << begin_->value_->toString() << " -> " << iter->value_->begin_->value_->toString() << std::endl;
 }

@@ -86,7 +86,7 @@ void BinInstr::genCode(std::ofstream& ofs)
 std::string GotoInstr::toString() const
 {
     std::ostringstream oss;
-    oss << "GOTO " << label_->toString();
+    oss << "GOTO " << label()->toString();
 
     return oss.str();
 }
@@ -97,8 +97,8 @@ std::string BranchInstr::toString() const
 {
     std::ostringstream oss;
     oss << "IF " << boolReg_->toString()
-        << " THEN " << trueLabel_->toString()
-        << " ELSE " << falseLabel_->toString();
+        << " THEN " << trueLabel()->toString()
+        << " ELSE " << falseLabel()->toString();
 
     return oss.str();
 }

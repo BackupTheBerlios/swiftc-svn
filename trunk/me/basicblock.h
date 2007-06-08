@@ -16,10 +16,10 @@ struct BasicBlock
     BBList pred_;
     BBList succ_;
 
-    LabelInstr* begin_;
-    LabelInstr* end_;
+    InstrList::Node* begin_;
+    InstrList::Node* end_;
 
-    BasicBlock(LabelInstr* begin, LabelInstr* end)
+    BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)
         , end_(end)
     {}

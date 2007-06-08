@@ -40,6 +40,7 @@ bool Declaration::analyze()
 
     // everything ok. so insert the local
     local_ = new Local(type_->clone(), id_, line_, 0);
+    local_->magic_ = symtab->newMagic();
     symtab->insert(local_);
 
     swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );
@@ -84,8 +85,8 @@ bool IfElStatement::analyze()
     }
 
     // create labels
-    LabelInstr* trueLabel   = new LabelInstr();
-    LabelInstr* nextLabel   = new LabelInstr();
+    InstrList::Node* trueLabelNode  = new InstrList::Node( new LabelInstr() );
+    InstrList::Node* nextLabelNode  = new InstrList::Node( new LabelInstr() );
 
     if (!elBranch_)
     {
@@ -93,18 +94,18 @@ bool IfElStatement::analyze()
             so here is only a plain if statement
             generate this SSA code:
 
-                IF expr THEN trueLabel
-            trueLabel:
+                IF expr THEN trueLabelNode
+            trueLabelNode:
                 //...
-            nextLabel:
+            nextLabelNode:
                 // add phi functions here
                 //...
         */
         if (result)
         {
             // generate BranchInstr if types are correct
-            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabel, nextLabel) );
-            functab->appendInstr(trueLabel);
+            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabelNode, nextLabelNode) );
+            functab->appendInstrNode(trueLabelNode);
         }
 
         // update scoping
@@ -119,7 +120,7 @@ bool IfElStatement::analyze()
 
         // generate instructions as you can see above
         if (result)
-            functab->appendInstr(nextLabel);
+            functab->appendInstrNode(nextLabelNode);
     }
     else
     {
@@ -127,22 +128,22 @@ bool IfElStatement::analyze()
             so we have an if-else-construct
             generate this SSA code:
 
-            IF expr THEN trueLabel ELSE falseLabel
-            trueLabel:
+            IF expr THEN trueLabelNode ELSE falseLabelNode
+            trueLabelNode:
                 //...
-                GOTO nextLabel
-            falseLabel:
+                GOTO nextLabelNode
+            falseLabelNode:
                 //...
-            nextLabel:
+            nextLabelNode:
                 //...
         */
-        LabelInstr* falseLabel  = new LabelInstr();
+        InstrList::Node* falseLabelNode = new InstrList::Node( new LabelInstr() );
 
         if (result)
         {
             // generate BranchInstr if types are correct
-            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabel, falseLabel) );
-            functab->appendInstr(trueLabel);
+            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabelNode, falseLabelNode) );
+            functab->appendInstrNode(trueLabelNode);
         }
 
         // update scoping
@@ -158,8 +159,8 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate instructions as you can see above
-            functab->appendInstr( new GotoInstr(nextLabel) );
-            functab->appendInstr(falseLabel);
+            functab->appendInstr( new GotoInstr(nextLabelNode) );
+            functab->appendInstrNode(falseLabelNode);
         }
 
         /*
@@ -179,7 +180,7 @@ bool IfElStatement::analyze()
         // generate instructions as you can see above
         if (result)
         {
-            functab->appendInstr(nextLabel);
+            functab->appendInstrNode(nextLabelNode);
         }
     }
 

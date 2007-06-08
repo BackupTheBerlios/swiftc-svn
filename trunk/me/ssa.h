@@ -252,11 +252,23 @@ struct BinInstr : public CalcInstr
  */
 struct GotoInstr : public InstrBase
 {
-    LabelInstr* label_;// will be deleted by the functab
+    InstrList::Node* labelNode_;// will be deleted by the functab
 
-    GotoInstr(LabelInstr* label)
-        : label_(label)
-    {}
+    GotoInstr(InstrList::Node* labelNode)
+        : labelNode_(labelNode)
+    {
+        swiftAssert( typeid(*labelNode->value_) == typeid(LabelInstr),
+            "labelNode must be a node to a LabelInstr");
+    }
+
+    LabelInstr* label()
+    {
+        return (LabelInstr*) labelNode_->value_;
+    }
+    const LabelInstr* label() const
+    {
+        return (LabelInstr*) labelNode_->value_;
+    }
 
     virtual std::string toString() const;
 };
@@ -266,21 +278,41 @@ struct GotoInstr : public InstrBase
 struct BranchInstr : public InstrBase
 {
     PseudoReg* boolReg_;
-    LabelInstr* trueLabel_; // will be deleted by the functab
-    LabelInstr* falseLabel_;// will be deleted by the functab
+    InstrList::Node* trueLabelNode_; // will be deleted by the functab
+    InstrList::Node* falseLabelNode_;// will be deleted by the functab
 
-    BranchInstr(PseudoReg* boolReg, LabelInstr* trueLabel, LabelInstr* falseLabel)
+    BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode)
         : boolReg_(boolReg)
-        , trueLabel_(trueLabel)
-        , falseLabel_(falseLabel)
+        , trueLabelNode_(trueLabelNode)
+        , falseLabelNode_(falseLabelNode)
     {
         swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
+        swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),
+            "trueLabelNode must be a node to a LabelInstr");
+        swiftAssert( typeid(*falseLabelNode->value_) == typeid(LabelInstr),
+            "falseLabelNode must be a node to a LabelInstr");
     }
-
     ~BranchInstr()
     {
         if ( boolReg_->isLiteral() )
             delete boolReg_;
+    }
+
+    LabelInstr* trueLabel()
+    {
+        return (LabelInstr*) trueLabelNode_->value_;
+    }
+    LabelInstr* falseLabel()
+    {
+        return (LabelInstr*) falseLabelNode_->value_;
+    }
+    const LabelInstr* trueLabel() const
+    {
+        return (LabelInstr*) trueLabelNode_->value_;
+    }
+    const LabelInstr* falseLabel() const
+    {
+        return (LabelInstr*) falseLabelNode_->value_;
     }
 
     virtual std::string toString() const;

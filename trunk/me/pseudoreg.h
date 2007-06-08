@@ -14,7 +14,8 @@
 struct PseudoReg
 {
     enum {
-        LITERAL = -1
+        LITERAL = -1,
+        TEMP = -1
     };
 
     /// Types of pseudo registers / constants
@@ -58,8 +59,9 @@ struct PseudoReg
         BOTTOM
     };
 
-    int regNr_;
     RegType regType_;
+    int regNr_;
+    int magic_;///< PseudoRegs with the same magic number originally belong to the same var
     State state_;
 
     /// for constants
@@ -93,15 +95,27 @@ struct PseudoReg
 
     Value value_;
 
-    PseudoReg(int regNr, RegType regType)
-        : regNr_(regNr)
-        , regType_(regType)
+    PseudoReg(RegType regType, int regNr, int magic)
+        : regType_(regType)
+        , regNr_(regNr)
+        , magic_(magic)
+        , state_(TOP) // TOP is assumed as initial state
+    {}
+    /// use this constructor if you want to create a literal
+    PseudoReg(RegType regType)
+        : regType_(regType)
+        , regNr_(LITERAL)
+        , magic_(LITERAL)
         , state_(TOP) // TOP is assumed as initial state
     {}
 
     bool isLiteral() const
     {
         return regNr_ == LITERAL;
+    }
+    bool isVar() const
+    {
+        return regNr_ != TEMP;
     }
 
     std::string toString() const;
