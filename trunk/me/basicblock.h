@@ -24,8 +24,8 @@ struct BasicBlock
         , end_(end)
     {}
 
+    /// returns the title string of this BasicBlock
     std::string toString() const;
-    void toDot(std::ofstream& ofs) const;
 };
 
 #endif // SWIFT_BASIC_BLOCK_H

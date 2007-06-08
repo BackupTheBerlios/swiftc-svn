@@ -42,15 +42,9 @@ void Function::calcCFG()
     swiftAssert( typeid( *instrList_.last ()->value_ ) == typeid(LabelInstr),
         "last instruction of a function must be a LabelInstr");
 
-    // append and prepend artificially two starting and one ending label
-//     LabelInstr* entryLabel = new LabelInstr();
-//     LabelInstr* exitLabel  = new LabelInstr();
-//     instrList_.append(exitLabel);           // this will become the EXIT block
-//     instrList_.prepend(entryLabel);         // this will become the ENTRY block
-
     InstrList::Node* end = 0;
     InstrList::Node* begin = 0;
-    BasicBlock* lastBB = 0;
+    BasicBlock* prevBB = 0;
 
     // iterate over the instruction list and find basic blocks
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
@@ -66,14 +60,14 @@ void Function::calcCFG()
                 labelNode2BB_[begin] = bb; // keep acount of the label and the basic block in the map
                 bbList_.append( bb );
 
-                // connect new found basic block with the last one if it exists
-                if (lastBB)
+                // connect new found basic block with the previous one if it exists
+                if (prevBB)
                 {
-                    lastBB->succ_.append(bb);   // append successor
-                    bb->pred_.append(lastBB);   // append predecessor
+                    prevBB->succ_.append(bb);   // append successor
+                    bb->pred_.append(prevBB);   // append predecessor
                 }
 
-                lastBB = bb;                // now this is the last basic block
+                prevBB = bb;                    // now this is the previous basic block
             }
         }
 
@@ -86,6 +80,7 @@ void Function::calcCFG()
         }
 #endif // SWIFT_DEBUG
     }
+    // prevBB now holds the last basic block
 
     /*
         now we know of all starting labels and their associated basic block
@@ -104,7 +99,7 @@ void Function::calcCFG()
         {
             BasicBlock* succ = labelNode2BB_[ ((GotoInstr*) iter->value_)->labelNode_ ];
             currentBB->succ_.append(succ);  // append successor
-            succ->pred_.append(succ);       // append predecessor
+            succ->pred_.append(currentBB);  // append predecessor
         }
         else if ( typeid(*iter->value_) == typeid(BranchInstr) )
         {
@@ -121,9 +116,24 @@ void Function::calcCFG()
     /*
         Create the two additional blocks ENTRY and EXIT.
     */
-//     BasicBlock* entry = labelNode2BB_[entryLabel];
-//     BasicBlock* exit  = labelNode2BB_[exitLabel];
+    BasicBlock* entry = new BasicBlock( 0, instrList_.first() );
+    BasicBlock* exit  = new BasicBlock( instrList_.last(), 0 );
+    bbList_.prepend(entry);
+    bbList_.append(exit);
 
+    // connect entry with exit
+    entry->succ_.append(exit);
+    exit->pred_.append(entry);
+
+    // connect entry with first regular basic block
+    BasicBlock* firstBB = labelNode2BB_[instrList_.first()];
+    entry->succ_.append(firstBB);
+    firstBB->pred_.append(entry);
+
+    // connect exit with last regular basic block
+    BasicBlock* lastBB = prevBB; // prevBB holds the last basic block
+    lastBB->succ_.append(exit);
+    exit->pred_.append(lastBB);
 }
 
 void Function::dumpSSA(ofstream& ofs)
@@ -157,30 +167,45 @@ void Function::dumpDot(const string& baseFilename)
     ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
     // prepare graphviz dot file
-    ofs << "digraph " << *id_ << " {" << endl;
-
-    // for all instructions in this function
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
-    {
-        // start a new node if this is a label
-        if ( typeid(*iter->value_) == typeid(LabelInstr) )
-        {
-            // close this node when this is not the first instruction
-            if ( iter != instrList_.first() )
-                ofs << "\t\"]" << endl << endl;
-
-            ofs << '\t' << iter->value_->toString() << " [shape=box, label=\"\\" << endl;
-        }
-
-        ofs << "\t\t" << iter->value_->toString() << "\\n\\" << endl;
-    }
-
-    // close last node
-    ofs << "\t\"]" << endl << endl;
+    ofs << "digraph " << *id_ << " {" << endl << endl;
 
     // iterate over all basic blocks
+    for (BBList::Node* bbIter = bbList_.first(); bbIter != bbList_.sentinel(); bbIter = bbIter->next())
+    {
+        // start a new node
+        ofs << bbIter->value_->toString() << " [shape=box, label=\"\\" << endl;
+
+        if (bbIter->value_->begin_ == 0)
+            ofs << "\tENTRY\\n\\" << endl;
+        else if (bbIter->value_->end_ == 0)
+            ofs << "\tEXIT\\n\\" << endl;
+        else
+        {
+            // for all instructions in this basic block except the last LabelInstr
+            for (InstrList::Node* instrIter = bbIter->value_->begin_; instrIter != bbIter->value_->end_; instrIter = instrIter->next())
+                ofs << '\t' << instrIter->value_->toString() << "\\n\\" << endl; // print instruction
+        }
+        // close this node
+        ofs << "\"]" << endl << endl;
+    }
+
+// use this switch to print predecessors
+#if 0
     for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
-        iter->value_->toDot(ofs); // print connections
+    {
+        // for all predecessors
+        for (const BBList::Node* pred = iter->value_->pred_.first(); pred != iter->value_->pred_.sentinel(); pred = pred->next())
+            ofs << '\t' << iter->value_->toString() << " -> " << pred->value_->toString() << std::endl;
+    }
+#else
+    // iterate over all basic blocks in order to print connections
+    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+    {
+        // for all successors
+        for (const BBList::Node* succ = iter->value_->succ_.first(); succ != iter->value_->succ_.sentinel(); succ = succ->next())
+            ofs << '\t' << iter->value_->toString() << " -> " << succ->value_->toString() << std::endl;
+    }
+#endif
 
     // end graphviz dot file
     ofs << '}' << endl;
@@ -229,10 +254,8 @@ PseudoReg* FunctionTable::lookupReg(int regNr)
 
     if ( regIter == current_->vars_.end() )
         return 0;
-    else {
-//         std::cout << regIter->second->magic_ << std::endl;
+    else
         return regIter->second;
-    }
 }
 
 void FunctionTable::appendInstr(InstrBase* instr)
