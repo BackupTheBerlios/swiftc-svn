@@ -13,7 +13,7 @@ std::string BasicBlock::toString() const
     else if (!end_)
         oss << "EXIT";
     else
-        oss << begin_->value_->toString();// << " -> " << end_->value_->toString();
+        oss << begin_->value_->toString();
 
     return oss.str();
 }

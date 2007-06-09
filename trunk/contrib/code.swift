@@ -38,8 +38,10 @@ class Test
             end
 
          else
-            bool b;
-            b  = false;
+            if (b)
+                bool b;
+                b  = false;
+            end
         end
 
     real u;

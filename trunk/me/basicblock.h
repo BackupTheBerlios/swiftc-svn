@@ -10,6 +10,7 @@
 #include "me/ssa.h"
 
 struct BasicBlock;
+
 typedef List<BasicBlock*> BBList;
 typedef std::set<BasicBlock*> BBSet;
 
@@ -20,6 +21,9 @@ struct BasicBlock
 
     InstrList::Node* begin_;
     InstrList::Node* end_;
+
+    /// keeps acount of the regs with magic numbers which are assigned to in this basic block last
+    RegMap magics_;
 
     BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)

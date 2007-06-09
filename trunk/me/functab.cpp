@@ -57,14 +57,15 @@ void Function::calcCFG()
             if (begin) // we have found the next basic block
             {
                 BasicBlock* bb = new BasicBlock(begin, end);
-                labelNode2BB_[begin] = bb; // keep acount of the label and the basic block in the map
+                // keep acount of the label node and the basic block in the map
+                labelNode2BB_[begin] = bb;
                 bbList_.append( bb );
 
                 // connect new found basic block with the previous one if it exists
                 if (prevBB)
                     prevBB->connectBB(bb);
 
-                prevBB = bb;                    // now this is the previous basic block
+                prevBB = bb; // now this is the previous basic block
             }
         }
 
@@ -91,8 +92,7 @@ void Function::calcCFG()
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
             currentBB = labelNode2BB_[iter]; // we have found a new basic block
-
-        if ( typeid(*iter->value_) == typeid(GotoInstr) )
+        else if ( typeid(*iter->value_) == typeid(GotoInstr) )
         {
             BasicBlock* succ = labelNode2BB_[ ((GotoInstr*) iter->value_)->labelNode_ ];
             currentBB->connectBB(succ);
@@ -105,6 +105,13 @@ void Function::calcCFG()
             */
             BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
             currentBB->connectBB(succ);
+        }
+        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
+        {
+            // if we have an assignment to a real var update this in the map
+            AssignInstr* ai = (AssignInstr*) iter->value_;
+            if ( ai->result_->isVar() )
+                currentBB->magics_[ai->result_->magic_] = ai->result_;
         }
     }
 
@@ -143,12 +150,6 @@ void Function::dumpSSA(ofstream& ofs)
             ofs << '\t';
         ofs << iter->value_->toString() << endl;
     }
-
-    // now print the basic blocks of this function
-    ofs << "---" << endl;
-
-    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
-        ofs << '\t' << iter->value_->toString() << endl;
 }
 
 void Function::dumpDot(const string& baseFilename)
@@ -185,7 +186,7 @@ void Function::dumpDot(const string& baseFilename)
     for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
     {
 
-// use this switch to print predecessors
+// use this switch to print predecessors instead of successors
 #if 0
         // for all predecessors
         for (BBSet::iterator pred = iter->value_->pred_.begin(); pred != iter->value_->pred_.end(); ++pred)
