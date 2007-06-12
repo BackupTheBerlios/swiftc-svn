@@ -387,7 +387,7 @@ void AssignExpr::genSSA()
 
     swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
 
-    reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType(), local->magic_ );
+    reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType(), local->varNr_ );
     // FIXME here is double work: local must be found twice
     symtab->replaceRegNr(local->regNr_, reg_->regNr_); // keep account of the current regNr
 
@@ -424,13 +424,10 @@ void Id::genSSA()
     {
         // do the first revision
         Local* local = (Local*) entry;
-        reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType(), local->magic_ );
+        reg_ = functab->newTemp( ((SimpleType*) local->type_->baseType_)->toRegType(), local->varNr_ );
         local->regNr_ = reg_->regNr_;
         symtab->insertLocalByRegNr(local);
     }
-//     else
-//         std::cout << reg_->magic_ << std::endl;
-
 }
 
 //------------------------------------------------------------------------------

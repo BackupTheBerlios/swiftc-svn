@@ -16,28 +16,46 @@ typedef std::set<BasicBlock*> BBSet;
 
 struct BasicBlock
 {
-    BBSet pred_;
-    BBSet succ_;
-
     InstrList::Node* begin_;
     InstrList::Node* end_;
 
-    /// keeps acount of the regs with magic numbers which are assigned to in this basic block last
-    RegMap magics_;
+    int postOrderNr_;
+    bool reached_;
+    static bool reachedValue_;
+
+    BBSet pred_; ///< predecessors of the control flow graph
+    BBSet succ_; ///< successors of the control flow graph
+
+    /// keeps acount of the regs with var numbers which are assigned to in this basic block last
+    RegMap varNr_;
 
     BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)
         , end_(end)
+        , postOrderNr_(-1)
+        , reached_(false)
     {}
-
-    /// returns the title string of this BasicBlock
-    std::string toString() const;
 
     void connectBB(BasicBlock* bb)
     {
         this->succ_.insert(bb);
         bb->pred_.insert(this);
     }
+    bool isEntry() const
+    {
+        swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
+        return !begin_;
+    }
+    bool isExit() const
+    {
+        swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
+        return !end_;
+    }
+
+    static BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
+
+    /// returns the title string of this BasicBlock
+    std::string toString() const;
 };
 
 #endif // SWIFT_BASIC_BLOCK_H

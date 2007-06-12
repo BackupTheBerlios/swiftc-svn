@@ -111,7 +111,7 @@ void Function::calcCFG()
             // if we have an assignment to a real var update this in the map
             AssignInstr* ai = (AssignInstr*) iter->value_;
             if ( ai->result_->isVar() )
-                currentBB->magics_[ai->result_->magic_] = ai->result_;
+                currentBB->varNr_[ai->result_->varNr_] = ai->result_;
         }
     }
 
@@ -133,6 +133,57 @@ void Function::calcCFG()
     // connect exit with last regular basic block
     BasicBlock* lastBB = prevBB; // prevBB holds the last basic block
     lastBB->connectBB(exit);
+
+    // store number of basic blocks
+    numBBs_ = bbList_.size();
+}
+
+void Function::r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb)
+{
+    bb->reached_ = BasicBlock::reachedValue_;
+    process(bb);
+
+    for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
+    {
+        if ( (*iter)->reached_ == BasicBlock::reachedValue_ )
+            continue;
+
+        r_reversePostOrderWalk(process, (*iter));
+    }
+}
+
+void assignPostOrderNr(BasicBlock* bb)
+{
+    static int counter = 0;
+    bb->postOrderNr_ = counter;
+    ++counter;
+}
+
+void Function::calcDomTree()
+{
+    // init dom array
+    dom_ = new BasicBlock();
+    memset(dom_, 0, sizeof(BasicBlock*) * numBBs_);
+
+    reversePostOrderWalk(assignPostOrderNr);
+/*    BasicBlock* entry = getEntry();
+    entry->doms_.insert(entry);
+
+    bool changed = true;
+
+    while (changed)
+    {
+        changed = false;
+
+        // iterate over the CFG in reverse post-order
+        for ()
+        {
+            BasicBlock* newIdom =
+
+            // for all predecessors of
+            for
+        }
+    }*/
 }
 
 void Function::dumpSSA(ofstream& ofs)
@@ -229,9 +280,9 @@ inline void FunctionTable::insert(PseudoReg* reg)
     swiftAssert(p.second, "there is already a reg with this regNr in the map");
 }
 
-PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, int magic)
+PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, int varNr)
 {
-    PseudoReg* reg = new PseudoReg(regType, current_->counter_, magic);
+    PseudoReg* reg = new PseudoReg(regType, current_->counter_, varNr);
     insert(reg);
 
     ++current_->counter_;
@@ -265,6 +316,12 @@ void FunctionTable::calcCFG()
         iter->second->calcCFG();
 }
 
+void FunctionTable::calcDomTree()
+{
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+        iter->second->calcDomTree();
+}
+
 void FunctionTable::dumpSSA()
 {
     ostringstream oss;
@@ -285,3 +342,4 @@ void FunctionTable::dumpDot()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_);
 }
+

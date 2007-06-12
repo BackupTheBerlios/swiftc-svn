@@ -21,10 +21,10 @@ struct SymbolTable
     typedef std::stack<Scope*> ScopeStack;
     ScopeStack scopeStack_;
 
-    int magicCounter_;
+    int varCounter_;
 
     SymbolTable()
-        : magicCounter_(0)
+        : varCounter_(0)
     {
         reset();
     }
@@ -78,7 +78,7 @@ struct SymbolTable
 
     int newMagic()
     {
-        return magicCounter_++;
+        return varCounter_++;
     }
 };
 

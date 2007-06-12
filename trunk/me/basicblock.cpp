@@ -2,18 +2,30 @@
 
 #include <sstream>
 
+bool BasicBlock::reachedValue_ = true;
+
 std::string BasicBlock::toString() const
 {
-    swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
-
     std::ostringstream oss;
 
-    if (!begin_)
+    if ( isEntry() )
         oss << "ENTRY";
-    else if (!end_)
+    else if ( isExit() )
         oss << "EXIT";
     else
         oss << begin_->value_->toString();
 
     return oss.str();
+}
+
+BBSet BasicBlock::intersect(BasicBlock* b1, BasicBlock* b2)
+{
+    BasicBlock* finger1 = b1;
+    BasicBlock* finger2 = b2;
+
+    while (finger1->postOrderNr_ != finger2->postOrderNr_)
+    {
+        while (finger1->postOrderNr < finger2->postOrderNr)
+            finger1
+    }
 }

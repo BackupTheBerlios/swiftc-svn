@@ -61,10 +61,10 @@ std::string PseudoReg::toString() const
                 swiftAssert(false, "VR_* not implemented yet");
         }
     }
-    else if (magic_ == TEMP)
+    else if (varNr_ == TEMP)
         oss << "tmp" << regNr_;
     else // it is a real var
-        oss << "tmp" << regNr_ << '[' << magic_ << ']';
+        oss << "tmp" << regNr_ << '[' << varNr_ << ']';
 
     return oss.str();
 }

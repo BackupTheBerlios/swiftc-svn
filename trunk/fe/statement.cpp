@@ -40,7 +40,7 @@ bool Declaration::analyze()
 
     // everything ok. so insert the local
     local_ = new Local(type_->clone(), id_, line_, 0);
-    local_->magic_ = symtab->newMagic();
+    local_->varNr_ = symtab->newMagic();
     symtab->insert(local_);
 
     swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );
@@ -98,7 +98,6 @@ bool IfElStatement::analyze()
             trueLabelNode:
                 //...
             nextLabelNode:
-                // add phi functions here
                 //...
         */
         if (result)
@@ -179,9 +178,7 @@ bool IfElStatement::analyze()
 
         // generate instructions as you can see above
         if (result)
-        {
             functab->appendInstrNode(nextLabelNode);
-        }
     }
 
     return result;

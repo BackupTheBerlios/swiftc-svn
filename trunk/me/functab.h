@@ -15,6 +15,8 @@
 
 //------------------------------------------------------------------------------
 
+typedef void (*ProcessBBFunc)(BasicBlock*);
+
 /**
  * Function has in, inout and out going parameters and, of course, an identifier.
 */
@@ -31,6 +33,9 @@ struct Function
 
     BBList bbList_;
 
+    BasicBlock* dom_;
+    size_t      numBBs_;
+
     typedef std::map<InstrList::Node*, BasicBlock*> LabelNode2BBMap;
     /// with this data structure we can quickly find a BB with a given starting label
     LabelNode2BBMap labelNode2BB_;
@@ -42,9 +47,28 @@ struct Function
     ~Function();
 
     void calcCFG();
+    void calcDomTree();
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
+
+    BasicBlock* getEntry()
+    {
+        return bbList_.first()->value_;
+    }
+    BasicBlock* getExit()
+    {
+        return bbList_.last()->value_;
+    }
+
+    /// traverses the cfg in reverse post order for each node func is executed
+    void reversePostOrderWalk(ProcessBBFunc process)
+    {
+        r_reversePostOrderWalk(process, getExit());
+        // toggle reachedValue_
+        BasicBlock::reachedValue_ = ! BasicBlock::reachedValue_;
+    }
+    void r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb);
 };
 
 struct FunctionTable
@@ -63,12 +87,13 @@ struct FunctionTable
     Function* insertFunction(std::string* id);
 
     inline void insert(PseudoReg* reg);
-    PseudoReg* newTemp(PseudoReg::RegType regType, int magic = PseudoReg::TEMP);
+    PseudoReg* newTemp(PseudoReg::RegType regType, int varNr = PseudoReg::TEMP);
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrList::Node* node);
     void calcCFG();
+    void calcDomTree();
 
     void dumpSSA();
     void dumpDot();

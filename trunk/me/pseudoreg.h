@@ -61,7 +61,7 @@ struct PseudoReg
 
     RegType regType_;
     int regNr_;
-    int magic_;///< PseudoRegs with the same magic number originally belong to the same var
+    int varNr_;///< PseudoRegs with the same magic number originally belong to the same var
     State state_;
 
     /// for constants
@@ -95,17 +95,17 @@ struct PseudoReg
 
     Value value_;
 
-    PseudoReg(RegType regType, int regNr, int magic)
+    PseudoReg(RegType regType, int regNr, int varNr)
         : regType_(regType)
         , regNr_(regNr)
-        , magic_(magic)
+        , varNr_(varNr)
         , state_(TOP) // TOP is assumed as initial state
     {}
     /// use this constructor if you want to create a literal
     PseudoReg(RegType regType)
         : regType_(regType)
         , regNr_(LITERAL)
-        , magic_(LITERAL)
+        , varNr_(LITERAL)
         , state_(TOP) // TOP is assumed as initial state
     {}
 

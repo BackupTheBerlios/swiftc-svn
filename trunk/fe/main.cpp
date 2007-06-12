@@ -72,9 +72,15 @@ int start(int argc, char** argv)
     }
 
     /*
-        find basic blocks and caculate control flow graph
+        find basic blocks, caculate control flow graph and
+        find last assignment of vars in a basic block
     */
     functab->calcCFG();
+
+    /*
+        calculate the dominator tree
+    */
+    functab->calcDomTree();
 
     /*
         4.  Optional pass to optimize the 3 address code.
