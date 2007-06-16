@@ -24,6 +24,8 @@ struct Function
 {
     std::string* id_;
     int counter_;
+    bool reachedValue_;
+
     InstrList instrList_;
 
     RegMap in_;
@@ -33,7 +35,7 @@ struct Function
 
     BBList bbList_;
 
-    BasicBlock* dom_;
+    BasicBlock** doms_;
     size_t      numBBs_;
 
     typedef std::map<InstrList::Node*, BasicBlock*> LabelNode2BBMap;
@@ -43,11 +45,13 @@ struct Function
     Function(std::string* id)
         : id_(id)
         , counter_(0)
+        , reachedValue_(true)
     {}
     ~Function();
 
     void calcCFG();
     void calcDomTree();
+    BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
@@ -66,7 +70,7 @@ struct Function
     {
         r_reversePostOrderWalk(process, getExit());
         // toggle reachedValue_
-        BasicBlock::reachedValue_ = ! BasicBlock::reachedValue_;
+        reachedValue_ = !reachedValue_;
     }
     void r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb);
 };

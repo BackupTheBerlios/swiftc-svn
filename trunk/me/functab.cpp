@@ -15,6 +15,7 @@ FuncTab* functab = 0;
 Function::~Function()
 {
     delete id_;
+    delete[] doms_;
 
     // delete all pseudo regs
     for (RegMap::iterator iter = in_    .begin(); iter != in_   .end(); ++iter)
@@ -140,12 +141,12 @@ void Function::calcCFG()
 
 void Function::r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb)
 {
-    bb->reached_ = BasicBlock::reachedValue_;
+    bb->reached_ = reachedValue_;
     process(bb);
 
     for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
     {
-        if ( (*iter)->reached_ == BasicBlock::reachedValue_ )
+        if ( (*iter)->reached_ == reachedValue_ )
             continue;
 
         r_reversePostOrderWalk(process, (*iter));
@@ -154,20 +155,29 @@ void Function::r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb)
 
 void assignPostOrderNr(BasicBlock* bb)
 {
+    // HACK
     static int counter = 0;
     bb->postOrderNr_ = counter;
     ++counter;
 }
 
+void calcDoms(BasicBlock* bb)
+{
+// TODO
+}
+
 void Function::calcDomTree()
 {
-    // init dom array
-    dom_ = new BasicBlock();
-    memset(dom_, 0, sizeof(BasicBlock*) * numBBs_);
-
+return;
+    // assign post order nr to all basic blocks
     reversePostOrderWalk(assignPostOrderNr);
-/*    BasicBlock* entry = getEntry();
-    entry->doms_.insert(entry);
+
+    // init dom array
+    doms_ = new BasicBlock*[numBBs_];
+    memset(doms_, 0, sizeof(BasicBlock*) * numBBs_);
+
+    BasicBlock* entry = getEntry();
+    doms_[entry->postOrderNr_] = entry;
 
     bool changed = true;
 
@@ -176,14 +186,24 @@ void Function::calcDomTree()
         changed = false;
 
         // iterate over the CFG in reverse post-order
-        for ()
-        {
-            BasicBlock* newIdom =
+        reversePostOrderWalk(calcDoms);
+    }
+}
 
-            // for all predecessors of
-            for
-        }
-    }*/
+BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
+{
+    BasicBlock* finger1 = b1;
+    BasicBlock* finger2 = b2;
+
+    while (finger1->postOrderNr_ != finger2->postOrderNr_)
+    {
+        while (finger1->postOrderNr_ < finger2->postOrderNr_)
+            finger1 = doms_[finger1->postOrderNr_];
+        while (finger2->postOrderNr_ < finger1->postOrderNr_)
+            finger2 = doms_[finger2->postOrderNr_];
+    }
+
+    return finger1;
 }
 
 void Function::dumpSSA(ofstream& ofs)

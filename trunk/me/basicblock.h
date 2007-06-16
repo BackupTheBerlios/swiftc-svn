@@ -21,7 +21,6 @@ struct BasicBlock
 
     int postOrderNr_;
     bool reached_;
-    static bool reachedValue_;
 
     BBSet pred_; ///< predecessors of the control flow graph
     BBSet succ_; ///< successors of the control flow graph
@@ -51,8 +50,6 @@ struct BasicBlock
         swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
         return !end_;
     }
-
-    static BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
 
     /// returns the title string of this BasicBlock
     std::string toString() const;
