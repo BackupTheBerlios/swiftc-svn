@@ -15,7 +15,7 @@
 
 //------------------------------------------------------------------------------
 
-typedef void (*ProcessBBFunc)(BasicBlock*);
+struct Function;
 
 /**
  * Function has in, inout and out going parameters and, of course, an identifier.
@@ -23,8 +23,8 @@ typedef void (*ProcessBBFunc)(BasicBlock*);
 struct Function
 {
     std::string* id_;
-    int counter_;
-    bool reachedValue_;
+    int regCounter_;
+    size_t indexCounter_;
 
     InstrList instrList_;
 
@@ -33,10 +33,12 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    BBList bbList_;
+    BasicBlock* entry_;
+    BasicBlock* exit_;
 
-    BasicBlock** doms_;
-    size_t      numBBs_;
+    BasicBlock** bbs_;
+    BasicBlock** idoms_;
+    size_t       numBBs_;
 
     typedef std::map<InstrList::Node*, BasicBlock*> LabelNode2BBMap;
     /// with this data structure we can quickly find a BB with a given starting label
@@ -44,35 +46,23 @@ struct Function
 
     Function(std::string* id)
         : id_(id)
-        , counter_(0)
-        , reachedValue_(true)
+        , regCounter_(0)
+        , indexCounter_(0)
+        , numBBs_(2) // every function does at least have an entry and an exit node
     {}
     ~Function();
 
     void calcCFG();
     void calcDomTree();
     BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
+    void assignPostOrderNr(BasicBlock* bb);
+    void calcDoms(BasicBlock* bb);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
 
-    BasicBlock* getEntry()
-    {
-        return bbList_.first()->value_;
-    }
-    BasicBlock* getExit()
-    {
-        return bbList_.last()->value_;
-    }
-
-    /// traverses the cfg in reverse post order for each node func is executed
-    void reversePostOrderWalk(ProcessBBFunc process)
-    {
-        r_reversePostOrderWalk(process, getExit());
-        // toggle reachedValue_
-        reachedValue_ = !reachedValue_;
-    }
-    void r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb);
+    /// traverses the cfg in post order so the bbs_ array and nr_ are properly initialized
+    void postOrderWalk(BasicBlock* bb);
 };
 
 struct FunctionTable

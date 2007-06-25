@@ -16,6 +16,11 @@ class List
 public:
     struct Node
     {
+        friend List::~List();
+        friend void List::removeFirst();
+        friend void List::removeLast();
+        friend void List::erase(Node* n);
+
         Node* next_;
         Node* prev_;
 

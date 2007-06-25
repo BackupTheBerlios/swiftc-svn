@@ -14,9 +14,6 @@ FuncTab* functab = 0;
 
 Function::~Function()
 {
-    delete id_;
-    delete[] doms_;
-
     // delete all pseudo regs
     for (RegMap::iterator iter = in_    .begin(); iter != in_   .end(); ++iter)
         delete iter->second;
@@ -32,8 +29,12 @@ Function::~Function()
         delete iter->value_;
 
     // delete all basic blocks
-    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
-        delete iter->value_;
+    for (size_t i = 0; i < numBBs_; ++i)
+        delete bbs_[i];
+
+    delete id_;
+    delete[] idoms_;
+    delete[] bbs_;
 }
 
 void Function::calcCFG()
@@ -60,7 +61,8 @@ void Function::calcCFG()
                 BasicBlock* bb = new BasicBlock(begin, end);
                 // keep acount of the label node and the basic block in the map
                 labelNode2BB_[begin] = bb;
-                bbList_.append( bb );
+                // and count basic blocks
+                ++numBBs_;
 
                 // connect new found basic block with the previous one if it exists
                 if (prevBB)
@@ -88,7 +90,7 @@ void Function::calcCFG()
 
     BasicBlock* currentBB = 0;
 
-    // iterate once again over the instruction list
+    // iterate once again over the instruction list in order to connect the blocks properly
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
@@ -119,66 +121,52 @@ void Function::calcCFG()
     /*
         Create the two additional blocks ENTRY and EXIT.
     */
-    BasicBlock* entry = new BasicBlock( 0, instrList_.first() );
-    BasicBlock* exit  = new BasicBlock( instrList_.last(), 0 );
-    bbList_.prepend(entry);
-    bbList_.append(exit);
+    entry_ = new BasicBlock( 0, instrList_.first() );
+    exit_  = new BasicBlock( instrList_.last(), 0 );
+    // do not increment numBBs_, it has already been initialized with 2
 
     // connect entry with exit
-    entry->connectBB(exit);
+// FIXME connect or not?
+//     entry_->connectBB(exit_);
 
     // connect entry with first regular basic block
     BasicBlock* firstBB = labelNode2BB_[instrList_.first()];
-    entry->connectBB(firstBB);
+    entry_->connectBB(firstBB);
 
     // connect exit with last regular basic block
     BasicBlock* lastBB = prevBB; // prevBB holds the last basic block
-    lastBB->connectBB(exit);
+    lastBB->connectBB(exit_);
 
-    // store number of basic blocks
-    numBBs_ = bbList_.size();
+    // init bbs array
+    bbs_ = new BasicBlock*[numBBs_];
+    // assign post order nr to all basic blocks
+    postOrderWalk(entry_);
 }
 
-void Function::r_reversePostOrderWalk(ProcessBBFunc process, BasicBlock* bb)
+void Function::postOrderWalk(BasicBlock* bb)
 {
-    bb->reached_ = reachedValue_;
-    process(bb);
-
-    for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
+    for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
     {
-        if ( (*iter)->reached_ == reachedValue_ )
+        if ( (*iter)->isReached() )
             continue;
 
-        r_reversePostOrderWalk(process, (*iter));
+        postOrderWalk(*iter);
     }
-}
 
-void assignPostOrderNr(BasicBlock* bb)
-{
-    // HACK
-    static int counter = 0;
-    bb->postOrderNr_ = counter;
-    ++counter;
-}
-
-void calcDoms(BasicBlock* bb)
-{
-// TODO
+    // process this node
+    bbs_[indexCounter_] = bb;
+    bb->index_ = indexCounter_;
+    ++indexCounter_;
 }
 
 void Function::calcDomTree()
 {
-return;
-    // assign post order nr to all basic blocks
-    reversePostOrderWalk(assignPostOrderNr);
-
     // init dom array
-    doms_ = new BasicBlock*[numBBs_];
-    memset(doms_, 0, sizeof(BasicBlock*) * numBBs_);
+    idoms_ = new BasicBlock*[numBBs_];
+    memset(idoms_, 0, sizeof(BasicBlock*) * numBBs_);
 
-    BasicBlock* entry = getEntry();
-    doms_[entry->postOrderNr_] = entry;
-
+    BasicBlock* entry = entry_;
+    idoms_[entry->index_] = entry;
     bool changed = true;
 
     while (changed)
@@ -186,8 +174,48 @@ return;
         changed = false;
 
         // iterate over the CFG in reverse post-order
-        reversePostOrderWalk(calcDoms);
-    }
+        for (size_t i = numBBs_ - 2; long(i) >= 0; --i) // void entry node
+        {
+            // current node
+            BasicBlock* bb = bbs_[i];
+            swiftAssert( bb != entry_, "do not process the entry node" );
+
+            // pick one which has been processed
+            BasicBlock* newIdom = 0;
+            for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
+            {
+                if ( (*iter)->index_ > i)
+                {
+                    newIdom = *iter;
+                    // found a processed node
+                    break;
+                }
+            }
+
+            swiftAssert(newIdom, "no processed predecessor found");
+
+            // for all other predecessors
+            for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
+            {
+                if (bb == newIdom)
+                    continue;
+
+                if ( idoms_[(*iter)->index_] != 0 )
+                    newIdom = intersect(*iter, newIdom);
+            }
+
+            if (idoms_[bb->index_] != newIdom )
+            {
+                idoms_[bb->index_] = newIdom;
+                changed = true;
+            }
+        } // for
+    } // while
+
+    for (size_t i = 0; i < numBBs_; ++i)
+        std::cout << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << std::endl;
+
+    std::cout << std::endl;
 }
 
 BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
@@ -195,12 +223,12 @@ BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
     BasicBlock* finger1 = b1;
     BasicBlock* finger2 = b2;
 
-    while (finger1->postOrderNr_ != finger2->postOrderNr_)
+    while (finger1->index_ != finger2->index_)
     {
-        while (finger1->postOrderNr_ < finger2->postOrderNr_)
-            finger1 = doms_[finger1->postOrderNr_];
-        while (finger2->postOrderNr_ < finger1->postOrderNr_)
-            finger2 = doms_[finger2->postOrderNr_];
+        while (finger1->index_ < finger2->index_)
+            finger1 = idoms_[finger1->index_];
+        while (finger2->index_ < finger1->index_)
+            finger2 = idoms_[finger2->index_];
     }
 
     return finger1;
@@ -234,19 +262,20 @@ void Function::dumpDot(const string& baseFilename)
     ofs << "digraph " << *id_ << " {" << endl << endl;
 
     // iterate over all basic blocks
-    for (BBList::Node* bbIter = bbList_.first(); bbIter != bbList_.sentinel(); bbIter = bbIter->next())
+    for (size_t i = 0; i < numBBs_; ++i)
     {
+        BasicBlock* bb = bbs_[i];
         // start a new node
-        ofs << bbIter->value_->toString() << " [shape=box, label=\"\\" << endl;
+        ofs << bb->toString() << " [shape=box, label=\"\\" << endl;
 
-        if (bbIter->value_->begin_ == 0)
+        if (bb->begin_ == 0)
             ofs << "\tENTRY\\n\\" << endl;
-        else if (bbIter->value_->end_ == 0)
+        else if (bb->end_ == 0)
             ofs << "\tEXIT\\n\\" << endl;
         else
         {
             // for all instructions in this basic block except the last LabelInstr
-            for (InstrList::Node* instrIter = bbIter->value_->begin_; instrIter != bbIter->value_->end_; instrIter = instrIter->next())
+            for (InstrList::Node* instrIter = bb->begin_; instrIter != bb->end_; instrIter = instrIter->next())
                 ofs << '\t' << instrIter->value_->toString() << "\\n\\" << endl; // print instruction
         }
         // close this node
@@ -254,18 +283,18 @@ void Function::dumpDot(const string& baseFilename)
     }
 
     // iterate over all basic blocks in order to print connections
-    for (BBList::Node* iter = bbList_.first(); iter != bbList_.sentinel(); iter = iter->next())
+    for (size_t i = 0; i < numBBs_; ++i)
     {
-
+        BasicBlock* bb = bbs_[i];
 // use this switch to print predecessors instead of successors
 #if 0
         // for all predecessors
-        for (BBSet::iterator pred = iter->value_->pred_.begin(); pred != iter->value_->pred_.end(); ++pred)
-            ofs << iter->value_->toString() << " -> " << (*pred)->toString() << std::endl;
+        for (BBSet::iterator pred = bb->pred_.begin(); pred != bb->pred_.end(); ++pred)
+            ofs << bb->toString() << " -> " << (*pred)->toString() << std::endl;
 #else
         // for all successors
-        for (BBSet::iterator succ = iter->value_->succ_.begin(); succ != iter->value_->succ_.end(); ++succ)
-            ofs << iter->value_->toString() << " -> " << (*succ)->toString() << std::endl;
+        for (BBSet::iterator succ = bb->succ_.begin(); succ != bb->succ_.end(); ++succ)
+            ofs << bb->toString() << " -> " << (*succ)->toString() << std::endl;
 #endif
     }
 
@@ -302,10 +331,10 @@ inline void FunctionTable::insert(PseudoReg* reg)
 
 PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, int varNr)
 {
-    PseudoReg* reg = new PseudoReg(regType, current_->counter_, varNr);
+    PseudoReg* reg = new PseudoReg(regType, current_->regCounter_, varNr);
     insert(reg);
 
-    ++current_->counter_;
+    ++current_->regCounter_;
 
     return reg;
 }

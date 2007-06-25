@@ -28,7 +28,7 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
             case 'q':
                 exit(EXIT_FAILURE);
             default:
-                std::cout << "An assertion in a assertion... :(" << std::endl;
+                std::cout << "An assertion in an assertion... :(" << std::endl;
         }
     } while (true);
 }

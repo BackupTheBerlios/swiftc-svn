@@ -19,8 +19,7 @@ struct BasicBlock
     InstrList::Node* begin_;
     InstrList::Node* end_;
 
-    int postOrderNr_;
-    bool reached_;
+    size_t index_;
 
     BBSet pred_; ///< predecessors of the control flow graph
     BBSet succ_; ///< successors of the control flow graph
@@ -31,8 +30,7 @@ struct BasicBlock
     BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)
         , end_(end)
-        , postOrderNr_(-1)
-        , reached_(false)
+        , index_(std::numeric_limits<size_t>::max()) // means: not reached yet
     {}
 
     void connectBB(BasicBlock* bb)
@@ -49,6 +47,10 @@ struct BasicBlock
     {
         swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
         return !end_;
+    }
+    bool isReached() const
+    {
+        return index_ != std::numeric_limits<size_t>::max();
     }
 
     /// returns the title string of this BasicBlock
