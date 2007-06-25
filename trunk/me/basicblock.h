@@ -23,6 +23,7 @@ struct BasicBlock
 
     BBSet pred_; ///< predecessors of the control flow graph
     BBSet succ_; ///< successors of the control flow graph
+    BBSet domFrontier_;
 
     /// keeps acount of the regs with var numbers which are assigned to in this basic block last
     RegMap varNr_;

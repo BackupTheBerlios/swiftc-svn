@@ -56,7 +56,8 @@ struct Function
     void calcDomTree();
     BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
     void assignPostOrderNr(BasicBlock* bb);
-    void calcDoms(BasicBlock* bb);
+    void calcDomFrontier();
+    void placePhiFunctions();
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
@@ -86,8 +87,7 @@ struct FunctionTable
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrList::Node* node);
-    void calcCFG();
-    void calcDomTree();
+    void buildUpME();
 
     void dumpSSA();
     void dumpDot();

@@ -211,11 +211,6 @@ void Function::calcDomTree()
             }
         } // for
     } // while
-
-    for (size_t i = 0; i < numBBs_; ++i)
-        std::cout << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << std::endl;
-
-    std::cout << std::endl;
 }
 
 BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
@@ -234,6 +229,40 @@ BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
     return finger1;
 }
 
+void Function::calcDomFrontier()
+{
+    for (size_t i = 0; i < numBBs_; ++i)
+    {
+        BasicBlock* bb = bbs_[i];
+
+        // if the number of predecessors >=2
+        if (bb->pred_.size() >= 2)
+        {
+            // for all predecessors of bb
+            for (BBSet::iterator iter = bb->pred_.begin(); iter != bb->pred_.end(); ++iter)
+            {
+                BasicBlock* runner = *iter;
+
+                while ( runner != idoms_[bb->index_] )
+                {
+                    // add bb to the runner's dominance frontier
+                    runner->domFrontier_.insert(bb);
+                    runner = idoms_[runner->index_];
+                }
+            }
+        }
+    }
+}
+
+void Function::placePhiFunctions()
+{
+    // TODO
+}
+
+/*
+    dump functions
+*/
+
 void Function::dumpSSA(ofstream& ofs)
 {
     ofs << endl
@@ -248,6 +277,28 @@ void Function::dumpSSA(ofstream& ofs)
         if ( typeid(*iter->value_) != typeid(LabelInstr) )
             ofs << '\t';
         ofs << iter->value_->toString() << endl;
+    }
+
+    // print idmos
+    ofs << endl
+        << "IDOMS:" << endl;
+    for (size_t i = 0; i < numBBs_; ++i)
+        ofs << '\t' << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << endl;
+
+    // print dominance frontier
+    ofs << endl
+        << "DOMINANCE FRONTIER:" << endl;
+    for (size_t i = 0; i < numBBs_; ++i)
+    {
+        BasicBlock* bb = bbs_[i];
+
+        ofs << '\t' << bb->toString() << ":" << endl
+            << "\t\t";
+
+        for (BBSet::iterator iter = bb->domFrontier_.begin(); iter != bb->domFrontier_.end(); ++iter)
+            ofs << (*iter)->toString() << " ";
+
+        ofs << endl;
     }
 }
 
@@ -290,11 +341,11 @@ void Function::dumpDot(const string& baseFilename)
 #if 0
         // for all predecessors
         for (BBSet::iterator pred = bb->pred_.begin(); pred != bb->pred_.end(); ++pred)
-            ofs << bb->toString() << " -> " << (*pred)->toString() << std::endl;
+            ofs << bb->toString() << " -> " << (*pred)->toString() << endl;
 #else
         // for all successors
         for (BBSet::iterator succ = bb->succ_.begin(); succ != bb->succ_.end(); ++succ)
-            ofs << bb->toString() << " -> " << (*succ)->toString() << std::endl;
+            ofs << bb->toString() << " -> " << (*succ)->toString() << endl;
 #endif
     }
 
@@ -359,16 +410,15 @@ void FunctionTable::appendInstrNode(InstrList::Node* node)
     current_->instrList_.append(node);
 }
 
-void FunctionTable::calcCFG()
+void FunctionTable::buildUpME()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+    {
         iter->second->calcCFG();
-}
-
-void FunctionTable::calcDomTree()
-{
-    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->calcDomTree();
+        iter->second->calcDomFrontier();
+        iter->second->placePhiFunctions();
+    }
 }
 
 void FunctionTable::dumpSSA()
@@ -391,4 +441,3 @@ void FunctionTable::dumpDot()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_);
 }
-
