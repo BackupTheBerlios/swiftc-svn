@@ -35,6 +35,13 @@ void AssignInstr::genCode(std::ofstream& ofs)
 
 //------------------------------------------------------------------------------
 
+std::string PhiInstr::toString() const
+{
+    return "phi";
+}
+
+//------------------------------------------------------------------------------
+
 std::string UnInstr::toString() const
 {
     std::ostringstream oss;

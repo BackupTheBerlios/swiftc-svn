@@ -256,7 +256,49 @@ void Function::calcDomFrontier()
 
 void Function::placePhiFunctions()
 {
-    // TODO
+    /*
+        hasAlready[bb->index_] knows
+        whether an phi-function for var i in bb has already been put
+    */
+    typedef set<int> HasAlready;
+    HasAlready hasAlreadyArray[numBBs_];
+
+    // for each var
+    for (RegMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
+    {
+        PseudoReg* var = iter->second;
+        BBList work;
+        // init work list with all basic blocks
+        for (size_t i = 0; i < numBBs_; ++i)
+            work.append( bbs_[i] );
+
+        // for each basic block in the work list
+        while ( !work.empty() )
+        {
+            // take a basic block from the list
+            BasicBlock* bb = work.first()->value_;
+            work.removeFirst();
+
+            // for each basic block from DF(bb)
+            for (BBSet::iterator iter = bb->domFrontier_.begin(); iter != bb->domFrontier_.end(); ++iter)
+            {
+                BasicBlock* df = *iter;
+                HasAlready& hasAlready = hasAlreadyArray[df->index_];
+std::cout << "1" << std::endl;
+                // do we already have an phi function for this node and this var?
+                if ( hasAlready.find(var->varNr_) != hasAlready.end() )
+                    continue; // yes -> so process next one
+                // else
+std::cout << "2" << std::endl;
+                hasAlready.insert(var->varNr_);
+                PhiInstr* phiInstr = new PhiInstr();
+                instrList_.insert(df->begin_, phiInstr);
+
+                // TODO
+                work.append(df);
+            }
+        } // while
+    } // for each var
 }
 
 /*

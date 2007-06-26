@@ -40,7 +40,7 @@ bool Declaration::analyze()
 
     // everything ok. so insert the local
     local_ = new Local(type_->clone(), id_, line_, 0);
-    local_->varNr_ = symtab->newMagic();
+    local_->varNr_ = symtab->varNr();
     symtab->insert(local_);
 
     swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );

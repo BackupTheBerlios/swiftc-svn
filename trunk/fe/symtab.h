@@ -76,7 +76,7 @@ struct SymbolTable
     }
     Class* lookupClass(std::string* id);
 
-    int newMagic()
+    int varNr()
     {
         return varCounter_++;
     }

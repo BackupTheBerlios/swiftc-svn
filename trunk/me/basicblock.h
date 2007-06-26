@@ -39,20 +39,25 @@ struct BasicBlock
         this->succ_.insert(bb);
         bb->pred_.insert(this);
     }
+
     bool isEntry() const
     {
         swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
         return !begin_;
     }
+
     bool isExit() const
     {
         swiftAssert( begin_ || end_, "begin_ and end_ are not allowed to be zero simultanously");
         return !end_;
     }
+
     bool isReached() const
     {
         return index_ != std::numeric_limits<size_t>::max();
     }
+
+//     void placePhiFunction();
 
     /// returns the title string of this BasicBlock
     std::string toString() const;

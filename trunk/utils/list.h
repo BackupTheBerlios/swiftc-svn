@@ -31,8 +31,8 @@ public:
         {}
         ~Node()
         {
-            if (next_)
-                delete next_;
+//             if (next_)
+//                 delete next_;
         }
 
         Node* next()
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * Inserts a Node n after node prev.
+     * Inserts a Node n behind node prev.
      * @param prev the predecessor of n
      * @param n the node to be inserted
      */
@@ -172,7 +172,7 @@ public:
     }
 
     /**
-     * inserts a node n after node prev
+     * inserts a node n behind node prev
      * @param prev the predecessor of n
      * @param t the value to be inserted
      */
@@ -283,7 +283,7 @@ public:
 
     bool empty()
     {
-        return bool(size_);
+        return size_ == 0;
     }
 };
 

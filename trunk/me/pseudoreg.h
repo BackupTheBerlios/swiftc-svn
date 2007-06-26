@@ -61,7 +61,7 @@ struct PseudoReg
 
     RegType regType_;
     int regNr_;
-    int varNr_;///< PseudoRegs with the same magic number originally belong to the same var
+    int varNr_;///< PseudoRegs with the same var number belong to the same var originally
     State state_;
 
     /// for constants

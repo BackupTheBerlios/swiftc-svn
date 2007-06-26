@@ -102,11 +102,11 @@ struct NOPInstr : public CalcInstr
  */
 struct PhiInstr : public CalcInstr
 {
-    PseudoReg* result_;
+//     PseudoReg* result_;
 //     RegList args_;
 
-    PhiInstr(PseudoReg* result)
-        : result_(result)
+    PhiInstr(/*PseudoReg* result*/)
+//         : result_(result)
     {}
     ~PhiInstr()
     {
@@ -114,7 +114,7 @@ struct PhiInstr : public CalcInstr
     }
 
 
-    virtual std::string toString() const = 0;
+    std::string toString() const;
     /// dummy implementation, NOP does nothing
     void genCode(std::ofstream& /*ofs*/) {}
 };
