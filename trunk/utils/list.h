@@ -31,8 +31,8 @@ public:
         {}
         ~Node()
         {
-//             if (next_)
-//                 delete next_;
+            if (next_)
+                delete next_;
         }
 
         Node* next()
@@ -195,6 +195,8 @@ public:
     {
         Node* newFirst = sentinel_->next_->next_;
 
+        // mark end of destruction
+        sentinel_->next_->next_ = 0;
         delete sentinel_->next_;
 
         sentinel_->next_ = newFirst;
@@ -208,6 +210,8 @@ public:
     {
         Node* newLast = sentinel_->prev_->prev_;
 
+        // mark end of destruction
+        sentinel_->prev_->next_ = 0;
         delete sentinel_->prev_;
 
         sentinel_->prev_ = newLast;
@@ -223,6 +227,8 @@ public:
         Node* prev = n->prev_;
         Node* next = n->next_;
 
+        // mark end of destruction
+        n->next_ = 0;
         delete n;
 
         prev->next_ = next;

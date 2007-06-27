@@ -284,17 +284,14 @@ void Function::placePhiFunctions()
             {
                 BasicBlock* df = *iter;
                 HasAlready& hasAlready = hasAlreadyArray[df->index_];
-std::cout << "1" << std::endl;
+
                 // do we already have an phi function for this node and this var?
                 if ( hasAlready.find(var->varNr_) != hasAlready.end() )
                     continue; // yes -> so process next one
                 // else
-std::cout << "2" << std::endl;
                 hasAlready.insert(var->varNr_);
                 PhiInstr* phiInstr = new PhiInstr();
                 instrList_.insert(df->begin_, phiInstr);
-
-                // TODO
                 work.append(df);
             }
         } // while
