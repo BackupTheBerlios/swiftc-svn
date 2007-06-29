@@ -136,7 +136,9 @@ struct AssignInstr : public CalcInstr
         : kind_(kind)
         , result_(result)
         , reg_(reg)
-    {}
+    {
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    }
     ~AssignInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
@@ -169,12 +171,14 @@ struct UnInstr : public CalcInstr
         : kind_(kind)
         , result_(result)
         , op_(op)
-    {}
+    {
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    }
     ~UnInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
 
-        if (op_->isLiteral() )
+        if ( op_->isLiteral() )
             delete op_;
     }
 
@@ -228,14 +232,16 @@ struct BinInstr : public CalcInstr
         , result_(result)
         , op1_(op1)
         , op2_(op2)
-    {}
+    {
+        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    }
     ~BinInstr()
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
 
-        if (op1_->isLiteral() )
+        if ( op1_->isLiteral() )
             delete op1_;
-        if (op2_->isLiteral() )
+        if ( op2_->isLiteral() )
             delete op2_;
     }
 

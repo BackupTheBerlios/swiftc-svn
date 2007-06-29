@@ -135,7 +135,6 @@ struct Scope
     Local* lookupLocal(std::string* id);
     /// Returns the local by regNr, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(int);
-    void replaceRegNr(int oldNr, int newNr);
 };
 
 //------------------------------------------------------------------------------

@@ -14,6 +14,10 @@ FuncTab* functab = 0;
 
 Function::~Function()
 {
+    // delete all instructions
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+        delete iter->value_;
+
     // delete all pseudo regs
     for (RegMap::iterator iter = in_    .begin(); iter != in_   .end(); ++iter)
         delete iter->second;
@@ -23,10 +27,6 @@ Function::~Function()
         delete iter->second;
     for (RegMap::iterator iter = vars_  .begin(); iter != vars_ .end(); ++iter)
         delete iter->second;
-
-    // delete all instructions
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
-        delete iter->value_;
 
     // delete all basic blocks
     for (size_t i = 0; i < numBBs_; ++i)
@@ -109,13 +109,14 @@ void Function::calcCFG()
             BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
             currentBB->connectBB(succ);
         }
-        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
+// FIXME needed?
+/*        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
         {
             // if we have an assignment to a real var update this in the map
             AssignInstr* ai = (AssignInstr*) iter->value_;
             if ( ai->result_->isVar() )
                 currentBB->varNr_[ai->result_->varNr_] = ai->result_;
-        }
+        }*/
     }
 
     /*
@@ -297,7 +298,7 @@ void Function::placePhiFunctions()
                 HasAlready& hasAlready = hasAlreadyArray[df->index_];
 
                 // do we already have an phi function for this node and this var?
-                if ( hasAlready.find(var->varNr_) != hasAlready.end() )
+                if ( hasAlready.find(var->regNr_) != hasAlready.end() )
                     continue; // yes -> so process next one
                 // else
 
@@ -306,7 +307,7 @@ void Function::placePhiFunctions()
 //                 instrList_.insert(df->begin_, phiInstr);
 
                 // update data structures
-                hasAlready.insert(var->varNr_);
+                hasAlready.insert(var->regNr_);
                 if (hasBeenAdded[df->index_] == false)
                 {
                     work.append(df);
@@ -438,9 +439,18 @@ inline void FunctionTable::insert(PseudoReg* reg)
     swiftAssert(p.second, "there is already a reg with this regNr in the map");
 }
 
-PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, int varNr)
+PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr)
 {
-    PseudoReg* reg = new PseudoReg(regType, current_->regCounter_, varNr);
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    PseudoReg* reg = new PseudoReg(regType, varNr);
+    insert(reg);
+
+    return reg;
+}
+
+PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
+{
+    PseudoReg* reg = new PseudoReg(regType, current_->regCounter_);
     insert(reg);
 
     ++current_->regCounter_;

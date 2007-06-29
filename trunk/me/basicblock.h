@@ -25,8 +25,9 @@ struct BasicBlock
     BBSet succ_; ///< successors of the control flow graph
     BBSet domFrontier_;
 
-    /// keeps acount of the regs with var numbers which are assigned to in this basic block last
-    RegMap varNr_;
+// /// keeps acount of the regs with var numbers which are assigned to in this basic block last
+//     RegMap varNr_;
+// FIXME needed?
 
     BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)

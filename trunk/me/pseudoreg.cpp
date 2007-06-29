@@ -8,7 +8,7 @@ std::string PseudoReg::toString() const
 {
     std::ostringstream oss;
 
-    if (regNr_ == LITERAL)
+    if ( isLiteral() )
     {
         switch (regType_)
         {
@@ -61,10 +61,10 @@ std::string PseudoReg::toString() const
                 swiftAssert(false, "VR_* not implemented yet");
         }
     }
-    else if (varNr_ == TEMP)
-        oss << "tmp" << regNr_;
+    else if ( isVar() )
+        oss << "var" << -regNr_;
     else // it is a real var
-        oss << "tmp" << regNr_ << '[' << varNr_ << ']';
+        oss << "tmp" << regNr_;
 
     return oss.str();
 }

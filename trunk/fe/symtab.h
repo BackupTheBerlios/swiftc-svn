@@ -24,7 +24,7 @@ struct SymbolTable
     int varCounter_;
 
     SymbolTable()
-        : varCounter_(0)
+        : varCounter_(-1) // 0 is reserved for literals
     {
         reset();
     }
@@ -70,15 +70,12 @@ struct SymbolTable
     {
         return currentScope()->lookupLocal(regNr);
     }
-    void replaceRegNr(int oldNr, int newNr)
-    {
-        return currentScope()->replaceRegNr(oldNr, newNr);
-    }
+
     Class* lookupClass(std::string* id);
 
-    int varNr()
+    int newVarNr()
     {
-        return varCounter_++;
+        return varCounter_--;
     }
 };
 

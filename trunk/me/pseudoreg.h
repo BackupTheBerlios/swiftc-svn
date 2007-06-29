@@ -13,11 +13,6 @@
 
 struct PseudoReg
 {
-    enum {
-        LITERAL = -1,
-        TEMP = -1
-    };
-
     /// Types of pseudo registers / constants
     enum RegType
     {
@@ -52,16 +47,26 @@ struct PseudoReg
         VR_REAL64= -R_REAL64,
     };
 
-    enum State {
+    enum State
+    {
         /// location lies in an unexecutable edge with an as yet unknown constant value
         TOP,
         /// location lies in an executable edge with an known constant value
         BOTTOM
     };
 
+    enum
+    {
+        LITERAL = 0
+    };
+
     RegType regType_;
+    /**
+     * regNr_ > 0   a temp with nr regNr
+     * regNr_ = 0   a literal
+     * regNr_ < 0   a var with nr -regNr
+    */
     int regNr_;
-    int varNr_;///< PseudoRegs with the same var number belong to the same var originally
     State state_;
 
     /// for constants
@@ -95,27 +100,30 @@ struct PseudoReg
 
     Value value_;
 
-    PseudoReg(RegType regType, int regNr, int varNr)
+    PseudoReg(RegType regType, int regNr)
         : regType_(regType)
         , regNr_(regNr)
-        , varNr_(varNr)
         , state_(TOP) // TOP is assumed as initial state
     {}
     /// use this constructor if you want to create a literal
     PseudoReg(RegType regType)
         : regType_(regType)
         , regNr_(LITERAL)
-        , varNr_(LITERAL)
         , state_(TOP) // TOP is assumed as initial state
     {}
 
     bool isLiteral() const
     {
-        return regNr_ == LITERAL;
+        return regNr_ == 0;
     }
+    /// PseudoRegs with the same var number belong to the same var originally
     bool isVar() const
     {
-        return regNr_ != TEMP;
+        return regNr_ < 0;
+    }
+    bool isTemp() const
+    {
+        return regNr_ > 0;
     }
 
     std::string toString() const;

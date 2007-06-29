@@ -46,9 +46,9 @@ struct Function
 
     Function(std::string* id)
         : id_(id)
-        , regCounter_(0)
+        , regCounter_(1)    // 0 is reserved for literals
         , indexCounter_(0)
-        , numBBs_(2) // every function does at least have an entry and an exit node
+        , numBBs_(2)        // every function does at least have an entry and an exit node
     {}
     ~Function();
 
@@ -82,7 +82,20 @@ struct FunctionTable
     Function* insertFunction(std::string* id);
 
     inline void insert(PseudoReg* reg);
-    PseudoReg* newTemp(PseudoReg::RegType regType, int varNr = PseudoReg::TEMP);
+
+    /**
+     * This method creates a new temp PseudoReg.
+     * @param regType the type of the PseudoReg
+    */
+    PseudoReg* newTemp(PseudoReg::RegType regType);
+
+    /**
+     * This method creates a new var PseudoReg.
+     * @param regType the type of the PseudoReg
+     * @param varNr the varNr of the var; must be positive.
+    */
+    PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);

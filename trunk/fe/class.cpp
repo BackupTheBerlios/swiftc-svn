@@ -105,26 +105,6 @@ Local* Scope::lookupLocal(int regNr)
     }
 }
 
-void Scope::replaceRegNr(int oldNr, int newNr)
-{
-    RegNrMap::iterator iter = regNrs_.find(oldNr);
-    if ( iter != regNrs_.end() )
-    {
-        Local* local = iter->second;
-        regNrs_.erase(iter);    // remove from map
-        local->regNr_ = newNr;  // update regNr
-        regNrs_[newNr] = local; // put into the map again
-    }
-    else
-    {
-        // try to find in parent scope
-        if (parent_)
-            return parent_->replaceRegNr(oldNr, newNr);
-        else
-            swiftAssert(false, "no regNr found");
-    }
-}
-
 //------------------------------------------------------------------------------
 
 Method::~Method()

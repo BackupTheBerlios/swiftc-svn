@@ -38,22 +38,18 @@ struct Node
 struct SymTabEntry : public Node
 {
     std::string* id_;
+
     /**
-     * used to keep acount of the current register which holds the value
-     * at the moment when in SSA form
+     * regNr_ > 0   a temp with nr regNr
+     * regNr_ = 0   invalid
+     * regNr_ < 0   a var with nr -regNr
     */
     int regNr_;
-    /**
-     * Var numbers are used to find out which PseudoRegs belong together
-     * when in SSA form.
-    */
-    int varNr_;
 
     SymTabEntry(std::string* id, int line = NO_LINE, Node* parent = 0)
         : Node(line, parent)
         , id_(id)
-        , regNr_(-1) // start with an invalid value
-        , varNr_(-1) // start with an invalid value
+        , regNr_(0) // start with an invalid value
     {}
     ~SymTabEntry()
     {
