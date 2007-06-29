@@ -44,7 +44,7 @@ struct SymTabEntry : public Node
     */
     int regNr_;
     /**
-     * Magic numbers are used to find out which PseudoRegs belong together
+     * Var numbers are used to find out which PseudoRegs belong together
      * when in SSA form.
     */
     int varNr_;

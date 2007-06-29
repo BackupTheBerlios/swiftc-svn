@@ -59,5 +59,4 @@ ADD_EXECUTABLE (swift
     me/functab.cpp
     me/pseudoreg.cpp
     me/ssa.cpp
-
 )

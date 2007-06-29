@@ -263,14 +263,25 @@ void Function::placePhiFunctions()
     typedef set<int> HasAlready;
     HasAlready hasAlreadyArray[numBBs_];
 
+    /*
+        hasBeenAdded[bb->index_] knows
+        whether bb has already been added to the work list
+    */
+    bool hasBeenAdded[numBBs_];
+
     // for each var
     for (RegMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
     {
         PseudoReg* var = iter->second;
         BBList work;
+
         // init work list with all basic blocks
         for (size_t i = 0; i < numBBs_; ++i)
             work.append( bbs_[i] );
+
+        // set all blocks to "not added"
+        memset(hasBeenAdded, 0, sizeof(bool) * numBBs_); // init to false
+
 
         // for each basic block in the work list
         while ( !work.empty() )
@@ -289,10 +300,18 @@ void Function::placePhiFunctions()
                 if ( hasAlready.find(var->varNr_) != hasAlready.end() )
                     continue; // yes -> so process next one
                 // else
+
+                // place phi function
+//                 PhiInstr* phiInstr = new PhiInstr();
+//                 instrList_.insert(df->begin_, phiInstr);
+
+                // update data structures
                 hasAlready.insert(var->varNr_);
-                PhiInstr* phiInstr = new PhiInstr();
-                instrList_.insert(df->begin_, phiInstr);
-                work.append(df);
+                if (hasBeenAdded[df->index_] == false)
+                {
+                    work.append(df);
+                    hasBeenAdded[df->index_] = true;
+                }
             }
         } // while
     } // for each var
