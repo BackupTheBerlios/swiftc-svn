@@ -58,6 +58,8 @@ struct Function
     void assignPostOrderNr(BasicBlock* bb);
     void calcDomFrontier();
     void placePhiFunctions();
+    void renameVars();
+    void search(BasicBlock* bb, std::stack<int>* names, int** varCounter);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);

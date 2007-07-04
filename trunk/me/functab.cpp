@@ -109,14 +109,13 @@ void Function::calcCFG()
             BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
             currentBB->connectBB(succ);
         }
-// FIXME needed?
-/*        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
+        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
         {
-            // if we have an assignment to a real var update this in the map
+            // if we have an assignment to a var update this in the map
             AssignInstr* ai = (AssignInstr*) iter->value_;
             if ( ai->result_->isVar() )
-                currentBB->varNr_[ai->result_->varNr_] = ai->result_;
-        }*/
+                currentBB->vars_[ai->result_->regNr_] = ai->result_;
+        }
     }
 
     /*
@@ -179,7 +178,7 @@ void Function::calcDomTree()
         {
             // current node
             BasicBlock* bb = bbs_[i];
-            swiftAssert( bb != entry_, "do not process the entry node" );
+            swiftAssert(bb != entry_, "do not process the entry node");
 
             // pick one which has been processed
             BasicBlock* newIdom = 0;
@@ -212,6 +211,20 @@ void Function::calcDomTree()
             }
         } // for
     } // while
+
+    /*
+        Now we can walk the idom array to get each dominator.
+        Let's compute the reserve set, too, so we can easily access
+        children of basic blocks and not only their parents.
+    */
+
+    for (size_t i = 0; i < numBBs_; ++i)
+    {
+        BasicBlock* bb = bbs_[i];
+        swiftAssert(i == bb->index_, "i and index_ bust be consistent");
+        BasicBlock* idom = idoms_[i];
+        idom->domChildren_.insert(bb); // append child
+    }
 }
 
 BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
@@ -274,11 +287,20 @@ void Function::placePhiFunctions()
     for (RegMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
     {
         PseudoReg* var = iter->second;
+
+        if (var->regNr_ >= 0)
+            break; // not vars anymore
+
         BBList work;
 
-        // init work list with all basic blocks
+        // init work list with all basic blocks which assign to var
         for (size_t i = 0; i < numBBs_; ++i)
-            work.append( bbs_[i] );
+        {
+            BasicBlock* bb = bbs_[i];
+
+            if ( bb->vars_.find(var->regNr_) != bb->vars_.end() )
+                work.append(bb);
+        }
 
         // set all blocks to "not added"
         memset(hasBeenAdded, 0, sizeof(bool) * numBBs_); // init to false
@@ -303,8 +325,8 @@ void Function::placePhiFunctions()
                 // else
 
                 // place phi function
-//                 PhiInstr* phiInstr = new PhiInstr();
-//                 instrList_.insert(df->begin_, phiInstr);
+                PhiInstr* phiInstr = new PhiInstr(var);
+                instrList_.insert(df->begin_, phiInstr);
 
                 // update data structures
                 hasAlready.insert(var->regNr_);
@@ -316,6 +338,45 @@ void Function::placePhiFunctions()
             }
         } // while
     } // for each var
+}
+
+void Function::renameVars()
+{
+    stack<int>* names = new stack<int>[ vars_.size() ];
+    int** varCounter = new int*[ vars_.size() ];
+    // set counter for all vars do zero
+    memset( varCounter, 0, sizeof(int*) * vars_.size() );
+
+//     search(entry_, names, varCounter);
+
+    // TODO perhaps these arrays are useful later on
+    delete[] names;
+    delete[] varCounter;
+}
+
+void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
+{
+    // for each instructin in bb except the entry and exit node
+    if ( !bb->isEntry() && !bb->isExit() )
+    {
+        for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
+        {
+            std::cout <<"fjdkj" << std::endl;
+        }
+    }
+
+    // for each successor of bb
+    for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
+    {
+//         BasicBlock* succ = *iter;
+
+        // for each phi function in succ
+
+    }
+
+    // for each child of bb in the dominator tree
+    for (BBSet::iterator iter = bb->domChildren_.begin(); iter != bb->domChildren_.end(); ++iter)
+        search(*iter, names, varCounter);
 }
 
 /*
@@ -338,11 +399,27 @@ void Function::dumpSSA(ofstream& ofs)
         ofs << iter->value_->toString() << endl;
     }
 
-    // print idmos
+    // print idoms
     ofs << endl
         << "IDOMS:" << endl;
     for (size_t i = 0; i < numBBs_; ++i)
         ofs << '\t' << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << endl;
+
+    // print domChildren
+    ofs << endl
+        << "DOM CHILDREN:" << endl;
+    for (size_t i = 0; i < numBBs_; ++i)
+    {
+        BasicBlock* bb = bbs_[i];
+
+        ofs << '\t' << bb->toString() << ':' << endl
+            << "\t\t";
+
+        for (BBSet::iterator iter = bb->domChildren_.begin(); iter != bb->domChildren_.end(); ++iter)
+             ofs << (*iter)->toString() << ' ';
+
+        ofs << endl;
+    }
 
     // print dominance frontier
     ofs << endl
@@ -482,10 +559,12 @@ void FunctionTable::buildUpME()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
-        iter->second->calcCFG();
-        iter->second->calcDomTree();
-        iter->second->calcDomFrontier();
-        iter->second->placePhiFunctions();
+        Function* function = iter->second;
+        function->calcCFG();
+        function->calcDomTree();
+        function->calcDomFrontier();
+        function->placePhiFunctions();
+        function->renameVars();
     }
 }
 

@@ -38,10 +38,18 @@ class Test
             end
 
          else
+            real t;
+
+
             if (b)
                 bool b;
                 b  = false;
+                t = 7.0;
+            else
+                t = 8.0;
             end
+
+            t = t * 0.3;
         end
 
     real u;

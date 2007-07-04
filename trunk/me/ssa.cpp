@@ -23,7 +23,7 @@ LabelInstr::LabelInstr()
 std::string AssignInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << "\t" << c_ << " " << reg_->toString();
+    oss << result_->toString() << '\t' << c_ << ' ' << reg_->toString();
 
     return oss.str();
 }
@@ -37,7 +37,10 @@ void AssignInstr::genCode(std::ofstream& ofs)
 
 std::string PhiInstr::toString() const
 {
-    return "phi";
+    std::ostringstream oss;
+    oss << result_->toString() << "\t= phi()";
+
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------

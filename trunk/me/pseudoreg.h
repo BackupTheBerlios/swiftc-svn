@@ -125,7 +125,12 @@ struct PseudoReg
     {
         return regNr_ > 0;
     }
+    size_t var2Index() const
+    {
+        swiftAssert(regNr_ < 0, "this is not a var");
 
+        return size_t(-regNr_);
+    }
     std::string toString() const;
 };
 

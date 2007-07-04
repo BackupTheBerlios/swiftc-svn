@@ -102,11 +102,11 @@ struct NOPInstr : public CalcInstr
  */
 struct PhiInstr : public CalcInstr
 {
-//     PseudoReg* result_;
+    PseudoReg* result_;
 //     RegList args_;
 
-    PhiInstr(/*PseudoReg* result*/)
-//         : result_(result)
+    PhiInstr(PseudoReg* result)
+        : result_(result)
     {}
     ~PhiInstr()
     {
