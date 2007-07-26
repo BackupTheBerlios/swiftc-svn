@@ -46,6 +46,10 @@ class Test
                 b  = false;
                 t = 7.0;
             else
+                if (b)
+                    real u;
+                    u = 5.0 * r;
+                end
                 t = 8.0;
             end
 

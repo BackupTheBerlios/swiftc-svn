@@ -347,7 +347,7 @@ void Function::renameVars()
     // set counter for all vars do zero
     memset( varCounter, 0, sizeof(int*) * vars_.size() );
 
-//     search(entry_, names, varCounter);
+    search(entry_, names, varCounter);
 
     // TODO perhaps these arrays are useful later on
     delete[] names;
@@ -368,9 +368,10 @@ void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
     // for each successor of bb
     for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
     {
-//         BasicBlock* succ = *iter;
+       BasicBlock* succ = *iter;
 
         // for each phi function in succ
+	for (InstrList::Node* iter =
 
     }
 
@@ -406,6 +407,7 @@ void Function::dumpSSA(ofstream& ofs)
         ofs << '\t' << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << endl;
 
     // print domChildren
+
     ofs << endl
         << "DOM CHILDREN:" << endl;
     for (size_t i = 0; i < numBBs_; ++i)
