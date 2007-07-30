@@ -4,6 +4,11 @@ However you can compile and run swift on other archs as well.
 
 //------------------------------------------------------------------------------
 
+All files are published under the GPL-3. See the LICENSE-file in this directory
+for details.
+
+//------------------------------------------------------------------------------
+
 REQUIREMENTS
 - bison
 - flex
