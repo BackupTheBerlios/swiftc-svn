@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-#include "assert.h"
+#include "utils/assert.h"
 
 // Because std::list sucks here my own implementation
 

@@ -249,7 +249,7 @@ void Function::calcDomFrontier()
     {
         BasicBlock* bb = bbs_[i];
 
-        // if the number of predecessors >=2
+        // if the number of predecessors >= 2
         if (bb->pred_.size() >= 2)
         {
             // for all predecessors of bb
@@ -361,17 +361,26 @@ void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
     {
         for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
-            std::cout <<"fjdkj" << std::endl;
+            InstrBase* instr = iter->value_;
+
+            // if instr is an ordinary instruction TODO proper inheritance
+            if ( typeid(*instr) == typeid(BinInstr) )
+            {
+                // instr->replaceVar();
+            }
+
+//             i = names[];
+            // replace V by Vi
         }
     }
 
     // for each successor of bb
     for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
     {
-       BasicBlock* succ = *iter;
+        BasicBlock* succ = *iter;
 
         // for each phi function in succ
-	for (InstrList::Node* iter =
+//         for (InstrList::Node* iter =
 
     }
 
@@ -407,7 +416,6 @@ void Function::dumpSSA(ofstream& ofs)
         ofs << '\t' << bbs_[i]->toString() << " -> " << idoms_[i]->toString() << endl;
 
     // print domChildren
-
     ofs << endl
         << "DOM CHILDREN:" << endl;
     for (size_t i = 0; i < numBBs_; ++i)
