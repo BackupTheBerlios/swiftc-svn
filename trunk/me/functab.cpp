@@ -347,7 +347,7 @@ void Function::renameVars()
     // set counter for all vars do zero
     memset( varCounter, 0, sizeof(int*) * vars_.size() );
 
-    search(entry_, names, varCounter);
+//     search(entry_, names, varCounter);
 
     // TODO perhaps these arrays are useful later on
     delete[] names;
@@ -363,8 +363,8 @@ void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
         {
             InstrBase* instr = iter->value_;
 
-            // if instr is an ordinary instruction TODO proper inheritance
-            if ( typeid(*instr) == typeid(BinInstr) )
+            // if instr is an ordinary instruction
+            if ( typeid(*instr) == typeid(AssignInstr) )
             {
                 // instr->replaceVar();
             }

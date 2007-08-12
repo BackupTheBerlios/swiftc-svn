@@ -226,7 +226,23 @@ void UnExpr::genSSA()
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
 
     reg_ = functab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
-    functab->appendInstr( new UnInstr(kind_, reg_, op_->reg_) );
+
+    int kind;
+
+    switch (kind_)
+    {
+        case '-':
+            kind = AssignInstr::UNARY_MINUS;
+            break;
+        case NOT:
+            kind = AssignInstr::NOT;
+            break;
+        default:
+            swiftAssert(kind_ == '^', "impossible switch/case value");
+            kind = kind_;
+    }
+
+    functab->appendInstr( new AssignInstr(kind, reg_, op_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -328,22 +344,22 @@ void BinExpr::genSSA()
     switch (kind_)
     {
         case EQ_OP:
-            kind = BinInstr::EQ;
+            kind = AssignInstr::EQ;
             break;
         case NE_OP:
-            kind = BinInstr::NE;
+            kind = AssignInstr::NE;
             break;
         case LE_OP:
-            kind = BinInstr::LE;
+            kind = AssignInstr::LE;
             break;
         case GE_OP:
-            kind = BinInstr::GE;
+            kind = AssignInstr::GE;
             break;
         default:
             kind = kind_;
     }
 
-    functab->appendInstr( new BinInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+    functab->appendInstr( new AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
 }
 
 //------------------------------------------------------------------------------

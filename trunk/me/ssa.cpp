@@ -20,21 +20,6 @@ LabelInstr::LabelInstr()
 
 //------------------------------------------------------------------------------
 
-std::string AssignInstr::toString() const
-{
-    std::ostringstream oss;
-    oss << result_->toString() << '\t' << c_ << ' ' << reg_->toString();
-
-    return oss.str();
-}
-
-void AssignInstr::genCode(std::ofstream& ofs)
-{
-    ofs << "ai" << std::endl;
-};
-
-//------------------------------------------------------------------------------
-
 std::string PhiInstr::toString() const
 {
     std::ostringstream oss;
@@ -45,26 +30,26 @@ std::string PhiInstr::toString() const
 
 //------------------------------------------------------------------------------
 
-std::string UnInstr::toString() const
-{
-    std::ostringstream oss;
-    oss << result_->toString() << "\t= " << c_ << op_->toString();
-
-    return oss.str();
-}
-
-void UnInstr::genCode(std::ofstream& ofs)
-{
-    ofs << "ui" << std::endl;
-};
-
-//------------------------------------------------------------------------------
-
-std::string BinInstr::toString() const
+std::string AssignInstr::getOpString() const
 {
     std::string opString;
     switch (kind_)
     {
+        case UNARY_MINUS:
+            opString = "-";
+            break;
+        case NOT:
+            opString = "NOT";
+            break;
+        case AND:
+            opString = "AND";
+            break;
+        case OR:
+            opString = "OR";
+            break;
+        case XOR:
+            opString = "XOR";
+            break;
         case EQ:
             opString = "==";
             break;
@@ -80,13 +65,41 @@ std::string BinInstr::toString() const
         default:
             opString = c_;
     }
+
+    return opString;
+}
+
+std::string AssignInstr::toString() const
+{
+    std::string opString = getOpString();
     std::ostringstream oss;
-    oss << result_->toString() << "\t= " << op1_->toString() << " " << opString << " " << op2_->toString();
+    oss << result_->toString() << '\t';
+
+    // is this a binary, an unary instruction or an assignment?
+    if (op2_)
+    {
+        // it is a binary instruction
+        oss << "= " << op1_->toString() << " " << opString << " " << op2_->toString();
+    }
+    else
+    {
+        if ( isUnaryInstr() )
+        {
+            // it is an unary instruction
+            oss << "= " << opString;
+        }
+        else
+        {
+            // it is an assignment
+            oss << opString;
+        }
+        oss << ' ' << op1_->toString();
+    }
 
     return oss.str();
 }
 
-void BinInstr::genCode(std::ofstream& ofs)
+void AssignInstr::genCode(std::ofstream& ofs)
 {
     ofs << "bi" << std::endl;
 };

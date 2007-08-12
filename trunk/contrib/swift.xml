@@ -46,6 +46,8 @@
       <item> create </item>
       <item> constructor </item>
       <item> destructor </item>
+      <item> in </item>
+      <item> iterator </item>
 
       <item> reader </item>
       <item> writer </item>
@@ -133,9 +135,8 @@
 
       <item> lazy </item>
 
-      <item> in </item>
       <item> inout </item>
-      <item> out </item>
+<!--       <item> out </item> -->
 
       <item> def </item>
       <item> cst </item>

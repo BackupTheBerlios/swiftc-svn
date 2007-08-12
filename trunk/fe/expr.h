@@ -100,7 +100,13 @@ struct Id : public Expr
 
 struct UnExpr : public Expr
 {
-    union {
+    enum
+    {
+        NOT
+    };
+
+    union
+    {
         int kind_;
         char c_;
     };
