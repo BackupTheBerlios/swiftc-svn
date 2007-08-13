@@ -5,6 +5,7 @@ class Test
     routine test()
         int a;
         int b;
+        a = 5 * 6 + 7;
         b = a;
         int c;
         c = -3;

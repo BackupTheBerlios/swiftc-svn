@@ -41,10 +41,13 @@ struct PhiInstr : public InstrBase
     PseudoReg** args_;
     size_t      argc_;
 
+    int oldResultVar_;
+
     PhiInstr(PseudoReg* result, size_t argc)
         : result_(result)
         , args_( new PseudoReg*[argc] )
         , argc_(argc)
+        , oldResultVar_(result->regNr_)
     {
         memset(args_, 0, sizeof(PseudoReg*) * argc);
     }
@@ -52,7 +55,6 @@ struct PhiInstr : public InstrBase
     {
         delete[] args_;
     }
-
 
     std::string toString() const;
     void genCode(std::ofstream& /*ofs*/) {}
@@ -123,14 +125,14 @@ struct AssignInstr : public InstrBase
     PseudoReg* op1_;
     PseudoReg* op2_;
 
-    int resultVar_;
+    int oldResultVar_;
 
     AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0)
         : kind_(kind)
         , result_(result)
         , op1_(op1)
         , op2_(op2)
-        , resultVar_(0)
+        , oldResultVar_(result->regNr_)
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }

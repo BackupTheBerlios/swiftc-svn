@@ -94,10 +94,6 @@ void Function::calcCFG()
                 // and count basic blocks
                 ++numBBs_;
 
-                // connect new found basic block with the previous one if it exists
-                if (prevBB)
-                    prevBB->connectBB(bb);
-
                 prevBB = bb; // now this is the previous basic block
             }
         }
@@ -124,7 +120,24 @@ void Function::calcCFG()
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         if ( typeid(*iter->value_) == typeid(LabelInstr) )
-            currentBB = labelNode2BB_[iter]; // we have found a new basic block
+        {
+            BasicBlock* prevBB = currentBB;
+            // we have found a new basic block
+            currentBB = labelNode2BB_[iter];
+
+            if (currentBB == 0)
+                break; // -> this is the last label
+
+            // check whether there is already a connection between currentBB and prevBB
+            if ( prevBB && currentBB->pred_.find(prevBB) == currentBB->pred_.end() )
+            {
+                // no -> test whether a connection is needed
+                InstrBase* lastInstrOfPrevBB = prevBB->end_->prev()->value_;
+
+                if ( typeid(*lastInstrOfPrevBB) == typeid(AssignInstr) )
+                    prevBB->connectBB(currentBB);
+            }
+        }
         else if ( typeid(*iter->value_) == typeid(GotoInstr) )
         {
             BasicBlock* succ = labelNode2BB_[ ((GotoInstr*) iter->value_)->labelNode_ ];
@@ -132,12 +145,11 @@ void Function::calcCFG()
         }
         else if ( typeid(*iter->value_) == typeid(BranchInstr) )
         {
-            /*
-                do not connect the current basic block with the one of the
-                trueLabel since they were already connected in the first pass
-            */
-            BasicBlock* succ = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
-            currentBB->connectBB(succ);
+            BasicBlock* falseBlock = labelNode2BB_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
+            currentBB->connectBB(falseBlock);
+
+            BasicBlock* trueBlock = labelNode2BB_[ ((BranchInstr*) iter->value_)->trueLabelNode_ ];
+            currentBB->connectBB(trueBlock);
         }
         else if ( typeid(*iter->value_) == typeid(AssignInstr) )
         {
@@ -258,6 +270,7 @@ void Function::calcDomTree()
 
     // remove the entry -> entry cycle from the domChildren_
     entry->domChildren_.erase(entry);
+    swiftAssert(entry->domChildren_.size() == 1, "the entry must have exactly 1 child");
 }
 
 BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
@@ -381,52 +394,61 @@ void Function::renameVars()
 {
     stack<PseudoReg*>* names = new stack<PseudoReg*>[ vars_.size() ];
 
-    search(entry_, names);
+    // start with the first real basic block
+    rename( *entry_->domChildren_.begin(), names );
 
     delete[] names;
 }
 
-void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
+void Function::rename(BasicBlock* bb, stack<PseudoReg*>* names)
 {
-    // for each instruction in bb except the entry node
-    if ( !bb->isEntry() )
+    // for each phi function in succ -> start with the first instruction which is followed by the leading LabelInstr
+    for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
     {
-        for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(*instr) == typeid(PhiInstr) )
         {
-            InstrBase* instr = iter->value_;
+            PhiInstr* phi = (PhiInstr*) instr;
 
-            // if instr is an AssignInstr
-            if ( typeid(*instr) == typeid(AssignInstr) )
+            PseudoReg* reg = newTemp(phi->result_->regType_);
+            names[ -phi->oldResultVar_ ].push(reg);
+            phi->result_ = reg;
+            continue;
+        }
+        else if ( typeid(*instr) == typeid(AssignInstr) )
+        {
+            AssignInstr* ai = (AssignInstr*) instr;
+
+            // replace vars on the right hand side
+            if ( ai->op1_->isVar() )
             {
-                AssignInstr* ai = (AssignInstr*) instr;
+                swiftAssert( !names[ ai->op1_->var2Index() ].empty(), "stack is empty here");
+                ai->op1_ = names[ ai->op1_->var2Index() ].top();
+            }
+            if ( ai->op2_ && ai->op2_->isVar() )
+            {
+                swiftAssert( !names[ ai->op2_->var2Index() ].empty(), "stack is empty here");
+                ai->op2_ = names[ ai->op2_->var2Index() ].top();
+            }
 
-                /*
-                    replaces vars
-                */
+            // replace var on the left hand side
+            if ( ai->result_->isVar() )
+            {
+                PseudoReg* reg = newTemp(ai->result_->regType_);
+                names[ -ai->oldResultVar_ ].push(reg);
+                ai->result_ = reg;
+            }
+        }
+        else if ( typeid(*instr) == typeid(BranchInstr) )
+        {
+            BranchInstr* bi = (BranchInstr*) instr;
 
-                // replace vars on the right hand side
-                if ( ai->op1_->isVar() )
-                {
-                    if (names[ ai->op1_->var2Index() ].empty() )
-                        break;
-                    ai->op1_ = names[ ai->op1_->var2Index() ].top();
-                }
-
-                if ( ai->op2_ && ai->op2_->isVar() )
-                {
-                    if (names[ ai->op2_->var2Index() ].empty() )
-                        break;
-                    ai->op2_ = names[ ai->op2_->var2Index() ].top();
-                }
-
-                // replace var on the left hand side
-                if ( ai->result_->isVar() )
-                {
-                    ai->resultVar_ = - ai->resultVar_;
-                    PseudoReg* reg = newTemp(ai->result_->regType_);
-                    names[ ai->result_->var2Index() ].push(reg);
-                    ai->result_ = reg;
-                }
+            // replace boolean var
+            if ( bi->boolReg_->isVar() )
+            {
+                swiftAssert( !names[ bi->boolReg_->var2Index() ].empty(), "stack is empty here");
+                bi->boolReg_ = names[ bi->boolReg_->var2Index() ].top();
             }
         }
     }
@@ -445,13 +467,10 @@ void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
             if (!phi)
                 break; // no further phi functions in this basic block
 
-            if ( names[phi->result_->var2Index()].empty() )
-            {
-                std::cout << phi->result_->var2Index() << " not found" << std::endl;
-                continue;
-            }
+            if ( names[ -phi->oldResultVar_ ].empty() )
+                continue; // var not found
 
-            phi->args_[j] = names[phi->result_->var2Index()].top();
+            phi->args_[j] = names[ -phi->oldResultVar_ ].top();
         }
     }
 
@@ -462,24 +481,31 @@ void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
         if ( (*iter)->isExit() )
             continue;
 
-        search(*iter, names);
+        rename(*iter, names);
     }
-
-    if (bb->isEntry())
-        return;
-
 
     // for each AssignInstr in bb
     for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
     {
-        AssignInstr* ai = dynamic_cast<AssignInstr*>(iter->value_);
-        if (!ai)
-            continue;
+        InstrBase* instr = iter->value_;
 
-        if (ai->resultVar_)
+        if ( typeid(*instr) == typeid(PhiInstr) )
         {
-            swiftAssert( names[ai->resultVar_].size() > 0, "cannot pop here");
-            names[ai->resultVar_].pop();
+            PhiInstr* phi = (PhiInstr*) iter->value_;
+
+            swiftAssert(phi->oldResultVar_ < 0, "this should be a var");
+            swiftAssert( names[-phi->oldResultVar_].size() > 0, "cannot pop here");
+            names[- phi->oldResultVar_].pop();
+        }
+        else if ( typeid(*instr) == typeid(AssignInstr) )
+        {
+            AssignInstr* ai = dynamic_cast<AssignInstr*>(iter->value_);
+
+            if (ai->oldResultVar_ < 0) // if this is a var
+            {
+                swiftAssert( names[- ai->oldResultVar_].size() > 0, "cannot pop here");
+                names[- ai->oldResultVar_].pop();
+            }
         }
     }
 }

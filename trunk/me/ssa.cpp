@@ -31,10 +31,14 @@ std::string PhiInstr::toString() const
     {
         if (args_[i])
             oss << args_[i]->toString() << ", ";
+        else
+            oss << "-, ";
     }
 
     if (args_[argc_ - 1])
         oss << args_[argc_ - 1]->toString();
+    else
+        oss << '-';
 
     oss << ')';
 

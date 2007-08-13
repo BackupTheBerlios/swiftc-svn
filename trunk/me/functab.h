@@ -74,7 +74,7 @@ struct Function
     void calcDomFrontier();
     void placePhiFunctions();
     void renameVars();
-    void search(BasicBlock* bb, std::stack<PseudoReg*>* names);
+    void rename(BasicBlock* bb, std::stack<PseudoReg*>* names);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
