@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "utils/assert.h"
+
 
 std::string BasicBlock::toString() const
 {
@@ -16,3 +18,20 @@ std::string BasicBlock::toString() const
 
     return oss.str();
 }
+
+size_t BasicBlock::whichPred(BasicBlock* bb) const
+{
+    size_t pos = 0;
+
+    for (BBSet::const_iterator iter = pred_.begin(); iter != pred_.end(); ++iter)
+    {
+        if (*iter == bb)
+            break;
+        ++pos;
+    }
+
+    swiftAssert(pos < pred_.size(), "bb not found");
+
+    return pos;
+}
+

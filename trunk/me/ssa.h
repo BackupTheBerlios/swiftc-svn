@@ -38,14 +38,19 @@ typedef List<InstrBase*> InstrList;
 struct PhiInstr : public InstrBase
 {
     PseudoReg* result_;
-//     RegList args_;
+    PseudoReg** args_;
+    size_t      argc_;
 
-    PhiInstr(PseudoReg* result)
+    PhiInstr(PseudoReg* result, size_t argc)
         : result_(result)
-    {}
+        , args_( new PseudoReg*[argc] )
+        , argc_(argc)
+    {
+        memset(args_, 0, sizeof(PseudoReg*) * argc);
+    }
     ~PhiInstr()
     {
-//         delete result_;
+        delete[] args_;
     }
 
 
@@ -118,16 +123,14 @@ struct AssignInstr : public InstrBase
     PseudoReg* op1_;
     PseudoReg* op2_;
 
-    int op1Var_;
-    int op2Var_;
+    int resultVar_;
 
     AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0)
         : kind_(kind)
         , result_(result)
         , op1_(op1)
         , op2_(op2)
-        , op1Var_(0)
-        , op2Var_(0)
+        , resultVar_(0)
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }

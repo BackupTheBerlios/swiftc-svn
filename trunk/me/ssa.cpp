@@ -25,7 +25,18 @@ LabelInstr::LabelInstr()
 std::string PhiInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << "\t= phi()";
+    oss << result_->toString() << "\t= phi(";
+
+    for (size_t i = 0; i < argc_ - 1; ++i)
+    {
+        if (args_[i])
+            oss << args_[i]->toString() << ", ";
+    }
+
+    if (args_[argc_ - 1])
+        oss << args_[argc_ - 1]->toString();
+
+    oss << ')';
 
     return oss.str();
 }

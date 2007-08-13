@@ -58,7 +58,7 @@ struct BasicBlock
         return index_ != std::numeric_limits<size_t>::max();
     }
 
-//     void placePhiFunction();
+    size_t whichPred(BasicBlock* bb) const;
 
     /// returns the title string of this BasicBlock
     std::string toString() const;

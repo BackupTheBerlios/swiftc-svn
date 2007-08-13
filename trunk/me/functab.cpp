@@ -255,6 +255,9 @@ void Function::calcDomTree()
         BasicBlock* idom = idoms_[i];
         idom->domChildren_.insert(bb); // append child
     }
+
+    // remove the entry -> entry cycle from the domChildren_
+    entry->domChildren_.erase(entry);
 }
 
 BasicBlock* Function::intersect(BasicBlock* b1, BasicBlock* b2)
@@ -359,7 +362,7 @@ void Function::placePhiFunctions()
                 // else
 
                 // place phi function
-                PhiInstr* phiInstr = new PhiInstr(var);
+                PhiInstr* phiInstr = new PhiInstr( var, df->pred_.size() );
                 instrList_.insert(df->begin_, phiInstr);
 
                 // update data structures
@@ -378,15 +381,15 @@ void Function::renameVars()
 {
     stack<PseudoReg*>* names = new stack<PseudoReg*>[ vars_.size() ];
 
-//     search(entry_, names);
+    search(entry_, names);
 
     delete[] names;
 }
 
 void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
 {
-    // for each instruction in bb except the entry and exit node
-    if ( !bb->isEntry() && !bb->isExit() )
+    // for each instruction in bb except the entry node
+    if ( !bb->isEntry() )
     {
         for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
@@ -404,19 +407,22 @@ void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
                 // replace vars on the right hand side
                 if ( ai->op1_->isVar() )
                 {
-                    ai->op1Var_ = - ai->op1_->regNr_;
+                    if (names[ ai->op1_->var2Index() ].empty() )
+                        break;
                     ai->op1_ = names[ ai->op1_->var2Index() ].top();
                 }
 
                 if ( ai->op2_ && ai->op2_->isVar() )
                 {
-                    ai->op2Var_ = - ai->op2_->regNr_;
+                    if (names[ ai->op2_->var2Index() ].empty() )
+                        break;
                     ai->op2_ = names[ ai->op2_->var2Index() ].top();
                 }
 
                 // replace var on the left hand side
                 if ( ai->result_->isVar() )
                 {
+                    ai->resultVar_ = - ai->resultVar_;
                     PseudoReg* reg = newTemp(ai->result_->regType_);
                     names[ ai->result_->var2Index() ].push(reg);
                     ai->result_ = reg;
@@ -429,15 +435,39 @@ void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
     for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
     {
         BasicBlock* succ = *iter;
-// TODO
-        // for each phi function in succ
-//         for (InstrList::Node* iter =
+        size_t j = succ->whichPred(bb);
 
+        // for each phi function in succ -> start with the first instruction which is followed by the leading LabelInstr
+        for (InstrList::Node* iter = succ->begin_->next(); iter != succ->end_; iter = iter->next())
+        {
+            PhiInstr* phi = dynamic_cast<PhiInstr*>(iter->value_);
+
+            if (!phi)
+                break; // no further phi functions in this basic block
+
+            if ( names[phi->result_->var2Index()].empty() )
+            {
+                std::cout << phi->result_->var2Index() << " not found" << std::endl;
+                continue;
+            }
+
+            phi->args_[j] = names[phi->result_->var2Index()].top();
+        }
     }
 
     // for each child of bb in the dominator tree
     for (BBSet::iterator iter = bb->domChildren_.begin(); iter != bb->domChildren_.end(); ++iter)
+    {
+        // omit special exit node
+        if ( (*iter)->isExit() )
+            continue;
+
         search(*iter, names);
+    }
+
+    if (bb->isEntry())
+        return;
+
 
     // for each AssignInstr in bb
     for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
@@ -446,15 +476,10 @@ void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
         if (!ai)
             continue;
 
-        if (ai->op1Var_)
+        if (ai->resultVar_)
         {
-            swiftAssert( names[ai->op1Var_].size() > 0, "cannot pop here");
-            names[ai->op1Var_].pop();
-        }
-        if (ai->op2Var_)
-        {
-            swiftAssert( names[ai->op2Var_].size() > 0, "cannot pop here");
-            names[ai->op2Var_].pop();
+            swiftAssert( names[ai->resultVar_].size() > 0, "cannot pop here");
+            names[ai->resultVar_].pop();
         }
     }
 }
