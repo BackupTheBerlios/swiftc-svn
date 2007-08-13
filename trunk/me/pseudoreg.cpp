@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath> // for fmod
 
+#include "utils/stringhelper.h"
+
 
 std::string PseudoReg::toString() const
 {
@@ -62,9 +64,9 @@ std::string PseudoReg::toString() const
         }
     }
     else if ( isVar() )
-        oss << "var" << -regNr_;
+        oss << "var" << number2String(-regNr_);
     else // it is a real var
-        oss << "tmp" << regNr_;
+        oss << "tmp" << number2String( regNr_);
 
     return oss.str();
 }

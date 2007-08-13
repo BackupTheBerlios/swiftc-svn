@@ -61,11 +61,14 @@ struct PseudoReg
     };
 
     RegType regType_;
+
     /**
-     * regNr_ > 0   a temp with nr regNr
-     * regNr_ = 0   a literal
-     * regNr_ < 0   a var with nr -regNr
-    */
+     * regNr_ > 0   a temp with nr regNr <br>
+     * regNr_ = 0   a literal <br>
+     * regNr_ < 0   a var with nr -regNr <br>
+     *
+     * When in SSA-Form all regNr_ < 0 will be replaced by names > 0
+     */
     int regNr_;
     State state_;
 

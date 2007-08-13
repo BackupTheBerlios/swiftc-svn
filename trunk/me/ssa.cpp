@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "utils/stringhelper.h"
+
 #include "me/functab.h"
 
 //------------------------------------------------------------------------------
@@ -12,7 +14,7 @@ int LabelInstr::counter_ = 0;
 LabelInstr::LabelInstr()
 {
     std::ostringstream oss;
-    oss << "L" << counter_;
+    oss << "L" << number2String(counter_);
     label_ = oss.str();
 
     ++counter_;

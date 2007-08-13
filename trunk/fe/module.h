@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "utils/stringptrcmp.h"
+#include "utils/stringhelper.h"
 
 #include "fe/syntaxtree.h"
 #include "fe/parser.h"

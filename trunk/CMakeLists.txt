@@ -52,6 +52,7 @@ ADD_CUSTOM_COMMAND (
 ADD_EXECUTABLE (swift
     utils/assert.cpp
     utils/memmgr.cpp
+    utils/stringhelper.cpp
 
     fe/lex.yy.cpp
     fe/parser.tab.cpp

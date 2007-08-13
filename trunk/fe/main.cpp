@@ -2,6 +2,7 @@
 #include <cstdio>
 
 #include "utils/memmgr.h"
+#include "utils/stringhelper.h"
 
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"

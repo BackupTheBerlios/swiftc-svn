@@ -37,6 +37,36 @@ Function::~Function()
     delete[] bbs_;
 }
 
+inline void Function::insert(PseudoReg* reg)
+{
+    swiftAssert(reg->regNr_ != PseudoReg::LITERAL, "reg is a LITERAL");
+
+    pair<RegMap::iterator, bool> p
+        = vars_.insert( make_pair(reg->regNr_, reg) );
+
+    swiftAssert(p.second, "there is already a reg with this regNr in the map");
+}
+
+
+PseudoReg* Function::newVar(PseudoReg::RegType regType, int varNr)
+{
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    PseudoReg* reg = new PseudoReg(regType, varNr);
+    insert(reg);
+
+    return reg;
+}
+
+PseudoReg* Function::newTemp(PseudoReg::RegType regType)
+{
+    PseudoReg* reg = new PseudoReg(regType, regCounter_);
+    insert(reg);
+
+    ++regCounter_;
+
+    return reg;
+}
+
 void Function::calcCFG()
 {
     swiftAssert( typeid( *instrList_.first()->value_ ) == typeid(LabelInstr),
@@ -272,24 +302,29 @@ void Function::placePhiFunctions()
 {
     /*
         hasAlready[bb->index_] knows
-        whether an phi-function for var i in bb has already been put
+        whether an phi-function in bb has already been put
     */
-    typedef set<int> HasAlready;
-    HasAlready hasAlreadyArray[numBBs_];
+    int hasAlready[numBBs_];
 
     /*
         hasBeenAdded[bb->index_] knows
         whether bb has already been added to the work list
     */
-    bool hasBeenAdded[numBBs_];
+    int hasBeenAdded[numBBs_];
+
+    // set all blocks to "not added" and "not already"
+    memset(hasAlready, 0, sizeof(int) * numBBs_); // init to 0
+    memset(hasBeenAdded, 0, sizeof(int) * numBBs_); // init to 0
+
+    int iterCount = 0;
 
     // for each var
     for (RegMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
     {
-        PseudoReg* var = iter->second;
+        ++iterCount;
 
-        if (var->regNr_ >= 0)
-            break; // not vars anymore
+        PseudoReg* var = iter->second;
+        swiftAssert(var->regNr_, "this is not a var");
 
         BBList work;
 
@@ -299,12 +334,12 @@ void Function::placePhiFunctions()
             BasicBlock* bb = bbs_[i];
 
             if ( bb->vars_.find(var->regNr_) != bb->vars_.end() )
+            {
+                hasBeenAdded[bb->index_] = iterCount;
                 work.append(bb);
+            }
+
         }
-
-        // set all blocks to "not added"
-        memset(hasBeenAdded, 0, sizeof(bool) * numBBs_); // init to false
-
 
         // for each basic block in the work list
         while ( !work.empty() )
@@ -317,10 +352,9 @@ void Function::placePhiFunctions()
             for (BBSet::iterator iter = bb->domFrontier_.begin(); iter != bb->domFrontier_.end(); ++iter)
             {
                 BasicBlock* df = *iter;
-                HasAlready& hasAlready = hasAlreadyArray[df->index_];
 
-                // do we already have an phi function for this node and this var?
-                if ( hasAlready.find(var->regNr_) != hasAlready.end() )
+                // do we already have a phi function for this node and this var?
+                if ( hasAlready[df->index_] >= iterCount )
                     continue; // yes -> so process next one
                 // else
 
@@ -329,11 +363,11 @@ void Function::placePhiFunctions()
                 instrList_.insert(df->begin_, phiInstr);
 
                 // update data structures
-                hasAlready.insert(var->regNr_);
+                hasAlready[df->index_] = iterCount;
                 if (hasBeenAdded[df->index_] == false)
                 {
+                    hasBeenAdded[df->index_] = iterCount;
                     work.append(df);
-                    hasBeenAdded[df->index_] = true;
                 }
             }
         } // while
@@ -342,35 +376,52 @@ void Function::placePhiFunctions()
 
 void Function::renameVars()
 {
-    stack<int>* names = new stack<int>[ vars_.size() ];
-    int** varCounter = new int*[ vars_.size() ];
-    // set counter for all vars do zero
-    memset( varCounter, 0, sizeof(int*) * vars_.size() );
+    stack<PseudoReg*>* names = new stack<PseudoReg*>[ vars_.size() ];
 
-//     search(entry_, names, varCounter);
+//     search(entry_, names);
 
-    // TODO perhaps these arrays are useful later on
     delete[] names;
-    delete[] varCounter;
 }
 
-void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
+void Function::search(BasicBlock* bb, stack<PseudoReg*>* names)
 {
-    // for each instructin in bb except the entry and exit node
+    // for each instruction in bb except the entry and exit node
     if ( !bb->isEntry() && !bb->isExit() )
     {
         for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
             InstrBase* instr = iter->value_;
 
-            // if instr is an ordinary instruction
+            // if instr is an AssignInstr
             if ( typeid(*instr) == typeid(AssignInstr) )
             {
-                // instr->replaceVar();
-            }
+                AssignInstr* ai = (AssignInstr*) instr;
 
-//             i = names[];
-            // replace V by Vi
+                /*
+                    replaces vars
+                */
+
+                // replace vars on the right hand side
+                if ( ai->op1_->isVar() )
+                {
+                    ai->op1Var_ = - ai->op1_->regNr_;
+                    ai->op1_ = names[ ai->op1_->var2Index() ].top();
+                }
+
+                if ( ai->op2_ && ai->op2_->isVar() )
+                {
+                    ai->op2Var_ = - ai->op2_->regNr_;
+                    ai->op2_ = names[ ai->op2_->var2Index() ].top();
+                }
+
+                // replace var on the left hand side
+                if ( ai->result_->isVar() )
+                {
+                    PseudoReg* reg = newTemp(ai->result_->regType_);
+                    names[ ai->result_->var2Index() ].push(reg);
+                    ai->result_ = reg;
+                }
+            }
         }
     }
 
@@ -378,7 +429,7 @@ void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
     for (BBSet::iterator iter = bb->succ_.begin(); iter != bb->succ_.end(); ++iter)
     {
         BasicBlock* succ = *iter;
-
+// TODO
         // for each phi function in succ
 //         for (InstrList::Node* iter =
 
@@ -386,7 +437,26 @@ void Function::search(BasicBlock* bb, stack<int>* names, int** varCounter)
 
     // for each child of bb in the dominator tree
     for (BBSet::iterator iter = bb->domChildren_.begin(); iter != bb->domChildren_.end(); ++iter)
-        search(*iter, names, varCounter);
+        search(*iter, names);
+
+    // for each AssignInstr in bb
+    for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
+    {
+        AssignInstr* ai = dynamic_cast<AssignInstr*>(iter->value_);
+        if (!ai)
+            continue;
+
+        if (ai->op1Var_)
+        {
+            swiftAssert( names[ai->op1Var_].size() > 0, "cannot pop here");
+            names[ai->op1Var_].pop();
+        }
+        if (ai->op2Var_)
+        {
+            swiftAssert( names[ai->op2Var_].size() > 0, "cannot pop here");
+            names[ai->op2Var_].pop();
+        }
+    }
 }
 
 /*
@@ -422,8 +492,7 @@ void Function::dumpSSA(ofstream& ofs)
     {
         BasicBlock* bb = bbs_[i];
 
-        ofs << '\t' << bb->toString() << ':' << endl
-            << "\t\t";
+        ofs << '\t' << bb->toString() << ":\t";
 
         for (BBSet::iterator iter = bb->domChildren_.begin(); iter != bb->domChildren_.end(); ++iter)
              ofs << (*iter)->toString() << ' ';
@@ -438,8 +507,7 @@ void Function::dumpSSA(ofstream& ofs)
     {
         BasicBlock* bb = bbs_[i];
 
-        ofs << '\t' << bb->toString() << ":" << endl
-            << "\t\t";
+        ofs << '\t' << bb->toString() << ":\t";
 
         for (BBSet::iterator iter = bb->domFrontier_.begin(); iter != bb->domFrontier_.end(); ++iter)
             ofs << (*iter)->toString() << " ";
@@ -516,33 +584,14 @@ Function* FunctionTable::insertFunction(string* id)
     return current_;
 }
 
-inline void FunctionTable::insert(PseudoReg* reg)
-{
-    swiftAssert(reg->regNr_ != PseudoReg::LITERAL, "reg is a LITERAL");
-
-    pair<RegMap::iterator, bool> p
-        = current_->vars_.insert( make_pair(reg->regNr_, reg) );
-
-    swiftAssert(p.second, "there is already a reg with this regNr in the map");
-}
-
 PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr)
 {
-    swiftAssert(varNr < 0, "varNr must be less than zero");
-    PseudoReg* reg = new PseudoReg(regType, varNr);
-    insert(reg);
-
-    return reg;
+    return current_->newVar(regType, varNr);
 }
 
 PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
 {
-    PseudoReg* reg = new PseudoReg(regType, current_->regCounter_);
-    insert(reg);
-
-    ++current_->regCounter_;
-
-    return reg;
+    return current_->newTemp(regType);
 }
 
 PseudoReg* FunctionTable::lookupReg(int regNr)

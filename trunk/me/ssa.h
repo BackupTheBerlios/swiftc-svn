@@ -118,11 +118,16 @@ struct AssignInstr : public InstrBase
     PseudoReg* op1_;
     PseudoReg* op2_;
 
+    int op1Var_;
+    int op2Var_;
+
     AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0)
         : kind_(kind)
         , result_(result)
         , op1_(op1)
         , op2_(op2)
+        , op1Var_(0)
+        , op2Var_(0)
     {
         swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
     }
@@ -148,6 +153,8 @@ struct AssignInstr : public InstrBase
     }
 
     std::string getOpString() const;
+
+    void replaceVar();
 };
 
 //------------------------------------------------------------------------------

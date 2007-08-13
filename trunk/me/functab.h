@@ -7,7 +7,7 @@
 #include <stack>
 
 #include "utils/list.h"
-#include "utils/stringptrcmp.h"
+#include "utils/stringhelper.h"
 
 #include "me/basicblock.h"
 #include "me/pseudoreg.h"
@@ -36,7 +36,7 @@ struct Function
     BasicBlock* entry_;
     BasicBlock* exit_;
 
-    BasicBlock** bbs_;
+    BasicBlock** bbs_;  ///< in post order
     BasicBlock** idoms_;
     size_t       numBBs_;
 
@@ -52,6 +52,21 @@ struct Function
     {}
     ~Function();
 
+    inline void insert(PseudoReg* reg);
+
+    /**
+     * This method creates a new temp PseudoReg.
+     * @param regType the type of the PseudoReg
+    */
+    PseudoReg* newTemp(PseudoReg::RegType regType);
+
+    /**
+     * This method creates a new var PseudoReg.
+     * @param regType the type of the PseudoReg
+     * @param varNr the varNr of the var; must be positive.
+    */
+    PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+
     void calcCFG();
     void calcDomTree();
     BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
@@ -59,7 +74,7 @@ struct Function
     void calcDomFrontier();
     void placePhiFunctions();
     void renameVars();
-    void search(BasicBlock* bb, std::stack<int>* names, int** varCounter);
+    void search(BasicBlock* bb, std::stack<PseudoReg*>* names);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
@@ -82,8 +97,6 @@ struct FunctionTable
     ~FunctionTable();
 
     Function* insertFunction(std::string* id);
-
-    inline void insert(PseudoReg* reg);
 
     /**
      * This method creates a new temp PseudoReg.
