@@ -74,4 +74,7 @@ ADD_EXECUTABLE (swift
     me/functab.cpp
     me/pseudoreg.cpp
     me/ssa.cpp
+
+    be/codegenerator.cpp
+    be/amd64/spiller.cpp
 )

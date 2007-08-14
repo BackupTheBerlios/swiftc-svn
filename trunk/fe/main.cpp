@@ -13,6 +13,8 @@
 
 #include "me/functab.h"
 
+#include "be/codegenerator.h"
+#include "be/amd64/spiller.h"
 
 int start(int argc, char** argv)
 {
@@ -91,9 +93,20 @@ int start(int argc, char** argv)
     functab->dumpDot();
 
     /*
+        build up back-end
+    */
+    CodeGenerator::spiller_ = new Amd64Spiller();
+    functab->genCode();
+
+    /*
         clean up middle-end
     */
     delete functab;
+
+    /*
+        clean up back-end
+    */
+    delete CodeGenerator::spiller_;
 
     return 0;
 }

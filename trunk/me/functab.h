@@ -119,6 +119,8 @@ struct FunctionTable
 
     void dumpSSA();
     void dumpDot();
+
+    void genCode();
 };
 
 typedef FunctionTable FuncTab;
