@@ -12,10 +12,15 @@ Spiller* CodeGenerator::spiller_ = 0;
 
 void CodeGenerator::genCode()
 {
+    calcIG();
     spill();
     color();
     coalesce();
     destructSSA();
+}
+
+void CodeGenerator::calcIG()
+{
 }
 
 void CodeGenerator::spill()

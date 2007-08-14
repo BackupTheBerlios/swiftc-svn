@@ -399,6 +399,21 @@ void Function::renameVars()
     // start with the first real basic block
     rename( *entry_->domChildren_.begin(), names );
 
+    /*
+        all vars i.e. regNr < 0 are not needed anymore from this point
+    */
+
+    // for each basic block
+    for (size_t i = 0; i < numBBs_; ++i)
+        bbs_[i]->vars_.clear();
+
+    // for all vars, no temps
+    for (RegMap::iterator iter = vars_.begin(); iter->first < 0 && iter != vars_.end(); ++iter)
+    {
+        delete iter->second;
+        vars_.erase(iter);
+    }
+
     delete[] names;
 }
 

@@ -23,6 +23,8 @@ struct CodeGenerator
 
 //private:
 
+    /// calculates the interference graph
+    void calcIG();
     void spill();
     void color();
     void coalesce();
