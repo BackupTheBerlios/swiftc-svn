@@ -33,6 +33,9 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
+    typedef std::map<int, BasicBlock*> FirstOccurance;
+    FirstOccurance firstOccurance_;
+
     BasicBlock* entry_;
     BasicBlock* exit_;
 

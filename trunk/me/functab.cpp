@@ -157,8 +157,15 @@ void Function::calcCFG()
         {
             // if we have an assignment to a var update this in the map
             AssignInstr* ai = (AssignInstr*) iter->value_;
+
             if ( ai->result_->isVar() )
-                currentBB->vars_[ai->result_->regNr_] = ai->result_;
+            {
+                int resultNr = ai->result_->regNr_;
+                currentBB->vars_[resultNr] = ai->result_;
+
+                if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
+                    firstOccurance_[resultNr] = currentBB;
+            }
         }
     }
 
@@ -374,6 +381,15 @@ void Function::placePhiFunctions()
                 // do we already have a phi function for this node and this var?
                 if ( hasAlready[df->index_] >= iterCount )
                     continue; // yes -> so process next one
+
+                // is this the first occurance of the var?
+                FirstOccurance::iterator iter = firstOccurance_.find(var->regNr_);
+                if (iter->second  == bb)
+		{
+std::cout << "hey" << std::endl;
+                    continue; // yes -> so process next one
+		}
+
                 // else
 
                 // place phi function
