@@ -14,6 +14,7 @@ template<class T>
 class List
 {
 public:
+
     struct Node
     {
         friend List::~List();
