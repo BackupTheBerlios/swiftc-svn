@@ -49,6 +49,39 @@ inline void Function::insert(PseudoReg* reg)
     swiftAssert(p.second, "there is already a reg with this regNr in the map");
 }
 
+PseudoReg* Function::newTemp(PseudoReg::RegType regType)
+{
+    PseudoReg* reg = new PseudoReg(regType, regCounter_);
+    insert(reg);
+
+    ++regCounter_;
+
+    return reg;
+}
+
+
+#ifdef SWIFT_DEBUG
+
+PseudoReg* Function::newTemp(PseudoReg::RegType regType, std::string* id)
+{
+    PseudoReg* reg = new PseudoReg(regType, regCounter_, id);
+    insert(reg);
+
+    ++regCounter_;
+
+    return reg;
+}
+
+PseudoReg* Function::newVar(PseudoReg::RegType regType, int varNr, std::string* id)
+{
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    PseudoReg* reg = new PseudoReg(regType, varNr, id);
+    insert(reg);
+
+    return reg;
+}
+
+#else // SWIFT_DEBUG
 
 PseudoReg* Function::newVar(PseudoReg::RegType regType, int varNr)
 {
@@ -59,15 +92,7 @@ PseudoReg* Function::newVar(PseudoReg::RegType regType, int varNr)
     return reg;
 }
 
-PseudoReg* Function::newTemp(PseudoReg::RegType regType)
-{
-    PseudoReg* reg = new PseudoReg(regType, regCounter_);
-    insert(reg);
-
-    ++regCounter_;
-
-    return reg;
-}
+#endif // SWIFT_DEBUG
 
 void Function::calcCFG()
 {
@@ -349,6 +374,11 @@ void Function::placePhiFunctions()
         ++iterCount;
 
         PseudoReg* var = iter->second;
+
+        // if it is a temp continue
+        if ( !var->isVar() )
+            continue;
+
         swiftAssert(var->regNr_, "this is not a var");
 
         BBList work;
@@ -366,12 +396,23 @@ void Function::placePhiFunctions()
 
         }
 
+        /*
+            mark dominance frontier of the basic block with the first occurance
+            of var as hasAlready
+        */
+        BasicBlock* firstBB = firstOccurance_.find(var->regNr_)->second;
+
+        // for each basic block from DF(fristBB)
+        for (BBSet::iterator iter = firstBB->domFrontier_.begin(); iter != firstBB->domFrontier_.end(); ++iter)
+            hasAlready[(*iter)->index_] = iterCount;
+
         // for each basic block in the work list
         while ( !work.empty() )
         {
             // take a basic block from the list
             BasicBlock* bb = work.first()->value_;
             work.removeFirst();
+
 
             // for each basic block from DF(bb)
             for (BBSet::iterator iter = bb->domFrontier_.begin(); iter != bb->domFrontier_.end(); ++iter)
@@ -381,15 +422,6 @@ void Function::placePhiFunctions()
                 // do we already have a phi function for this node and this var?
                 if ( hasAlready[df->index_] >= iterCount )
                     continue; // yes -> so process next one
-
-                // is this the first occurance of the var?
-                FirstOccurance::iterator iter = firstOccurance_.find(var->regNr_);
-                if (iter->second  == bb)
-		{
-std::cout << "hey" << std::endl;
-                    continue; // yes -> so process next one
-		}
-
                 // else
 
                 // place phi function
@@ -444,7 +476,12 @@ void Function::rename(BasicBlock* bb, stack<PseudoReg*>* names)
         {
             PhiInstr* phi = (PhiInstr*) instr;
 
+#ifdef SWIFT_DEBUG
+            PseudoReg* reg = newTemp(phi->result_->regType_, &phi->result_->id_);
+#else // SWIFT_DEBUG
             PseudoReg* reg = newTemp(phi->result_->regType_);
+#endif // SWIFT_DEBUG
+
             names[ -phi->oldResultVar_ ].push(reg);
             phi->result_ = reg;
             continue;
@@ -468,7 +505,11 @@ void Function::rename(BasicBlock* bb, stack<PseudoReg*>* names)
             // replace var on the left hand side
             if ( ai->result_->isVar() )
             {
+#ifdef SWIFT_DEBUG
+                PseudoReg* reg = newTemp(ai->result_->regType_, &ai->result_->id_);
+#else // SWIFT_DEBUG
                 PseudoReg* reg = newTemp(ai->result_->regType_);
+#endif // SWIFT_DEBUG
                 names[ -ai->oldResultVar_ ].push(reg);
                 ai->result_ = reg;
             }
@@ -668,10 +709,21 @@ Function* FunctionTable::insertFunction(string* id)
     return current_;
 }
 
+#ifdef SWIFT_DEBUG
+
+PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr, std::string* id)
+{
+    return current_->newVar(regType, varNr, id);
+}
+
+#else // SWIFT_DEBUG
+
 PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr)
 {
     return current_->newVar(regType, varNr);
 }
+
+#endif // SWIFT_DEBUG
 
 PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
 {

@@ -64,9 +64,28 @@ std::string PseudoReg::toString() const
         }
     }
     else if ( isVar() )
-        oss << "var" << number2String(-regNr_);
-    else // it is a real var
-        oss << "tmp" << number2String( regNr_);
+    {
+#ifdef SWIFT_DEBUG
+        oss << id_;
+#else
+        oss << "var";
+#endif // SWIFT_DEBUG
+        oss << number2String(-regNr_);
+    }
+    else
+    {
+        // -> it is a temp
+
+#ifdef SWIFT_DEBUG
+        if ( id_ == std::string("") )
+            oss << "tmp";
+        else
+            oss << id_;
+#else
+        oss << "tmp";
+#endif // SWIFT_DEBUG
+        oss << number2String( regNr_);
+    }
 
     return oss.str();
 }

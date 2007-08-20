@@ -40,7 +40,7 @@ class Test
 
          else
             real t;
-
+            t = 1.2;
 
             if (b)
                 bool b;

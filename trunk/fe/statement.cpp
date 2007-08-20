@@ -43,7 +43,11 @@ bool Declaration::analyze()
     local_->regNr_ = symtab->newVarNr();
     symtab->insert(local_);
     symtab->insertLocalByRegNr(local_);
+#ifdef SWIFT_DEBUG
+    functab->newVar( ((SimpleType*) local_->type_->baseType_)->toRegType(), local_->regNr_, local_->id_ );
+#else // SWIFT_DEBUG
     functab->newVar( ((SimpleType*) local_->type_->baseType_)->toRegType(), local_->regNr_ );
+#endif // SWIFT_DEBUG
 
     swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );
 

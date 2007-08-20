@@ -437,7 +437,11 @@ void Id::genSSA()
     {
         // do the first revision
         Local* local = (Local*) entry;
+#ifdef SWIFT_DEBUG
+        reg_ = functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_, id_ );
+#else // SWIFT_DEBUG
         reg_ = functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_ );
+#endif // SWIFT_DEBUG
         local->regNr_ = reg_->regNr_;
         symtab->insertLocalByRegNr(local);
     }

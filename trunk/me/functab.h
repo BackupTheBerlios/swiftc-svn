@@ -63,12 +63,33 @@ struct Function
     */
     PseudoReg* newTemp(PseudoReg::RegType regType);
 
+#ifdef SWIFT_DEBUG
+
+    /**
+     * This method creates a new temp PseudoReg.
+     * @param regType the type of the PseudoReg
+     * @param id name of the original var
+    */
+    PseudoReg* newTemp(PseudoReg::RegType regType, std::string* id);
+
+    /**
+     * This method creates a new var PseudoReg.
+     * @param regType the type of the PseudoReg
+     * @param varNr the varNr of the var; must be positive.
+     * @param id the name of the original var
+    */
+    PseudoReg* newVar(PseudoReg::RegType regType, int varNr, std::string* id);
+
+#else // SWIFT_DEBUG
+
     /**
      * This method creates a new var PseudoReg.
      * @param regType the type of the PseudoReg
      * @param varNr the varNr of the var; must be positive.
     */
     PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+
+#endif // SWIFT_DEBUG
 
     void calcCFG();
     void calcDomTree();
@@ -107,12 +128,26 @@ struct FunctionTable
     */
     PseudoReg* newTemp(PseudoReg::RegType regType);
 
+#ifdef SWIFT_DEBUG
+
+    /**
+     * This method creates a new var PseudoReg.
+     * @param regType the type of the PseudoReg
+     * @param varNr the varNr of the var; must be positive.
+     * @param id the name of the original var
+    */
+    PseudoReg* newVar(PseudoReg::RegType regType, int varNr, std::string* id);
+
+#else // SWIFT_DEBUG
+
     /**
      * This method creates a new var PseudoReg.
      * @param regType the type of the PseudoReg
      * @param varNr the varNr of the var; must be positive.
     */
     PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+
+#endif // SWIFT_DEBUG
 
     PseudoReg* lookupReg(int regNr);
 

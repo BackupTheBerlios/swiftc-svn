@@ -72,6 +72,10 @@ struct PseudoReg
     int regNr_;
     State state_;
 
+#ifdef SWIFT_DEBUG
+    std::string id_; ///< this var stores the name of the orignal var in the debug version
+#endif
+
     /// for constants
     union Value {
         size_t      index_;
@@ -103,11 +107,22 @@ struct PseudoReg
 
     Value value_;
 
+#ifdef SWIFT_DEBUG
+    PseudoReg(RegType regType, int regNr, std::string* id = 0)
+        : regType_(regType)
+        , regNr_(regNr)
+        , state_(TOP) // TOP is assumed as initial state
+        , id_( id ? *id : "" )
+    {}
+#else // SWIFT_DEBUG
     PseudoReg(RegType regType, int regNr)
         : regType_(regType)
         , regNr_(regNr)
         , state_(TOP) // TOP is assumed as initial state
     {}
+#endif // SWIFT_DEBUG
+
+
     /// use this constructor if you want to create a literal
     PseudoReg(RegType regType)
         : regType_(regType)
