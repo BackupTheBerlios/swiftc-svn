@@ -71,6 +71,7 @@ ADD_EXECUTABLE (swift
     fe/main.cpp
 
     me/basicblock.cpp
+    me/cfg.cpp
     me/functab.cpp
     me/pseudoreg.cpp
     me/ssa.cpp

@@ -10,6 +10,7 @@
 #include "utils/stringhelper.h"
 
 #include "me/basicblock.h"
+#include "me/cfg.h" // TODO move to .cpp
 #include "me/pseudoreg.h"
 #include "me/ssa.h"
 
@@ -33,25 +34,15 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    typedef std::map<int, BasicBlock*> FirstOccurance;
-    FirstOccurance firstOccurance_;
-
-    BasicBlock* entry_;
-    BasicBlock* exit_;
-
-    BasicBlock** bbs_;  ///< in post order
-    BasicBlock** idoms_;
-    size_t       numBBs_;
-
-    typedef std::map<InstrList::Node*, BasicBlock*> LabelNode2BBMap;
-    /// with this data structure we can quickly find a BB with a given starting label
-    LabelNode2BBMap labelNode2BB_;
+    size_t      numBBs_;
+    CFG         cfg_;
 
     Function(std::string* id)
         : id_(id)
         , regCounter_(1)    // 0 is reserved for literals
         , indexCounter_(0)
         , numBBs_(2)        // every function does at least have an entry and an exit node
+        , cfg_(this)
     {}
     ~Function();
 
@@ -91,20 +82,8 @@ struct Function
 
 #endif // SWIFT_DEBUG
 
-    void calcCFG();
-    void calcDomTree();
-    BasicBlock* intersect(BasicBlock* b1, BasicBlock* b2);
-    void assignPostOrderNr(BasicBlock* bb);
-    void calcDomFrontier();
-    void placePhiFunctions();
-    void renameVars();
-    void rename(BasicBlock* bb, std::stack<PseudoReg*>* names);
-
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);
-
-    /// traverses the cfg in post order so the bbs_ array and nr_ are properly initialized
-    void postOrderWalk(BasicBlock* bb);
 };
 
 struct FunctionTable

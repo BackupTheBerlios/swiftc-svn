@@ -5,14 +5,15 @@
 #include <string>
 #include <set>
 
+#include "utils/graph.h"
 #include "utils/list.h"
 
 #include "me/ssa.h"
 
 struct BasicBlock;
 
-typedef List<BasicBlock*> BBList;
-typedef std::set<BasicBlock*> BBSet;
+typedef Graph<BasicBlock>::Node BBNode;
+typedef List<BBNode*> BBList;
 
 struct BasicBlock
 {
@@ -21,25 +22,18 @@ struct BasicBlock
 
     size_t index_;
 
-    BBSet pred_; ///< predecessors of the control flow graph
-    BBSet succ_; ///< successors of the control flow graph
-    BBSet domFrontier_;
-    BBSet domChildren_;
+    BBList domFrontier_;
+    BBList domChildren_;
 
     /// keeps acount of the vars which are assigned to in this basic block last
     RegMap vars_;
 
+    BasicBlock() {}
+
     BasicBlock(InstrList::Node* begin, InstrList::Node* end)
         : begin_(begin)
         , end_(end)
-        , index_(std::numeric_limits<size_t>::max()) // means: not reached yet
     {}
-
-    void connectBB(BasicBlock* bb)
-    {
-        this->succ_.insert(bb);
-        bb->pred_.insert(this);
-    }
 
     bool isEntry() const
     {
@@ -53,14 +47,10 @@ struct BasicBlock
         return !end_;
     }
 
-    bool isReached() const
-    {
-        return index_ != std::numeric_limits<size_t>::max();
-    }
-
-    size_t whichPred(BasicBlock* bb) const;
-
     /// returns the title string of this BasicBlock
+    std::string name() const;
+
+    /// returns a string holding the instructions of the BasicBlock for dot-files
     std::string toString() const;
 };
 

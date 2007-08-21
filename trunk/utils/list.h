@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * Searches for the first t in the list. Returns sentinel() if not found.
+     * Searches for the first \p t in the list. Returns sentinel() if not found.
      * @param t the value to be searched
      * @return The node which contains t if found.
      * If t was not found sentinel() is returned.
@@ -252,6 +252,48 @@ public:
             n = n->next_;
 
         return n;
+    }
+
+    /**
+     * Searches for the Node \p n and returns its position.
+     * 0 means the first and so on. size() is returned if it is not found.
+     * @param n the node to be searched
+     * @return The node which contains t if found.
+     * If t was not found sentinel() is returned.
+     */
+    size_t position(Node* n) const
+    {
+        size_t pos = 0;
+        Node* iter = sentinel_->next_;
+
+        while (iter != n && iter != sentinel_)
+        {
+            iter = iter->next_;
+            ++pos;
+        }
+
+        return pos;
+    }
+
+    /**
+     * Searches for the first \p t and returns its position.
+     * 0 means the first and so on. size() is returned if it is not found.
+     * @param t the value to be searched
+     * @return The node which contains t if found.
+     * If t was not found sentinel() is returned.
+     */
+    size_t position(const T& t) const
+    {
+        size_t pos = 0;
+        Node* iter = sentinel_->next_;
+
+        while (iter != sentinel_ && iter->value_ != t)
+        {
+            iter = iter->next_;
+            ++pos;
+        }
+
+        return pos;
     }
 
     Node* sentinel()
@@ -284,11 +326,11 @@ public:
         return sentinel_->prev_;
     }
 
-    size_t size() {
+    size_t size() const {
         return size_;
     }
 
-    bool empty()
+    bool empty() const
     {
         return size_ == 0;
     }

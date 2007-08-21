@@ -5,7 +5,7 @@
 #include "utils/assert.h"
 
 
-std::string BasicBlock::toString() const
+std::string BasicBlock::name() const
 {
     std::ostringstream oss;
 
@@ -19,19 +19,20 @@ std::string BasicBlock::toString() const
     return oss.str();
 }
 
-size_t BasicBlock::whichPred(BasicBlock* bb) const
+std::string BasicBlock::toString() const
 {
-    size_t pos = 0;
+    std::ostringstream oss;
 
-    for (BBSet::const_iterator iter = pred_.begin(); iter != pred_.end(); ++iter)
+    if (begin_ == 0)
+        oss << "\tENTRY\\n\\" << std::endl;
+    else if (end_ == 0)
+        oss << "\tEXIT\\n\\" << std::endl;
+    else
     {
-        if (*iter == bb)
-            break;
-        ++pos;
+        // for all instructions in this basic block except the last LabelInstr
+        for (InstrList::Node* instrIter = begin_; instrIter != end_; instrIter = instrIter->next())
+            oss << '\t' << instrIter->value_->toString() << "\\n\\" << std::endl; // print instruction
     }
 
-    swiftAssert(pos < pred_.size(), "bb not found");
-
-    return pos;
+    return oss.str();
 }
-
