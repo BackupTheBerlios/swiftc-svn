@@ -34,7 +34,9 @@ void CFG::calcCFG()
     // iterate over the instruction list and find basic blocks
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
-        if ( typeid(*iter->value_) == typeid(LabelInstr) )
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(instr) == typeid(LabelInstr) )
         {
             begin = end;
             end = iter;
@@ -52,7 +54,7 @@ void CFG::calcCFG()
 
 #ifdef SWIFT_DEBUG
         // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
-        if ( typeid(*iter->value_) == typeid(BranchInstr) || typeid(*iter->value_) == typeid(GotoInstr) )
+        if ( typeid(instr) == typeid(BranchInstr) || typeid(instr) == typeid(GotoInstr) )
         {
             swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
                 "BranchInstr or GotoInstr is not followed by a LabelInstr");
@@ -71,7 +73,9 @@ void CFG::calcCFG()
     // iterate once again over the instruction list in order to connect the blocks properly
     for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
-        if ( typeid(*iter->value_) == typeid(LabelInstr) )
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(instr) == typeid(LabelInstr) )
         {
             BBNode* prevBB = currentBB;
             // we have found a new basic block
@@ -90,23 +94,27 @@ void CFG::calcCFG()
                     prevBB->link(currentBB);
             }
         }
-        else if ( typeid(*iter->value_) == typeid(GotoInstr) )
+        else if ( typeid(instr) == typeid(GotoInstr) )
         {
-            BBNode* succ = labelNode2BBNode_[ ((GotoInstr*) iter->value_)->labelNode_ ];
-            currentBB->link(succ);
-        }
-        else if ( typeid(*iter->value_) == typeid(BranchInstr) )
-        {
-            BBNode* falseBlock = labelNode2BBNode_[ ((BranchInstr*) iter->value_)->falseLabelNode_ ];
-            currentBB->link(falseBlock);
+            GotoInstr* gi = (GotoInstr*) instr;
 
-            BBNode* trueBlock = labelNode2BBNode_[ ((BranchInstr*) iter->value_)->trueLabelNode_ ];
-            currentBB->link(trueBlock);
+            gi->succBB_ = labelNode2BBNode_[ gi->labelNode_ ];
+            currentBB->link(gi->succBB_);
         }
-        else if ( typeid(*iter->value_) == typeid(AssignInstr) )
+        else if ( typeid(instr) == typeid(BranchInstr) )
+        {
+            BranchInstr* bi = (BranchInstr*) instr;
+
+            bi->falseBB_ = labelNode2BBNode_[bi->falseLabelNode_];
+            currentBB->link(bi->falseBB_);
+
+            bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
+            currentBB->link(bi->trueBB_);
+        }
+        else if ( typeid(instr) == typeid(AssignInstr) )
         {
             // if we have an assignment to a var update this in the map
-            AssignInstr* ai = (AssignInstr*) iter->value_;
+            AssignInstr* ai = (AssignInstr*) instr;
 
             if ( ai->result_->isVar() )
             {
@@ -161,9 +169,11 @@ void CFG::calcDomTree()
             BBNode* newIdom = 0;
             for (Relative* iter = bb->pred_.first(); iter != bb->pred_.sentinel(); iter = iter->next())
             {
-                if ( iter->value_->postOrderIndex_ > i)
+                BBNode* processedBB = iter->value_;
+
+                if ( processedBB->postOrderIndex_ > i)
                 {
-                    newIdom = iter->value_;
+                    newIdom = processedBB;
                     // found a processed node
                     break;
                 }
@@ -174,11 +184,13 @@ void CFG::calcDomTree()
             // for all other predecessors
             for (Relative* iter = bb->pred_.first(); iter != bb->pred_.sentinel(); iter = iter->next())
             {
+                BBNode* predBB = iter->value_;
+
                 if (bb == newIdom)
                     continue;
 
-                if ( idoms_[iter->value_->postOrderIndex_] != 0 )
-                    newIdom = intersect(iter->value_, newIdom);
+                if ( idoms_[predBB->postOrderIndex_] != 0 )
+                    newIdom = intersect(predBB, newIdom);
             }
 
             if (idoms_[bb->postOrderIndex_] != newIdom )
@@ -447,17 +459,20 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
                 continue; // var not found
 
             phi->args_[j] = names[ -phi->oldResultVar_ ].top();
+            phi->sourceBBs_[j] = bb;
         }
     }
 
     // for each child of bb in the dominator tree
     for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
     {
+        BBNode* domChild = iter->value_;
+
         // omit special exit node
-        if ( iter->value_->value_->isExit() )
+        if ( domChild->value_->isExit() )
             continue;
 
-        rename(iter->value_, names);
+        rename(domChild, names);
     }
 
     // for each AssignInstr in bb
@@ -467,7 +482,7 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
 
         if ( typeid(*instr) == typeid(PhiInstr) )
         {
-            PhiInstr* phi = (PhiInstr*) iter->value_;
+            PhiInstr* phi = (PhiInstr*) instr;
 
             swiftAssert(phi->oldResultVar_ < 0, "this should be a var");
             swiftAssert( names[-phi->oldResultVar_].size() > 0, "cannot pop here");
@@ -475,7 +490,7 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
         }
         else if ( typeid(*instr) == typeid(AssignInstr) )
         {
-            AssignInstr* ai = dynamic_cast<AssignInstr*>(iter->value_);
+            AssignInstr* ai = dynamic_cast<AssignInstr*>(instr);
 
             if (ai->oldResultVar_ < 0) // if this is a var
             {

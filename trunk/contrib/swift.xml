@@ -36,6 +36,7 @@
       <item> finally </item>
 
       <item> class </item>
+      <item> macro </item>
       <item> struct </item>
       <item> enum </item>
       <item> union </item>

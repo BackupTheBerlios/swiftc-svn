@@ -3,11 +3,15 @@
 
 #include <fstream>
 
+#include "utils/graph.h"
 #include "utils/list.h"
-#include "pseudoreg.h"
+
+#include "me/pseudoreg.h"
 
 // forward declarations
 struct PseudoReg;
+struct BasicBlock;
+typedef Graph<BasicBlock>::Node BBNode;
 
 //------------------------------------------------------------------------------
 
@@ -38,7 +42,9 @@ typedef List<InstrBase*> InstrList;
 struct PhiInstr : public InstrBase
 {
     PseudoReg* result_;
+
     PseudoReg** args_;
+    BBNode**    sourceBBs_;
     size_t      argc_;
 
     int oldResultVar_;
@@ -46,14 +52,17 @@ struct PhiInstr : public InstrBase
     PhiInstr(PseudoReg* result, size_t argc)
         : result_(result)
         , args_( new PseudoReg*[argc] )
+        , sourceBBs_( new BBNode*[argc] )
         , argc_(argc)
         , oldResultVar_(result->regNr_)
     {
         memset(args_, 0, sizeof(PseudoReg*) * argc);
+        memset(args_, 0, sizeof(InstrList::Node*) * argc);
     }
     ~PhiInstr()
     {
         delete[] args_;
+        delete[] sourceBBs_;
     }
 
     std::string toString() const;
@@ -187,11 +196,12 @@ struct LabelInstr : public InstrBase
 //------------------------------------------------------------------------------
 
 /**
- * BranchInstr do not calculate something. They influence the control flow.
+ * GotoInstr does not calculate something. It influences the control flow.
  */
 struct GotoInstr : public InstrBase
 {
-    InstrList::Node* labelNode_;// will be deleted by the functab
+    InstrList::Node* labelNode_;
+    BBNode* succBB_;
 
     GotoInstr(InstrList::Node* labelNode)
         : labelNode_(labelNode)
@@ -217,8 +227,12 @@ struct GotoInstr : public InstrBase
 struct BranchInstr : public InstrBase
 {
     PseudoReg* boolReg_;
-    InstrList::Node* trueLabelNode_; // will be deleted by the functab
-    InstrList::Node* falseLabelNode_;// will be deleted by the functab
+
+    InstrList::Node* trueLabelNode_;
+    InstrList::Node* falseLabelNode_;
+
+    BBNode* trueBB_;
+    BBNode* falseBB_;
 
     BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode)
         : boolReg_(boolReg)

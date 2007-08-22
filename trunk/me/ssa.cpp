@@ -30,13 +30,13 @@ std::string PhiInstr::toString() const
     for (size_t i = 0; i < argc_ - 1; ++i)
     {
         if (args_[i])
-            oss << args_[i]->toString() << ", ";
+            oss << args_[i]->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
         else
             oss << "-, ";
     }
 
     if (args_[argc_ - 1])
-        oss << args_[argc_ - 1]->toString();
+        oss << args_[argc_-1]->toString() << '(' << sourceBBs_[argc_-1]->value_->name()  << ')';
     else
         oss << '-';
 
