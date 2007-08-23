@@ -6,8 +6,6 @@
 
 #include "utils/assert.h"
 
-#include "be/codegenerator.h"
-
 using namespace std;
 
 FuncTab* functab = 0;
@@ -215,22 +213,4 @@ void FunctionTable::dumpDot()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_ + '.' + *iter->second->id_);
-}
-
-void FunctionTable::genCode()
-{
-    ostringstream oss;
-    oss << filename_ << ".asm";
-
-    ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
-    ofs << oss.str() << "; hello world" << endl;
-
-    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
-    {
-        CodeGenerator cg(ofs, iter->second);
-        cg.genCode();
-    }
-
-    // finish
-    ofs.close();
 }

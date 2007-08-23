@@ -10,6 +10,7 @@ struct CmdLineParser
     char** argv_;
     char* filename_;
     bool error_;
+    bool optimize_;
 
     CmdLineParser(int argc, char** argv);
 };

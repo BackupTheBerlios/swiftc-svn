@@ -7,15 +7,20 @@
 
 #include "be/spiller.h"
 
+// forward declarations
+struct CFG;
+
 struct CodeGenerator
 {
     static Spiller* spiller_;
 
-    Function* function_;
-    std::ofstream& ofs_;
+    Function*       function_;
+    CFG*            cfg_;
+    std::ofstream&  ofs_;
 
     CodeGenerator(std::ofstream& ofs, Function* function)
         : function_(function)
+        , cfg_(&function->cfg_)
         , ofs_(ofs)
     {}
 
@@ -23,12 +28,10 @@ struct CodeGenerator
 
 //private:
 
-    /// calculates the interference graph
-    void calcIG();
     void spill();
     void color();
+    void colorRecursive(BBNode* bb);
     void coalesce();
-    void destructSSA();
 };
 
 #endif // SWIFT_CODEGENERATOR_H

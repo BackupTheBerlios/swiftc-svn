@@ -36,7 +36,7 @@ void CFG::calcCFG()
     {
         InstrBase* instr = iter->value_;
 
-        if ( typeid(instr) == typeid(LabelInstr) )
+        if ( typeid(*instr) == typeid(LabelInstr) )
         {
             begin = end;
             end = iter;
@@ -54,7 +54,7 @@ void CFG::calcCFG()
 
 #ifdef SWIFT_DEBUG
         // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
-        if ( typeid(instr) == typeid(BranchInstr) || typeid(instr) == typeid(GotoInstr) )
+        if ( typeid(*instr) == typeid(BranchInstr) || typeid(*instr) == typeid(GotoInstr) )
         {
             swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
                 "BranchInstr or GotoInstr is not followed by a LabelInstr");
@@ -75,7 +75,7 @@ void CFG::calcCFG()
     {
         InstrBase* instr = iter->value_;
 
-        if ( typeid(instr) == typeid(LabelInstr) )
+        if ( typeid(*instr) == typeid(LabelInstr) )
         {
             BBNode* prevBB = currentBB;
             // we have found a new basic block
@@ -94,14 +94,14 @@ void CFG::calcCFG()
                     prevBB->link(currentBB);
             }
         }
-        else if ( typeid(instr) == typeid(GotoInstr) )
+        else if ( typeid(*instr) == typeid(GotoInstr) )
         {
             GotoInstr* gi = (GotoInstr*) instr;
 
             gi->succBB_ = labelNode2BBNode_[ gi->labelNode_ ];
             currentBB->link(gi->succBB_);
         }
-        else if ( typeid(instr) == typeid(BranchInstr) )
+        else if ( typeid(*instr) == typeid(BranchInstr) )
         {
             BranchInstr* bi = (BranchInstr*) instr;
 
@@ -111,7 +111,7 @@ void CFG::calcCFG()
             bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
             currentBB->link(bi->trueBB_);
         }
-        else if ( typeid(instr) == typeid(AssignInstr) )
+        else if ( typeid(*instr) == typeid(AssignInstr) )
         {
             // if we have an assignment to a var update this in the map
             AssignInstr* ai = (AssignInstr*) instr;

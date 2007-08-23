@@ -6,6 +6,7 @@ CmdLineParser::CmdLineParser(int argc, char** argv)
     : argc_(argc)
     , argv_(argv)
     , error_(false)
+    , optimize_(false)
 {
     switch (argc)
     {

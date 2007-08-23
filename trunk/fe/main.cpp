@@ -1,5 +1,7 @@
-#include <iostream>
 #include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include "utils/memmgr.h"
 #include "utils/stringhelper.h"
@@ -12,6 +14,7 @@
 #include "fe/syntaxtree.h"
 
 #include "me/functab.h"
+#include "me/optimizer.h"
 
 #include "be/codegenerator.h"
 #include "be/amd64/spiller.h"
@@ -41,8 +44,8 @@ int start(int argc, char** argv)
     functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
 
     /*
-        1.  Parse the input file, build a syntax tree
-            and  start filling the SymbolTable
+        Parse the input file, build a syntax tree
+        and  start filling the SymbolTable
 
         Since not all symbols can be found in the first pass there will be gaps
         in the SymbolTable.
@@ -87,16 +90,46 @@ int start(int argc, char** argv)
     functab->buildUpME();
 
     /*
+        optimize if applicable
+    */
+    if (cmdLineParser.optimize_)
+    {
+        Optimizer::commonSubexprElimination_    = true;
+        Optimizer::deadCodeElimination_         = true;
+        Optimizer::constantPropagation_         = true;
+
+        for (FunctionTable::FunctionMap::iterator iter = functab->functions_.begin(); iter != functab->functions_.end(); ++iter)
+        {
+            Optimizer optimizer(iter->second);
+            optimizer.optimize();
+        }
+    }
+
+
+    /*
         debug output
     */
     functab->dumpSSA();
     functab->dumpDot();
 
     /*
-        build up back-end
+        build up back-end and generate assembly code
     */
     CodeGenerator::spiller_ = new Amd64Spiller();
-    functab->genCode();
+
+    std::ostringstream oss;
+    oss << cmdLineParser.filename_ << ".asm";
+
+    std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+
+    for (FunctionTable::FunctionMap::iterator iter = functab->functions_.begin(); iter != functab->functions_.end(); ++iter)
+    {
+        CodeGenerator cg(ofs, iter->second);
+        cg.genCode();
+    }
+
+    // finish
+    ofs.close();
 
     /*
         clean up middle-end
