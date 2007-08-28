@@ -1,4 +1,4 @@
-#include "me/cfg.h"
+#include "cfg.h"
 
 #include "me/functab.h"
 
@@ -381,7 +381,7 @@ void CFG::renameVars()
 
 void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
 {
-    // for each phi function in succ -> start with the first instruction which is followed by the leading LabelInstr
+    // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrList::Node* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
