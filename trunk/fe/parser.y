@@ -92,7 +92,7 @@ bool parseerror = false;
 %token PUBLIC PROTECTED PACKAGE PRIVATE
 
 // miscellaneous
-%token SCOPE CLASS END
+%token SCOPE CLASS END EOL
 
 %token <integer_>   INTEGER
 %token <float_>     FLOAT
@@ -112,15 +112,20 @@ bool parseerror = false;
 %type <memberVar_>  member_var
 
 %type <module_>     module
-%type <expr_>       expr assign_expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
+%type <expr_>       expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <arg_>        arg_list
 
 %type <statement_>  statement_list statement
 %type <baseType_>   base_type
 
-%start module
+%start file
 
 %%
+
+file
+    : module
+    | EOL module
+    ;
 
 module
     :   {
@@ -137,8 +142,8 @@ module
     ;
 
 definitions
-    : /*empty*/                                 { $$ = 0; }
-    | class_definition opt_semis definitions    { $$ = $1; $$->next_ = $3; }
+    : /*empty*/                     { $$ = 0; }
+    | definitions class_definition  { $$ = $2; $$->next_ = $1; }
     ;
 
 /*
@@ -148,25 +153,25 @@ definitions
 */
 
 class_definition
-    : CLASS ID
+    : CLASS ID EOL
         {
             $$ = new Class($2, currentLine);
             symtab->insert($<class_>$);
         }
-        class_body END
+        class_body END EOL
         {
-            $$ = $<class_>3;
-            $<class_>$->classMember_= $4;
+            $$ = $<class_>4;
+            $<class_>$->classMember_= $5;
         }
-    | CLASS ID
+    | CLASS ID EOL
         {
             $$ = new Class($2, currentLine);
             symtab->insert($<class_>$);
         }
-        '{' template_list '}' class_body END
+        '{' template_list '}' class_body END EOL
         {
-            $$ = $<class_>3;
-            $<class_>$->classMember_= $7;
+            $$ = $<class_>4;
+            $<class_>$->classMember_= $8;
         }
     ;
 
@@ -182,7 +187,7 @@ template_parameter
 class_body
     : /*empty*/                 { $$ = 0; }
     | class_member class_body   { $$ = $1; $1->next_ = $2; }
-    | ';' class_body            { $$ = $2; }
+    | EOL class_body            { $$ = $2; }
     ;
 
 class_member
@@ -202,20 +207,20 @@ method
             $$ = new Method( $1, 0, $2, getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list')' statement_list END
+        '(' parameter_list')' EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->statements_ = $7;
+            $$->statements_ = $8;
         }
     | method_qualifier type ID
         {
             $$ = new Method( $1, $2, $3, getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list')' statement_list END
+        '(' parameter_list')' EOL statement_list END EOL
         {
             $$ = $<method_>4;
-            $$->statements_ = $8;
+            $$->statements_ = $9;
         }
     ;
 
@@ -245,7 +250,7 @@ parameter
 */
 
 member_var
-    : type ID ';'
+    : type ID EOL
         {
             $$ = new MemberVar($1, $2, currentLine);
             symtab->insert($$);
@@ -264,11 +269,11 @@ statement_list
     ;
 
 statement
-    : expr ';' opt_semis    { $$ = new ExprStatement($1, currentLine); }
-    | type ID ';'           { $$ = new Declaration($1, $2, getKeyLine()); }
-    | IF '(' rel_expr ')' statement_list END                     { $$ = new IfElStatement(0,    $3, $5,  0, currentLine); }
-    | IF '(' rel_expr ')' statement_list ELSE statement_list END { $$ = new IfElStatement(ELSE, $3, $5, $7, currentLine); }
-/*     | IF '(' rel_expr ')' statement_list ELIF '(' rel_expr ')' statement_list END { $$ = new IfElStatement(ELIF, $3, $5, $10, currentLine); } */
+    : expr EOL              { $$ = new ExprStatement($1, currentLine); }
+    | type ID EOL           { $$ = new Declaration($1, $2, getKeyLine()); }
+    | IF rel_expr EOL statement_list END EOL                         { $$ = new IfElStatement(0,  $2, $4,  0, currentLine); }
+    | IF rel_expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement(ELSE, $2, $4, $7, currentLine); }
+/*     | IF rel_expr EOL statement_list ELIF '(' rel_expr ')' statement_list END EOL { $$ = new IfElStatement(ELIF, $3, $5, $10, currentLine); } */
     ;
 
 /*
@@ -278,13 +283,8 @@ statement
 */
 
 expr
-    : assign_expr               { $$ = $1; }
-    | expr ',' assign_expr      { $$ = new BinExpr(',', $1, $3, currentLine); }
-    ;
-
-assign_expr
     : rel_expr                  { $$ = $1; }
-    | assign_expr '=' rel_expr  { $$ = new AssignExpr('=', $1, $3, currentLine); }
+    | expr '=' rel_expr         { $$ = new AssignExpr('=', $1, $3, currentLine); }
     ;
 
 rel_expr
@@ -352,13 +352,8 @@ primary_expr
     ;
 
 arg_list
-    : assign_expr                   { $$ = new Arg($1,  0, currentLine); }
-    | assign_expr ',' arg_list      { $$ = new Arg($1, $3, currentLine); }
-    ;
-
-opt_semis
-    : /*empty*/
-    | opt_semis ';'
+    : expr                   { $$ = new Arg($1,  0, currentLine); }
+    | expr ',' arg_list      { $$ = new Arg($1, $3, currentLine); }
     ;
 
 method_qualifier
@@ -395,8 +390,8 @@ pointer
 
 
 template_arg_list
-    : assign_expr
-    | assign_expr ',' template_arg_list
+    : expr
+    | expr ',' template_arg_list
     ;
 
 type_qualifier

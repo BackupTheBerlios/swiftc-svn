@@ -41,6 +41,7 @@ INTEGER     {DIGIT}+
 */
 %x COMMENT
 %x NESTED_COMMENT
+%x EOL_STATE
 
 %%
 
@@ -171,9 +172,17 @@ nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Litera
 [ \t]   { /* skip whitespaces */ }
 
 \n {
+    BEGIN EOL_STATE;
     ++currentLine; // count line number
+    return EOL;
 }
+
 .       { printf("%i: error: invalid input character '%c'\n", currentLine, yytext[0]); }
+
+
+<EOL_STATE>[ \t]   { /* skip whitespaces */ }
+<EOL_STATE>\n       { ++currentLine; /* count line number */ }
+<EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
 
 \/\*            { BEGIN COMMENT; }
 <COMMENT>\*\/   { BEGIN INITIAL; }

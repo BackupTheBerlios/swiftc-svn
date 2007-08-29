@@ -249,8 +249,6 @@ void UnExpr::genSSA()
 
 std::string BinExpr::getExprName() const
 {
-    if (c_ == ',' )
-        return "comma expression";
     if (c_ == '[')
         return "index expression";
 
@@ -260,9 +258,7 @@ std::string BinExpr::getExprName() const
 std::string BinExpr::getOpString() const
 {
     std::ostringstream oss;
-    if      (c_ == ',' )
-        oss << ", ";
-    else if (c_ == '[')
+    if (c_ == '[')
         oss << "[";
     else
         oss << " " << c_ << " ";
@@ -275,15 +271,6 @@ bool BinExpr::analyze()
     // return false when syntax is wrong
     if ( !op1_->analyze() || !op2_->analyze() )
         return false;
-
-    if (kind_ == ',')
-    {
-        // FIXME remove comma operator
-        type_ = op2_->type_->clone();
-        lvalue_ = op2_->lvalue_;
-
-        return true;
-    }
 
     if ( (op1_->type_->pointerCount_ >= 1 || op2_->type_->pointerCount_ >= 1) )
     {
