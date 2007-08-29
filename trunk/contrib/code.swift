@@ -23,12 +23,12 @@ class Test
 
         b = r * 5.0 > 7.0
 
-        if (6 == 8)
-            if (true)
+        if 6 == 8
+            if true
                 real r
                 r  = 6.0
 
-                if (r > 8.0)
+                if r > 8.0
                     r = 9.0
                 else
                     bool z
@@ -42,12 +42,12 @@ class Test
             real t
             t = 1.2
 
-            if (b)
+            if b
                 bool b
                 b  = false
                 t = 7.0
             else
-                if (b)
+                if b
                     real u
                     u = 5.0 * r
                 end
@@ -66,8 +66,3 @@ end
 class FOO
     int i
 end
-
-
-
-
-
