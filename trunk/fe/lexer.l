@@ -69,10 +69,6 @@ dec { return DEC; }
 \<->    { return SWAP_OP; }
 ->      { return PTR_OP; }
 
-var { keyLine = currentLine; return VAR; }
-cst { keyLine = currentLine; return CST; }
-def { keyLine = currentLine; return DEF; }
-
 int     { return INT; }
 int8    { return INT8; }
 int16   { return INT16; }

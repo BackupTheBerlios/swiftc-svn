@@ -64,8 +64,6 @@ bool parseerror = false;
 // built-in template types
 %token ARRAY SIMD
 
-// type qualifier
-%token VAR CST DEF
 // parameter qualifier
 %token IN INOUT OUT
 // method qualifier
@@ -83,6 +81,7 @@ bool parseerror = false;
 %token MOVE_OP SWAP_OP PTR_OP
 
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
+%token VAR DEF CST
 
 // control flow
 %token IF ELSE ELIF FOR WHILE DO_WHILE
@@ -102,9 +101,9 @@ bool parseerror = false;
     types
 */
 
-%type <int_>        simple_type type_qualifier method_qualifier parameter_qualifier
+%type <int_>        simple_type method_qualifier
 %type <type_>       type
-%type <parameter_>  parameter parameter_list
+%type <parameter_>  parameter parameter_list return_type_list return_type /*return_values*/
 
 %type <definition_> class_definition definitions
 %type <classMember_> class_body class_member
@@ -201,6 +200,8 @@ class_member
     *******
 */
 
+
+
 method
     : method_qualifier /**/ ID
         {
@@ -212,15 +213,45 @@ method
             $$ = $<method_>3;
             $$->statements_ = $8;
         }
-    | method_qualifier type ID
+    | method_qualifier return_type_list '=' ID
         {
-            $$ = new Method( $1, $2, $3, getKeyLine() );
+            $$ = new Method( $1, $2, $4, getKeyLine() );
+            symtab->insert($$);
+            $$->insertReturnTypesInSymtab();
+        }
+        '(' parameter_list')' EOL statement_list END EOL
+        {
+            $$ = $<method_>5;
+            $$->statements_ = $10;
+        }
+    | CREATE
+        {
+            $$ = new Method( CREATE, 0, new std::string("create"), getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list')' EOL statement_list END EOL
         {
-            $$ = $<method_>4;
-            $$->statements_ = $9;
+            $$ = $<method_>2;
+            $$->statements_ = $7;
+        }
+
+
+
+    ;
+
+return_type_list
+    : return_type                       { $$ = $1; $$->next_ = 0; }
+    | return_type ',' return_type_list  { $$ = $1; $$->next_ = $3; }
+    ;
+
+return_type
+    : type ID
+        {
+            $$ = new Parameter(Parameter::ARG, $1, $2, currentLine);
+        }
+    | INOUT type ID
+        {
+            $$ = new Parameter(Parameter::RES_INOUT, $2, $3, currentLine);
         }
     ;
 
@@ -231,14 +262,9 @@ parameter_list
     ;
 
 parameter
-    : /* default is IN */ type ID
+    : type ID
         {
-            $$ = new Parameter(IN, $1, $2, currentLine);
-            symtab->insert($$);
-        }
-    | parameter_qualifier type ID
-        {
-            $$ = new Parameter($1, $2, $3, currentLine);
+            $$ = new Parameter(Parameter::ARG, $1, $2, currentLine);
             symtab->insert($$);
         }
     ;
@@ -362,15 +388,8 @@ method_qualifier
     | ROUTINE   { $$ = ROUTINE; }
     ;
 
-parameter_qualifier
-    : IN    { $$ = IN; }
-    | INOUT { $$ = INOUT; }
-    | OUT   { $$ = OUT; }
-    ;
-
 type
-    : type_qualifier  base_type { pointercount = 0; } pointer  { $$ = new Type($1,  $2, pointercount, currentLine); }
-    | /*default VAR*/ base_type { pointercount = 0; } pointer  { $$ = new Type(VAR, $1, pointercount, currentLine); }
+    : base_type { pointercount = 0; } pointer  { $$ = new Type(VAR, $1, pointercount, currentLine); }
     ;
 
 base_type
@@ -393,17 +412,6 @@ template_arg_list
     : expr
     | expr ',' template_arg_list
     ;
-
-type_qualifier
-    : VAR   { $$ = VAR; }
-    | CST   { $$ = CST; }
-    | DEF   { $$ = DEF; }
-    ;
-
-/*type_modifier:
-    '*'
-    | '*' type_modifier
-    ;*/
 
 simple_type
     : INDEX     { $$ = INDEX; }

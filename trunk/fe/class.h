@@ -94,13 +94,20 @@ struct MemberVar : public ClassMember
 
 struct Parameter : public SymTabEntry
 {
-    int             parameterQualifier_;
+    enum Kind
+    {
+        ARG,
+        RES,
+        RES_INOUT                
+    };
+    
+    Kind            kind_;
     Type*           type_;
     Parameter*      next_;
 
-    Parameter(int parameterQualifier, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
+    Parameter(Kind kind, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
         : SymTabEntry(id, line, parent)
-        , parameterQualifier_(parameterQualifier)
+        , kind_(kind)
         , type_(type)
     {}
     ~Parameter();
@@ -142,7 +149,7 @@ struct Scope
 struct Method : public ClassMember
 {
     int methodQualifier_;
-    Type* returnType_;
+    Parameter* returnTypeList_;
 
     Statement* statements_;
 
@@ -150,16 +157,18 @@ struct Method : public ClassMember
 
     Scope* rootScope_;
 
-    Method(int methodQualifier, Type* returnType, std::string* id, int line = NO_LINE, Node* parent = 0)
+    Method(int methodQualifier, Parameter* returnTypeList, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
-        , returnType_(returnType)
+        , returnTypeList_(returnTypeList)
         , rootScope_( new Scope(0) )
     {
         // should be enough for most methods
         params_.reserve(10);
     }
     ~Method();
+    
+    void insertReturnTypesInSymtab();
 
     std::string toString() const;
     bool analyze();

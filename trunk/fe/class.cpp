@@ -40,25 +40,14 @@ bool Class::analyze()
 Parameter::~Parameter()
 {
     delete type_;
-
-    if (next_)
-        delete next_;
 }
 
 std::string Parameter::toString() const
 {
     std::ostringstream oss;
 
-    switch (parameterQualifier_)
-    {
-        case IN:    oss << "in ";       break;
-        case INOUT: oss << "inout ";    break;
-        case OUT:   oss << "out ";      break;
-
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
-    }
+    if (kind_ == RES_INOUT)
+        oss << "inout ";
 
     oss << type_->toString() << " ";
     oss << *id_;
@@ -109,13 +98,20 @@ Local* Scope::lookupLocal(int regNr)
 
 Method::~Method()
 {
-    delete returnType_;
     delete statements_;
     delete rootScope_;
 
     // delete each parameter
     for (size_t i = 0; i < params_.size(); ++i)
         delete params_[i];
+}
+
+void Method::insertReturnTypesInSymtab()
+{
+    swiftAssert(returnTypeList_, "this may not be NULL");
+
+    for (Parameter* iter = returnTypeList_; iter != 0; iter = iter->next_)
+        symtab->insert(iter);
 }
 
 std::string Method::toString() const
@@ -132,8 +128,8 @@ std::string Method::toString() const
             return "";
     }
 
-    if (returnType_) {
-        oss << returnType_->toString() << " ";
+    if (returnTypeList_) {
+        oss << returnTypeList_->toString() << " ";
         oss << " ";
     }
 
