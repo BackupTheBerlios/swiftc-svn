@@ -81,7 +81,6 @@ bool parseerror = false;
 %token MOVE_OP SWAP_OP PTR_OP
 
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
-%token VAR DEF CST
 
 // control flow
 %token IF ELSE ELIF FOR WHILE DO_WHILE
@@ -208,10 +207,14 @@ method
             $$ = new Method( $1, 0, $2, getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list')' EOL statement_list END EOL
+        '(' parameter_list')'
+        {
+            symtab->checkSignature();
+        }
+        EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->statements_ = $8;
+            $$->statements_ = $9;
         }
     | method_qualifier return_type_list '=' ID
         {
@@ -219,24 +222,29 @@ method
             symtab->insert($$);
             $$->insertReturnTypesInSymtab();
         }
-        '(' parameter_list')' EOL statement_list END EOL
+        '(' parameter_list')'
+        {
+            symtab->checkSignature();
+        }
+        EOL statement_list END EOL
         {
             $$ = $<method_>5;
-            $$->statements_ = $10;
+            $$->statements_ = $11;
         }
     | CREATE
         {
             $$ = new Method( CREATE, 0, new std::string("create"), getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list')' EOL statement_list END EOL
+        '(' parameter_list')'
+        {
+            symtab->checkSignature();
+        }
+        EOL statement_list END EOL
         {
             $$ = $<method_>2;
-            $$->statements_ = $7;
+            $$->statements_ = $8;
         }
-
-
-
     ;
 
 return_type_list
@@ -389,7 +397,7 @@ method_qualifier
     ;
 
 type
-    : base_type { pointercount = 0; } pointer  { $$ = new Type(VAR, $1, pointercount, currentLine); }
+    : base_type { pointercount = 0; } pointer  { $$ = new Type($1, pointercount, currentLine); }
     ;
 
 base_type

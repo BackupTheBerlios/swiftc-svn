@@ -91,8 +91,8 @@ typedef unsigned long ulong;
 
 #ifdef WIN32
 
-	//For nasty microsoft compiler
-	#define _USE_MATH_DEFINES
+    //For nasty microsoft compiler
+    #define _USE_MATH_DEFINES
 
     #include <windows.h>
     #include <limits.h>

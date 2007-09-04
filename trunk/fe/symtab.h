@@ -38,11 +38,14 @@ struct SymbolTable
 
     bool insert(Module* module);
     bool insert(Class* _class);
-    bool insert(Method* method);
+    void insert(Method* method);
     bool insert(MemberVar* memberVar);
     bool insert(Parameter* parameter);
     bool insert(Local* local);
+
     void insertLocalByRegNr(Local* local);
+
+    bool checkSignature();
 
     void enterModule();
     void leaveModule();

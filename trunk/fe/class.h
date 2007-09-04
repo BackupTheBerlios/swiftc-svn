@@ -1,8 +1,8 @@
 #ifndef SWIFT_CLASS_H
 #define SWIFT_CLASS_H
 
-#include <vector>
 #include <map>
+#include <set>
 
 #include "utils/list.h"
 
@@ -54,7 +54,7 @@ struct ClassMember : public SymTabEntry
 
 struct Class : public Definition
 {
-    typedef std::map<std::string*, Method*, StringPtrCmp> MethodMap;
+    typedef std::multimap<std::string*, Method*, StringPtrCmp> MethodMap;
     typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
     ClassMember* classMember_;
@@ -98,9 +98,9 @@ struct Parameter : public SymTabEntry
     {
         ARG,
         RES,
-        RES_INOUT                
+        RES_INOUT
     };
-    
+
     Kind            kind_;
     Type*           type_;
     Parameter*      next_;
@@ -111,6 +111,8 @@ struct Parameter : public SymTabEntry
         , type_(type)
     {}
     ~Parameter();
+
+    bool operator == (const Parameter& parameter) const;
 
     std::string toString() const;
 };
@@ -148,12 +150,23 @@ struct Scope
 
 struct Method : public ClassMember
 {
+    struct Signature
+    {
+        typedef List<Parameter*> Params;
+        Params params_;
+
+        bool operator == (const Signature& sig) const;
+    };
+
     int methodQualifier_;
     Parameter* returnTypeList_;
 
     Statement* statements_;
 
-    std::vector<Parameter*> params_;
+    typedef std::set<Parameter*> Params;
+    Params params_;
+
+    Signature signature_;
 
     Scope* rootScope_;
 
@@ -162,13 +175,12 @@ struct Method : public ClassMember
         , methodQualifier_(methodQualifier)
         , returnTypeList_(returnTypeList)
         , rootScope_( new Scope(0) )
-    {
-        // should be enough for most methods
-        params_.reserve(10);
-    }
+    {}
     ~Method();
-    
+
     void insertReturnTypesInSymtab();
+
+    void appendParameter(Parameter* parameter);
 
     std::string toString() const;
     bool analyze();

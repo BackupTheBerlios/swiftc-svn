@@ -1,12 +1,23 @@
 # Swift Language test file
+
+class FOO
+    int i
+end
+
 class Test
     Foo foo
-    
+
     create (int peter, FOO fubert)
         int a
     end
 
+    routine real re, int rs, inout int bs = test(FOO foo, int i)
+        int a
+        a = 5
+    end
+
     routine real re, int rs, inout int bs = test(FOO foo)
+
         int a
         int b
         a = 5 * 6 + 7
@@ -65,8 +76,4 @@ class Test
     u = 5.0
 
     end
-end
-
-class FOO
-    int i
 end

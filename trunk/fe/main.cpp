@@ -45,18 +45,18 @@ int start(int argc, char** argv)
 
     /*
         Parse the input file, build a syntax tree
-        and  start filling the SymbolTable
+        and start filling the SymbolTable
 
         Since not all symbols can be found in the first pass there will be gaps
         in the SymbolTable.
     */
-    swiftparse();   // call generated parser which on its part calls swiftlex
+    swiftparse(); // call generated parser which on its part calls swiftlex
     if ( parseerror )
-        return EXIT_FAILURE;  // abort on a parse error
+        return EXIT_FAILURE; // abort on a parse error
 
     /*
-        2.  Check types of all expressions, fill all gaps in the symtab and
-            build single static assignment form if everything is ok
+        Check types of all expressions, fill all gaps in the symtab and
+        build single static assignment form if everything is ok
 
         Thus a complete SymbolTable and type consistency is ensured after this pass.
     */

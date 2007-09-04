@@ -161,7 +161,8 @@ struct BinExpr : public Expr
 
 struct AssignExpr : public Expr
 {
-    union {
+    union 
+    {
         int kind_;
         char c_;
     };

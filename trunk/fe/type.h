@@ -23,13 +23,11 @@ struct BaseType : public Node
 
 struct Type : public Node
 {
-    int         typeQualifier_;
     BaseType*   baseType_;
     int         pointerCount_;
 
-    Type(int typeQualifier, BaseType* baseType, int pointerCount, int line = NO_LINE)
+    Type(BaseType* baseType, int pointerCount, int line = NO_LINE)
         : Node(line)
-        , typeQualifier_(typeQualifier)
         , baseType_(baseType)
         , pointerCount_(pointerCount)
     {}
@@ -40,14 +38,13 @@ struct Type : public Node
 
     virtual Type* clone() const
     {
-        return new Type(typeQualifier_, baseType_->clone(), pointerCount_, line_);
+        return new Type(baseType_->clone(), pointerCount_, line_);
     }
 
     std::string toString() const;
     bool analyze();
 
     static bool check(Type* t1, Type* t2);
-    static int fitQualifier(Type* t1, Type* t2);
     bool validate();
     bool isBool();
 };

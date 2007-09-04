@@ -99,52 +99,77 @@ bool SymbolTable::insert(MemberVar* memberVar)
     return true;
 }
 
-bool SymbolTable::insert(Method* method)
+void SymbolTable::insert(Method* method)
 {
-    pair<Class::MethodMap::iterator, bool> p
+    Class::MethodMap::iterator iter
         = class_->methods_.insert( std::make_pair(method->id_, method) );
 
-    if ( !p.second )
-    {
-        stack<string> idStack;
-
-        for (Node* iter = method_->parent_; iter != 0; iter = iter->parent_)
-            idStack.push( iter->toString() );
-
-        ostringstream oss;
-
-        while ( !idStack.empty() )
-        {
-            oss << idStack.top();
-            idStack.pop();
-
-            if ( !idStack.empty() )
-                oss << '.';
-        }
-
-        errorf(method->line_, "there is already a method '%s' defined in '%s' line %i", method_->toString().c_str(), oss.str().c_str(), p.first->second->line_);
-
-        return false;
-    }
-
     // set current method scope
-    method_ = p.first->second;
+    method_ = iter->second;
+}
+
+bool SymbolTable::checkSignature()
+{
+    typedef Class::MethodMap::iterator Iter;
+
+    pair<Iter, Iter> range = class_->methods_.equal_range( method_->id_ );
+
+    bool result = true;
+
+    for (Iter iter = range.first; iter != range.second; ++iter)
+    {
+        // do not check *iter with itself
+        if (iter->second == method_)
+            continue;
+
+        // keep account of the comparison
+        // note   ! here
+        result &= !(iter->second->signature_ == method_->signature_);
+
+        if (!result)
+        {
+            stack<string> idStack;
+
+            for (Node* nodeIter = method_->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
+                idStack.push( nodeIter->toString() );
+
+            ostringstream oss;
+
+            while ( !idStack.empty() )
+            {
+                oss << idStack.top();
+                idStack.pop();
+
+                if ( !idStack.empty() )
+                    oss << '.';
+            }
+
+            errorf(method_->line_, "there is already a method '%s' defined in '%s' line %i",
+                method_->toString().c_str(),
+                oss.str().c_str(), iter->second->line_);
+
+            return false;
+        }
+    }
 
     return true;
 }
 
 bool SymbolTable::insert(Parameter* parameter)
 {
-    for (size_t i = 0; i < method_->params_.size(); ++i)
+    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
     {
-        if (*parameter->id_ == *method_->params_[i]->id_)
+
+        if (*parameter->id_ == *(*iter)->id_)
         {
-            errorf(parameter->line_, "there is already a parameter '%s' defined in this procedure", parameter->id_->c_str());
+            errorf(parameter->line_, "there is already a parameter '%s' defined in this procedure",
+                parameter->id_->c_str());
+
             return false;
         }
     }
 
-    method_->params_.push_back(parameter);
+    method_->appendParameter(parameter);
 
     return true;
 }
@@ -156,14 +181,15 @@ bool SymbolTable::insert(Local* local)
 
     if ( !p.second )
     {
-        errorf(local->line_, "there is already a local '%s' defined in this scope in line %i", local->id_->c_str(), p.first->second->line_);
+        errorf(local->line_, "there is already a local '%s' defined in this scope in line %i",
+            local->id_->c_str(), p.first->second->line_);
 
         return false;
     }
 
-    for (size_t i = 0; i < method_->params_.size(); ++i)
+    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
     {
-        if (*local->id_ == *method_->params_[i]->id_)
+        if (*local->id_ == *(*iter)->id_)
         {
             errorf(local->line_, "local '%s' shadows a parameter", local->id_->c_str());
             return false;
@@ -247,10 +273,10 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
         return local;
 
     // no - perhaps a parameter?
-    for (size_t i = 0; i < method_->params_.size(); ++i)
+    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
     {
-        if (*method_->params_[i]->id_ == *id)
-            return method_->params_[i];
+        if (*(*iter)->id_ == *id)
+            return *iter;
     }
 
     {
@@ -273,10 +299,10 @@ Type* SymbolTable::lookupType(string* id)
         return local->type_;
 
     // no - perhaps a parameter?
-    for (size_t i = 0; i < method_->params_.size(); ++i)
+    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
     {
-        if (*method_->params_[i]->id_ == *id)
-            return method_->params_[i]->type_;
+        if (*(*iter)->id_ == *id)
+            return (*iter)->type_;
     }
 
     {

@@ -37,9 +37,23 @@ bool Class::analyze()
     return true;
 }
 
+//------------------------------------------------------------------------------
+
 Parameter::~Parameter()
 {
     delete type_;
+}
+
+bool Parameter::operator == (const Parameter& parameter) const
+{
+    if (kind_ != parameter.kind_)
+        return false;
+
+    if ( Type::check(type_, parameter.type_) )
+        return true;
+
+    // else
+    return false;
 }
 
 std::string Parameter::toString() const
@@ -50,7 +64,7 @@ std::string Parameter::toString() const
         oss << "inout ";
 
     oss << type_->toString() << " ";
-    oss << *id_;
+//     oss << *id_;
 
     return oss.str();
 }
@@ -96,14 +110,44 @@ Local* Scope::lookupLocal(int regNr)
 
 //------------------------------------------------------------------------------
 
+bool Method::Signature::operator == (const Method::Signature& signature) const
+{
+    // if the sizes do not match the signature is obviously different
+    if ( params_.size() != signature.params_.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    const Signature::Params::Node* param1 = params_.first();
+    const Signature::Params::Node* param2 = signature.params_.first();
+
+    while (result && param1 != params_.sentinel())
+    {
+        result = *param1->value_ == *param2->value_;
+
+        // traverse both nodes to the next node
+        param1 = param1->next();
+        param2 = param2->next();
+    }
+
+    return result;
+}
+
 Method::~Method()
 {
     delete statements_;
     delete rootScope_;
 
     // delete each parameter
-    for (size_t i = 0; i < params_.size(); ++i)
-        delete params_[i];
+    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
+        delete *iter;
+}
+
+void Method::appendParameter(Parameter* param)
+{
+    params_.insert(param);
+    signature_.params_.append(param);
 }
 
 void Method::insertReturnTypesInSymtab()
@@ -134,8 +178,9 @@ std::string Method::toString() const
     }
 
     oss << *id_ << '(';
-    for (size_t i = 0; i < params_.size(); ++i) {
-        oss << params_[i]->toString();
+    size_t i = 0;
+    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter, ++i) {
+        oss << (*iter)->toString();
         if (i + 1 < params_.size())
             oss << ", ";
     }
@@ -156,8 +201,8 @@ bool Method::analyze()
     functab->appendInstr( new LabelInstr() );
 
     // analyze each parameter
-    for (size_t i = 0; i < symtab->method_->params_.size(); ++i)
-        symtab->method_->params_[i]->type_->validate();
+    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
+        (*iter)->type_->validate();
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)

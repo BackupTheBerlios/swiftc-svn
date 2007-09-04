@@ -15,16 +15,6 @@ std::string Type::toString() const
 {
     std::ostringstream oss;
 
-    switch (typeQualifier_)
-    {
-        case VAR: oss << "var "; break;
-        case CST: oss << "cst "; break;
-        case DEF: oss << "def "; break;
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
-    }
-
     oss << baseType_->toString();
     for (int i = 0; 0 < pointerCount_; ++i)
         oss << '^';
@@ -34,7 +24,6 @@ std::string Type::toString() const
 
 /**
  * type checking <br>
- * This function does _NOT_ check the typeQualifier_
 */
 bool Type::check(Type* t1, Type* t2)
 {
@@ -140,46 +129,6 @@ bool Type::validate()
 
     swiftAssert(false, "strange type given");
     return false;
-}
-
-/**
- * Returns the compatible typeQualifier_
-*/
-int Type::fitQualifier(Type* t1, Type* t2)
-{
-    if (t1->typeQualifier_ == t2->typeQualifier_)
-        return t1->typeQualifier_;
-
-    switch (t1->typeQualifier_)
-    {
-        case VAR:
-            return VAR;
-
-        case CST:
-            if (t2->typeQualifier_ == VAR)
-                return VAR;
-            else
-                return CST;
-
-        case DEF:
-            switch (t2->typeQualifier_)
-            {
-                case VAR:
-                    return VAR;
-
-                case CST:
-                    return CST;
-
-                case DEF:
-                    return DEF;
-
-                default:
-                    swiftAssert(false, "invalid value in t2->typeQualifier_");
-            }
-        default:
-            swiftAssert(false, "invalid value in t2->typeQualifier_");
-            return VAR;
-    }
 }
 
 bool Type::isBool()
