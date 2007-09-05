@@ -46,7 +46,7 @@ struct CFG : public Graph<BasicBlock>
     void calcDomFrontier();
     void placePhiFunctions();
     void renameVars();
-    void rename(BBNode* bb, std::stack<PseudoReg*>* names);
+    void rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names);
 
 /*
     dump methods

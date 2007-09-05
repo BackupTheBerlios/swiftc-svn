@@ -4,6 +4,7 @@
 
 #include "utils/assert.h"
 
+#include "fe/error.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 
@@ -26,15 +27,80 @@ Class::~Class()
 
 bool Class::analyze()
 {
-    symtab->enterClass(id_);
+    symtab->enterClass(this);
+
+    // assume true as initial state
+    bool result = true;
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
-        iter->analyze();
+    {
+        /*
+            TODO since this is an O(n^2) algorithm it should be checked
+            whether in real-world-programms an O(n log n) algorithm with sorting
+            ist faster
+        */
+        if ( typeid(*iter) == typeid(Method) )
+        {
+            Method* method = (Method*) iter;
+
+            /*
+                check whether there is method with the same name and the same signature
+            */
+            typedef Class::MethodMap::iterator Iter;
+            Iter methodIter = methods_.find(method->id_);
+
+            // move iter to point to method
+            while (methodIter->second != method)
+                ++methodIter;
+
+            // and one further to the first item which is not itself
+            ++methodIter;
+
+            // find element behind the last one
+            Iter last = methods_.upper_bound(method->id_);
+
+            for (; methodIter != last; ++methodIter)
+            {
+                // check methodQualifier_
+                if (methodIter->second->methodQualifier_ != method->methodQualifier_)
+                    continue;
+
+                if ( methodIter->second->signature_ == method->signature_ )
+                {
+                    std::stack<std::string> idStack;
+
+                    for (Node* nodeIter = methodIter->second->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
+                        idStack.push( nodeIter->toString() );
+
+                    std::ostringstream oss;
+
+                    while ( !idStack.empty() )
+                    {
+                        oss << idStack.top();
+                        idStack.pop();
+
+                        if ( !idStack.empty() )
+                            oss << '.';
+                    }
+
+                    errorf(methodIter->second->line_, "there is already a method '%s' defined in '%s' line %i",
+                        method->toString().c_str(),
+                        oss.str().c_str(), method->line_);
+
+                    result = false;
+
+                    break;
+                }
+            }
+        }
+
+        result &= iter->analyze();
+    }
 
     symtab->leaveClass();
 
-    return true;
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -164,6 +230,7 @@ std::string Method::toString() const
 
     switch (methodQualifier_)
     {
+        case CREATE:                        break;
         case READER:    oss << "reader ";   break;
         case WRITER:    oss << "writer ";   break;
         case ROUTINE:   oss << "routine ";  break;
@@ -178,6 +245,7 @@ std::string Method::toString() const
     }
 
     oss << *id_ << '(';
+
     size_t i = 0;
     for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter, ++i) {
         oss << (*iter)->toString();
@@ -192,21 +260,33 @@ std::string Method::toString() const
 
 bool Method::analyze()
 {
+    static int counter = 0;
+
     bool result = true;
 
-    symtab->enterMethod(id_);
-    functab->insertFunction( new std::string(*id_) );// TODO build a name consisting of module, class name, real name and arg-types
+    symtab->enterMethod(this);
+
+    /*
+        build a function name for the functab consisting of the class name,
+        the method name and a counted number to prevent name clashes
+        due to overloading
+    */
+    std::ostringstream oss;
+    oss << *symtab->class_->id_ << '#' << *id_ << '#' << counter;
+    ++counter;
+
+    functab->insertFunction( new std::string(oss.str()) );
 
     // insert the first label since every function must start with one
     functab->appendInstr( new LabelInstr() );
 
     // analyze each parameter
     for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
-        (*iter)->type_->validate();
+        result &= (*iter)->type_->validate();
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
-        iter->analyze();
+        result &= iter->analyze();
 
     // insert the last label since every function must end with one
     functab->appendInstr( new LabelInstr() );

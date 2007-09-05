@@ -105,54 +105,7 @@ void SymbolTable::insert(Method* method)
         = class_->methods_.insert( std::make_pair(method->id_, method) );
 
     // set current method scope
-    method_ = iter->second;
-}
-
-bool SymbolTable::checkSignature()
-{
-    typedef Class::MethodMap::iterator Iter;
-
-    pair<Iter, Iter> range = class_->methods_.equal_range( method_->id_ );
-
-    bool result = true;
-
-    for (Iter iter = range.first; iter != range.second; ++iter)
-    {
-        // do not check *iter with itself
-        if (iter->second == method_)
-            continue;
-
-        // keep account of the comparison
-        // note   ! here
-        result &= !(iter->second->signature_ == method_->signature_);
-
-        if (!result)
-        {
-            stack<string> idStack;
-
-            for (Node* nodeIter = method_->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
-                idStack.push( nodeIter->toString() );
-
-            ostringstream oss;
-
-            while ( !idStack.empty() )
-            {
-                oss << idStack.top();
-                idStack.pop();
-
-                if ( !idStack.empty() )
-                    oss << '.';
-            }
-
-            errorf(method_->line_, "there is already a method '%s' defined in '%s' line %i",
-                method_->toString().c_str(),
-                oss.str().c_str(), iter->second->line_);
-
-            return false;
-        }
-    }
-
-    return true;
+    method_ = method;
 }
 
 bool SymbolTable::insert(Parameter* parameter)
@@ -218,11 +171,9 @@ void SymbolTable::leaveModule()
     module_ = 0;
 }
 
-void SymbolTable::enterClass(std::string* id)
+void SymbolTable::enterClass(Class* _class)
 {
-    Module::ClassMap::iterator iter = module_->classes_.find(id);
-    swiftAssert(iter != module_->classes_.end(), "class not found");
-    class_ = iter->second;;
+    class_ = _class;
 }
 
 void SymbolTable::leaveClass()
@@ -230,11 +181,9 @@ void SymbolTable::leaveClass()
     class_ = 0;
 }
 
-void SymbolTable::enterMethod(std::string* id)
+void SymbolTable::enterMethod(Method* method)
 {
-    Class::MethodMap::iterator iter = class_->methods_.find(id);
-    swiftAssert(iter != class_->methods_.end(), "method not found");
-    method_ = iter->second;
+    method_ = method;
 
     scopeStack_.push(method_->rootScope_);
 }

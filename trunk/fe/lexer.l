@@ -117,8 +117,8 @@ reader  { keyLine = currentLine; return READER; }
 writer  { keyLine = currentLine; return WRITER; }
 routine { keyLine = currentLine; return ROUTINE; }
 
-create  { return CREATE; }
-destroy { return DESTROY; }
+create  { keyLine = currentLine; return CREATE; }
+destroy { keyLine = currentLine; return DESTROY; }
 
 in      { return IN; }
 inout   { return INOUT; }

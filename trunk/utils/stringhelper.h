@@ -9,7 +9,7 @@
  */
 struct StringPtrCmp
 {
-    bool operator () (const std::string* str1, const std::string* str2)
+    bool operator () (const std::string* str1, const std::string* str2) const
     {
         return *str1 < *str2;
     }

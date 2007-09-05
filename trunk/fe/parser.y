@@ -208,13 +208,10 @@ method
             symtab->insert($$);
         }
         '(' parameter_list')'
-        {
-            symtab->checkSignature();
-        }
         EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->statements_ = $9;
+            $$->statements_ = $8;
         }
     | method_qualifier return_type_list '=' ID
         {
@@ -223,13 +220,10 @@ method
             $$->insertReturnTypesInSymtab();
         }
         '(' parameter_list')'
-        {
-            symtab->checkSignature();
-        }
         EOL statement_list END EOL
         {
             $$ = $<method_>5;
-            $$->statements_ = $11;
+            $$->statements_ = $10;
         }
     | CREATE
         {
@@ -237,13 +231,10 @@ method
             symtab->insert($$);
         }
         '(' parameter_list')'
-        {
-            symtab->checkSignature();
-        }
         EOL statement_list END EOL
         {
             $$ = $<method_>2;
-            $$->statements_ = $8;
+            $$->statements_ = $7;
         }
     ;
 

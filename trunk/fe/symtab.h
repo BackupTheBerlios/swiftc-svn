@@ -45,13 +45,11 @@ struct SymbolTable
 
     void insertLocalByRegNr(Local* local);
 
-    bool checkSignature();
-
     void enterModule();
     void leaveModule();
-    void enterClass(std::string* id);
+    void enterClass(Class* _class);
     void leaveClass();
-    void enterMethod(std::string* id);
+    void enterMethod(Method* method);
     void leaveMethod();
     void enterScope(Scope* scope);
     void leaveScope();

@@ -356,7 +356,9 @@ void CFG::renameVars()
 {
     RegMap& vars = function_->vars_;
 
-    std::stack<PseudoReg*>* names = new std::stack<PseudoReg*>[ vars.size() ];
+    std::vector< std::stack<PseudoReg*> > names;
+    // since index 0 is reserved for literals the stack-array's size must be increased by one
+    names.resize( -vars.begin()->first + 1 );
 
     // start with the first real basic block
     rename( entry_->value_->domChildren_.first()->value_, names );
@@ -375,11 +377,9 @@ void CFG::renameVars()
         delete iter->second;
         vars.erase(iter);
     }
-
-    delete[] names;
 }
 
-void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
+void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
 {
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrList::Node* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
@@ -396,6 +396,7 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
             PseudoReg* reg = function_->newTemp(phi->result_->regType_);
 #endif // SWIFT_DEBUG
 
+            swiftAssert(size_t(-phi->oldResultVar_) < names.size(), "index out of bounds");
             names[ -phi->oldResultVar_ ].push(reg);
             phi->result_ = reg;
             continue;
@@ -424,6 +425,8 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
 #else // SWIFT_DEBUG
                 PseudoReg* reg = function_->newTemp(ai->result_->regType_);
 #endif // SWIFT_DEBUG
+
+                swiftAssert(size_t(-ai->oldResultVar_) < names.size(), "index out of bounds");
                 names[ -ai->oldResultVar_ ].push(reg);
                 ai->result_ = reg;
             }
@@ -507,9 +510,17 @@ void CFG::rename(BBNode* bb, std::stack<PseudoReg*>* names)
 
 std::string CFG::name() const
 {
-    return *function_->id_;
-}
+    // make the id readable for dot
+    std::string result = *function_->id_;
 
+    for (size_t i = 0; i < result.size(); ++i)
+    {
+        if (result[i] == '#')
+            result[i] = '_';
+    }
+
+    return result;
+}
 
 std::string CFG::dumpIdoms() const
 {

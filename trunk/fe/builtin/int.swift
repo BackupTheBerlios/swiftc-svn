@@ -1,5 +1,5 @@
 class int
-    constructor (int i)
+    create (int i)
     end
 
     operator int + - * / (int i1, int i2)

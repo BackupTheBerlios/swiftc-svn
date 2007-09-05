@@ -1,5 +1,5 @@
 class bool
-    constructor (bool b)
+    create (bool b)
     end
 
     operator bool and or xor (bool b1, bool b2)

@@ -123,7 +123,7 @@ class Test
     writer constMember()
     routine staticMember()
 
-    constructor (int i, real r)
+    create (int i, real r)
         # ....
     end
 };
@@ -131,7 +131,11 @@ class Test
 routine test()
     Test test = 5, 6.0
 
-    Map m = {"Bier", "Penis", "Fotze"}
+    {}
+
+    Set m = {"Bier", "Penis", "Fotze"}
+
+    Map m = {{5, "Peter"}, {4, "fjdkdjfk"}}
 
     Map^ m = new Map("Bier", "Penis", "Fotze")
 
@@ -140,4 +144,40 @@ routine test()
     string str("fjdkjdfk");
 
     str = "fjkfdjk";
+
+    int i   = 4
+    int8 i  = 4b
+    int16 i = 4w
+    int32 i = 4d
+    int64 i = 4q
+
+    uint i   = 4u
+    uint8 i  = 4ub
+    uint16 i = 4uw
+    uint32 i = 4ud
+    uint64 i = 4uq
+
+    index i = 4x
+
+    real r = 3.0
+    real32 r = 3.0d
+    real64 r = 3.0q
+
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+    int i = 434324234
+
+    cplx c = {4, 5}
+    c += {3, 8}
+
+    i = 5
+    i = {5}
+    i = {{5}}
+
 end

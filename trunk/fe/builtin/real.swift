@@ -1,5 +1,5 @@
 class real
-    constructor (real r)
+    create (real r)
     end
 
     operator real + - * / (real r1, real r2)

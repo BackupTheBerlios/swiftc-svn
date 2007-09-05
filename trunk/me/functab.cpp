@@ -186,6 +186,7 @@ void FunctionTable::buildUpME()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         Function* function = iter->second;
+
         function->cfg_.calcCFG();
         function->cfg_.calcDomTree();
         function->cfg_.calcDomFrontier();
@@ -200,7 +201,7 @@ void FunctionTable::dumpSSA()
     oss << filename_ << ".ssa";
 
     ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
-    ofs << oss.str() << ":" << endl;
+    ofs << oss.str() << ':' << endl;
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpSSA(ofs);

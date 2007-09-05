@@ -1,19 +1,20 @@
 # Swift Language test file
 
-class FOO
-    int i
-end
-
 class Test
     Foo foo
 
-    create (int peter, FOO fubert)
-        int a
+    create ()
+        int afdafdsaf
+        afdafdsaf = 5 +7
+    end
+    create ()
+        int z
+        z = 5
     end
 
     routine real re, int rs, inout int bs = test(FOO foo, int i)
-        int a
-        a = 5
+        int z
+        z = 5
     end
 
     routine real re, int rs, inout int bs = test(FOO foo)
@@ -77,3 +78,8 @@ class Test
 
     end
 end
+
+class FOO
+    int i
+end
+
