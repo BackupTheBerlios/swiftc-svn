@@ -348,6 +348,8 @@ void BinExpr::genSSA()
 
 //------------------------------------------------------------------------------
 
+/* replaced by AssignStatement
+
 bool AssignExpr::analyze()
 {
     // return false when syntax is wrong
@@ -388,6 +390,8 @@ void AssignExpr::genSSA()
     reg_ = result_->reg_;//functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_ );
     functab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
+
+*/
 
 //------------------------------------------------------------------------------
 

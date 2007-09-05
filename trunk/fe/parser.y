@@ -39,6 +39,7 @@ bool parseerror = false;
     Arg*         arg_;
 
     Statement*   statement_;
+    InitList*    initList_;
 };
 
 /*
@@ -104,13 +105,15 @@ bool parseerror = false;
 %type <type_>       type
 %type <parameter_>  parameter parameter_list return_type_list return_type /*return_values*/
 
+%type <initList_>   init_list init_list_item
+
 %type <definition_> class_definition definitions
 %type <classMember_> class_body class_member
 %type <method_>     method
 %type <memberVar_>  member_var
 
 %type <module_>     module
-%type <expr_>       expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
+%type <expr_>       expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <arg_>        arg_list
 
 %type <statement_>  statement_list statement
@@ -199,8 +202,6 @@ class_member
     *******
 */
 
-
-
 method
     : method_qualifier /**/ ID
         {
@@ -288,16 +289,31 @@ member_var
     **********
 */
 
+init_list
+    : init_list_item                { $$ = $1; $$->next_ =  0; }
+    | init_list_item ',' init_list  { $$ = $1; $$->next_ = $3; }
+    ;
+
+init_list_item
+    : expr              { $$ = new InitList( 0, $1, currentLine ); }
+    | '{' init_list '}' { $$ = new InitList($2,  0, currentLine ); }
+    | '{' '}'           { $$ = new InitList( 0,  0, currentLine ); }
+    ;
+
 statement_list
     : /*emtpy*/                 { $$ = 0; }
     | statement statement_list  { $$ = $1; $$->next_ = $2; }
     ;
 
 statement
-    : expr EOL              { $$ = new ExprStatement($1, currentLine); }
-    | type ID EOL           { $$ = new Declaration($1, $2, getKeyLine()); }
-    | IF rel_expr EOL statement_list END EOL                         { $$ = new IfElStatement(0,  $2, $4,  0, currentLine); }
-    | IF rel_expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement(ELSE, $2, $4, $7, currentLine); }
+    : expr EOL                  { $$ = new ExprStatement($1, currentLine); }
+    | expr '=' init_list EOL    { $$ = new AssignStatement('=', $1, $3, currentLine); }
+
+    | type ID EOL               { $$ = new Declaration($1, $2,  0, getKeyLine()); }
+    | type ID '=' init_list EOL { $$ = new Declaration($1, $2, $4, getKeyLine()); }
+
+    | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement(0,    $2, $4,  0, currentLine); }
+    | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement(ELSE, $2, $4, $7, currentLine); }
 /*     | IF rel_expr EOL statement_list ELIF '(' rel_expr ')' statement_list END EOL { $$ = new IfElStatement(ELIF, $3, $5, $10, currentLine); } */
     ;
 
@@ -308,18 +324,13 @@ statement
 */
 
 expr
-    : rel_expr                  { $$ = $1; }
-    | expr '=' rel_expr         { $$ = new AssignExpr('=', $1, $3, currentLine); }
-    ;
-
-rel_expr
-    : add_expr                  { $$ = $1; }
-    | rel_expr '<' add_expr     { $$ = new BinExpr('<', $1, $3, currentLine); }
-    | rel_expr '>' add_expr     { $$ = new BinExpr('>', $1, $3, currentLine); }
-    | rel_expr LE_OP add_expr   { $$ = new BinExpr(LE_OP, $1, $3, currentLine); }
-    | rel_expr GE_OP add_expr   { $$ = new BinExpr(GE_OP, $1, $3, currentLine); }
-    | rel_expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
-    | rel_expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
+    : add_expr              { $$ = $1; }
+    | expr '<' add_expr     { $$ = new BinExpr('<', $1, $3, currentLine); }
+    | expr '>' add_expr     { $$ = new BinExpr('>', $1, $3, currentLine); }
+    | expr LE_OP add_expr   { $$ = new BinExpr(LE_OP, $1, $3, currentLine); }
+    | expr GE_OP add_expr   { $$ = new BinExpr(GE_OP, $1, $3, currentLine); }
+    | expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
+    | expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
     ;
 
 add_expr

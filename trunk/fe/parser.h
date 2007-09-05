@@ -18,6 +18,7 @@ struct Expr;
 struct Arg;
 
 struct Statement;
+struct InitList;
 
 //------------------------------------------------------------------------------
 

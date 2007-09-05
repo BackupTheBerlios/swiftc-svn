@@ -15,18 +15,21 @@ Declaration::~Declaration()
 {
     delete type_;
     delete local_;
+    delete initList_;
 }
 
 std::string Declaration::toString() const
 {
     std::ostringstream oss;
-    oss << type_->toString() << " " << *id_;
+    oss << type_->toString() << " " << *id_ << initList_->toString();
 
     return oss.str();
 }
 
 bool Declaration::analyze()
 {
+// TODO: Possibility to initialize with InitList
+
     if ( typeid(*type_->baseType_) == typeid(UserType) )
     {
         UserType* userType = (UserType*) type_->baseType_;
@@ -188,4 +191,64 @@ bool IfElStatement::analyze()
     }
 
     return result;
+}
+
+
+//------------------------------------------------------------------------------
+
+AssignStatement::~AssignStatement()
+{
+    delete expr_;
+    delete initList_;
+}
+
+bool AssignStatement::analyze()
+{
+    if ( !expr_->analyze() || !initList_->analyze() )
+    {
+        return false;
+    }
+
+    //TODO check if type of initList_ and type of expr_ are the same
+
+    return true;
+}
+
+std::string AssignStatement::toString() const
+{
+    std::ostringstream oss;
+    oss << expr_->toString() << " = " << initList_->toString();
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+InitList::~InitList()
+{
+    delete child_;
+    delete next_;
+    delete expr_;
+}
+
+bool InitList::analyze()
+{
+    // TODO
+    return true;
+}
+
+std::string InitList::toString() const
+{
+    std::ostringstream oss;
+    oss << "{";
+
+    if (child_)
+        oss << child_->toString();
+    else
+        oss << expr_->toString();
+
+    if (next_)
+        oss << next_->toString() << ' ';
+
+    return oss.str();
 }

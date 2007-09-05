@@ -34,12 +34,14 @@ struct Declaration : public Statement
     Type*           type_;
     std::string*    id_;
     Local*          local_; // in order to delete those locals again
+    InitList*       initList_;
 
-    Declaration(Type* type, std::string* id, int line = NO_LINE)
+    Declaration(Type* type, std::string* id, InitList* initList, int line = NO_LINE)
         : Statement(line)
         , type_(type)
         , id_(id)
         , local_(0)
+        , initList_(initList)
     {}
     ~Declaration();
 
@@ -70,18 +72,15 @@ struct IfElStatement : public Statement
 {
     int kind_;
     Expr* expr_;
+
     Statement* ifBranch_;
     Statement* elBranch_;
-//     Scope* ifScope_;
-//     Scope* elScope_;
 
     IfElStatement(int kind_, Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
         : Statement(line)
         , expr_(expr)
         , ifBranch_(ifBranch)
         , elBranch_(elBranch)
-//         , ifScope_(0)
-//         , elScope_(0)
     {
         swiftAssert( kind_ == 0 || kind_ == ELSE || kind_ == ELIF, "kind_ must be 0, ELSE or ELIF" );
     }
@@ -89,6 +88,53 @@ struct IfElStatement : public Statement
 
     std::string toString() const { return std::string(""); }
     /// SSA code will be generated here, too
+    bool analyze();
+};
+
+
+//------------------------------------------------------------------------------
+
+struct AssignStatement : public Statement
+{
+    union
+    {
+        int kind_;
+        char c_;
+    };
+
+    Expr* expr_;
+    InitList* initList_;
+
+    AssignStatement(int kind, Expr* expr, InitList* initList, int line = NO_LINE)
+        : Statement(line)
+        , expr_(expr)
+        , initList_(initList)
+    {}
+
+    ~AssignStatement();
+
+    std::string toString() const;
+
+    bool analyze();
+};
+
+//------------------------------------------------------------------------------
+
+struct InitList : public Node
+{
+    InitList*   child_;
+    InitList*   next_;
+    Expr*       expr_;
+
+    InitList(InitList* child, Expr* expr, int line = NO_LINE)
+        : Node(line)
+        , child_(child)
+        , expr_(expr)
+    {}
+    ~InitList();
+
+    std::string toString() const;
+
     bool analyze();
 };
 

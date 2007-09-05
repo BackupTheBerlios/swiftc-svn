@@ -159,6 +159,8 @@ struct BinExpr : public Expr
 
 //------------------------------------------------------------------------------
 
+/* replaced by AssignStatement
+
 struct AssignExpr : public Expr
 {
     union 
@@ -185,6 +187,8 @@ struct AssignExpr : public Expr
     bool analyze();
     void genSSA();
 };
+
+*/
 
 //------------------------------------------------------------------------------
 
