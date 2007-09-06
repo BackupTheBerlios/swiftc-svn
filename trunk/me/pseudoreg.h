@@ -153,5 +153,6 @@ struct PseudoReg
 };
 
 typedef std::map<int, PseudoReg*> RegMap;
+typedef List<PseudoReg*> RegList;
 
 #endif // SWIFT_PSEUDOREG_H

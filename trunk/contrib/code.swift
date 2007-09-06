@@ -7,7 +7,7 @@ class Test
         int afdafdsaf
         afdafdsaf = 5 +7
     end
-    create ()
+    create (real r)
         int z
         z = 5
     end
@@ -19,10 +19,10 @@ class Test
 
     routine real re, int rs, inout int bs = test(FOO foo)
 
-        int a
-        int b
+        int a = {{4, 7.0}, 6}
+        int b = 8
         a = 5 * 6 + 7
-        b = a
+        b = {5, {7.0, {8 + b * 7, 9, 10}, 8}, {5, {7, 8}}}
         int c
         c = -3
         c = 5 + b

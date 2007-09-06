@@ -11,6 +11,7 @@
 // forward declarations
 struct PseudoReg;
 struct BasicBlock;
+struct Function;
 typedef Graph<BasicBlock>::Node BBNode;
 
 //------------------------------------------------------------------------------
@@ -270,6 +271,39 @@ struct BranchInstr : public InstrBase
 
     virtual std::string toString() const;
 };
+
+//------------------------------------------------------------------------------
+
+/**
+ * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
+ * around other Instr won't invalidate pointers in basic blocks.
+ */
+struct InvokeInstr : public InstrBase
+{
+    /// This type is used to specify calling conventions
+    enum Conventions
+    {
+        SWIFT_CALL,
+        C_CALL,
+        PASCAL_CALL,
+        STD_CALL
+    };
+
+    Function* function_;
+    Conventions conventions_;
+
+    RegList in_;
+    RegList out_;
+    RegList inout_;
+
+    InvokeInstr(Function* function, Conventions conventions)
+        : function_(function)
+        , conventions_(conventions)
+    {}
+
+    virtual std::string toString() const;
+};
+
 
 //------------------------------------------------------------------------------
 

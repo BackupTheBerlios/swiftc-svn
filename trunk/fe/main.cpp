@@ -76,7 +76,7 @@ int start(int argc, char** argv)
         std::cerr << "error" << std::endl;
         return EXIT_FAILURE; // abort on error
     }
-
+return 0;
     /*
         build up middle-end:
 
