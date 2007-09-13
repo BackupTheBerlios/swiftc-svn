@@ -45,7 +45,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
         // for each var on the right hand side
         if ( typeid(*instr) == typeid(AssignInstr) )
         {
-//             if (l
+            AssignInstr* ai = (AssignInstr*) instr;
         }
 
         // for the left hand side

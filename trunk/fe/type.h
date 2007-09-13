@@ -22,6 +22,7 @@ struct BaseType : public Node
         delete id_;
     }
 
+    PseudoReg::RegType toRegType() const;
     BaseType* clone() const
     {
         return new BaseType(id_, NO_LINE);

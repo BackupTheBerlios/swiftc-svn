@@ -3,9 +3,10 @@
 
 #include "fe/syntaxtree.h"
 
+#include "me/pseudoreg.h"
+
 // forward declarations
 struct Expr;
-struct PseudoReg;
 
 //------------------------------------------------------------------------------
 
@@ -69,6 +70,7 @@ struct Literal : public Expr
         , kind_(kind)
     {}
 
+    PseudoReg::RegType toRegType() const;
     std::string toString() const;
 
     bool analyze();

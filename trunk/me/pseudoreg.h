@@ -6,8 +6,8 @@
 #include <sstream>
 
 #include "utils/list.h"
-
 // forward declaration
+struct Struct;
 
 // -----------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ struct PseudoReg
         R_UINT, R_UINT8, R_UINT16, R_UINT32, R_UINT64, R_USAT8, R_USAT16,
         R_REAL, R_REAL32, R_REAL64,
         R_BOOL,
-        R_STRUCT
+        R_STRUCT,
 
         // SIMD registers use the same value but negative
         VR_INDEX = -R_INDEX,
@@ -45,7 +45,7 @@ struct PseudoReg
 
         VR_REAL  = -R_REAL,
         VR_REAL32= -R_REAL32,
-        VR_REAL64= -R_REAL64,
+        VR_REAL64= -R_REAL64
     };
 
     enum
@@ -105,14 +105,12 @@ struct PseudoReg
     PseudoReg(RegType regType, int regNr, std::string* id = 0)
         : regType_(regType)
         , regNr_(regNr)
-        , state_(TOP) // TOP is assumed as initial state
         , id_( id ? *id : "" )
     {}
 #else // SWIFT_DEBUG
     PseudoReg(RegType regType, int regNr)
         : regType_(regType)
         , regNr_(regNr)
-        , state_(TOP) // TOP is assumed as initial state
     {}
 #endif // SWIFT_DEBUG
 
@@ -121,7 +119,6 @@ struct PseudoReg
     PseudoReg(RegType regType)
         : regType_(regType)
         , regNr_(LITERAL)
-        , state_(TOP) // TOP is assumed as initial state
     {}
 
     bool isLiteral() const

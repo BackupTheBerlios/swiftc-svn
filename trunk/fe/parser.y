@@ -13,8 +13,8 @@
 
 
 int pointercount = -1;
-bool parseerror = false;
-bool nocodegen  = false;
+bool parseerror  = false;
+bool gencode     = true;
 
 %}
 

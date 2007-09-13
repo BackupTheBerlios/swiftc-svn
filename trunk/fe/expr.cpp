@@ -93,6 +93,59 @@ std::string Literal::toString() const
     return oss.str();
 }
 
+PseudoReg::RegType Literal::toRegType() const
+{
+    switch (kind_)
+    {
+        case L_INDEX:
+            return PseudoReg::R_INDEX;
+
+        case L_INT:
+            return PseudoReg::R_INT;
+        case L_INT8:
+            return PseudoReg::R_INT8;
+        case L_INT16:
+            return PseudoReg::R_INT16;
+        case L_INT32:
+            return PseudoReg::R_INT32;
+        case L_INT64:
+            return PseudoReg::R_INT64;
+        case L_SAT8:
+            return PseudoReg::R_SAT8;
+        case L_SAT16:
+            return PseudoReg::R_SAT16;
+
+       case L_UINT:
+            return PseudoReg::R_UINT;
+        case L_UINT8:
+            return PseudoReg::R_UINT8;
+        case L_UINT16:
+            return PseudoReg::R_UINT16;
+        case L_UINT32:
+            return PseudoReg::R_UINT32;
+        case L_UINT64:
+            return PseudoReg::R_UINT64;
+        case L_USAT8:
+            return PseudoReg::R_USAT8;
+        case L_USAT16:
+            return PseudoReg::R_USAT16;
+
+        case L_REAL:
+            return PseudoReg::R_REAL;
+        case L_REAL32:
+            return PseudoReg::R_REAL32;
+        case L_REAL64:
+            return PseudoReg::R_REAL64;
+
+        case L_TRUE:
+        case L_FALSE:
+            return PseudoReg::R_BOOL;
+
+        default:
+            swiftAssert(false, "illegal switch-case-value");
+    }
+}
+
 bool Literal::analyze()
 {
     lvalue_ = false;
@@ -140,7 +193,7 @@ void Literal::genSSA()
 {
     // create appropriate PseudoReg
     if (gencode)
-        reg_ = new PseudoReg( SimpleType::int2RegType(kind_) );
+        reg_ = new PseudoReg( toRegType() );
 
     switch (kind_)
     {
@@ -184,13 +237,6 @@ bool UnExpr::analyze()
     if ( !op_->analyze() )
         return false;
 
-    // check type
-    if ( typeid(*op_->type_->baseType_) != typeid(SimpleType) )
-    {
-        errorf(op_->line_, "unary operator used with wrong type");
-        return false;
-    }
-
     lvalue_ = false;
     type_ = op_->type_->clone();
 
@@ -224,7 +270,7 @@ void UnExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
 
-    reg_ = functab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    reg_ = functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
 
@@ -284,22 +330,16 @@ bool BinExpr::analyze()
         return false;
     }
 
-    // check type
-    if ( typeid(*op1_->type_->baseType_) != typeid(SimpleType) )
-    {
-        errorf(op1_->line_, "binary operator used with wrong type");
-        return false;
-    }
-
-    // check bool cases
-    if (    kind_ == '<'   || kind_ == '>'
-        ||  kind_ == LE_OP || kind_ == GE_OP
-        ||  kind_ == EQ_OP || kind_ == NE_OP)
-    {
-        type_ = new Type(new SimpleType(BOOL), 0);
-    }
-    else
-        type_ = op1_->type_->clone();
+// TODO
+//     // check bool cases
+//     if (    kind_ == '<'   || kind_ == '>'
+//         ||  kind_ == LE_OP || kind_ == GE_OP
+//         ||  kind_ == EQ_OP || kind_ == NE_OP)
+//     {
+//         type_ = new Type(new SimpleType(BOOL), 0);
+//     }
+//     else
+//         type_ = op1_->type_->clone();
 
 //             if (    (typeid(*op1_->type_->baseType_) != typeid(SimpleType))
 //             ||  (((SimpleType*) op1_->type_->baseType_)->kind_ != BOOL) )
@@ -320,7 +360,7 @@ void BinExpr::genSSA()
 {
     swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
 
-    reg_ = functab->newTemp( ((SimpleType*) type_->baseType_)->toRegType() );
+    reg_ = functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
 
@@ -418,9 +458,9 @@ void Id::genSSA()
         // do the first revision
         Local* local = (Local*) entry;
 #ifdef SWIFT_DEBUG
-        reg_ = functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_, id_ );
+        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_, id_ );
 #else // SWIFT_DEBUG
-        reg_ = functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_ );
+        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_ );
 #endif // SWIFT_DEBUG
         local->regNr_ = reg_->regNr_;
         symtab->insertLocalByRegNr(local);

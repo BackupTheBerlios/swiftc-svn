@@ -126,7 +126,7 @@ class Test
     create (int i, real r)
         # ....
     end
-};
+end
 
 routine test()
     Test test = 5, 6.0

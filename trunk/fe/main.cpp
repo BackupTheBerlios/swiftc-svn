@@ -70,7 +70,7 @@ int start(int argc, char** argv)
     readBuiltinTypes();
 
     // try to open the input file and init the lexer
-    FILE* file = lexerInit(cmdlineparser.filename_);
+    FILE* file = lexerInit(cmdLineParser.filename_);
     if (!file)
     {
         std::cerr << "error: failed to open input file" << std::endl;
@@ -222,4 +222,3 @@ void readBuiltinTypes()
 
     gencode = true;
 }
-

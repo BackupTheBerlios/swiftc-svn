@@ -28,16 +28,10 @@ std::string Declaration::toString() const
 
 bool Declaration::analyze()
 {
-    if ( typeid(*type_->baseType_) == typeid(UserType) )
-    {
-        UserType* userType = (UserType*) type_->baseType_;
-        // it is a user defined type - so check whether it has been defined
-        if (symtab->lookupClass(userType->id_) == 0)
-        {
-            errorf( line_, "class '%s' is not defined in this module", type_->baseType_->toString().c_str() );
-            return false;
-        }
-    }
+    bool result = true;
+
+    // check whether this type exists
+    result &= type_->validate();
 
     // do we have an initialization here?
     if (exprList_)
@@ -46,18 +40,19 @@ bool Declaration::analyze()
             return false;
     }
 
+    if (!result)
+        return false;
+
     // everything ok. so insert the local
     local_ = new Local(type_->clone(), id_, line_, 0);
     local_->regNr_ = symtab->newVarNr();
     symtab->insert(local_);
     symtab->insertLocalByRegNr(local_);
 #ifdef SWIFT_DEBUG
-    functab->newVar( ((SimpleType*) local_->type_->baseType_)->toRegType(), local_->regNr_, local_->id_ );
+    functab->newVar( local_->type_->baseType_->toRegType(), local_->regNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    functab->newVar( ((SimpleType*) local_->type_->baseType_)->toRegType(), local_->regNr_ );
+    functab->newVar( local_->type_->baseType_->toRegType(), local_->regNr_ );
 #endif // SWIFT_DEBUG
-
-    swiftAssert( typeid(*local_->type_->baseType_) == typeid(SimpleType), "TODO" );
 
     return true;
 }
@@ -227,10 +222,7 @@ bool AssignStatement::analyze()
             return false;
         }
 
-        Type* type = expr_->type_;
-        swiftAssert( typeid(*type) == typeid(UserType), "TODO");
-        UserType* ut = (UserType*) type;
-        Class* _class = symtab->lookupClass(ut->id_);
+        Class* _class = symtab->lookupClass(expr_->type_->baseType_->id_);
 
         std::string createStr("create");
         Class::MethodIter iter = _class->methods_.find(&createStr);

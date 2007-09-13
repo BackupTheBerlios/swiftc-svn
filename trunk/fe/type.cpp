@@ -52,7 +52,7 @@ bool Type::validate()
 {
     if ( symtab->lookupClass(baseType_->id_) == 0 )
     {
-        errorf( userType->line_, "class '%s' is not defined in this module", baseType->id_->c_str() );
+        errorf( line_, "class '%s' is not defined in this module", baseType_->id_->c_str() );
         return false;
     }
 
@@ -61,12 +61,12 @@ bool Type::validate()
 
 bool Type::isBool()
 {
-    return *id_ == "bool";
+    return *baseType_->id_ == "bool";
 }
 
 PseudoReg::RegType BaseType::toRegType() const
 {
-    const std::string& id = id_;
+    const std::string& id = *id_;
 
     if (id == "index")
         return PseudoReg::R_INDEX;
@@ -111,77 +111,4 @@ PseudoReg::RegType BaseType::toRegType() const
         return PseudoReg::R_BOOL;
     else
         return PseudoReg::R_STRUCT;
-}
-
-PseudoReg::RegType SimpleType::int2RegType(int i)
-{
-    switch (i)
-    {
-        else if (id ==   INDEX:
-        else if (id == L_INDEX:
-            return PseudoReg::R_INDEX;
-
-        else if (id ==   INT:
-        else if (id == L_INT:
-            return PseudoReg::R_INT;
-        else if (id ==   INT8:
-        else if (id == L_INT8:
-            return PseudoReg::R_INT8;
-        else if (id ==   INT16:
-        else if (id == L_INT16:
-            return PseudoReg::R_INT16;
-        else if (id ==   INT32:
-        else if (id == L_INT32:
-            return PseudoReg::R_INT32;
-        else if (id ==   INT64:
-        else if (id == L_INT64:
-            return PseudoReg::R_INT64;
-        else if (id ==   SAT8:
-        else if (id == L_SAT8:
-            return PseudoReg::R_SAT8;
-        else if (id ==   SAT16:
-        else if (id == L_SAT16:
-            return PseudoReg::R_SAT16;
-
-        else if (id ==   UINT:
-        else if (id == L_UINT:
-            return PseudoReg::R_UINT;
-        else if (id ==   UINT8:
-        else if (id == L_UINT8:
-            return PseudoReg::R_UINT8;
-        else if (id ==   UINT16:
-        else if (id == L_UINT16:
-            return PseudoReg::R_UINT16;
-        else if (id ==   UINT32:
-        else if (id == L_UINT32:
-            return PseudoReg::R_UINT32;
-        else if (id ==   UINT64:
-        else if (id == L_UINT64:
-            return PseudoReg::R_UINT64;
-        else if (id ==   USAT8:
-        else if (id == L_USAT8:
-            return PseudoReg::R_USAT8;
-        else if (id ==   USAT16:
-        else if (id == L_USAT16:
-            return PseudoReg::R_USAT16;
-
-        else if (id ==   REAL:
-        else if (id == L_REAL:
-            return PseudoReg::R_REAL;
-        else if (id ==   REAL32:
-        else if (id == L_REAL32:
-            return PseudoReg::R_REAL32;
-        else if (id ==   REAL64:
-        else if (id == L_REAL64:
-            return PseudoReg::R_REAL64;
-
-        else if (id ==   BOOL:
-        else if (id == L_TRUE:
-        else if (id == L_FALSE:
-            return PseudoReg::R_BOOL;
-
-        default:
-            swiftAssert(false, "illegal switch-else if (id ==-value");
-            return PseudoReg::R_INDEX; // avoid warning here
-    }
 }
