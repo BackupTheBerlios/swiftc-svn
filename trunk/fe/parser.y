@@ -95,12 +95,11 @@ bool gencode     = true;
 %type <type_>       type
 %type <parameter_>  parameter parameter_list return_type_list return_type /*return_values*/
 
-%type <definition_> class_definition definitions
+%type <definition_> class_definition
 %type <classMember_> class_body class_member
 %type <method_>     method
 %type <memberVar_>  member_var
 
-%type <module_>     module
 %type <expr_>       expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <exprList_>   expr_list expr_list_not_empty
 
@@ -117,22 +116,12 @@ file
     ;
 
 module
-    :   {
-            $$ = new Module(new std::string("default"), currentLine);
-            symtab->insert($$);
-        }
-        definitions
-        {
-            $$ = $<module_>1;
-            $$->definitions_ = $2;
-            $$->parent_ = 0;
-            syntaxtree->rootModule_ = $$;
-        }
+    : definitions
     ;
 
 definitions
-    : /*empty*/                     { $$ = 0; }
-    | definitions class_definition  { $$ = $2; $$->next_ = $1; }
+    : /*empty*/
+    | class_definition definitions  { syntaxtree->rootModule_->definitions_.append($1); }
     ;
 
 /*

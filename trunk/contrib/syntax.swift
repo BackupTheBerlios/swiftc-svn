@@ -110,7 +110,7 @@ class Test
         return 5
     end
 
-    reader int summe = knue(int summand1 , int summand2)
+    reader knue(int summand1 , int summand2) -> int summe
     end
 
     reader int i1, int i2 = member(real r, string str)
@@ -119,6 +119,12 @@ class Test
 
         return
     end
+    
+    operator + (Complex c1, Complex c2) -> Complex result
+        result.r_ = c1.r_@ c2.r_
+        result.i_ = c1.i_ @ c2.i_
+    end
+
 
     writer constMember()
     routine staticMember()

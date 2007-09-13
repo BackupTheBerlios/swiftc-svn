@@ -32,7 +32,7 @@ struct SymbolTable
 
     void reset()
     {
-        module_ = 0;
+//         module_ = 0;
         class_  = 0;
         method_ = 0;
     }

@@ -22,9 +22,6 @@ std::string Type::toString() const
     return oss.str();
 }
 
-/**
- * type checking <br>
-*/
 bool Type::check(Type* t1, Type* t2)
 {
     if (t1->pointerCount_ != t2->pointerCount_)

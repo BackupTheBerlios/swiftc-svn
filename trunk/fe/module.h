@@ -3,6 +3,7 @@
 
 #include <map>
 
+#include "utils/list.h"
 #include "utils/stringhelper.h"
 
 #include "fe/syntaxtree.h"
@@ -11,16 +12,10 @@
 
 struct Definition : public SymTabEntry
 {
-    Definition* next_;
-
     Definition(std::string* id, int line, Node* parent = 0)
         : SymTabEntry(id, line, parent)
-        , next_(0)
     {}
-    ~Definition()
-    {
-        delete next_;
-    }
+
     virtual bool analyze() = 0;
 };
 
@@ -28,10 +23,10 @@ struct Definition : public SymTabEntry
 
 struct Module : public SymTabEntry
 {
+    typedef List<Definition*> DefinitionList;
+    DefinitionList definitions_;
+
     typedef std::map<std::string*, Class*, StringPtrCmp> ClassMap;
-
-    Definition* definitions_;
-
     ClassMap    classes_;
 
     Module(std::string* id, int line = NO_LINE, Node* parent = 0)

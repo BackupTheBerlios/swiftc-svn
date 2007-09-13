@@ -11,6 +11,7 @@
 # sat8
 # sat16
 #
+# uint
 # uint8
 # uint16
 # uint32
@@ -28,7 +29,7 @@
 #
 
 for TYPE in \
-    index \
+    index uint \
      int8  int16  int32  int64  sat8  sat16 \
     uint8 uint16 uint32 uint64 usat8 usat16
 do

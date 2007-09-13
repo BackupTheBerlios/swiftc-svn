@@ -144,6 +144,8 @@ PseudoReg::RegType Literal::toRegType() const
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
+
+    return PseudoReg::R_INDEX; // avoid warning here
 }
 
 bool Literal::analyze()
@@ -184,7 +186,8 @@ bool Literal::analyze()
             swiftAssert(false, "illegal switch-case-value");
     }
 
-    genSSA();
+    if (gencode)
+        genSSA();
 
     return true;
 }
@@ -261,15 +264,14 @@ bool UnExpr::analyze()
         }
     }
 
-    genSSA();
+    if (gencode)
+        genSSA();
 
     return true;
 }
 
 void UnExpr::genSSA()
 {
-    swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here");
-
     reg_ = functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
@@ -351,15 +353,14 @@ bool BinExpr::analyze()
 
     lvalue_ = false;
 
-    genSSA();
+    if (gencode)
+        genSSA();
 
     return true;
 }
 
 void BinExpr::genSSA()
 {
-    swiftAssert( typeid(*type_->baseType_) == typeid(SimpleType), "wrong type here" );
-
     reg_ = functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
@@ -442,7 +443,8 @@ bool Id::analyze()
 
     type_ = type_->clone();
 
-    genSSA();
+    if (gencode)
+        genSSA();
 
     return true;
 }

@@ -51,7 +51,8 @@ struct Type : public Node
         delete baseType_;
     }
 
-    virtual Type* clone() const
+    /// Creates a copy of this Type
+    Type* clone() const
     {
         return new Type(baseType_->clone(), pointerCount_, NO_LINE);
     }
@@ -59,8 +60,18 @@ struct Type : public Node
     std::string toString() const;
     bool analyze();
 
+    /** 
+     * Check Type \p t1 and Type \p t2 for consistency
+     *
+     * @param t1 first type to be checked
+     * @param t2 second type to be checked
+    */
     static bool check(Type* t1, Type* t2);
+
+    /// Checks whether a given type exists
     bool validate();
+    
+    /// Checks whether this Type is the builtin bool Type
     bool isBool();
 };
 

@@ -6,10 +6,9 @@
 
 Module::~Module()
 {
-    delete definitions_;
-
-/*    for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
-        delete iter->second;*/
+    // for each definition
+    for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
+        delete iter->value_;
 }
 
 std::string Module::toString() const
@@ -29,8 +28,8 @@ bool Module::analyze()
     bool result = true;
 
     // for each definition
-    for (Definition* iter = definitions_; iter != 0; iter = iter->next_)
-        result &= iter->analyze();
+    for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
+        result &= iter->value_->analyze();
 
     return result;
 }

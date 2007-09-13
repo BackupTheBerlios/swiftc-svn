@@ -35,18 +35,18 @@ ADD_CUSTOM_COMMAND (
 )
 
 # autogenerate builtin types
-# ADD_CUSTOM_COMMAND (
-# #     TARGET swift
-#     PRE_BUILD
-#     COMMAND ./gentypes.sh
-#     WORKING_DIRECTORY fe/builtin
-#     COMMENT autogenerating builtin types
-#     OUTPUT
-#          fe/builtin/int8.swift  fe/builtin/int16.swift  fe/builtin/int32.swift  fe/builtin/int64.swift  fe/builtin/sat8.swift  fe/builtin/sat16.swift
-#         fe/builtin/uint8.swift fe/builtin/uint16.swift fe/builtin/uint32.swift fe/builtin/uint64.swift fe/builtin/usat8.swift fe/builtin/usat16.swift
-#         fe/builtin/real32.swift fe/builtin/real64.swift fe/builtin/index.swift
+ADD_CUSTOM_COMMAND (
+    OUTPUT
+        fe/builtin/index.swift fe/builtin/uint.swift
+         fe/builtin/int8.swift  fe/builtin/int16.swift  fe/builtin/int32.swift  fe/builtin/int64.swift  fe/builtin/sat8.swift  fe/builtin/sat16.swift
+        fe/builtin/uint8.swift fe/builtin/uint16.swift fe/builtin/uint32.swift fe/builtin/uint64.swift fe/builtin/usat8.swift fe/builtin/usat16.swift
+        fe/builtin/real32.swift fe/builtin/real64.swift
+
+    COMMAND ./gentypes.sh
+    WORKING_DIRECTORY fe/builtin
+    COMMENT autogenerating builtin types
 #     DEPENDS fe/builtin/int.swift fe/builtin/real.swift fe/builtin/gentypes.sh
-# )
+)
 
 # sources
 ADD_EXECUTABLE (swift

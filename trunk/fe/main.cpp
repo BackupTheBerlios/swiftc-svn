@@ -67,6 +67,7 @@ int start(int argc, char** argv)
     error = new ErrorHandler(cmdLineParser.filename_);
     functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
 
+    // populate symtab with builtin types
     readBuiltinTypes();
 
     // try to open the input file and init the lexer
@@ -187,36 +188,38 @@ void readBuiltinTypes()
     */
     std::vector<const char*> builtin;
 
-    builtin.push_back("builtin/int.swift");
-    builtin.push_back("builtin/int8.swift");
-    builtin.push_back("builtin/int16.swift");
-    builtin.push_back("builtin/int32.swift");
-    builtin.push_back("builtin/int64.swift");
+    builtin.push_back("fe/builtin/int.swift");
+    builtin.push_back("fe/builtin/int8.swift");
+    builtin.push_back("fe/builtin/int16.swift");
+    builtin.push_back("fe/builtin/int32.swift");
+    builtin.push_back("fe/builtin/int64.swift");
 
-    builtin.push_back("builtin/uint.swift");
-    builtin.push_back("builtin/uint8.swift");
-    builtin.push_back("builtin/uint16.swift");
-    builtin.push_back("builtin/uint32.swift");
-    builtin.push_back("builtin/uint64.swift");
+    builtin.push_back("fe/builtin/uint.swift");
+    builtin.push_back("fe/builtin/uint8.swift");
+    builtin.push_back("fe/builtin/uint16.swift");
+    builtin.push_back("fe/builtin/uint32.swift");
+    builtin.push_back("fe/builtin/uint64.swift");
 
-    builtin.push_back("builtin/sat8.swift");
-    builtin.push_back("builtin/sat16.swift");
+    builtin.push_back("fe/builtin/sat8.swift");
+    builtin.push_back("fe/builtin/sat16.swift");
 
-    builtin.push_back("builtin/usat8.swift");
-    builtin.push_back("builtin/usat16.swift");
+    builtin.push_back("fe/builtin/usat8.swift");
+    builtin.push_back("fe/builtin/usat16.swift");
 
-    builtin.push_back("builtin/real.swift");
-    builtin.push_back("builtin/real32.swift");
-    builtin.push_back("builtin/real64.swift");
+    builtin.push_back("fe/builtin/real.swift");
+    builtin.push_back("fe/builtin/real32.swift");
+    builtin.push_back("fe/builtin/real64.swift");
 
-    builtin.push_back("builtin/bool.swift");
+    builtin.push_back("fe/builtin/bool.swift");
 
     FILE* file;
 
     for (size_t i = 0; i < builtin.size(); ++i)
     {
+std::cout << builtin[i] << std::endl;
         file = lexerInit(builtin[i]);
         swiftparse();
+        swiftlex();
         fclose(file);
     }
 
