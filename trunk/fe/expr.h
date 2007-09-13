@@ -163,7 +163,7 @@ struct BinExpr : public Expr
 
 struct AssignExpr : public Expr
 {
-    union 
+    union
     {
         int kind_;
         char c_;
@@ -192,25 +192,26 @@ struct AssignExpr : public Expr
 
 //------------------------------------------------------------------------------
 
-// actually not a Expr, but belongs to expressions
-struct Arg : public Node
+/// Actually not a Expr, but belongs to expressions
+struct ExprList : public Node
 {
-    Expr*   expr_;
-    Arg*    next_;
+    Expr*       expr_;  ///< the Expr owned by this instance
+    ExprList*   next_;  ///< next element in the list
 
-    Arg(Expr* expr, Arg* next = 0, int line = NO_LINE)
+    ExprList(Expr* expr, ExprList* next = 0, int line = NO_LINE)
         : Node(line)
         , expr_(expr)
         , next_(next)
     {}
-    ~Arg()
+    ~ExprList()
     {
         delete expr_;
         if (next_)
             delete next_;
     }
 
-    std::string toString() const { return ""; }
+    std::string toString() const { return "TODO"; }
+    bool analyze();
     void genSSA();
 };
 
@@ -218,17 +219,17 @@ struct Arg : public Node
 
 struct FunctionCall : public Expr
 {
-    std::string* id_;
-    Arg* args_;
+    std::string*    id_;
+    ExprList*       exprList_;
 
-    FunctionCall(std::string* id, Arg* args, int line = NO_LINE)
+    FunctionCall(std::string* id, ExprList* exprList, int line = NO_LINE)
         : Expr(line)
         , id_(id)
-        , args_(args)
+        , exprList_(exprList)
     {}
     ~FunctionCall()
     {
-        delete args_;
+        delete exprList_;
     }
 
     bool analyze();

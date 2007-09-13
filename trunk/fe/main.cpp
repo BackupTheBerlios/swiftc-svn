@@ -19,6 +19,34 @@
 #include "be/codegenerator.h"
 #include "be/amd64/spiller.h"
 
+//------------------------------------------------------------------------------
+
+// forward declarations
+
+void readBuiltinTypes();
+int start(int argc, char** argv);
+
+//------------------------------------------------------------------------------
+
+// inits the memory manager
+int main(int argc, char** argv)
+{
+#ifdef SWIFT_DEBUG
+    // find memory leaks
+    MemMgr::init();
+#endif // SWIFT_DEBUG
+
+//     MemMgr::setBreakpoint(673);
+    int result = start(argc, argv);
+
+#ifdef SWIFT_DEBUG
+    MemMgr::deinit();
+#endif // SWIFT_DEBUG
+
+    return result;
+}
+
+// inits all compiler globas and controls all compiler passes
 int start(int argc, char** argv)
 {
     // parse the command line
@@ -27,21 +55,27 @@ int start(int argc, char** argv)
     if (cmdLineParser.error_)
         return EXIT_FAILURE;
 
+    /*
+        init globals
+    */
+    syntaxtree = new SyntaxTree();
+    syntaxtree->rootModule_ = new Module(new std::string("default"), currentLine);
+
+    symtab = new SymTab();
+    symtab->insert(syntaxtree->rootModule_);
+
+    error = new ErrorHandler(cmdLineParser.filename_);
+    functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
+
+    readBuiltinTypes();
+
     // try to open the input file and init the lexer
-    FILE* file = lexerInit(argv[1]);
+    FILE* file = lexerInit(cmdlineparser.filename_);
     if (!file)
     {
         std::cerr << "error: failed to open input file" << std::endl;
         return EXIT_FAILURE;
     }
-
-    /*
-        init globals
-    */
-    syntaxtree = new SyntaxTree();
-    symtab = new SymTab();
-    error = new ErrorHandler(cmdLineParser.filename_);
-    functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
 
     /*
         Parse the input file, build a syntax tree
@@ -144,20 +178,48 @@ return 0;
     return 0;
 }
 
-int main(int argc, char** argv)
+void readBuiltinTypes()
 {
-#ifdef SWIFT_DEBUG
-    // find memory leaks
-    MemMgr::init();
-#endif // SWIFT_DEBUG
+    gencode = false;
 
-//     MemMgr::setBreakpoint(673);
-    int result = start(argc, argv);
+    /*
+        read builtin types
+    */
+    std::vector<const char*> builtin;
 
-#ifdef SWIFT_DEBUG
-    MemMgr::deinit();
-#endif // SWIFT_DEBUG
+    builtin.push_back("builtin/int.swift");
+    builtin.push_back("builtin/int8.swift");
+    builtin.push_back("builtin/int16.swift");
+    builtin.push_back("builtin/int32.swift");
+    builtin.push_back("builtin/int64.swift");
 
-    return result;
+    builtin.push_back("builtin/uint.swift");
+    builtin.push_back("builtin/uint8.swift");
+    builtin.push_back("builtin/uint16.swift");
+    builtin.push_back("builtin/uint32.swift");
+    builtin.push_back("builtin/uint64.swift");
+
+    builtin.push_back("builtin/sat8.swift");
+    builtin.push_back("builtin/sat16.swift");
+
+    builtin.push_back("builtin/usat8.swift");
+    builtin.push_back("builtin/usat16.swift");
+
+    builtin.push_back("builtin/real.swift");
+    builtin.push_back("builtin/real32.swift");
+    builtin.push_back("builtin/real64.swift");
+
+    builtin.push_back("builtin/bool.swift");
+
+    FILE* file;
+
+    for (size_t i = 0; i < builtin.size(); ++i)
+    {
+        file = lexerInit(builtin[i]);
+        swiftparse();
+        fclose(file);
+    }
+
+    gencode = true;
 }
 

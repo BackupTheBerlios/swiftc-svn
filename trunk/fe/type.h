@@ -5,18 +5,32 @@
 
 #include "me/pseudoreg.h"
 
-// forward declarations
-struct Expr;
-
 //------------------------------------------------------------------------------
 
 struct BaseType : public Node
 {
-    BaseType(int line)
-        : Node(line)
-    {}
+    std::string* id_;
+    bool builtin_;
 
-    virtual BaseType* clone() const = 0;
+    BaseType(std::string* id, int line = NO_LINE)
+        : Node(line)
+        , id_(id)
+        , builtin_(false)
+    {}
+    ~BaseType()
+    {
+        delete id_;
+    }
+
+    BaseType* clone() const
+    {
+        return new BaseType(id_, NO_LINE);
+    }
+
+    std::string toString() const
+    {
+        return *id_;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -38,7 +52,7 @@ struct Type : public Node
 
     virtual Type* clone() const
     {
-        return new Type(baseType_->clone(), pointerCount_, line_);
+        return new Type(baseType_->clone(), pointerCount_, NO_LINE);
     }
 
     std::string toString() const;
@@ -50,76 +64,5 @@ struct Type : public Node
 };
 
 //------------------------------------------------------------------------------
-
-struct SimpleType : public BaseType
-{
-    int kind_;
-
-    SimpleType(int kind, int line = NO_LINE)
-        : BaseType(line)
-        , kind_(kind)
-    {}
-
-    BaseType* clone() const
-    {
-        return new SimpleType(kind_, line_);
-    }
-
-    PseudoReg::RegType toRegType() const;
-    static PseudoReg::RegType int2RegType(int i);
-
-    std::string toString() const;
-};
-
-//------------------------------------------------------------------------------
-
-struct Container : public BaseType
-{
-    int     kind_;
-    Type*   type_;
-    Expr*   expr_;
-
-    Container(int kind, Type* type, Expr* expr, int line = NO_LINE)
-        : BaseType(line)
-        , kind_(kind)
-        , type_(type)
-        , expr_(expr)
-    {}
-    ~Container();
-
-    std::string getContainerType() const;
-    std::string toString() const;
-
-    BaseType* clone() const
-    {
-        return new Container(kind_, type_, 0, line_); // TODO
-    }
-};
-
-//------------------------------------------------------------------------------
-
-struct UserType : public BaseType
-{
-    std::string* id_;
-
-    UserType(std::string* id, int line = NO_LINE)
-        : BaseType(line)
-        , id_(id)
-    {}
-    ~UserType()
-    {
-        delete id_;
-    }
-
-    BaseType* clone() const
-    {
-        return new UserType(id_, line_);
-    }
-
-    std::string toString() const
-    {
-        return *id_;
-    }
-};
 
 #endif // SWIFT_TYPE_H

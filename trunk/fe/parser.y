@@ -14,32 +14,31 @@
 
 int pointercount = -1;
 bool parseerror = false;
+bool nocodegen  = false;
 
 %}
 
 %union
 {
-    int                 int_;
+    int             int_;
 
-    std::string*        id_;
+    std::string*    id_;
 
-    Module*      module_;
-    Definition*  definition_;
+    Module*         module_;
+    Definition*     definition_;
 
-    Class*       class_;
-    ClassMember* classMember_;
-    MemberVar*   memberVar_;
-    Method*      method_;
-    Parameter*   parameter_;
+    Class*          class_;
+    ClassMember*    classMember_;
+    MemberVar*      memberVar_;
+    Method*         method_;
+    Parameter*      parameter_;
 
-    Type*        type_;
-    BaseType*    baseType_;
+    Type*           type_;
+    BaseType*       baseType_;
 
-    Expr*        expr_;
-    Arg*         arg_;
-
-    Statement*   statement_;
-    InitList*    initList_;
+    Statement*      statement_;
+    Expr*           expr_;
+    ExprList*       exprList_;
 };
 
 /*
@@ -52,15 +51,6 @@ bool parseerror = false;
 %token <expr_> L_UINT L_UINT8  L_UINT16 L_UINT32 L_UINT64 L_USAT8 L_USAT16
 %token <expr_> L_REAL L_REAL32 L_REAL64
 %token <expr_> L_TRUE L_FALSE  L_NIL
-
-// types
-%token INDEX
-%token  INT  INT8   INT16  INT32  INT64  SAT8  SAT16
-%token UINT UINT8  UINT16 UINT32 UINT64 USAT8 USAT16
-%token REAL REAL32 REAL64
-%token CHAR CHAR8  CHAR16
-%token STRING STRING8 STRING16
-%token BOOL
 
 // built-in template types
 %token ARRAY SIMD
@@ -101,11 +91,9 @@ bool parseerror = false;
     types
 */
 
-%type <int_>        simple_type method_qualifier
+%type <int_>        method_qualifier
 %type <type_>       type
 %type <parameter_>  parameter parameter_list return_type_list return_type /*return_values*/
-
-%type <initList_>   init_list init_list_item
 
 %type <definition_> class_definition definitions
 %type <classMember_> class_body class_member
@@ -114,7 +102,7 @@ bool parseerror = false;
 
 %type <module_>     module
 %type <expr_>       expr mul_expr add_expr postfix_expr un_expr primary_expr
-%type <arg_>        arg_list
+%type <exprList_>   expr_list expr_list_not_empty
 
 %type <statement_>  statement_list statement
 %type <baseType_>   base_type
@@ -289,32 +277,20 @@ member_var
     **********
 */
 
-init_list
-    : init_list_item                { $$ = $1; $$->next_ =  0; }
-    | init_list_item ',' init_list  { $$ = $1; $$->next_ = $3; }
-    ;
-
-init_list_item
-    : expr              { $$ = new InitList( 0, $1, currentLine ); }
-    | '{' init_list '}' { $$ = new InitList($2,  0, currentLine ); }
-    | '{' '}'           { $$ = new InitList( 0,  0, currentLine ); }
-    ;
-
 statement_list
     : /*emtpy*/                 { $$ = 0; }
     | statement statement_list  { $$ = $1; $$->next_ = $2; }
     ;
 
 statement
-    : expr EOL                  { $$ = new ExprStatement($1, currentLine); }
-    | expr '=' init_list EOL    { $$ = new AssignStatement('=', $1, $3, currentLine); }
+    : expr EOL                              { $$ = new ExprStatement($1, currentLine); }
+    | expr '=' expr_list_not_empty EOL      { $$ = new AssignStatement('=', $1, $3, currentLine); }
 
-    | type ID EOL               { $$ = new Declaration($1, $2,  0, getKeyLine()); }
-    | type ID '=' init_list EOL { $$ = new Declaration($1, $2, $4, getKeyLine()); }
+    | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
+    | type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }
 
     | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement(0,    $2, $4,  0, currentLine); }
     | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement(ELSE, $2, $4, $7, currentLine); }
-/*     | IF rel_expr EOL statement_list ELIF '(' rel_expr ')' statement_list END EOL { $$ = new IfElStatement(ELIF, $3, $5, $10, currentLine); } */
     ;
 
 /*
@@ -355,10 +331,10 @@ un_expr
     ;
 
 postfix_expr
-    : primary_expr                  { $$ = $1; }
-    | postfix_expr '.' ID
-    | postfix_expr '(' ')'
-    | postfix_expr '(' arg_list ')'
+    : primary_expr                          { $$ = $1; }
+    | postfix_expr '.' ID                   /* member access*/
+    | postfix_expr '.' ID '(' expr_list ')' /* method call */
+    | ID '(' expr_list ')'                  { $$ = new FunctionCall($1, $3, currentLine); }
     ;
 
 primary_expr
@@ -387,9 +363,14 @@ primary_expr
     | '(' expr ')'  { $$ = $2; }
     ;
 
-arg_list
-    : expr                   { $$ = new Arg($1,  0, currentLine); }
-    | expr ',' arg_list      { $$ = new Arg($1, $3, currentLine); }
+expr_list
+    : /* empty */           { $$ =  0; }
+    | expr_list_not_empty   { $$ = $1; }
+    ;
+
+expr_list_not_empty
+    : expr                          { $$ = new ExprList($1,  0, currentLine); }
+    | expr ',' expr_list_not_empty  { $$ = new ExprList($1, $3, currentLine); }
     ;
 
 method_qualifier
@@ -403,57 +384,12 @@ type
     ;
 
 base_type
-    : simple_type                   { $$ = new SimpleType($1, currentLine); }
-    | ARRAY '{' type '}'            { $$ = new Container(ARRAY, $3,  0, currentLine); }
-    | SIMD  '{' type '}'            { $$ = new Container(SIMD,  $3,  0, currentLine); }
-    | ARRAY '{' type ',' expr '}'   { $$ = new Container(ARRAY, $3, $5, currentLine); }
-    | SIMD  '{' type ',' expr '}'   { $$ = new Container(SIMD,  $3, $5, currentLine); }
-    | ID                            { $$ = new UserType($1/*, 0*/, currentLine); }
-    | ID  '{' template_arg_list '}' { $$ = new UserType($1/*, $3*/, currentLine); }
+    : ID { $$ = new BaseType($1, currentLine); }
     ;
 
 pointer
     : /**/
     | '^' pointer   { ++pointercount; }
-    ;
-
-
-template_arg_list
-    : expr
-    | expr ',' template_arg_list
-    ;
-
-simple_type
-    : INDEX     { $$ = INDEX; }
-    | INT       { $$ = INT; }
-    | INT8      { $$ = INT8; }
-    | INT16     { $$ = INT16; }
-    | INT32     { $$ = INT32; }
-    | INT64     { $$ = INT64; }
-    | SAT8      { $$ = SAT8; }
-    | SAT16     { $$ = SAT16; }
-
-    | UINT      { $$ = UINT; }
-    | UINT8     { $$ = UINT8; }
-    | UINT16    { $$ = UINT16; }
-    | UINT32    { $$ = UINT32; }
-    | UINT64    { $$ = UINT64; }
-    | USAT8     { $$ = USAT8; }
-    | USAT16    { $$ = USAT16; }
-
-    | REAL      { $$ = REAL; }
-    | REAL32    { $$ = REAL32; }
-    | REAL64    { $$ = REAL64; }
-
-    | CHAR      { $$ = CHAR; }
-    | CHAR8     { $$ = CHAR8; }
-    | CHAR16    { $$ = CHAR16; }
-
-    | STRING    { $$ = STRING; }
-    | STRING8   { $$ = STRING8; }
-    | STRING16  { $$ = STRING16; }
-
-    | BOOL      { $$ = BOOL; }
     ;
 
 %%

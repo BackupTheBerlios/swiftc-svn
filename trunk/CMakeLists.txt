@@ -61,6 +61,7 @@ ADD_EXECUTABLE (swift
     fe/class.cpp
     fe/error.cpp
     fe/expr.cpp
+    fe/method.cpp
     fe/module.cpp
     fe/statement.cpp
     fe/symtab.cpp

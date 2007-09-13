@@ -26,9 +26,11 @@ std::string Module::toString() const
 
 bool Module::analyze()
 {
+    bool result = true;
+
     // for each definition
     for (Definition* iter = definitions_; iter != 0; iter = iter->next_)
-        iter->analyze();
+        result &= iter->analyze();
 
-    return true;
+    return result;
 }

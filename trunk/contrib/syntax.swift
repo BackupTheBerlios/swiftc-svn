@@ -133,9 +133,9 @@ routine test()
 
     {}
 
-    Set m = {"Bier", "Penis", "Fotze"}
+    Set m = "Bier", "Penis", "Fotze"
 
-    Map m = {{5, "Peter"}, {4, "fjdkdjfk"}}
+    Map m = pair(5, "Peter"), pair(4, "fjdkdjfk")
 
     Map^ m = new Map("Bier", "Penis", "Fotze")
 
@@ -181,3 +181,34 @@ routine test()
     i = {{5}}
 
 end
+
+class cplx
+    real r_
+    real i_
+
+    create (real r, real i)
+        r_ = r
+        i_ = i
+    end
+end
+
+class vec2
+    real x_
+    real y_
+
+    create (real x, real y)
+        x_ = x
+        y_ = y
+    end
+end
+
+class Foo
+    create (cplx c)
+    end
+
+    create (vec2 v)
+    end
+end
+
+
+Foo f = { vec2(5.0, 6.0) }

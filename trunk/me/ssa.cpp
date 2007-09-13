@@ -142,3 +142,34 @@ std::string BranchInstr::toString() const
 
     return oss.str();
 }
+
+//------------------------------------------------------------------------------
+
+std::string InvokeInstr::toString() const
+{
+    std::string result = "INVOKE ";
+    result += *function_->id_;
+
+    result += "IN: ";
+    for (const RegList::Node* iter = in_.first(); iter != in_.sentinel(); iter = iter->next())
+    {
+        result += iter->value_->toString();
+        result += ' ';
+    }
+
+    result += "INOUT: ";
+    for (const RegList::Node* iter = inout_.first(); iter != inout_.sentinel(); iter = iter->next())
+    {
+        result += iter->value_->toString();
+        result += ' ';
+    }
+
+    result += "OUT: ";
+    for (const RegList::Node* iter = out_.first(); iter != out_.sentinel(); iter = iter->next())
+    {
+        result += iter->value_->toString();
+        result += ' ';
+    }
+
+    return result;
+}

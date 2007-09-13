@@ -27,65 +27,22 @@ std::string Type::toString() const
 */
 bool Type::check(Type* t1, Type* t2)
 {
-    if (   t1->pointerCount_ != t2->pointerCount_
-        || typeid(*t1->baseType_) != typeid(*t2->baseType_) )
+    if (t1->pointerCount_ != t2->pointerCount_)
+        return false; // pointerCount_ does not match
+
+    Class* class1 = symtab->lookupClass(t1->baseType_->id_);
+    Class* class2 = symtab->lookupClass(t2->baseType_->id_);
+
+    // both classes must exist
+    swiftAssert(class1, "first class not found in the symbol table");
+    swiftAssert(class2, "second class not found in the symbol table");
+
+    if (class1 != class2) {
+        // different pointers -> hence different types
         return false;
-
-    /*
-        Hence both types are of the same base type.
-        Thus check all possibilities.
-    */
-
-    if ( typeid(*t1->baseType_) == typeid(SimpleType) )
-    {
-        if ( ((SimpleType*) t1->baseType_)->kind_ == ((SimpleType*) t2->baseType_)->kind_ )
-            return true;
-        else
-            return false;
     }
 
-    if ( typeid(*t1->baseType_) == typeid(Container) )
-    {
-        Container* container1 = (Container*) t1->baseType_;
-        Container* container2 = (Container*) t2->baseType_;
-
-        // check whether we have an array or an simd container
-        if (container1->kind_ != container2->kind_)
-            return false;
-
-        if ( !check(container1->type_, container2->type_) )
-            return false;
-
-        if ( container1->expr_ == 0 && container2->expr_ == 0)
-            return true;
-
-        std::cout << "TODO in line " << t1->line_ << std::endl;
-    }
-
-    if ( typeid(*t1->baseType_) == typeid(UserType) )
-    {
-        UserType* u1 = (UserType*) t1->baseType_;
-        UserType* u2 = (UserType*) t2->baseType_;
-
-        Class* class1 = symtab->lookupClass(u1->id_);
-        Class* class2 = symtab->lookupClass(u2->id_);
-
-        // both classes must exist
-        swiftAssert(class1, "first class not found in the symbol table");
-        swiftAssert(class2, "second class not found in the symbol table");
-
-        if (class1 != class2) {
-            // different pointers -> hence different types
-            return false;
-        }
-
-        // TODO templates
-        return true;
-    }
-
-    swiftAssert(false, "impossible type-combo");
-
-    return false;
+    return true;
 }
 
 /**
@@ -93,251 +50,138 @@ bool Type::check(Type* t1, Type* t2)
 */
 bool Type::validate()
 {
-    if ( typeid(*baseType_) == typeid(SimpleType) )
-        return true;
-
-    if ( typeid(*baseType_) == typeid(Container) )
+    if ( symtab->lookupClass(baseType_->id_) == 0 )
     {
-        Container* container = (Container*) baseType_;
-
-        bool result = container->type_->validate();
-
-        if ( !result )
-            return false;
-
-        if (container->expr_ == 0)
-            return true;
-
-        std::cout << "TODO: test def expr of conatainer. returning false" << std::endl;
-
+        errorf( userType->line_, "class '%s' is not defined in this module", baseType->id_->c_str() );
         return false;
     }
 
-    if ( typeid(*baseType_) == typeid(UserType) )
-    {
-        UserType* userType = (UserType*) baseType_;
-        if (symtab->lookupClass( userType->id_ ) == 0)
-        {
-            errorf( userType->line_, "class '%s' is not defined in this module", userType->id_->c_str() );
-            return false;
-        }
-
-        // TODO templates
-
-        return true;
-    }
-
-    swiftAssert(false, "strange type given");
-    return false;
+    return true;
 }
 
 bool Type::isBool()
 {
-    return (typeid(*baseType_) == typeid(SimpleType))
-        && (((SimpleType*) baseType_)->kind_ == BOOL);
+    return *id_ == "bool";
 }
 
-//------------------------------------------------------------------------------
-
-std::string SimpleType::toString() const
+PseudoReg::RegType BaseType::toRegType() const
 {
-    switch (kind_)
-    {
-        case INDEX:     return "index";
+    const std::string& id = id_;
 
-        case INT:       return "int";
-        case INT8:      return "int8";
-        case INT16:     return "int16";
-        case INT32:     return "int32";
-        case INT64:     return "int64";
-        case SAT8:      return "sat8";
-        case SAT16:     return "sat16";
+    if (id == "index")
+        return PseudoReg::R_INDEX;
+    else if (id == "INT")
+        return PseudoReg::R_INT;
+    else if (id == "int8")
+        return PseudoReg::R_INT8;
+    else if (id == "int16")
+        return PseudoReg::R_INT16;
+    else if (id == "int32")
+        return PseudoReg::R_INT32;
+    else if (id == "int64")
+        return PseudoReg::R_INT64;
+    else if (id == "sat8")
+        return PseudoReg::R_SAT8;
+    else if (id == "sat16")
+        return PseudoReg::R_SAT16;
 
-        case UINT:      return "uint";
-        case UINT8:     return "uint8";
-        case UINT16:    return "uint16";
-        case UINT32:    return "uint32";
-        case UINT64:    return "uint64";
-        case USAT8:     return "usat8";
-        case USAT16:    return "usat16";
+    else if (id == "uint")
+        return PseudoReg::R_UINT;
+    else if (id == "uint8")
+        return PseudoReg::R_UINT8;
+    else if (id == "uint16")
+        return PseudoReg::R_UINT16;
+    else if (id == "uint32")
+        return PseudoReg::R_UINT32;
+    else if (id == "uint64")
+        return PseudoReg::R_UINT64;
+    else if (id == "usat8")
+        return PseudoReg::R_USAT8;
+    else if (id == "usat16")
+        return PseudoReg::R_USAT16;
 
-        case REAL:      return "real";
-        case REAL32:    return "real32";
-        case REAL64:    return "real64";
+    else if (id == "real")
+        return PseudoReg::R_REAL;
+    else if (id == "real32")
+        return PseudoReg::R_REAL32;
+    else if (id == "real64")
+        return PseudoReg::R_REAL64;
 
-        case CHAR:      return "char";
-        case CHAR8:     return "char8";
-        case CHAR16:    return "char16";
-
-        case STRING:    return "string";
-        case STRING8:   return "string8";
-        case STRING16:  return "string16";
-
-        case BOOL:      return "bool";
-
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
-    }
-}
-
-PseudoReg::RegType SimpleType::toRegType() const
-{
-    switch (kind_)
-    {
-        case INDEX:
-            return PseudoReg::R_INDEX;
-
-        case INT:
-            return PseudoReg::R_INT;
-        case INT8:
-            return PseudoReg::R_INT8;
-        case INT16:
-            return PseudoReg::R_INT16;
-        case INT32:
-            return PseudoReg::R_INT32;
-        case INT64:
-            return PseudoReg::R_INT64;
-        case SAT8:
-            return PseudoReg::R_SAT8;
-        case SAT16:
-            return PseudoReg::R_SAT16;
-
-        case UINT:
-            return PseudoReg::R_UINT;
-        case UINT8:
-            return PseudoReg::R_UINT8;
-        case UINT16:
-            return PseudoReg::R_UINT16;
-        case UINT32:
-            return PseudoReg::R_UINT32;
-        case UINT64:
-            return PseudoReg::R_UINT64;
-        case USAT8:
-            return PseudoReg::R_USAT8;
-        case USAT16:
-            return PseudoReg::R_USAT16;
-
-        case REAL:
-            return PseudoReg::R_REAL;
-        case REAL32:
-            return PseudoReg::R_REAL32;
-        case REAL64:
-            return PseudoReg::R_REAL64;
-
-        case BOOL:
-            return PseudoReg::R_BOOL;
-
-        default:
-            swiftAssert(false, "illegal switch-case-value");
-            return PseudoReg::R_INDEX; // avoid warning here
-    }
+    else if (id == "bool")
+        return PseudoReg::R_BOOL;
+    else
+        return PseudoReg::R_STRUCT;
 }
 
 PseudoReg::RegType SimpleType::int2RegType(int i)
 {
     switch (i)
     {
-        case   INDEX:
-        case L_INDEX:
+        else if (id ==   INDEX:
+        else if (id == L_INDEX:
             return PseudoReg::R_INDEX;
 
-        case   INT:
-        case L_INT:
+        else if (id ==   INT:
+        else if (id == L_INT:
             return PseudoReg::R_INT;
-        case   INT8:
-        case L_INT8:
+        else if (id ==   INT8:
+        else if (id == L_INT8:
             return PseudoReg::R_INT8;
-        case   INT16:
-        case L_INT16:
+        else if (id ==   INT16:
+        else if (id == L_INT16:
             return PseudoReg::R_INT16;
-        case   INT32:
-        case L_INT32:
+        else if (id ==   INT32:
+        else if (id == L_INT32:
             return PseudoReg::R_INT32;
-        case   INT64:
-        case L_INT64:
+        else if (id ==   INT64:
+        else if (id == L_INT64:
             return PseudoReg::R_INT64;
-        case   SAT8:
-        case L_SAT8:
+        else if (id ==   SAT8:
+        else if (id == L_SAT8:
             return PseudoReg::R_SAT8;
-        case   SAT16:
-        case L_SAT16:
+        else if (id ==   SAT16:
+        else if (id == L_SAT16:
             return PseudoReg::R_SAT16;
 
-        case   UINT:
-        case L_UINT:
+        else if (id ==   UINT:
+        else if (id == L_UINT:
             return PseudoReg::R_UINT;
-        case   UINT8:
-        case L_UINT8:
+        else if (id ==   UINT8:
+        else if (id == L_UINT8:
             return PseudoReg::R_UINT8;
-        case   UINT16:
-        case L_UINT16:
+        else if (id ==   UINT16:
+        else if (id == L_UINT16:
             return PseudoReg::R_UINT16;
-        case   UINT32:
-        case L_UINT32:
+        else if (id ==   UINT32:
+        else if (id == L_UINT32:
             return PseudoReg::R_UINT32;
-        case   UINT64:
-        case L_UINT64:
+        else if (id ==   UINT64:
+        else if (id == L_UINT64:
             return PseudoReg::R_UINT64;
-        case   USAT8:
-        case L_USAT8:
+        else if (id ==   USAT8:
+        else if (id == L_USAT8:
             return PseudoReg::R_USAT8;
-        case   USAT16:
-        case L_USAT16:
+        else if (id ==   USAT16:
+        else if (id == L_USAT16:
             return PseudoReg::R_USAT16;
 
-        case   REAL:
-        case L_REAL:
+        else if (id ==   REAL:
+        else if (id == L_REAL:
             return PseudoReg::R_REAL;
-        case   REAL32:
-        case L_REAL32:
+        else if (id ==   REAL32:
+        else if (id == L_REAL32:
             return PseudoReg::R_REAL32;
-        case   REAL64:
-        case L_REAL64:
+        else if (id ==   REAL64:
+        else if (id == L_REAL64:
             return PseudoReg::R_REAL64;
 
-        case   BOOL:
-        case L_TRUE:
-        case L_FALSE:
+        else if (id ==   BOOL:
+        else if (id == L_TRUE:
+        else if (id == L_FALSE:
             return PseudoReg::R_BOOL;
 
         default:
-            swiftAssert(false, "illegal switch-case-value");
+            swiftAssert(false, "illegal switch-else if (id ==-value");
             return PseudoReg::R_INDEX; // avoid warning here
     }
-}
-
-//------------------------------------------------------------------------------
-
-Container::~Container()
-{
-    delete type_;
-    delete expr_;
-}
-
-std::string Container::getContainerType() const
-{
-    switch (kind_)
-    {
-        case ARRAY:
-            return "array";
-        case SIMD:
-            return "simd";
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
-    }
-}
-
-std::string Container::toString() const
-{
-    std::ostringstream oss;
-    oss << getContainerType() << "{" << type_->toString();
-
-    if (expr_)
-        oss << ", " << expr_->toString();
-
-    oss << '}';
-
-    return oss.str();
 }

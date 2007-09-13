@@ -20,7 +20,8 @@ struct PseudoReg
         R_INT,  R_INT8,  R_INT16,  R_INT32,  R_INT64,  R_SAT8,  R_SAT16,
         R_UINT, R_UINT8, R_UINT16, R_UINT32, R_UINT64, R_USAT8, R_USAT16,
         R_REAL, R_REAL32, R_REAL64,
-        R_BOOL, R_PTR,
+        R_BOOL,
+        R_STRUCT
 
         // SIMD registers use the same value but negative
         VR_INDEX = -R_INDEX,
@@ -47,14 +48,6 @@ struct PseudoReg
         VR_REAL64= -R_REAL64,
     };
 
-    enum State
-    {
-        /// location lies in an unexecutable edge with an as yet unknown constant value
-        TOP,
-        /// location lies in an executable edge with an known constant value
-        BOTTOM
-    };
-
     enum
     {
         LITERAL = 0
@@ -70,7 +63,6 @@ struct PseudoReg
      * When in SSA-Form all regNr_ < 0 will be replaced by names > 0
      */
     int regNr_;
-    State state_;
 
 #ifdef SWIFT_DEBUG
     std::string id_; ///< this var stores the name of the orignal var in the debug version
@@ -103,6 +95,8 @@ struct PseudoReg
         bool        bool_;
 
         void*       ptr_;
+
+        Struct*     struct_;
     };
 
     Value value_;

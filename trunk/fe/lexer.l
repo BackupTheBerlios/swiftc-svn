@@ -69,39 +69,6 @@ dec { return DEC; }
 \<->    { return SWAP_OP; }
 ->      { return PTR_OP; }
 
-int     { return INT; }
-int8    { return INT8; }
-int16   { return INT16; }
-int32   { return INT32; }
-int64   { return INT64; }
-sat8    { return SAT8; }
-sat16   { return SAT16; }
-
-uint    { return UINT; }
-uint8   { return UINT8; }
-uint16  { return UINT16; }
-uint32  { return UINT32; }
-uint64  { return UINT64; }
-usat8   { return USAT8; }
-usat16  { return USAT16; }
-
-real    { return REAL; }
-real32  { return REAL32; }
-real64  { return REAL64; }
-
-char    { return CHAR; }
-char8   { return CHAR8; }
-char16  { return CHAR16; }
-
-string   { return STRING; }
-string8  { return STRING8; }
-string16 { return STRING16; }
-
-bool    { return BOOL; }
-
-array   { return ARRAY; }
-simd    { return SIMD; }
-
 if       { return IF; }
 else     { return ELSE; }
 elif     { return ELIF; }

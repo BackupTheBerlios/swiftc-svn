@@ -99,30 +99,30 @@ bool Literal::analyze()
 
     switch (kind_)
     {
-        case L_INDEX:   type_ = new Type(new SimpleType(INDEX),  0); break;
+        case L_INDEX:   type_ = new Type(new BaseType(new std::string("index")),  0); break;
 
-        case L_INT:     type_ = new Type(new SimpleType(INT),    0); break;
-        case L_INT8:    type_ = new Type(new SimpleType(INT8),   0); break;
-        case L_INT16:   type_ = new Type(new SimpleType(INT16),  0); break;
-        case L_INT32:   type_ = new Type(new SimpleType(INT32),  0); break;
-        case L_INT64:   type_ = new Type(new SimpleType(INT64),  0); break;
-        case L_SAT8:    type_ = new Type(new SimpleType(SAT8),   0); break;
-        case L_SAT16:   type_ = new Type(new SimpleType(SAT16),  0); break;
+        case L_INT:     type_ = new Type(new BaseType(new std::string("int")),    0); break;
+        case L_INT8:    type_ = new Type(new BaseType(new std::string("int8")),   0); break;
+        case L_INT16:   type_ = new Type(new BaseType(new std::string("int16")),  0); break;
+        case L_INT32:   type_ = new Type(new BaseType(new std::string("int32")),  0); break;
+        case L_INT64:   type_ = new Type(new BaseType(new std::string("int64")),  0); break;
+        case L_SAT8:    type_ = new Type(new BaseType(new std::string("sat8")),   0); break;
+        case L_SAT16:   type_ = new Type(new BaseType(new std::string("sat16")),  0); break;
 
-        case L_UINT:    type_ = new Type(new SimpleType(UINT),   0); break;
-        case L_UINT8:   type_ = new Type(new SimpleType(UINT8),  0); break;
-        case L_UINT16:  type_ = new Type(new SimpleType(UINT16), 0); break;
-        case L_UINT32:  type_ = new Type(new SimpleType(UINT32), 0); break;
-        case L_UINT64:  type_ = new Type(new SimpleType(UINT64), 0); break;
-        case L_USAT8:   type_ = new Type(new SimpleType(USAT8),  0); break;
-        case L_USAT16:  type_ = new Type(new SimpleType(USAT16), 0); break;
+        case L_UINT:    type_ = new Type(new BaseType(new std::string("uint")),   0); break;
+        case L_UINT8:   type_ = new Type(new BaseType(new std::string("uint8")),  0); break;
+        case L_UINT16:  type_ = new Type(new BaseType(new std::string("uint16")), 0); break;
+        case L_UINT32:  type_ = new Type(new BaseType(new std::string("uint32")), 0); break;
+        case L_UINT64:  type_ = new Type(new BaseType(new std::string("uint64")), 0); break;
+        case L_USAT8:   type_ = new Type(new BaseType(new std::string("usat8")),  0); break;
+        case L_USAT16:  type_ = new Type(new BaseType(new std::string("usat16")), 0); break;
 
-        case L_REAL:    type_ = new Type(new SimpleType(REAL),   0); break;
-        case L_REAL32:  type_ = new Type(new SimpleType(REAL32), 0); break;
-        case L_REAL64:  type_ = new Type(new SimpleType(REAL64), 0); break;
+        case L_REAL:    type_ = new Type(new BaseType(new std::string("real")),   0); break;
+        case L_REAL32:  type_ = new Type(new BaseType(new std::string("real32")), 0); break;
+        case L_REAL64:  type_ = new Type(new BaseType(new std::string("real64")), 0); break;
 
         case L_TRUE: // like L_FALSE
-        case L_FALSE:   type_ = new Type(new SimpleType(BOOL),   0); break;
+        case L_FALSE:   type_ = new Type(new BaseType(new std::string("bool")),   0); break;
 
         case L_NIL:
             std::cout << "TODO" << std::endl;
@@ -139,7 +139,8 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate PseudoReg
-    reg_ = new PseudoReg( SimpleType::int2RegType(kind_) );
+    if (gencode)
+        reg_ = new PseudoReg( SimpleType::int2RegType(kind_) );
 
     switch (kind_)
     {
@@ -189,8 +190,6 @@ bool UnExpr::analyze()
         errorf(op_->line_, "unary operator used with wrong type");
         return false;
     }
-
-    // TODO VAR CST DEF
 
     lvalue_ = false;
     type_ = op_->type_->clone();
@@ -356,11 +355,6 @@ bool AssignExpr::analyze()
     if ( !result_->analyze() || !expr_->analyze() )
         return false;
 
-    if (!result_->lvalue_)
-    {
-        errorf(result_->line_, "invalid lvalue in assignment");
-        return false;
-    }
 
     if ( !Type::check(result_->type_, expr_->type_) )
     {
@@ -431,6 +425,19 @@ void Id::genSSA()
         local->regNr_ = reg_->regNr_;
         symtab->insertLocalByRegNr(local);
     }
+}
+
+//------------------------------------------------------------------------------
+
+bool ExprList::analyze()
+{
+    bool result = true;
+
+    // for each expr in this list
+    for (ExprList* iter = this; iter != 0; iter = iter->next_)
+        result &= iter->expr_->analyze();
+
+    return result;
 }
 
 //------------------------------------------------------------------------------

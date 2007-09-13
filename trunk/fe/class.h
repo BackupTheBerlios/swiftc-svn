@@ -55,6 +55,7 @@ struct ClassMember : public SymTabEntry
 struct Class : public Definition
 {
     typedef std::multimap<std::string*, Method*, StringPtrCmp> MethodMap;
+    typedef MethodMap::iterator MethodIter;
     typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
     ClassMember* classMember_;
@@ -85,102 +86,6 @@ struct MemberVar : public ClassMember
         , type_(type)
     {}
     ~MemberVar();
-
-    std::string toString() const;
-    bool analyze();
-};
-
-//------------------------------------------------------------------------------
-
-struct Parameter : public SymTabEntry
-{
-    enum Kind
-    {
-        ARG,
-        RES,
-        RES_INOUT
-    };
-
-    Kind            kind_;
-    Type*           type_;
-    Parameter*      next_;
-
-    Parameter(Kind kind, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-        , kind_(kind)
-        , type_(type)
-    {}
-    ~Parameter();
-
-    bool operator == (const Parameter& parameter) const;
-
-    std::string toString() const;
-};
-
-//------------------------------------------------------------------------------
-
-struct Scope
-{
-    Scope* parent_;/// 0 if root
-
-    typedef List<Scope*> ScopeList;
-    ScopeList childScopes_;
-
-    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
-    LocalMap locals_;
-
-    typedef std::map<int, Local*> RegNrMap;
-    RegNrMap regNrs_;
-
-    LabelInstr* lastLabel_;
-
-    Scope(Scope* parent)
-        : parent_(parent)
-        , lastLabel_(0)
-    {}
-    ~Scope();
-
-    /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(std::string* id);
-    /// Returns the local by regNr, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(int);
-};
-
-//------------------------------------------------------------------------------
-
-struct Method : public ClassMember
-{
-    struct Signature
-    {
-        typedef List<Parameter*> Params;
-        Params params_;
-
-        bool operator == (const Signature& sig) const;
-    };
-
-    int methodQualifier_;
-    Parameter* returnTypeList_;
-
-    Statement* statements_;
-
-    typedef std::set<Parameter*> Params;
-    Params params_;
-
-    Signature signature_;
-
-    Scope* rootScope_;
-
-    Method(int methodQualifier, Parameter* returnTypeList, std::string* id, int line = NO_LINE, Node* parent = 0)
-        : ClassMember(id, line, parent)
-        , methodQualifier_(methodQualifier)
-        , returnTypeList_(returnTypeList)
-        , rootScope_( new Scope(0) )
-    {}
-    ~Method();
-
-    void insertReturnTypesInSymtab();
-
-    void appendParameter(Parameter* parameter);
 
     std::string toString() const;
     bool analyze();

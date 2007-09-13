@@ -34,14 +34,14 @@ struct Declaration : public Statement
     Type*           type_;
     std::string*    id_;
     Local*          local_; // in order to delete those locals again
-    InitList*       initList_;
+    ExprList*       exprList_;
 
-    Declaration(Type* type, std::string* id, InitList* initList, int line = NO_LINE)
+    Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE)
         : Statement(line)
         , type_(type)
         , id_(id)
         , local_(0)
-        , initList_(initList)
+        , exprList_(exprList)
     {}
     ~Declaration();
 
@@ -64,6 +64,8 @@ struct ExprStatement : public Statement
     std::string toString() const { return std::string(""); }
     bool analyze();
 };
+
+//------------------------------------------------------------------------------
 
 /**
  * @brief Holds either an if, an if-else or an if-elif statement.
@@ -102,13 +104,14 @@ struct AssignStatement : public Statement
         char c_;
     };
 
-    Expr* expr_;
-    InitList* initList_;
+    Expr*       expr_;      ///< the lvalue
+    ExprList*   exprList_;  ///< the rvalue
 
-    AssignStatement(int kind, Expr* expr, InitList* initList, int line = NO_LINE)
+    AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE)
         : Statement(line)
+        , kind_(kind)
         , expr_(expr)
-        , initList_(initList)
+        , exprList_(exprList)
     {}
 
     ~AssignStatement();
@@ -119,23 +122,5 @@ struct AssignStatement : public Statement
 };
 
 //------------------------------------------------------------------------------
-
-struct InitList : public Node
-{
-    InitList*   child_;
-    InitList*   next_;
-    Expr*       expr_;
-
-    InitList(InitList* child, Expr* expr, int line = NO_LINE)
-        : Node(line)
-        , child_(child)
-        , expr_(expr)
-    {}
-    ~InitList();
-
-    std::string toString() const;
-
-    bool analyze();
-};
 
 #endif // SWIFT_STATEMENT_H

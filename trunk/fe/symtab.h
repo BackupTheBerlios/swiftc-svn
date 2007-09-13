@@ -7,6 +7,7 @@
 #include <map>
 
 #include "fe/class.h"
+#include "fe/method.h"
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
 

@@ -19,10 +19,10 @@ class Test
 
     routine real re, int rs, inout int bs = test(FOO foo)
 
-        int a = {{4, 7.0}, 6}
+        int e = 4, 7.0, 6
         int b = 8
         a = 5 * 6 + 7
-        b = {5, {7.0, {8 + b * 7, 9, 10}, 8}, {5, {7, 8}}}
+        b = 5, 7.0, 8 + b * 7, 9, 10, 8, 5, 7, 8
         int c
         c = -3
         c = 5 + b

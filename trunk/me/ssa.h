@@ -283,10 +283,10 @@ struct InvokeInstr : public InstrBase
     /// This type is used to specify calling conventions
     enum Conventions
     {
-        SWIFT_CALL,
         C_CALL,
         PASCAL_CALL,
-        STD_CALL
+        STD_CALL,
+        SWIFT_CALL
     };
 
     Function* function_;

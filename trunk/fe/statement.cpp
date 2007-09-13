@@ -15,21 +15,19 @@ Declaration::~Declaration()
 {
     delete type_;
     delete local_;
-    delete initList_;
+    delete exprList_;
 }
 
 std::string Declaration::toString() const
 {
     std::ostringstream oss;
-    oss << type_->toString() << " " << *id_ << initList_->toString();
+    oss << type_->toString() << " " << *id_ << exprList_->toString();
 
     return oss.str();
 }
 
 bool Declaration::analyze()
 {
-// TODO: Possibility to initialize with InitList
-
     if ( typeid(*type_->baseType_) == typeid(UserType) )
     {
         UserType* userType = (UserType*) type_->baseType_;
@@ -39,6 +37,13 @@ bool Declaration::analyze()
             errorf( line_, "class '%s' is not defined in this module", type_->baseType_->toString().c_str() );
             return false;
         }
+    }
+
+    // do we have an initialization here?
+    if (exprList_)
+    {
+        if ( !exprList_->analyze() )
+            return false;
     }
 
     // everything ok. so insert the local
@@ -199,56 +204,160 @@ bool IfElStatement::analyze()
 AssignStatement::~AssignStatement()
 {
     delete expr_;
-    delete initList_;
+    delete exprList_;
 }
 
 bool AssignStatement::analyze()
 {
-    if ( !expr_->analyze() || !initList_->analyze() )
+    bool result = expr_->analyze();
+    result &= exprList_->analyze();
+
+    // put the exprList_ in a more comfortable std::vector
+    typedef List<Expr*> ArgList;
+    ArgList argList;
+    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
+        argList.append(iter->expr_);
+
+    // only continue when analyze was correct
+    if (result)
     {
-        return false;
+        if (!expr_->lvalue_)
+        {
+            errorf(line_, "invalid lvalue in assignment");
+            return false;
+        }
+
+        Type* type = expr_->type_;
+        swiftAssert( typeid(*type) == typeid(UserType), "TODO");
+        UserType* ut = (UserType*) type;
+        Class* _class = symtab->lookupClass(ut->id_);
+
+        std::string createStr("create");
+        Class::MethodIter iter = _class->methods_.find(&createStr);
+        swiftAssert( iter != _class->methods_.end(), "TODO");
+        Class::MethodIter last = _class->methods_.upper_bound(&createStr);
+
+        for (; iter != last; ++iter)
+        {
+            Method* create = iter->second;
+
+            if ( create->signature_.params_.size() != argList.size() )
+                continue; // the number of arguments does not match
+
+            // -> number of arguments fits, so check types
+            ArgList::Node* argIter = argList.first();
+            Method::Signature::Params::Node* createIter = create->signature_.params_.first();
+
+            bool argCheckResult = true;
+
+            while ( argIter != argList.sentinel() && argCheckResult )
+                argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
+
+            if (argCheckResult)
+            {
+std::cout << "yeah" << std::endl;
+                // -> we found a constructor
+                return true;
+            }
+        }
+
+        errorf(line_, "no constructor found for this class with the given arguments");
     }
 
-    //TODO check if type of initList_ and type of expr_ are the same
-
-    return true;
+    return false;
 }
 
 std::string AssignStatement::toString() const
 {
     std::ostringstream oss;
-    oss << expr_->toString() << " = " << initList_->toString();
+    oss << expr_->toString() << " = " << exprList_->toString();
 
     return oss.str();
 }
 
 //------------------------------------------------------------------------------
 
-InitList::~InitList()
-{
-    delete child_;
-    delete next_;
-    delete expr_;
-}
-
-bool InitList::analyze()
-{
-    // TODO
-    return true;
-}
-
-std::string InitList::toString() const
-{
-    std::ostringstream oss;
-    oss << "{";
-
-    if (child_)
-        oss << child_->toString();
-    else
-        oss << expr_->toString();
-
-    if (next_)
-        oss << next_->toString() << ' ';
-
-    return oss.str();
-}
+// InitList::~InitList()
+// {
+//     delete child_;
+//     delete next_;
+//     delete expr_;
+// }
+//
+// bool InitList::analyze()
+// {
+//     bool result = true;
+//
+//     std::vector<InitList*> initList;
+//     for (InitList* iter = this; iter != 0; iter = iter->next_)
+//         initList.push_back(iter);
+//
+//     typedef Class::Methods::iterator Iter;
+//     Iter iter = symtab->class_->methods.find("create");
+//     Iter last =  symtab->class_->methods.upper_bound("create");
+//
+//     std::vector<Method*> constructors;
+//     for (; iter != last; ++iter)
+//     {
+//         if ( iter->second->params_.size() == initList.size() )
+//             constructors.push_back(iter->second);
+//     }
+//
+//     if ( constructors.empty() )
+//         errorf( "no constructor for class %s found with %i arguments", class_->id_->c_str(), (int) initList.size() );
+//
+//     // try if one contructor fits
+// }
+//
+// bool InitList::analyze()
+// {
+//     // check whether this is a leaf item
+//     if (expr_)
+//     {
+//         swiftAssert(child_ == 0, "child_ must be zero, when there is an expr_");
+//
+//         // -> yes, it is
+//         result = expr_->analyze();
+//
+//         // take type of this expression
+//         type_ = expr_->type_->clone();
+//
+//         return result;
+//     }
+//
+//     // This list keeps track of all types in this InitList
+//     typedef List<Type*> TypeList;
+//     TypeList typeList;
+//
+//     /*
+//         find out all types of the init list in this level, check syntax
+//         and do all this stuff recursively
+//     */
+//     for (InitList* iter = next_; iter != 0; iter = iter->next_)
+//     {
+//         // propagate to next level
+//         result &= iter->child_->analyze();
+//         // and take over the type
+//         iter->type_ = iter->child_->type_;
+//
+//         typeList.append(iter->type_);
+//     }
+//
+//     return result;
+// }
+//
+// std::string InitList::toString() const
+// {
+//     std::ostringstream oss;
+//     oss << "{";
+//
+//     if (child_)
+//         oss << child_->toString();
+//     else
+//         oss << expr_->toString();
+//
+//     if (next_)
+//         oss << next_->toString() << ' ';
+//
+//     return oss.str();
+// }

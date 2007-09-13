@@ -14,15 +14,14 @@ struct Parameter;
 struct MemberVar;
 struct Method;
 
-struct Expr;
-struct Arg;
-
 struct Statement;
-struct InitList;
+struct ExprList;
+struct Expr;
 
 //------------------------------------------------------------------------------
 
 extern bool parseerror;
+extern bool gencode;
 
 extern "C" int swiftparse();
 
