@@ -120,14 +120,6 @@ void Method::appendParameter(Parameter* param)
     signature_.params_.append(param);
 }
 
-void Method::insertReturnTypesInSymtab()
-{
-    swiftAssert(returnTypeList_, "this may not be NULL");
-
-    for (Parameter* iter = returnTypeList_; iter != 0; iter = iter->next_)
-        symtab->insert(iter);
-}
-
 std::string Method::toString() const
 {
     std::ostringstream oss;

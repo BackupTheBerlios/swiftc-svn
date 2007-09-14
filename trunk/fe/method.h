@@ -59,7 +59,6 @@ struct Parameter : public SymTabEntry
 
     Kind            kind_;
     Type*           type_;
-    Parameter*      next_;
 
     Parameter(Kind kind, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
         : SymTabEntry(id, line, parent)
@@ -86,7 +85,6 @@ struct Method : public ClassMember
     };
 
     int methodQualifier_;
-    Parameter* returnTypeList_;
 
     Statement* statements_;
 
@@ -97,15 +95,12 @@ struct Method : public ClassMember
 
     Scope* rootScope_;
 
-    Method(int methodQualifier, Parameter* returnTypeList, std::string* id, int line = NO_LINE, Node* parent = 0)
+    Method(int methodQualifier, std::string* id, int line = NO_LINE, Node* parent = 0)
         : ClassMember(id, line, parent)
         , methodQualifier_(methodQualifier)
-        , returnTypeList_(returnTypeList)
         , rootScope_( new Scope(0) )
     {}
     ~Method();
-
-    void insertReturnTypesInSymtab();
 
     void appendParameter(Parameter* parameter);
 

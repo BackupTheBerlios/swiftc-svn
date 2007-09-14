@@ -50,9 +50,11 @@ INTEGER     {DIGIT}+
 }
 
 ==  { return EQ_OP; }
-!=  { return NE_OP; }
+\<> { return NE_OP; }
 \<= { return LE_OP; }
 >=  { return GE_OP; }
+mod { return MOD; }
+div { return DIV; }
 
 inc { return INC; }
 dec { return DEC; }
@@ -67,7 +69,7 @@ dec { return DEC; }
 
 \<-     { return MOVE_OP; }
 \<->    { return SWAP_OP; }
-->      { return PTR_OP; }
+->      { return ARROW; }
 
 if       { return IF; }
 else     { return ELSE; }
@@ -80,9 +82,10 @@ scope   { keyLine = currentLine; return SCOPE; }
 class   { keyLine = currentLine; return CLASS; }
 end     { keyLine = currentLine; return END; }
 
-reader  { keyLine = currentLine; return READER; }
-writer  { keyLine = currentLine; return WRITER; }
-routine { keyLine = currentLine; return ROUTINE; }
+reader      { keyLine = currentLine; return READER; }
+writer      { keyLine = currentLine; return WRITER; }
+routine     { keyLine = currentLine; return ROUTINE; }
+operator    { keyLine = currentLine; return OPERATOR; }
 
 create  { keyLine = currentLine; return CREATE; }
 destroy { keyLine = currentLine; return DESTROY; }

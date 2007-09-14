@@ -16,6 +16,50 @@ int pointercount = -1;
 bool parseerror  = false;
 bool gencode     = true;
 
+std::string* operatorToString(int operator)
+{
+    std::string* str = new std::string();
+
+    switch(operator)
+    {
+        case AND:
+            *str = "and"
+            break; 
+        case OR:
+            *str = "or"
+            break; 
+        case XOR:
+            *str = "xor"
+            break; 
+        case NOT:
+            *str = "not"
+            break; 
+        case EQ_OP:
+            *str = "=="
+            break; 
+        case NE_OP:
+            *str = "<>"
+            break; 
+        case LE_OP:
+            *str = "<="
+            break; 
+        case GE_OP:
+            *str = ">="
+            break; 
+        case MOD:
+            *str = "mod"
+            break; 
+        case DIV:
+            *str = "div"
+            break; 
+        default:
+            *str = (char) operator;
+    }
+    
+    return str;
+}
+
+
 %}
 
 %union
@@ -31,7 +75,6 @@ bool gencode     = true;
     ClassMember*    classMember_;
     MemberVar*      memberVar_;
     Method*         method_;
-    Parameter*      parameter_;
 
     Type*           type_;
     BaseType*       baseType_;
@@ -58,7 +101,7 @@ bool gencode     = true;
 // parameter qualifier
 %token IN INOUT OUT
 // method qualifier
-%token READER WRITER ROUTINE
+%token READER WRITER ROUTINE OPERATOR
 // constructor / destructor
 %token CREATE DESTROY
 
@@ -69,7 +112,10 @@ bool gencode     = true;
 %token INC DEC
 %token EQ_OP NE_OP
 %token LE_OP GE_OP
-%token MOVE_OP SWAP_OP PTR_OP
+%token MOVE_OP SWAP_OP
+%token AND OR XOR NOT
+%token MOD DIV
+%token ARROW
 
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
 
@@ -93,7 +139,6 @@ bool gencode     = true;
 
 %type <int_>        method_qualifier
 %type <type_>       type
-%type <parameter_>  parameter parameter_list return_type_list return_type /*return_values*/
 
 %type <definition_> class_definition
 %type <classMember_> class_body class_member
@@ -180,29 +225,36 @@ class_member
 */
 
 method
-    : method_qualifier /**/ ID
+    : method_qualifier ID
         {
-            $$ = new Method( $1, 0, $2, getKeyLine() );
+            $$ = new Method( $1, $2, getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list')'
         EOL statement_list END EOL
         {
-            $$ = $<method_>3;
             $$->statements_ = $8;
         }
-    | method_qualifier return_type_list '=' ID
+    | method_qualifier ID
         {
-            $$ = new Method( $1, $2, $4, getKeyLine() );
+            $$ = new Method( $1, $2, getKeyLine() );
             symtab->insert($$);
-            $$->insertReturnTypesInSymtab();
         }
-        '(' parameter_list')'
+        '(' parameter_list ')' ARROW return_type_list
         EOL statement_list END EOL
         {
-            $$ = $<method_>5;
             $$->statements_ = $10;
         }
+    | OPERATOR operator
+        {
+            $$ = new Method( OPERATOR, operatorToString( operator ), getKeyLine() );
+            symtab->insert($$);
+        }
+        '(' parameter_list ')' ARROW return_type_list
+        EOL statement_list END EOL
+        {
+            $$->statements_ = $10;
+        }    
     | CREATE
         {
             $$ = new Method( CREATE, 0, new std::string("create"), getKeyLine() );
@@ -211,39 +263,47 @@ method
         '(' parameter_list')'
         EOL statement_list END EOL
         {
-            $$ = $<method_>2;
             $$->statements_ = $7;
         }
     ;
+    
+operator
+    :   '+'     { $$ = $1; }
+    |   '-'     { $$ = $1; }
+    |   '*'     { $$ = $1; }
+    |   '/'     { $$ = $1; }
+    |   '<'     { $$ = $1; }
+    |   '>'     { $$ = $1; }
+    |   MOD     { $$ = $1; }
+    |   DIV     { $$ = $1; }   
+    |   LE_OP   { $$ = $1; }
+    |   GE_OP   { $$ = $1; }
+    |   AND     { $$ = $1; }
+    |   OR      { $$ = $1; }
+    |   XOR     { $$ = $1; }
+    |   NOT     { $$ = $1; }
+    |   NE_OP   { $$ = $1; }
+    |   EQ_OP   { $$ = $1; }
+    ;
 
 return_type_list
-    : return_type                       { $$ = $1; $$->next_ = 0; }
-    | return_type ',' return_type_list  { $$ = $1; $$->next_ = $3; }
+    : return_type                       
+    | return_type ',' return_type_list
     ;
 
 return_type
-    : type ID
-        {
-            $$ = new Parameter(Parameter::ARG, $1, $2, currentLine);
-        }
-    | INOUT type ID
-        {
-            $$ = new Parameter(Parameter::RES_INOUT, $2, $3, currentLine);
-        }
+    : type ID       { symtab->insert( new Parameter(Parameter::RES, $1, $2, currentLine) ); }
+    | INOUT type ID { symtab->insert( new Parameter(Parameter::RES_INOUT, $1, $2, currentLine) ); }   
     ;
 
 parameter_list
-    : /*emtpy*/                     { $$ = 0; }
-    | parameter                     { $$ = $1; $$->next_ = 0; }
-    | parameter ',' parameter_list  { $$ = $1; $$->next_ = $3; }
+    : /*emtpy*/                     
+    | parameter                     
+    | parameter ',' parameter_list  
     ;
 
 parameter
-    : type ID
-        {
-            $$ = new Parameter(Parameter::ARG, $1, $2, currentLine);
-            symtab->insert($$);
-        }
+    : type ID   { symtab->insert( new Parameter(Parameter::ARG, $1, $2, currentLine) ); }
     ;
 
 /*
@@ -366,6 +426,7 @@ method_qualifier
     : READER    { $$ = READER; }
     | WRITER    { $$ = WRITER; }
     | ROUTINE   { $$ = ROUTINE; }
+	| OPERATOR	{ $$ = OPERATOR; }
     ;
 
 type
