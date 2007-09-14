@@ -16,46 +16,46 @@ int pointercount = -1;
 bool parseerror  = false;
 bool gencode     = true;
 
-std::string* operatorToString(int operator)
+std::string* operatorToString(int _operator)
 {
     std::string* str = new std::string();
 
-    switch(operator)
+    switch (_operator)
     {
-        case AND:
-            *str = "and"
+        case AND_OP:
+            *str = "and";
             break; 
-        case OR:
-            *str = "or"
+        case OR_OP:
+            *str = "or";
             break; 
-        case XOR:
-            *str = "xor"
+        case XOR_OP:
+            *str = "xor";
             break; 
-        case NOT:
-            *str = "not"
+        case NOT_OP:
+            *str = "not";
             break; 
         case EQ_OP:
-            *str = "=="
+            *str = "==";
             break; 
         case NE_OP:
-            *str = "<>"
+            *str = "<>";
             break; 
         case LE_OP:
-            *str = "<="
+            *str = "<=";
             break; 
         case GE_OP:
-            *str = ">="
+            *str = ">=";
             break; 
-        case MOD:
-            *str = "mod"
+        case MOD_OP:
+            *str = "mod";
             break; 
-        case DIV:
-            *str = "div"
+        case DIV_OP:
+            *str = "div";
             break; 
         default:
-            *str = (char) operator;
+            *str = (char) _operator;
     }
-    
+
     return str;
 }
 
@@ -102,6 +102,8 @@ std::string* operatorToString(int operator)
 %token IN INOUT OUT
 // method qualifier
 %token READER WRITER ROUTINE OPERATOR
+%token ARROW
+
 // constructor / destructor
 %token CREATE DESTROY
 
@@ -109,13 +111,12 @@ std::string* operatorToString(int operator)
 %token SHL SHR ROL ROR
 
 // operators
-%token INC DEC
+%token INC_OP DEC_OP
 %token EQ_OP NE_OP
 %token LE_OP GE_OP
 %token MOVE_OP SWAP_OP
-%token AND OR XOR NOT
-%token MOD DIV
-%token ARROW
+%token AND_OP OR_OP XOR_OP NOT_OP
+%token MOD_OP DIV_OP
 
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
 
@@ -129,15 +130,13 @@ std::string* operatorToString(int operator)
 // miscellaneous
 %token SCOPE CLASS END EOL
 
-%token <integer_>   INTEGER
-%token <float_>     FLOAT
 %token <id_>        ID
 
 /*
     types
 */
 
-%type <int_>        method_qualifier
+%type <int_>        method_qualifier operator
 %type <type_>       type
 
 %type <definition_> class_definition
@@ -224,86 +223,90 @@ class_member
     *******
 */
 
+method_qualifier
+    : READER    { $$ = READER; }
+    | WRITER    { $$ = WRITER; }
+    | ROUTINE   { $$ = ROUTINE; }
+    ;
+
 method
     : method_qualifier ID
         {
             $$ = new Method( $1, $2, getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list')'
+        '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$->statements_ = $8;
-        }
-    | method_qualifier ID
-        {
-            $$ = new Method( $1, $2, getKeyLine() );
-            symtab->insert($$);
-        }
-        '(' parameter_list ')' ARROW return_type_list
-        EOL statement_list END EOL
-        {
-            $$->statements_ = $10;
+            $$ = $<method_>3;
+            $$->statements_ = $9;
         }
     | OPERATOR operator
         {
-            $$ = new Method( OPERATOR, operatorToString( operator ), getKeyLine() );
+            $$ = new Method( OPERATOR, operatorToString($2), getKeyLine() );
             symtab->insert($$);
         }
-        '(' parameter_list ')' ARROW return_type_list
+        '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$->statements_ = $10;
-        }    
+            $$ = $<method_>3;
+            $$->statements_ = $9;
+        }
     | CREATE
         {
-            $$ = new Method( CREATE, 0, new std::string("create"), getKeyLine() );
+            $$ = new Method( CREATE, new std::string("create"), getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list')'
         EOL statement_list END EOL
         {
+            $$ = $<method_>2;
             $$->statements_ = $7;
         }
     ;
-    
+
 operator
-    :   '+'     { $$ = $1; }
-    |   '-'     { $$ = $1; }
-    |   '*'     { $$ = $1; }
-    |   '/'     { $$ = $1; }
-    |   '<'     { $$ = $1; }
-    |   '>'     { $$ = $1; }
-    |   MOD     { $$ = $1; }
-    |   DIV     { $$ = $1; }   
-    |   LE_OP   { $$ = $1; }
-    |   GE_OP   { $$ = $1; }
-    |   AND     { $$ = $1; }
-    |   OR      { $$ = $1; }
-    |   XOR     { $$ = $1; }
-    |   NOT     { $$ = $1; }
-    |   NE_OP   { $$ = $1; }
-    |   EQ_OP   { $$ = $1; }
+    :   '+'     { $$ = '+'; }
+    |   '-'     { $$ = '-'; }
+    |   '*'     { $$ = '*'; }
+    |   '/'     { $$ = '/'; }
+    |   MOD_OP  { $$ = MOD_OP; }
+    |   DIV_OP  { $$ = DIV_OP; }
+    |   EQ_OP   { $$ = EQ_OP; }
+    |   NE_OP   { $$ = NE_OP; }
+    |   '<'     { $$ = '<'; }
+    |   '>'     { $$ = '>'; }
+    |   LE_OP   { $$ = LE_OP; }
+    |   GE_OP   { $$ = GE_OP; }
+    |   AND_OP  { $$ = AND_OP; }
+    |   OR_OP   { $$ = OR_OP; }
+    |   XOR_OP  { $$ = XOR_OP; }
+    |   NOT_OP  { $$ = NOT_OP; }
+    ;
+
+parameter_list
+    : /* emtpy */
+    | parameter
+    | parameter ',' parameter_list
+    ;
+
+parameter
+    : type ID   { symtab->insert( new Parameter(Parameter::ARG, $1, $2, currentLine) ); }
+    ;
+
+arrow_return_type_list
+    : /* empty */
+    | ARROW return_type_list
     ;
 
 return_type_list
-    : return_type                       
+    : return_type
     | return_type ',' return_type_list
     ;
 
 return_type
     : type ID       { symtab->insert( new Parameter(Parameter::RES, $1, $2, currentLine) ); }
-    | INOUT type ID { symtab->insert( new Parameter(Parameter::RES_INOUT, $1, $2, currentLine) ); }   
-    ;
-
-parameter_list
-    : /*emtpy*/                     
-    | parameter                     
-    | parameter ',' parameter_list  
-    ;
-
-parameter
-    : type ID   { symtab->insert( new Parameter(Parameter::ARG, $1, $2, currentLine) ); }
+    | INOUT type ID { symtab->insert( new Parameter(Parameter::RES_INOUT, $2, $3, currentLine) ); }   
     ;
 
 /*
@@ -420,13 +423,6 @@ expr_list
 expr_list_not_empty
     : expr                          { $$ = new ExprList($1,  0, currentLine); }
     | expr ',' expr_list_not_empty  { $$ = new ExprList($1, $3, currentLine); }
-    ;
-
-method_qualifier
-    : READER    { $$ = READER; }
-    | WRITER    { $$ = WRITER; }
-    | ROUTINE   { $$ = ROUTINE; }
-	| OPERATOR	{ $$ = OPERATOR; }
     ;
 
 type

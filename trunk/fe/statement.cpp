@@ -243,7 +243,13 @@ bool AssignStatement::analyze()
             bool argCheckResult = true;
 
             while ( argIter != argList.sentinel() && argCheckResult )
+            {
                 argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
+
+                // move forward
+                argIter = argIter->next_;
+                createIter = createIter->next_;
+            }
 
             if (argCheckResult)
             {

@@ -130,14 +130,10 @@ std::string Method::toString() const
         case READER:    oss << "reader ";   break;
         case WRITER:    oss << "writer ";   break;
         case ROUTINE:   oss << "routine ";  break;
+        case OPERATOR:  oss << "operator "; break;
         default:
             swiftAssert(false, "illegal case value");
             return "";
-    }
-
-    if (returnTypeList_) {
-        oss << returnTypeList_->toString() << " ";
-        oss << " ";
     }
 
     oss << *id_ << '(';
@@ -162,21 +158,24 @@ bool Method::analyze()
 
     symtab->enterMethod(this);
 
-    /*
-        build a function name for the functab consisting of the class name,
-        the method name and a counted number to prevent name clashes
-        due to overloading
-    */
-    std::ostringstream oss;
-    oss << *symtab->class_->id_ << '#' << *id_ << '#' << counter;
-    ++counter;
+    if (gencode)
+    {
+        /*
+            build a function name for the functab consisting of the class name,
+            the method name and a counted number to prevent name clashes
+            due to overloading
+        */
+        std::ostringstream oss;
+        oss << *symtab->class_->id_ << '#' << *id_ << '#' << counter;
+        ++counter;
 
-    functab->insertFunction( new std::string(oss.str()) );
+        functab->insertFunction( new std::string(oss.str()) );
 
-    // insert the first label since every function must start with one
-    functab->appendInstr( new LabelInstr() );
+        // insert the first label since every function must start with one
+        functab->appendInstr( new LabelInstr() );
+    }
 
-    // analyze each parameter
+    // validate each parameter
     for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
         result &= (*iter)->type_->validate();
 
@@ -185,7 +184,8 @@ bool Method::analyze()
         result &= iter->analyze();
 
     // insert the last label since every function must end with one
-    functab->appendInstr( new LabelInstr() );
+    if (gencode)
+        functab->appendInstr( new LabelInstr() );
 
     symtab->leaveMethod();
 

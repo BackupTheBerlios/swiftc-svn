@@ -3,21 +3,24 @@
 class Test
     Foo foo
 
+    routine test(Foo foo, int i) -> real re, int rs, inout int bs
+        int z
+        z = 5
+    end
+
+    operator + (Foo f1, Foo f2) -> Foo res
+    end
+
     create ()
         int afdafdsaf
-        afdafdsaf = 5 +7
+        afdafdsaf = 5 + 7
     end
     create (real r)
         int z
         z = 5
     end
 
-    routine real re, int rs, inout int bs = test(FOO foo, int i)
-        int z
-        z = 5
-    end
-
-    routine real re, int rs, inout int bs = test(FOO foo)
+    routine test(Foo foo) -> real re, int rs, inout int bs
 
         int e = 4, 7.0, 6
         int b = 8
@@ -79,7 +82,7 @@ class Test
     end
 end
 
-class FOO
+class Foo
     int i
 end
 

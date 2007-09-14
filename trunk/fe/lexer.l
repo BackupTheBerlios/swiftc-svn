@@ -53,19 +53,20 @@ INTEGER     {DIGIT}+
 \<> { return NE_OP; }
 \<= { return LE_OP; }
 >=  { return GE_OP; }
-mod { return MOD; }
-div { return DIV; }
+mod { return MOD_OP; }
+div { return DIV_OP; }
 
-inc { return INC; }
-dec { return DEC; }
+inc { return INC_OP; }
+dec { return DEC_OP; }
 
 \+= { return ADD_ASSIGN; }
 \-= { return SUB_ASSIGN; }
 \*= { return MUL_ASSIGN; }
 \/= { return DIV_ASSIGN; }
-%=  { return MOD_ASSIGN; }
-\|= { return  OR_ASSIGN; }
-\^= { return XOR_ASSIGN; }
+mod= { return MOD_ASSIGN; }
+and= { return AND_ASSIGN; }
+or=  { return  OR_ASSIGN; }
+xor= { return XOR_ASSIGN; }
 
 \<-     { return MOVE_OP; }
 \<->    { return SWAP_OP; }
@@ -169,6 +170,7 @@ int yywrap() {
 }
 
 FILE* lexerInit(const char* filename) {
+    currentLine = 1;
     yyin = fopen(filename, "r");
     return yyin;
 }

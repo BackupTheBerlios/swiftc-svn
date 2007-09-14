@@ -281,7 +281,7 @@ void UnExpr::genSSA()
         case '-':
             kind = AssignInstr::UNARY_MINUS;
             break;
-        case NOT:
+        case NOT_OP:
             kind = AssignInstr::NOT;
             break;
         default:

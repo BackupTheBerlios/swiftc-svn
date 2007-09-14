@@ -216,10 +216,8 @@ void readBuiltinTypes()
 
     for (size_t i = 0; i < builtin.size(); ++i)
     {
-std::cout << builtin[i] << std::endl;
         file = lexerInit(builtin[i]);
         swiftparse();
-        swiftlex();
         fclose(file);
     }
 
