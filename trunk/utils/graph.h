@@ -19,6 +19,9 @@ public:
     typedef List<Node*> Relatives;
     typedef typename List<Node*>::Node Relative;
 
+#define RELATIVES_EACH(iter, relatives) \
+    for (Relative* (iter) = (relatives).first(); (iter) != (relatives).sentinel(); (iter) = (iter)->next())
+
     struct Node
     {
         T* value_;

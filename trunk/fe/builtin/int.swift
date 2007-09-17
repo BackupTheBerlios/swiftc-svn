@@ -30,6 +30,10 @@ class int
     operator >= (int i1, int i2) -> bool res
     end
 
+    # unary minus
+    operator - (int i) -> int res
+    end
+
 #    iterator int each(int begin, int ending, int step = 1)
 #    end
 

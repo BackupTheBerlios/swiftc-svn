@@ -49,12 +49,16 @@ INTEGER     {DIGIT}+
     return yytext[0];
 }
 
+mod { return MOD_OP; }
+div { return DIV_OP; }
 ==  { return EQ_OP; }
 \<> { return NE_OP; }
 \<= { return LE_OP; }
 >=  { return GE_OP; }
-mod { return MOD_OP; }
-div { return DIV_OP; }
+and { return AND_OP; }
+or  { return OR_OP; }
+xor { return XOR_OP; }
+not { return NOT_OP; }
 
 inc { return INC_OP; }
 dec { return DEC_OP; }

@@ -32,7 +32,7 @@ void CFG::calcCFG()
     BBNode* prevBB = 0;
 
     // iterate over the instruction list and find basic blocks
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    INSTRLIST_EACH(iter, instrList_)
     {
         InstrBase* instr = iter->value_;
 
@@ -71,7 +71,7 @@ void CFG::calcCFG()
     BBNode* currentBB = 0;
 
     // iterate once again over the instruction list in order to connect the blocks properly
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    INSTRLIST_EACH(iter, instrList_)
     {
         InstrBase* instr = iter->value_;
 
@@ -182,7 +182,7 @@ void CFG::calcDomTree()
             swiftAssert(newIdom, "no processed predecessor found");
 
             // for all other predecessors
-            for (Relative* iter = bb->pred_.first(); iter != bb->pred_.sentinel(); iter = iter->next())
+            RELATIVES_EACH(iter, bb->pred_)
             {
                 BBNode* predBB = iter->value_;
 
@@ -245,7 +245,7 @@ void CFG::calcDomFrontier()
         if (bb->pred_.size() >= 2)
         {
             // for all predecessors of bb
-            for (Relative* iter = bb->pred_.first(); iter != bb->pred_.sentinel(); iter = iter->next())
+            RELATIVES_EACH(iter, bb->pred_)
             {
                 BBNode* runner = iter->value_;
 
@@ -281,7 +281,7 @@ void CFG::placePhiFunctions()
     int iterCount = 0;
 
     // for each var
-    for (RegMap::iterator iter = function_->vars_.begin(); iter != function_->vars_.end(); ++iter)
+    REGMAP_EACH(iter, function_->vars_)
     {
         ++iterCount;
 
@@ -315,7 +315,7 @@ void CFG::placePhiFunctions()
         BBNode* firstBB = firstOccurance_.find(var->regNr_)->second;
 
         // for each basic block from DF(fristBB)
-        for (BBList::Node* iter = firstBB->value_->domFrontier_.first(); iter != firstBB->value_->domFrontier_.sentinel(); iter = iter->next())
+        BBLIST_EACH(iter, firstBB->value_->domFrontier_)
             hasAlready[iter->value_->postOrderIndex_] = iterCount;
 
         // for each basic block in the work list
@@ -327,7 +327,7 @@ void CFG::placePhiFunctions()
 
 
             // for each basic block from DF(bb)
-            for (BBList::Node* iter = bb->value_->domFrontier_.first(); iter != bb->value_->domFrontier_.sentinel(); iter = iter->next())
+            BBLIST_EACH(iter, bb->value_->domFrontier_)
             {
                 BBNode* df = iter->value_;
 
@@ -372,7 +372,7 @@ void CFG::renameVars()
         postOrder_[i]->value_->vars_.clear();
 
     // for all vars, no temps
-    for (RegMap::iterator iter = vars.begin(); iter->first < 0 && iter != vars.end(); ++iter)
+    REGMAP_EACH(iter, vars)
     {
         delete iter->second;
         vars.erase(iter);
@@ -445,7 +445,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     }
 
     // for each successor of bb
-    for (Relative* iter = bb->succ_.first(); iter != bb->succ_.sentinel(); iter = iter->next())
+    RELATIVES_EACH(iter, bb->succ_)
     {
         BBNode* succ = iter->value_;
         size_t j = succ->whichPred(bb);
@@ -467,7 +467,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     }
 
     // for each child of bb in the dominator tree
-    for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
+    BBLIST_EACH(iter, bb->value_->domChildren_)
     {
         BBNode* domChild = iter->value_;
 
@@ -542,7 +542,7 @@ std::string CFG::dumpDomChildren() const
 
         oss << '\t' << bb->value_->name() << ":\t";
 
-        for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
+        BBLIST_EACH(iter, bb->value_->domChildren_)
              oss << iter->value_->value_->name() << ' ';
 
         oss << std::endl;
@@ -561,7 +561,7 @@ std::string CFG::dumpDomFrontier() const
 
         oss << '\t' << bb->value_->name() << ":\t";
 
-        for (BBList::Node* iter = bb->value_->domFrontier_.first(); iter != bb->value_->domFrontier_.sentinel(); iter = iter->next())
+        BBLIST_EACH(iter, bb->value_->domChildren_)
             oss << iter->value_->value_->name() << " ";
 
         oss << std::endl;

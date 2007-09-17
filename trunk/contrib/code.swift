@@ -8,7 +8,7 @@ class Test
         z = 5
     end
 
-    operator + (Foo f1, Foo f2) -> Foo res
+    operator + (Test f1, Foo f2) -> Foo res
     end
 
     create ()

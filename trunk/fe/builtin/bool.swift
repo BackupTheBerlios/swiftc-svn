@@ -8,6 +8,6 @@ class bool
 #    operator and= or= (int i1)
 #    end
 
-#    operator bool not
-#    end
+    operator not (bool b) -> bool res
+    end
 end

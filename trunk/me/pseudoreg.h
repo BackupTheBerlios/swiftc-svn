@@ -125,7 +125,7 @@ struct PseudoReg
     {
         return regNr_ == 0;
     }
-    /// PseudoRegs with the same var number belong to the same var originally
+    /// PseudoRegs with the same \a regNr_ belong to the same var originally
     bool isVar() const
     {
         return regNr_ < 0;
@@ -144,6 +144,11 @@ struct PseudoReg
 };
 
 typedef std::map<int, PseudoReg*> RegMap;
+
+/// Use this macro in order to easily visit all elements of a RegMap
+#define REGMAP_EACH(iter, regMap) \
+    for (RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
+
 typedef List<PseudoReg*> RegList;
 
 #endif // SWIFT_PSEUDOREG_H

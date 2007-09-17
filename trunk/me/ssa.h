@@ -32,6 +32,9 @@ struct InstrBase
 
 typedef List<InstrBase*> InstrList;
 
+#define INSTRLIST_EACH(iter, instrList) \
+    for (InstrList::Node* (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -292,9 +295,10 @@ struct InvokeInstr : public InstrBase
     Function* function_;
     Conventions conventions_;
 
-    RegList in_;
-    RegList out_;
-    RegList inout_;
+    RegList args_;  ///< all arguments
+    RegList in_;    ///< incoming arguments
+    RegList out_;   ///< outgoing arguments
+    RegList inout_; ///< in and outgoing arguments
 
     InvokeInstr(Function* function, Conventions conventions)
         : function_(function)
