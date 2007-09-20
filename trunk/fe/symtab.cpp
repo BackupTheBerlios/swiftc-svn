@@ -275,3 +275,54 @@ Class* SymbolTable::lookupClass(string* id)
     // class not found -- so return NULL
     return 0;
 }
+
+Method* SymbolTable::lookupMethod(  std::string* classId,
+                                    std::string* methodId,
+                                    int methodQualifier,
+                                    Method::Signature& sig,
+                                    int line)
+{
+    Class* _class = symtab->lookupClass(classId);
+
+    Class::MethodIter iter = _class->methods_.find(methodId);
+    if (iter == _class->methods_.end())
+    {
+        errorf(line, "there is no method %s defined in class %s",
+            methodId->c_str(), classId->c_str());
+    }
+
+    Class::MethodIter last = _class->methods_.upper_bound(methodId);
+
+    for (; iter != last; ++iter)
+    {
+        Method* method = iter->second;
+
+        if ( create->signature_.params_.size() != argList.size() )
+            continue; // the number of arguments does not match
+
+        // -> number of arguments fits, so check types
+        ArgList::Node* argIter = argList.first();
+        Method::Signature::Params::Node* createIter = create->signature_.params_.first();
+
+        bool argCheckResult = true;
+
+        while ( argIter != argList.sentinel() && argCheckResult )
+        {
+            argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
+
+            // move forward
+            argIter = argIter->next_;
+            createIter = createIter->next_;
+        }
+
+        if (argCheckResult)
+        {
+            // -> we found a constructor
+            return true;
+        }
+    }
+
+    errorf(line_, "no constructor found for this class with the given arguments");
+}
+}
+
