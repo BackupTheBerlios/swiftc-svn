@@ -66,7 +66,7 @@ bool Class::analyze()
                 if (methodIter->second->methodQualifier_ != method->methodQualifier_)
                     continue;
 
-                if ( methodIter->second->signature_ == method->signature_ )
+                if ( Method::Signature::check(methodIter->second->signature_, method->signature_) )
                 {
                     std::stack<std::string> idStack;
 

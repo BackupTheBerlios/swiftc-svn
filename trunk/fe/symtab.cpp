@@ -289,40 +289,27 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
     {
         errorf(line, "there is no method %s defined in class %s",
             methodId->c_str(), classId->c_str());
+
+        return 0;
     }
 
     Class::MethodIter last = _class->methods_.upper_bound(methodId);
 
+    Method* method = 0;
+
     for (; iter != last; ++iter)
     {
-        Method* method = iter->second;
+        method = iter->second;
 
-        if ( create->signature_.params_.size() != argList.size() )
-            continue; // the number of arguments does not match
-
-        // -> number of arguments fits, so check types
-        ArgList::Node* argIter = argList.first();
-        Method::Signature::Params::Node* createIter = create->signature_.params_.first();
-
-        bool argCheckResult = true;
-
-        while ( argIter != argList.sentinel() && argCheckResult )
-        {
-            argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
-
-            // move forward
-            argIter = argIter->next_;
-            createIter = createIter->next_;
-        }
-
-        if (argCheckResult)
-        {
-            // -> we found a constructor
-            return true;
-        }
+        if ( Method::Signature::check(method->signature_, sig) )
+            break;
+        else
+            method = 0; // mark as not found
     }
 
-    errorf(line_, "no constructor found for this class with the given arguments");
-}
+    if ( !method )
+        errorf(line, "no method found for this class with the given arguments"); // TODO better error handling
+
+    return method;
 }
 

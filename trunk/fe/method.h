@@ -64,7 +64,8 @@ struct Parameter : public SymTabEntry
     {}
     ~Parameter();
 
-    bool operator == (const Parameter& parameter) const;
+    /// check whether the type of both Parameter objects fit
+    static bool check(const Parameter* param1, const Parameter* param2);
 
     std::string toString() const;
 };
@@ -78,7 +79,7 @@ struct Method : public ClassMember
         typedef List<Parameter*> Params;
         Params params_;
 
-        bool operator == (const Signature& sig) const;
+        static bool check(const Signature& sig1, const Signature& sig2);
     };
 
     int methodQualifier_;

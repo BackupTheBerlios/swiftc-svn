@@ -15,12 +15,12 @@ Parameter::~Parameter()
     delete type_;
 }
 
-bool Parameter::operator == (const Parameter& parameter) const
+bool Parameter::check(const Parameter* param1, const Parameter* param2)
 {
-    if (kind_ != parameter.kind_)
+    if (param1->kind_ != param2->kind_)
         return false;
 
-    if ( Type::check(type_, parameter.type_) )
+    if ( Type::check(param1->type_, param2->type_) )
         return true;
 
     // else
@@ -81,21 +81,21 @@ Local* Scope::lookupLocal(int regNr)
 
 //------------------------------------------------------------------------------
 
-bool Method::Signature::operator == (const Method::Signature& signature) const
+bool Method::Signature::check(const Method::Signature& sig1, const Method::Signature& sig2)
 {
     // if the sizes do not match the signature is obviously different
-    if ( params_.size() != signature.params_.size() )
+    if ( sig1.params_.size() != sig2.params_.size() )
         return false;
 
     // assume a true result in the beginning
     bool result = true;
 
-    const Signature::Params::Node* param1 = params_.first();
-    const Signature::Params::Node* param2 = signature.params_.first();
+    const Signature::Params::Node* param1 = sig1.params_.first();
+    const Signature::Params::Node* param2 = sig2.params_.first();
 
-    while (result && param1 != params_.sentinel())
+    while (result && param1 != sig1.params_.sentinel())
     {
-        result = *param1->value_ == *param2->value_;
+        result = Parameter::check(param1->value_, param2->value_);
 
         // traverse both nodes to the next node
         param1 = param1->next();

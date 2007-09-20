@@ -336,8 +336,9 @@ bool BinExpr::analyze()
     }
 
     // check whether there is an operator kind_ for op1
-    std::string* op1Id = op1_->type_->baseType_->id_;
-    symtab->lookupMethod
+//     std::string* op1Id = op1_->type_->baseType_->id_;
+//     symtab->lookupMethod
+// TODO
 
     if (gencode)
         genSSA();
