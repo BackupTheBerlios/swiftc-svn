@@ -271,7 +271,10 @@ bool Method::analyze()
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
+    {
+        std::cout << "hey" << std::endl;
         result &= iter->analyze();
+    }
 
     // insert the last label since every function must end with one
     if (gencode)

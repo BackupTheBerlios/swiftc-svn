@@ -204,6 +204,7 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
+std::cout << "fjdklfjdklfjdklfjdskl" << std::endl;
     bool result = expr_->analyze();
     result &= exprList_->analyze();
 

@@ -236,11 +236,12 @@ void Literal::genSSA()
 
 bool UnExpr::analyze()
 {
+    lvalue_ = false;
+
     // return false when syntax is wrong
     if ( !op_->analyze() )
         return false;
 
-    lvalue_ = false;
     type_ = op_->type_->clone();
 
     if (c_ == '&')
@@ -315,6 +316,8 @@ std::string BinExpr::getOpString() const
 
 bool BinExpr::analyze()
 {
+    lvalue_ = false;
+
     // return false when syntax is wrong
     if ( !op1_->analyze() || !op2_->analyze() )
         return false;
@@ -332,26 +335,7 @@ bool BinExpr::analyze()
         return false;
     }
 
-// TODO
-//     // check bool cases
-//     if (    kind_ == '<'   || kind_ == '>'
-//         ||  kind_ == LE_OP || kind_ == GE_OP
-//         ||  kind_ == EQ_OP || kind_ == NE_OP)
-//     {
-//         type_ = new Type(new SimpleType(BOOL), 0);
-//     }
-//     else
-//         type_ = op1_->type_->clone();
-
-//             if (    (typeid(*op1_->type_->baseType_) != typeid(SimpleType))
-//             ||  (((SimpleType*) op1_->type_->baseType_)->kind_ != BOOL) )
-//         {
-//             errorf(op1_->line_, "binary boolean operator not used with a bool");
-//             return false;
-//         }
-
-
-    lvalue_ = false;
+    // TODO operators
 
     if (gencode)
         genSSA();

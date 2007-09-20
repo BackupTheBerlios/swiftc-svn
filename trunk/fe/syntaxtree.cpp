@@ -17,6 +17,7 @@ SyntaxTree* syntaxtree = 0;
 
 SyntaxTree::~SyntaxTree()
 {
+std::cout << "destroy..." << std::endl;
     delete rootModule_;
 }
 

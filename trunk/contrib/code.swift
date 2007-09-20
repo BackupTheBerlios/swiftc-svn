@@ -5,7 +5,7 @@ class Test
 
     routine test(Foo foo, int i) -> real re, int rs, inout int bs
         int z
-        z = 5
+        z + 7 = 5
     end
 
     operator + (Test f1, Foo f2) -> Foo res
