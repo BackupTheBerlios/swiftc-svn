@@ -105,6 +105,98 @@ bool Method::Signature::check(const Method::Signature& sig1, const Method::Signa
     return result;
 }
 
+bool Method::Signature::checkIngoing(const Method::Signature& insig1, const Method::Signature& insig2)
+{
+    // find first outcoming parameter of this signatur
+    Parameter* firstOut1;
+    size_t numIn1 = 0; // and count the number of ingoing paramters
+
+    for (const Params::Node* iter = insig1.params_.first(); iter != insig1.params_.sentinel(); iter = iter->next())
+    {
+        firstOut1 = iter->value_;
+
+        if (firstOut1->kind_ != Parameter::ARG)
+            break;
+
+        ++numIn1;
+    }
+
+    /*
+        and the same for the second signature
+    */
+    Parameter* firstOut2;
+    size_t numIn2 = 0; // and count the number of ingoing paramters
+
+    for (const Params::Node* iter = insig2.params_.first(); iter != insig2.params_.sentinel(); iter = iter->next())
+    {
+        firstOut2 = iter->value_;
+
+        if (firstOut2->kind_ != Parameter::ARG)
+            break;
+
+        ++numIn2;
+    }
+
+    // if the sizes do not match the signature is obviously different
+    if ( numIn1 != numIn2 )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    const Signature::Params::Node* param1 = insig1.params_.first();
+    const Signature::Params::Node* param2 = insig1.params_.first();
+
+    while (result && param1 != insig1.params_.sentinel())
+    {
+        result = Parameter::check(param1->value_, param2->value_);
+
+        // traverse both nodes to the next node
+        param1 = param1->next();
+        param2 = param2->next();
+    }
+
+    return result;
+}
+
+bool Method::Signature::checkIngoing(const Method::Signature& insig) const
+{
+    // find first outcoming parameter of this signatur
+    Parameter* firstOut;
+    size_t numIn = 0; // and count the number of ingoing paramters
+
+    for (const Params::Node* iter = params_.first(); iter != params_.sentinel(); iter = iter->next())
+    {
+        firstOut = iter->value_;
+
+        if (firstOut->kind_ != Parameter::ARG)
+            break;
+
+        ++numIn;
+    }
+
+    // if the sizes do not match the signature is obviously different
+    if ( numIn != insig.params_.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    const Signature::Params::Node* thisParam = params_.first();
+    const Signature::Params::Node* inParam   = insig.params_.first();
+
+    while (result && inParam != insig.params_.sentinel())
+    {
+        result = Parameter::check(thisParam->value_, inParam->value_);
+
+        // traverse both nodes to the next node
+        thisParam = thisParam->next();
+        inParam   = inParam->next();
+    }
+
+    return result;
+}
+
 Method::~Method()
 {
     delete statements_;

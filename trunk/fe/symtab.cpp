@@ -301,7 +301,7 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
     {
         method = iter->second;
 
-        if ( Method::Signature::check(method->signature_, sig) )
+        if ( method->signature_.checkIngoing(sig) )
             break;
         else
             method = 0; // mark as not found
@@ -312,4 +312,3 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
 
     return method;
 }
-

@@ -80,6 +80,8 @@ struct Method : public ClassMember
         Params params_;
 
         static bool check(const Signature& sig1, const Signature& sig2);
+        static bool checkIngoing(const Signature& insig1, const Signature& insig2);
+        bool checkIngoing(const Signature& insig) const;
     };
 
     int methodQualifier_;

@@ -75,10 +75,13 @@ struct SymbolTable
 
     Class* lookupClass(std::string* id);
 
+    /**
+     * @param inSig ingoing parameters
+     */
     Method* lookupMethod(std::string* classId,
                          std::string* methodId,
                          int methodQualifier,
-                         Method::Signature& sig,
+                         Method::Signature& inSig,
                          int line);
 
     int newVarNr()
