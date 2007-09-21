@@ -57,7 +57,7 @@ struct Parameter : public SymTabEntry
     Kind            kind_;
     Type*           type_;
 
-    Parameter(Kind kind, Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
+    Parameter(Kind kind, Type* type, std::string* id = 0, int line = NO_LINE, Node* parent = 0)
         : SymTabEntry(id, line, parent)
         , kind_(kind)
         , type_(type)
@@ -82,6 +82,8 @@ struct Method : public ClassMember
         static bool check(const Signature& sig1, const Signature& sig2);
         static bool checkIngoing(const Signature& insig1, const Signature& insig2);
         bool checkIngoing(const Signature& insig) const;
+        const Parameter* findFirstOut() const;
+        const Parameter* findFirstOut(size_t& numIn) const;
     };
 
     int methodQualifier_;

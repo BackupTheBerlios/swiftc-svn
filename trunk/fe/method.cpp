@@ -107,35 +107,14 @@ bool Method::Signature::check(const Method::Signature& sig1, const Method::Signa
 
 bool Method::Signature::checkIngoing(const Method::Signature& insig1, const Method::Signature& insig2)
 {
-    // find first outcoming parameter of this signatur
-    Parameter* firstOut1;
-    size_t numIn1 = 0; // and count the number of ingoing paramters
+    // count the number of ingoing parameters of insig1
+    size_t numIn1;
+    // and find first outcoming parameter of this signatur
+    const Parameter* firstOut1 = insig1.findFirstOut(numIn1);
 
-    for (const Params::Node* iter = insig1.params_.first(); iter != insig1.params_.sentinel(); iter = iter->next())
-    {
-        firstOut1 = iter->value_;
-
-        if (firstOut1->kind_ != Parameter::ARG)
-            break;
-
-        ++numIn1;
-    }
-
-    /*
-        and the same for the second signature
-    */
-    Parameter* firstOut2;
-    size_t numIn2 = 0; // and count the number of ingoing paramters
-
-    for (const Params::Node* iter = insig2.params_.first(); iter != insig2.params_.sentinel(); iter = iter->next())
-    {
-        firstOut2 = iter->value_;
-
-        if (firstOut2->kind_ != Parameter::ARG)
-            break;
-
-        ++numIn2;
-    }
+    // count the number of ingoing parameters of insig2
+    size_t numIn2;
+    insig2.findFirstOut(numIn2);
 
     // if the sizes do not match the signature is obviously different
     if ( numIn1 != numIn2 )
@@ -147,7 +126,7 @@ bool Method::Signature::checkIngoing(const Method::Signature& insig1, const Meth
     const Signature::Params::Node* param1 = insig1.params_.first();
     const Signature::Params::Node* param2 = insig1.params_.first();
 
-    while (result && param1 != insig1.params_.sentinel())
+    while (result && param1 != insig1.params_.sentinel() && param1->value_ != firstOut1)
     {
         result = Parameter::check(param1->value_, param2->value_);
 
@@ -161,19 +140,10 @@ bool Method::Signature::checkIngoing(const Method::Signature& insig1, const Meth
 
 bool Method::Signature::checkIngoing(const Method::Signature& insig) const
 {
-    // find first outcoming parameter of this signatur
-    Parameter* firstOut;
-    size_t numIn = 0; // and count the number of ingoing paramters
-
-    for (const Params::Node* iter = params_.first(); iter != params_.sentinel(); iter = iter->next())
-    {
-        firstOut = iter->value_;
-
-        if (firstOut->kind_ != Parameter::ARG)
-            break;
-
-        ++numIn;
-    }
+    // and count the number of ingoing paramters
+    size_t numIn;
+    // and find first outcoming parameter of this signatur
+    const Parameter* firstOut = findFirstOut(numIn);
 
     // if the sizes do not match the signature is obviously different
     if ( numIn != insig.params_.size() )
@@ -185,7 +155,7 @@ bool Method::Signature::checkIngoing(const Method::Signature& insig) const
     const Signature::Params::Node* thisParam = params_.first();
     const Signature::Params::Node* inParam   = insig.params_.first();
 
-    while (result && inParam != insig.params_.sentinel())
+    while (result && inParam != insig.params_.sentinel() && inParam->value_ != firstOut)
     {
         result = Parameter::check(thisParam->value_, inParam->value_);
 
@@ -195,6 +165,31 @@ bool Method::Signature::checkIngoing(const Method::Signature& insig) const
     }
 
     return result;
+}
+
+const Parameter* Method::Signature::findFirstOut() const
+{
+    size_t dummy;
+    return findFirstOut(dummy);
+}
+
+const Parameter* Method::Signature::findFirstOut(size_t& numIn) const
+{
+    // find first outcoming parameter of this signatur
+    Parameter* firstOut;
+    numIn = 0; // and count the number of ingoing paramters
+
+    for (const Params::Node* iter = params_.first(); iter != params_.sentinel(); iter = iter->next())
+    {
+        firstOut = iter->value_;
+
+        if (firstOut->kind_ != Parameter::ARG)
+            break;
+
+        ++numIn;
+    }
+
+    return firstOut;
 }
 
 Method::~Method()
@@ -363,10 +358,7 @@ bool Method::analyze()
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
-    {
-        std::cout << "hey" << std::endl;
         result &= iter->analyze();
-    }
 
     // insert the last label since every function must end with one
     if (gencode)

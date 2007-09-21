@@ -8,6 +8,7 @@
 #include "utils/assert.h"
 
 #include "fe/error.h"
+#include "fe/method.h"
 #include "fe/type.h"
 #include "fe/symtab.h"
 
@@ -328,17 +329,18 @@ bool BinExpr::analyze()
         return false;
     }
 
-    // check whether both types are compatible
-    if ( !Type::check(op1_->type_, op2_->type_) )
-    {
-        errorf( op1_->line_, "%s used with different types", getExprName().c_str() );
-        return false;
-    }
+    // checker whether there is an operator which fits
+    Method::Signature sig;
+    sig.params_.append( new Parameter(Parameter::ARG, op1_->type_->clone()) );
+    sig.params_.append( new Parameter(Parameter::ARG, op2_->type_->clone()) );
+    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_);
 
-    // check whether there is an operator kind_ for op1
-//     std::string* op1Id = op1_->type_->baseType_->id_;
-//     symtab->lookupMethod
-// TODO
+    if (!method)
+        return false;
+    // else
+
+    // find first out parameter and clone this type
+    type_ = method->signature_.findFirstOut()->type_->clone();
 
     if (gencode)
         genSSA();

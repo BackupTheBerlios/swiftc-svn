@@ -19,13 +19,14 @@ struct BaseType : public Node
     {}
     ~BaseType()
     {
-        delete id_;
+        if (id_)
+            delete id_;
     }
 
     PseudoReg::RegType toRegType() const;
     BaseType* clone() const
     {
-        return new BaseType(id_, NO_LINE);
+        return new BaseType( new std::string(*id_), NO_LINE);
     }
 
     std::string toString() const
@@ -60,7 +61,7 @@ struct Type : public Node
     std::string toString() const;
     bool analyze();
 
-    /** 
+    /**
      * Check Type \p t1 and Type \p t2 for consistency
      *
      * @param t1 first type to be checked
@@ -70,7 +71,7 @@ struct Type : public Node
 
     /// Checks whether a given type exists
     bool validate();
-    
+
     /// Checks whether this Type is the builtin bool Type
     bool isBool();
 };

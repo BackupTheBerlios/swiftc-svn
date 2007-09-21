@@ -25,6 +25,8 @@ extern bool gencode;
 
 extern "C" int swiftparse();
 
+std::string* operatorToString(int _operator);
+
 // include auto generated parser header for tokens
 #include "parser.tab.hpp"
 

@@ -204,7 +204,6 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
-std::cout << "fjdklfjdklfjdklfjdskl" << std::endl;
     bool result = expr_->analyze();
     result &= exprList_->analyze();
 
@@ -254,7 +253,6 @@ std::cout << "fjdklfjdklfjdklfjdskl" << std::endl;
 
             if (argCheckResult)
             {
-std::cout << "yeah" << std::endl;
                 // -> we found a constructor
                 return true;
             }
