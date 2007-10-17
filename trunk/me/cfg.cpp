@@ -504,6 +504,57 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     }
 }
 
+void CFG::calcDef()
+{
+    // knows the current BB in the iteration
+    BBNode* currentBB;
+
+    // iterate over the instruction list and find all definitions
+    INSTRLIST_EACH(iter, instrList_)
+    {
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(*instr) == typeid(AssignInstr) )
+            ((AssignInstr*) instr)->res_->def_.set(instr, currentBB);
+        else if (typeid(*instr) == typeid(LabelInstr) )
+            currentBB == labelNode2BBNode_( (LabelInstr*) instr );
+    }
+}
+
+void CFG::calcUse()
+{
+    REGMAP_EACH(iter, function->vars_)
+    {
+        PseudoReg* var = iter->value_;
+
+        calcUse(var, var->def.bbNode_);
+    }
+}
+
+void CFG::calcUse(PseudoReg* var, BBNode* bb)
+{
+    // iterate over the instruction list in this bb and find all uses
+    for (InstrList::Node* iter = bb->begin_; iter != bb->end_; iter = iter->next())
+    {
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(*instr) == typeid(AssignInstr) )
+        {
+            AssignInstr* ai = (AssignInstr*) instr;
+
+            // note that a = b + b can cause to a double entry in the list
+            if (ai->op1_ == var)
+                var->uses_.append( DefUse(instr, bb) );
+            if (ai->op1_ == var)
+                var->uses_.append( DefUse(instr, bb) );
+        }
+    }
+
+    // for each child of bb in the dominator tree
+    BBLIST_EACH(iter, bb->value_->domChildren_)
+        calcUse(var, iter->value_);
+}
+
 /*
     dump methods
 */

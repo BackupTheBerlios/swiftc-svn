@@ -6,8 +6,12 @@
 #include <sstream>
 
 #include "utils/list.h"
+
+#include "me/defuse.h"
+
 // forward declaration
 struct Struct;
+struct InstrBase;
 
 // -----------------------------------------------------------------------------
 
@@ -100,6 +104,9 @@ struct PseudoReg
     };
 
     Value value_;
+
+    DefUse def_;   ///< knows where the var is defined
+    UseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
     PseudoReg(RegType regType, int regNr, std::string* id = 0)
