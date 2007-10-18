@@ -6,12 +6,7 @@
 #include "utils/graph.h"
 #include "utils/list.h"
 
-#include "me/pseudoreg.h"
-
-// forward declarations
-struct Function;
-struct BasicBlock;
-typedef Graph<BasicBlock>::Node BBNode;
+#include "me/forward.h"
 
 //------------------------------------------------------------------------------
 

@@ -5,11 +5,7 @@
 #include "utils/graph.h"
 
 #include "me/basicblock.h"
-
-// forward declaration
-struct BasicBlock;
-typedef Graph<BasicBlock>::Node BBNode;
-
+#include "me/forward.h"
 
 /// This class can be used to reference def and use information
 struct DefUse

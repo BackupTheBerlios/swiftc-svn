@@ -11,6 +11,7 @@
 // forward declarations
 struct Function;
 
+//------------------------------------------------------------------------------
 
 struct CFG : public Graph<BasicBlock>
 {
@@ -49,7 +50,7 @@ struct CFG : public Graph<BasicBlock>
     void rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names);
     void calcDef();
     void calcUse();
-    void calcUse();
+    void calcUse(PseudoReg* var, BBNode* bb);
 
 /*
     dump methods

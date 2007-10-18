@@ -20,6 +20,8 @@ CFG::~CFG()
     methods
 */
 
+// TODO remove labelNode2BBNode_
+
 void CFG::calcCFG()
 {
     swiftAssert( typeid( *instrList_.first()->value_ ) == typeid(LabelInstr),
@@ -515,26 +517,26 @@ void CFG::calcDef()
         InstrBase* instr = iter->value_;
 
         if ( typeid(*instr) == typeid(AssignInstr) )
-            ((AssignInstr*) instr)->res_->def_.set(instr, currentBB);
+            ((AssignInstr*) instr)->result_->def_.set(instr, currentBB); // store def
         else if (typeid(*instr) == typeid(LabelInstr) )
-            currentBB == labelNode2BBNode_( (LabelInstr*) instr );
+            currentBB = labelNode2BBNode_[iter]; // new basic block
     }
 }
 
 void CFG::calcUse()
 {
-    REGMAP_EACH(iter, function->vars_)
+    REGMAP_EACH(iter, function_->vars_)
     {
-        PseudoReg* var = iter->value_;
+        PseudoReg* var = iter->second;
 
-        calcUse(var, var->def.bbNode_);
+        calcUse(var, var->def_.bbNode_);
     }
 }
 
 void CFG::calcUse(PseudoReg* var, BBNode* bb)
 {
     // iterate over the instruction list in this bb and find all uses
-    for (InstrList::Node* iter = bb->begin_; iter != bb->end_; iter = iter->next())
+    for (InstrList::Node* iter = bb->value_->begin_; iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
 
@@ -542,7 +544,7 @@ void CFG::calcUse(PseudoReg* var, BBNode* bb)
         {
             AssignInstr* ai = (AssignInstr*) instr;
 
-            // note that a = b + b can cause to a double entry in the list
+            // note that a = b + b can cause a double entry in the list
             if (ai->op1_ == var)
                 var->uses_.append( DefUse(instr, bb) );
             if (ai->op1_ == var)

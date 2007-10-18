@@ -10,14 +10,6 @@
 
 #include "me/ssa.h"
 
-struct InstrBase;
-typedef List<InstrBase> InstrList;
-
-
-struct BasicBlock;
-
-typedef Graph<BasicBlock>::Node BBNode;
-typedef List<BBNode*> BBList;
 
 #define BBLIST_EACH(iter, bbList) \
     for (BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())

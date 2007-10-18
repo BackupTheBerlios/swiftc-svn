@@ -65,7 +65,7 @@ std::string PhiInstr::toString() const
 
 //------------------------------------------------------------------------------
 
-AssignInstr::AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0)
+AssignInstr::AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 /*= 0*/)
     : kind_(kind)
     , result_(result)
     , op1_(op1)
