@@ -10,6 +10,10 @@
 
 #include "me/ssa.h"
 
+struct InstrBase;
+typedef List<InstrBase> InstrList;
+
+
 struct BasicBlock;
 
 typedef Graph<BasicBlock>::Node BBNode;

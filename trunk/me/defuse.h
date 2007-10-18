@@ -2,10 +2,13 @@
 #define SWIFT_DEFUSE_H
 
 #include "utils/list.h"
+#include "utils/graph.h"
 
-// forward declarations
-struct InstrBase;
-struct BBNode;
+#include "me/basicblock.h"
+
+// forward declaration
+struct BasicBlock;
+typedef Graph<BasicBlock>::Node BBNode;
 
 
 /// This class can be used to reference def and use information

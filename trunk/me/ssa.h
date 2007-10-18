@@ -9,9 +9,8 @@
 #include "me/pseudoreg.h"
 
 // forward declarations
-struct PseudoReg;
-struct BasicBlock;
 struct Function;
+struct BasicBlock;
 typedef Graph<BasicBlock>::Node BBNode;
 
 //------------------------------------------------------------------------------
@@ -53,21 +52,8 @@ struct PhiInstr : public InstrBase
 
     int oldResultVar_;
 
-    PhiInstr(PseudoReg* result, size_t argc)
-        : result_(result)
-        , args_( new PseudoReg*[argc] )
-        , sourceBBs_( new BBNode*[argc] )
-        , argc_(argc)
-        , oldResultVar_(result->regNr_)
-    {
-        memset(args_, 0, sizeof(PseudoReg*) * argc);
-        memset(args_, 0, sizeof(InstrList::Node*) * argc);
-    }
-    ~PhiInstr()
-    {
-        delete[] args_;
-        delete[] sourceBBs_;
-    }
+    PhiInstr(PseudoReg* result, size_t argc);
+    ~PhiInstr();
 
     std::string toString() const;
     void genCode(std::ofstream& /*ofs*/) {}
@@ -140,24 +126,8 @@ struct AssignInstr : public InstrBase
 
     int oldResultVar_;
 
-    AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0)
-        : kind_(kind)
-        , result_(result)
-        , op1_(op1)
-        , op2_(op2)
-        , oldResultVar_(result->regNr_)
-    {
-        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
-    }
-    ~AssignInstr()
-    {
-        swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
-
-        if ( op1_->isLiteral() )
-            delete op1_;
-        if ( op2_ && op2_->isLiteral() )
-            delete op2_;
-    }
+    AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0);
+    ~AssignInstr();
 
     std::string toString() const;
     void genCode(std::ofstream& ofs);
@@ -238,22 +208,8 @@ struct BranchInstr : public InstrBase
     BBNode* trueBB_;
     BBNode* falseBB_;
 
-    BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode)
-        : boolReg_(boolReg)
-        , trueLabelNode_(trueLabelNode)
-        , falseLabelNode_(falseLabelNode)
-    {
-        swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
-        swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),
-            "trueLabelNode must be a node to a LabelInstr");
-        swiftAssert( typeid(*falseLabelNode->value_) == typeid(LabelInstr),
-            "falseLabelNode must be a node to a LabelInstr");
-    }
-    ~BranchInstr()
-    {
-        if ( boolReg_->isLiteral() )
-            delete boolReg_;
-    }
+    BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode);
+    ~BranchInstr();
 
     LabelInstr* trueLabel()
     {
