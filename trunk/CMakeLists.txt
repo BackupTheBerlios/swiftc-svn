@@ -49,10 +49,12 @@ ADD_EXECUTABLE (swift
     fe/expr.cpp
     fe/method.cpp
     fe/module.cpp
+    fe/proc.cpp
     fe/statement.cpp
     fe/symtab.cpp
     fe/syntaxtree.cpp
     fe/type.cpp
+    fe/var.cpp
 
     fe/cmdlineparser.cpp
     fe/main.cpp

@@ -7,22 +7,29 @@
 #include "utils/assert.h"
 #include "fe/parser.h"
 
-
 // forward declaration
 struct Class;
 
 //------------------------------------------------------------------------------
 
+/**
+ * This is the base class for all nodes in the SyntaxTree.
+ * It knows its \a parent_ and its \a line_.
+ */
 struct Node
 {
     enum
     {
-        NO_LINE = -1 /// if this node does not map to a line number -1 is used
+        NO_LINE = -1 ///< if this node does not map to a line number -1 is used
     };
-    /// the line number which this node is mapped to
-    int line_;
+
+    int line_;///< the line number which this node is mapped to
     /// NULL if root
     Node*   parent_;
+
+/*
+    constructor and destructor
+*/
 
     Node(int line = NO_LINE, Node* parent = 0)
         : line_(line)
@@ -30,36 +37,18 @@ struct Node
     {}
     virtual ~Node() {}
 
+/*
+    further methods
+*/
+
     virtual std::string toString() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
-struct SymTabEntry : public Node
-{
-    std::string* id_;
-
-    /**
-     * regNr_ > 0   a temp with nr regNr
-     * regNr_ = 0   invalid
-     * regNr_ < 0   a var with nr -regNr
-    */
-    int regNr_;
-
-    SymTabEntry(std::string* id, int line = NO_LINE, Node* parent = 0)
-        : Node(line, parent)
-        , id_(id)
-        , regNr_(0) // start with an invalid value
-    {}
-    ~SymTabEntry()
-    {
-        delete id_;
-    }
-};
-
-
-//------------------------------------------------------------------------------
-
+/**
+ * This class capsulates the root Module and the root to \a analyze.
+ */
 struct SyntaxTree
 {
     Module* rootModule_;

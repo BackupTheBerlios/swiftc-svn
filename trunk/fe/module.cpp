@@ -4,6 +4,15 @@
 
 #include "fe/class.h"
 
+/*
+    constructor and destructor
+*/
+
+Module::Module(std::string* id, int line = NO_LINE, Node* parent = 0)
+    : Node(line, parent)
+    , id_(id)
+{}
+
 Module::~Module()
 {
     // for each definition
@@ -11,15 +20,12 @@ Module::~Module()
         delete iter->value_;
 }
 
+/*
+    further methods
+*/
+
 std::string Module::toString() const
 {
-/*    std::ostringstream oss;
-
-    for (Definition* iter = definitions_; iter != 0; iter = iter->next_)
-        oss << iter->toString() << std::endl;
-
-    return oss.str();*/
-
     return *id_;
 }
 

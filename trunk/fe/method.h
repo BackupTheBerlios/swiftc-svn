@@ -14,100 +14,34 @@
 #include "me/pseudoreg.h"
 
 // forward declaration
-struct Local;
-struct LabelInstr;
+struct Param;
 
 //------------------------------------------------------------------------------
 
-struct Scope
-{
-    Scope* parent_;/// 0 if root
-
-    typedef List<Scope*> ScopeList;
-    ScopeList childScopes_;
-
-    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
-    LocalMap locals_;
-
-    typedef std::map<int, Local*> RegNrMap;
-    RegNrMap regNrs_;
-
-    Scope(Scope* parent)
-        : parent_(parent)
-    {}
-    ~Scope();
-
-    /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(std::string* id);
-    /// Returns the local by regNr, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(int);
-};
-
-//------------------------------------------------------------------------------
-
-struct Parameter : public SymTabEntry
-{
-    enum Kind
-    {
-        ARG,
-        RES,
-        RES_INOUT
-    };
-
-    Kind            kind_;
-    Type*           type_;
-
-    Parameter(Kind kind, Type* type, std::string* id = 0, int line = NO_LINE, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-        , kind_(kind)
-        , type_(type)
-    {}
-    ~Parameter();
-
-    /// check whether the type of both Parameter objects fit
-    static bool check(const Parameter* param1, const Parameter* param2);
-
-    std::string toString() const;
-};
-
-//------------------------------------------------------------------------------
-
+/**
+ * This class represents a Method of a Class. Because there may be one day
+ * routines all the logic is handled in Proc in order to share code.
+*/
 struct Method : public ClassMember
 {
-    struct Signature
-    {
-        typedef List<Parameter*> Params;
-        Params params_;
+    int methodQualifier_; ///< Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
+    Proc proc_;           ///< Handles the logic.
 
-        static bool check(const Signature& sig1, const Signature& sig2);
-        static bool checkIngoing(const Signature& insig1, const Signature& insig2);
-        bool checkIngoing(const Signature& insig) const;
-        const Parameter* findFirstOut() const;
-        const Parameter* findFirstOut(size_t& numIn) const;
-    };
+/*
+    constructor and destructor
+*/
 
-    int methodQualifier_;
+    Method(int methodQualifier, std::string* id, int line = NO_LINE, Node* parent = 0);
+    virtual ~Method();
 
-    Statement* statements_;
+/*
+    further methods
+*/
 
-    typedef std::set<Parameter*> Params;
-    Params params_;
+    void appendParam(Param* param);
 
-    Signature signature_;
-
-    Scope* rootScope_;
-
-    Method(int methodQualifier, std::string* id, int line = NO_LINE, Node* parent = 0)
-        : ClassMember(id, line, parent)
-        , methodQualifier_(methodQualifier)
-        , rootScope_( new Scope(0) )
-    {}
-    ~Method();
-
-    void appendParameter(Parameter* parameter);
-
-    std::string toString() const;
-    bool analyze();
+    virtual std::string toString() const;
+    virtual bool analyze();
 };
 
 #endif // SWIFT_METHOD_H

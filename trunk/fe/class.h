@@ -11,84 +11,89 @@
 
 
 // forward declarations
+struct ClassMember;
+struct Method;
 struct Type;
-struct LabelInstr;
 
 //------------------------------------------------------------------------------
 
-struct Local : public SymTabEntry
-{
-    /// it is important that every local gets is own copy of type_
-    Type* type_;
-
-    Local(Type* type, std::string* id, int line, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-        , type_(type)
-    {}
-    ~Local();
-
-    std::string toString() const
-    {
-        return *id_;
-    }
-};
-
-//------------------------------------------------------------------------------
-
-struct ClassMember : public SymTabEntry
-{
-    ClassMember* next_;
-
-    ClassMember(std::string* id, int line, Node* parent = 0)
-        : SymTabEntry(id, line, parent)
-        , next_(0)
-    {}
-    ~ClassMember()
-    {
-        delete next_;
-    }
-    virtual bool analyze() = 0;
-};
-
-//------------------------------------------------------------------------------
-
+/**
+ * This is the representation of a Class in Swift.
+ * It knows of its class members and methods.
+ */
 struct Class : public Definition
 {
     typedef std::multimap<std::string*, Method*, StringPtrCmp> MethodMap;
     typedef MethodMap::iterator MethodIter;
     typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
-    ClassMember* classMember_;
+    std::string* id_;
+    ClassMember* classMember_; ///< Linked list of class members.
 
-    MethodMap methods_;
-    MemberVarMap memberVars_;
+    MethodMap methods_; ///< Methods defined in this class.
+    MemberVarMap memberVars_; ///< MemberVars defined in this class.
 
-    Class(std::string* id, int line = NO_LINE, Node* parent = 0)
-        : Definition(id, line, parent)
-    {}
-    ~Class();
+/*
+    constructor and destructor
+*/
 
-    std::string toString() const
-    {
-        return *id_;
-    }
-    bool analyze();
+    Class(std::string* id, int line = NO_LINE, Node* parent = 0);
+    virtual ~Class();
+
+/*
+    further methods
+*/
+
+    virtual std::string toString() const;
+    virtual bool analyze();
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * This class represents either a MemberVar or a Method.
+*/
+struct ClassMember : public Node
+{
+    ClassMember* next_; ///< Linked List of class members.
+
+/*
+    constructor and destructor
+*/
+    ClassMember(int line, Node* parent = 0);
+    virtual ~ClassMember();
+
+/*
+    further Methods
+*/
+
+    virtual bool analyze() = 0;
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * This class represents a member variable of a Class.
+ */
 struct MemberVar : public ClassMember
 {
-    Type*           type_;
+    Type* type_;
+    std::string* id_;
 
-    MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
-        : ClassMember(id, line, parent)
-        , type_(type)
-    {}
-    ~MemberVar();
+/*
+    constructor and destructor
+*/
 
-    std::string toString() const;
-    bool analyze();
+    MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0);
+    virtual ~MemberVar();
+
+/*
+    further methods
+*/
+
+    virtual std::string toString() const;
+    virtual bool analyze();
 };
 
 #endif // SWIFT_CLASS_H

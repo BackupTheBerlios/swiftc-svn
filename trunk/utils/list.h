@@ -336,4 +336,11 @@ public:
     }
 };
 
+#define LIST_EACH(listType, iter, list) \
+    for (listType::Node* (iter) = (list).first(); (iter) != (list).sentinel(); (iter) = (iter)->next())
+
+#define LIST_CONST_EACH(listType, iter, list) \
+    for (const listType::Node* (iter) = (list).first(); (iter) != (list).sentinel(); (iter) = (iter)->next())
+
+
 #endif // SWIFT_LIST_H

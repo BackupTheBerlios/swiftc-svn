@@ -1,26 +1,90 @@
-#include "method.h"
+#inlude "proc.h"
 
 #include <sstream>
 
-#include "fe/error.h"
-#include "fe/symtab.h"
+#include "utils/assert.h"
 
-#include "me/functab.h"
-#include "me/ssa.h"
+#include "fe/var.h"
+
+//------------------------------------------------------------------------------
+
+bool Sig::check(const Method::Sig& sig1, const Method::Sig& sig2)
+{
+    // if the sizes do not match the Sig is obviously different
+    if ( sig1.params_.size() != sig2.params_.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    const Sig::Params::Node* param1 = sig1.params_.first();
+    const Sig::Params::Node* param2 = sig2.params_.first();
+
+    while (result && param1 != sig1.params_.sentinel())
+    {
+        result = Parameter::check(param1->value_, param2->value_);
+
+        // traverse both nodes to the next node
+        param1 = param1->next();
+        param2 = param2->next();
+    }
+
+    return result;
+}
+
+const Param* Sig::findFirstOut() const
+{
+    // shall hold the result
+    Parameter* firstOut = 0;
+
+    PARAMS_CONST_EACH(iter, params_)
+    {
+        firstOut = iter->value_;
+
+        if (firstOut->kind_ != Parameter::ARG)
+            break; // found first out
+    }
+
+    return firstOut;
+}
+
+std::string Sig::toString() const
+{
+    std::ostringstream oss;
+//     oss << '(';
+    oss << "TODO";
+
+//     // this is set to true in the loop below when the first outcoming param is found
+//     bool noMoreInParms = false;
+//
+//     PARAMS_CONST_EACH(iter, params_)
+//     {
+//         Param* param = iter->value_;
+//
+//         if (param->kind_ != Param::ARG)
+//         {
+//             oss << ')'
+//             oss << " -> ";
+//         }
+//     }
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
 
 /*
-    constructor or destructor
+    constructor and destructor
 */
 
-Method::Method(int methodQualifier, std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : ClassMember(line, parent)
-    , Proc(id, this)
-    , methodQualifier_(methodQualifier)
+Proc::Proc(std::string* id, Method* method)
+    : id_(id)
+    , rootScope_( new Scope(0) )
+    , kind_(METHOD)
+    , method_(method)
 {}
 
-Method::~Method()
+Proc::~Proc()
 {
-    delete statements_;
     delete rootScope_;
 
     // delete each parameter
@@ -29,15 +93,41 @@ Method::~Method()
 }
 
 /*
+    getters and setters
+*/
+
+Method* Proc::getMethod()
+{
+    return method_;
+}
+
+/*
     further methods
 */
 
-void Method::appendParameter(Parameter* param)
+void Proc::appendParam(Param* param)
 {
-    proc_.appendParam(param);
+    sig_.params_.append(param);
 }
 
-bool Method::analyze()
+Param* Param::findParem(std::string* id)
+{
+    PARAM_EACH(iter, sig_.param_)
+    {
+        if (*iter->value_->id_ == *id_)
+            return iter->value_;
+    }
+
+    // -> not found, so return 0
+    return 0;
+}
+
+std::string Proc::toString() const
+{
+    return *id + sig_.toString();
+}
+
+bool Proc::analyze()
 {
     static int counter = 0;
 
@@ -167,33 +257,53 @@ bool Method::analyze()
     return result;
 }
 
-std::string Method::toString() const
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+Scope::Scope(Scope* parent)
+    : parent_(parent)
+{}
+
+Scope::~Scope()
 {
-    std::ostringstream oss;
+    // delete each child scope
+    for (ScopeList::Node* iter = childScopes_.first(); iter != childScopes_.sentinel(); iter = iter->next())
+        delete iter->value_;
+}
 
-    switch (methodQualifier_)
+/*
+    further methods
+*/
+
+Local* Scope::lookupLocal(std::string* id)
+{
+    LocalMap::iterator iter = locals_.find(id);
+    if ( iter != locals_.end() )
+        return iter->second;
+    else
     {
-        case CREATE:                        break;
-        case READER:    oss << "reader ";   break;
-        case WRITER:    oss << "writer ";   break;
-        case ROUTINE:   oss << "routine ";  break;
-        case OPERATOR:  oss << "operator "; break;
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
+        // try to find in parent scope
+        if (parent_)
+            return parent_->lookupLocal(id);
+        else
+            return 0;
     }
+}
 
-    oss << *id_ << '(';
-
-    size_t i = 0;
-    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter, ++i)
+Local* Scope::lookupLocal(int regNr)
+{
+    RegNrMap::iterator iter = regNrs_.find(regNr);
+    if ( iter != regNrs_.end() )
+        return iter->second;
+    else
     {
-        oss << (*iter)->toString();
-        if (i + 1 < params_.size())
-            oss << ", ";
+        // try to find in parent scope
+        if (parent_)
+            return parent_->lookupLocal(regNr);
+        else
+            return 0;
     }
-
-    oss << ')';
-
-    return oss.str();
 }

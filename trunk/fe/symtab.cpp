@@ -10,11 +10,35 @@
 #include "fe/syntaxtree.h"
 #include "fe/class.h"
 
+/*
+    TODO remove all error handling here
+*/
+
 using namespace std;
 
+// init global
 SymTab* symtab = 0;
 
-// -----------------------------------------------------------------------------
+/*
+    constructor and init stuff
+*/
+
+SymbolTable()
+    : varCounter_(-1) // 0 is reserved for literals
+{
+    reset();
+}
+
+void reset()
+{
+//     module_ = 0; TODO
+    class_  = 0;
+    method_ = 0;
+}
+
+/*
+    insert methods
+*/
 
 bool SymbolTable::insert(Module* module)
 {
@@ -159,7 +183,9 @@ void SymbolTable::insertLocalByRegNr(Local* local)
     swiftAssert(p.second, "there is already a local with this regNr in the map");
 }
 
-// -----------------------------------------------------------------------------
+/*
+    enter and leave methods
+*/
 
 void SymbolTable::enterModule()
 {
@@ -212,9 +238,11 @@ Scope* SymbolTable::createAndEnterNewScope()
     return newScope;
 }
 
-// -----------------------------------------------------------------------------
+/*
+    lookup methods
+*/
 
-SymTabEntry* SymbolTable::lookupVar(string* id)
+Var* SymbolTable::lookupVar(string* id)
 {
     // is it a local?
     Local* local = currentScope()->lookupLocal(id);
@@ -222,47 +250,12 @@ SymTabEntry* SymbolTable::lookupVar(string* id)
         return local;
 
     // no - perhaps a parameter?
-    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
-    {
-        if (*(*iter)->id_ == *id)
-            return *iter;
-    }
-
-    {
-        // no - perhaps a member?
-        Class::MemberVarMap::iterator iter = class_->memberVars_.find(id);
-        if ( iter != class_->memberVars_.end() )
-            return iter->second;
-
-        // id has not been found -- so return NULL
-        return 0;
-    }
+    return method_->proc_.findParam(id); // will return 0, if not found
 }
 
-Type* SymbolTable::lookupType(string* id)
+Var* SymbolTable::lookupVar(int varNr)
 {
-    // FIXME merge this with lookupVar
-    // is it a local?
-    Local* local = currentScope()->lookupLocal(id);
-    if (local)
-        return local->type_;
-
-    // no - perhaps a parameter?
-    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
-    {
-        if (*(*iter)->id_ == *id)
-            return (*iter)->type_;
-    }
-
-    {
-        // no - perhaps a member?
-        Class::MemberVarMap::iterator iter = class_->memberVars_.find(id);
-        if ( iter != class_->memberVars_.end() )
-            return iter->second->type_;
-
-        // id has not been found -- so return NULL
-        return 0;
-    }
+    return currentScope()->lookupLocal(regNr);
 }
 
 Class* SymbolTable::lookupClass(string* id)
@@ -282,8 +275,10 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
                                     Method::Signature& sig,
                                     int line)
 {
+    // lookup class
     Class* _class = symtab->lookupClass(classId);
 
+    // lookup method
     Class::MethodIter iter = _class->methods_.find(methodId);
     if (iter == _class->methods_.end())
     {
@@ -293,8 +288,10 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
         return 0;
     }
 
+    // get iterator to the first method, which has not methodId as identifier
     Class::MethodIter last = _class->methods_.upper_bound(methodId);
 
+    // current method in loop below
     Method* method = 0;
 
     for (; iter != last; ++iter)
@@ -311,4 +308,18 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
         errorf(line, "no method found for this class with the given arguments"); // TODO better error handling
 
     return method;
+}
+
+/*
+    further methods
+*/
+
+Scope* Scope::currentScope()
+{
+    return scopeStack_.top();
+}
+
+int Scope::newVarNr()
+{
+    return varCounter_--;
 }

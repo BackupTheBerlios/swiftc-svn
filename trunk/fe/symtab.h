@@ -6,36 +6,44 @@
 #include <stack>
 #include <map>
 
-#include "fe/class.h"
-#include "fe/method.h"
-#include "fe/syntaxtree.h"
-#include "fe/type.h"
+// forward declarations
+struct Class;
+struct Method;
+struct Module;
+struct Scope;
 
+/**
+ * This is the symbol table which is used in the front-end. It is a global
+ * which can be accessed via
+ * \verbatim
+    symtab->foo();
+ * \endverbatim
+ * A stack of scope manages scoping and thus the top of stack is the current
+ * Scope. Other pointers point to current Module, Class, or Method.
+ */
 struct SymbolTable
 {
-    Module* rootModule_;
-
-    Module* module_;
-    Class*  class_;
-    Method* method_;
-
     typedef std::stack<Scope*> ScopeStack;
-    ScopeStack scopeStack_;
 
-    int varCounter_;
+    Module* rootModule_; ///< The root of the syntax tree.
+    Module* module_;     ///< Current Module.
+    Class*  class_;      ///< Current Class.
+    Method* method_;     ///< Current Method.
 
-    SymbolTable()
-        : varCounter_(-1) // 0 is reserved for literals
-    {
-        reset();
-    }
+    ScopeStack scopeStack_; ///< Top of stack knows the current Scope.
 
-    void reset()
-    {
-//         module_ = 0;
-        class_  = 0;
-        method_ = 0;
-    }
+    int varCounter_; ///< Counter which gives new var numbers.
+
+/*
+    constructor and init stuff
+*/
+
+    SymbolTable();
+    void reset();
+
+/*
+    insert methods
+*/
 
     bool insert(Module* module);
     bool insert(Class* _class);
@@ -45,6 +53,10 @@ struct SymbolTable
     bool insert(Local* local);
 
     void insertLocalByRegNr(Local* local);
+
+/*
+    enter and leave methods
+*/
 
     void enterModule();
     void leaveModule();
@@ -61,18 +73,29 @@ struct SymbolTable
     */
     Scope* createAndEnterNewScope();
 
-    Scope* currentScope()
-    {
-        return scopeStack_.top();
-    }
+/*
+    lookup methods
+*/
 
-    Type* lookupType(std::string* id);
-    SymTabEntry* lookupVar(std::string* id);
-    SymTabEntry* lookupVar(int regNr)
-    {
-        return currentScope()->lookupLocal(regNr);
-    }
+    /**
+     * Lookups a Var -- either a Local or a Param -- by name.
+     *
+     * @return The Var or 0 if not found.
+     */
+    Var* lookupVar(std::string* id);
 
+    /**
+     * Lookups a Var -- either a Local or a Param -- by varNr.
+     *
+     * @return The Var or 0 if not found.
+     */
+    Var* lookupVar(int varNr);
+
+    /**
+     * Lookups a Class by name.
+     *
+     * @return The Var or 0 if not found.
+     */
     Class* lookupClass(std::string* id);
 
     /**
@@ -81,13 +104,18 @@ struct SymbolTable
     Method* lookupMethod(std::string* classId,
                          std::string* methodId,
                          int methodQualifier,
-                         Method::Signature& inSig,
+                         Sig& sig,
                          int line);
 
-    int newVarNr()
-    {
-        return varCounter_--;
-    }
+/*
+    further methods
+*/
+
+    /// Returns the current Scope.
+    Scope* currentScope();
+
+    /// Returns a new int which can be used as VarNr.
+    int newVarNr();
 };
 
 typedef SymbolTable SymTab;

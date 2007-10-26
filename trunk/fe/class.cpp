@@ -11,19 +11,23 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
-//------------------------------------------------------------------------------
+/*
+    constructor and destructor
+*/
 
-Local::~Local()
-{
-    delete type_;
-};
-
-//------------------------------------------------------------------------------
+Class::Class(std::string* id, int line = NO_LINE, Node* parent = 0)
+    : Definition(line, parent)
+    , id_(id)
+{}
 
 Class::~Class()
 {
     delete classMember_;
 }
+
+/*
+    further methods
+*/
 
 bool Class::analyze()
 {
@@ -103,12 +107,47 @@ bool Class::analyze()
     return result;
 }
 
+std::string Class::toString() const
+{
+    return *id_;
+}
+
 //------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+ClassMember::ClassMember(int line, Node* parent = 0)
+    : Node(line, parent)
+    , next_(0)
+{}
+
+~ClassMember::ClassMember()
+{
+    delete next_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+MemberVar::MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
+    : ClassMember(line, parent)
+    , type_(type)
+    , id_(id)
+{}
 
 MemberVar::~MemberVar()
 {
     delete type_;
 }
+
+/*
+    further methods
+*/
 
 bool MemberVar::analyze()
 {
