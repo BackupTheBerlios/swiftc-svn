@@ -132,7 +132,7 @@ void SymbolTable::insert(Method* method)
     method_ = method;
 }
 
-bool SymbolTable::insert(Parameter* parameter)
+bool SymbolTable::insert(Param* Param)
 {
     for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
     {
@@ -146,7 +146,7 @@ bool SymbolTable::insert(Parameter* parameter)
         }
     }
 
-    method_->appendParameter(parameter);
+    method_->appendParam(param);
 
     return true;
 }

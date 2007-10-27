@@ -44,7 +44,7 @@ struct Sig
      * @return The first RES or RES_INOUT Param, 0 if there exists no outgoing
      *      Param.
      */
-    const Parameter* findFirstOut() const;
+    const Param* findFirstOut() const;
 
     std::string toString() const;
 };

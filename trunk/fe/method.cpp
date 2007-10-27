@@ -32,7 +32,7 @@ Method::~Method()
     further methods
 */
 
-void Method::appendParameter(Parameter* param)
+void Method::appendParam(Param* param)
 {
     proc_.appendParam(param);
 }
@@ -115,9 +115,9 @@ bool Method::analyze()
             Signature::Params::Node* param3 = param2->next();
 
             if (   signature_.params_.size() != 3
-                || param1->value_->kind_ != Parameter::ARG
-                || param2->value_->kind_ != Parameter::ARG
-                || param3->value_->kind_ != Parameter::RES)
+                || param1->value_->kind_ != Param::ARG
+                || param2->value_->kind_ != Param::ARG
+                || param3->value_->kind_ != Param::RES)
             {
                 if (*id_ == "-")
                     unaryMinus = true;
@@ -136,8 +136,8 @@ bool Method::analyze()
             Signature::Params::Node* param2 = param1->next();
 
             if (   signature_.params_.size() != 2
-                || param1->value_->kind_ != Parameter::ARG
-                || param2->value_->kind_ != Parameter::RES)
+                || param1->value_->kind_ != Param::ARG
+                || param2->value_->kind_ != Param::RES)
             {
                 if (*id_ == "-")
                 {

@@ -24,34 +24,34 @@ std::string* operatorToString(int _operator)
     {
         case AND_OP:
             *str = "and";
-            break; 
+            break;
         case OR_OP:
             *str = "or";
-            break; 
+            break;
         case XOR_OP:
             *str = "xor";
-            break; 
+            break;
         case NOT_OP:
             *str = "not";
-            break; 
+            break;
         case EQ_OP:
             *str = "==";
-            break; 
+            break;
         case NE_OP:
             *str = "<>";
-            break; 
+            break;
         case LE_OP:
             *str = "<=";
-            break; 
+            break;
         case GE_OP:
             *str = ">=";
-            break; 
+            break;
         case MOD_OP:
             *str = "mod";
-            break; 
+            break;
         case DIV_OP:
             *str = "div";
-            break; 
+            break;
         default:
             *str = (char) _operator;
     }
@@ -291,7 +291,7 @@ parameter_list
     ;
 
 parameter
-    : type ID   { symtab->insert( new Parameter(Parameter::ARG, $1, $2, currentLine) ); }
+    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -305,8 +305,8 @@ return_type_list
     ;
 
 return_type
-    : type ID       { symtab->insert( new Parameter(Parameter::RES, $1, $2, currentLine) ); }
-    | INOUT type ID { symtab->insert( new Parameter(Parameter::RES_INOUT, $2, $3, currentLine) ); }   
+    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, currentLine) ); }
+    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, currentLine) ); }
     ;
 
 /*

@@ -10,7 +10,7 @@ struct Definition;
 
 struct Class;
 struct ClassMember;
-struct Parameter;
+struct Param;
 struct MemberVar;
 struct Method;
 

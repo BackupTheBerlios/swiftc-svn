@@ -49,9 +49,10 @@ struct SymbolTable
     bool insert(Class* _class);
     void insert(Method* method);
     bool insert(MemberVar* memberVar);
-    bool insert(Parameter* parameter);
+    bool insert(Param* param);
     bool insert(Local* local);
 
+    // TODO really neccessary to have this and insert(Local*)?
     void insertLocalByRegNr(Local* local);
 
 /*

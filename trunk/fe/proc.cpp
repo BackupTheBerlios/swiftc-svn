@@ -22,7 +22,7 @@ bool Sig::check(const Method::Sig& sig1, const Method::Sig& sig2)
 
     while (result && param1 != sig1.params_.sentinel())
     {
-        result = Parameter::check(param1->value_, param2->value_);
+        result = Param::check(param1->value_, param2->value_);
 
         // traverse both nodes to the next node
         param1 = param1->next();
@@ -35,13 +35,13 @@ bool Sig::check(const Method::Sig& sig1, const Method::Sig& sig2)
 const Param* Sig::findFirstOut() const
 {
     // shall hold the result
-    Parameter* firstOut = 0;
+    Param* firstOut = 0;
 
     PARAMS_CONST_EACH(iter, params_)
     {
         firstOut = iter->value_;
 
-        if (firstOut->kind_ != Parameter::ARG)
+        if (firstOut->kind_ != Param::ARG)
             break; // found first out
     }
 
@@ -205,9 +205,9 @@ bool Proc::analyze()
             Signature::Params::Node* param3 = param2->next();
 
             if (   signature_.params_.size() != 3
-                || param1->value_->kind_ != Parameter::ARG
-                || param2->value_->kind_ != Parameter::ARG
-                || param3->value_->kind_ != Parameter::RES)
+                || param1->value_->kind_ != Param::ARG
+                || param2->value_->kind_ != Param::ARG
+                || param3->value_->kind_ != Param::RES)
             {
                 if (*id_ == "-")
                     unaryMinus = true;

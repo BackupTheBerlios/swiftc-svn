@@ -11,6 +11,36 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
+/*
+    constructor and destructor
+*/
+
+Statement::Statement(int line)
+    : Node(line)
+    , next_(0)
+{}
+
+Statement::~Statement()
+{
+    if (next_)
+        delete next_;
+};
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+Declaration::Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE)
+    : Statement(line)
+    , type_(type)
+    , id_(id)
+    , exprList_(exprList)
+    , local_(0) // This will be created in analyze
+{}
+
+
 Declaration::~Declaration()
 {
     delete type_;
@@ -18,13 +48,9 @@ Declaration::~Declaration()
     delete exprList_;
 }
 
-std::string Declaration::toString() const
-{
-    std::ostringstream oss;
-    oss << type_->toString() << " " << *id_ << exprList_->toString();
-
-    return oss.str();
-}
+/*
+    further methods
+*/
 
 bool Declaration::analyze()
 {
@@ -55,6 +81,14 @@ bool Declaration::analyze()
 #endif // SWIFT_DEBUG
 
     return true;
+}
+
+std::string Declaration::toString() const
+{
+    std::ostringstream oss;
+    oss << type_->toString() << " " << *id_ << exprList_->toString();
+
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------

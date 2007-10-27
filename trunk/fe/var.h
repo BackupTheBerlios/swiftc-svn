@@ -88,7 +88,7 @@ struct Param : public Var
     further methods
 */
 
-    /// Check whether the type of both Parameter objects fit.
+    /// Check whether the type of both Param objects fit.
     static bool check(const Param* param1, const Param* param2);
 };
 

@@ -10,117 +10,158 @@ struct Local;
 
 //------------------------------------------------------------------------------
 
+/**
+ * This class represents a Statement. It is either a Declaration, an
+ * ExprStatement, an IfElStatement or an AssignStatement.d
+ */
 struct Statement : public Node
 {
-    Statement* next_;
+    Statement* next_; ///< Linked List of statements.
 
-    Statement(int line)
-        : Node(line)
-        , next_(0)
-    {}
-    ~Statement()
-    {
-        if (next_)
-            delete next_;
-    };
+/*
+    constructor and destructor
+*/
+
+    Statement(int line);
+    virtual ~Statement();
+
+/*
+    further methods
+*/
 
     virtual bool analyze() = 0;
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * This is Declaration, consisting of a Type, an Identifier and an ExprList.
+ * Furthermore it will create a Local which will be inserted in the SymbolTable.
+ */
 struct Declaration : public Statement
 {
     Type*           type_;
     std::string*    id_;
-    Local*          local_; // in order to delete those locals again
     ExprList*       exprList_;
+
+    /// Since this class created the Local it is responsible to delete it again.
+    Local*          local_;
+
+/*
+    constructor and destructor
+*/
 
     Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE)
         : Statement(line)
         , type_(type)
         , id_(id)
-        , local_(0)
         , exprList_(exprList)
+        , local_(0)
     {}
-    ~Declaration();
+    virtual ~Declaration();
 
-    std::string toString() const;
-    bool analyze();
-};
+/*
+    further methods
+*/
 
-//------------------------------------------------------------------------------
-
-struct ExprStatement : public Statement
-{
-    Expr* expr_;
-
-    ExprStatement(Expr* expr, int line = NO_LINE)
-        : Statement(line)
-        , expr_(expr)
-    {}
-    ~ExprStatement();
-
-    std::string toString() const { return std::string(""); }
-    bool analyze();
+    virtual bool analyze();
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
 
 /**
- * @brief Holds either an if, an if-else or an if-elif statement.
+ * An ExprStatement is an Statement which holds an Expr.
+ */
+struct ExprStatement : public Statement
+{
+    Expr* expr_;
+
+/*
+    constructor and destructor
+*/
+
+    ExprStatement(Expr* expr, int line = NO_LINE)
+        : Statement(line)
+        , expr_(expr)
+    {}
+    virtual ~ExprStatement();
+
+/*
+    further methods
+*/
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Holds either an if, an if-else or an if-elif statement.
  */
 struct IfElStatement : public Statement
 {
-    int kind_;
     Expr* expr_;
 
-    Statement* ifBranch_;
-    Statement* elBranch_;
+    Statement* ifBranch_; ///< Linked List of statements of the if-branch.
+    Statement* elBranch_; ///< Linked List of statements of the else-branch, 0 if there is no else-branch.
 
-    IfElStatement(int kind_, Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
+/*
+    constructor and destructor
+*/
+
+    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
         : Statement(line)
         , expr_(expr)
         , ifBranch_(ifBranch)
         , elBranch_(elBranch)
-    {
-        swiftAssert( kind_ == 0 || kind_ == ELSE || kind_ == ELIF, "kind_ must be 0, ELSE or ELIF" );
-    }
-    ~IfElStatement();
+    {}
+    virtual ~IfElStatement();
 
-    std::string toString() const { return std::string(""); }
-    /// SSA code will be generated here, too
-    bool analyze();
+/*
+    further methods
+*/
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
 };
 
 
 //------------------------------------------------------------------------------
 
+/**
+ * This is an ordinary assignment. In contrast to other languages assignments in
+ * Swift are no expresions but statements.
+ */
 struct AssignStatement : public Statement
 {
     union
     {
         int kind_;
-        char c_;
+        char c_; ///< '=', others will follow.
     };
 
-    Expr*       expr_;      ///< the lvalue
-    ExprList*   exprList_;  ///< the rvalue
+    Expr*       expr_;      ///< The lvalue.
+    ExprList*   exprList_;  ///< The rvalue.
+
+/*
+    constructor and destructor
+*/
 
     AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE)
         : Statement(line)
-        , kind_(kind)
         , expr_(expr)
         , exprList_(exprList)
     {}
+    virtual ~AssignStatement();
 
-    ~AssignStatement();
+/*
+    further methods
+*/
 
-    std::string toString() const;
-
-    bool analyze();
+    virtual bool analyze();
+    virtual std::string toString() const;
 };
-
-//------------------------------------------------------------------------------
 
 #endif // SWIFT_STATEMENT_H

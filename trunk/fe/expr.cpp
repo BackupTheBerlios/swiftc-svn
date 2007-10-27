@@ -331,8 +331,8 @@ bool BinExpr::analyze()
 
     // checker whether there is an operator which fits
     Method::Signature sig;
-    sig.params_.append( new Parameter(Parameter::ARG, op1_->type_->clone()) );
-    sig.params_.append( new Parameter(Parameter::ARG, op2_->type_->clone()) );
+    sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
+    sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
     Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_);
 
     if (!method)
