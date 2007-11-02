@@ -3,10 +3,13 @@
 #include <sstream>
 #include <typeinfo>
 
+#include "fe/class.h"
 #include "fe/error.h"
 #include "fe/expr.h"
+#include "fe/method.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
+#include "fe/var.h"
 
 #include "me/functab.h"
 #include "me/ssa.h"
@@ -32,7 +35,7 @@ Statement::~Statement()
     constructor and destructor
 */
 
-Declaration::Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE)
+Declaration::Declaration(Type* type, std::string* id, ExprList* exprList, int line /*= NO_LINE*/)
     : Statement(line)
     , type_(type)
     , id_(id)
@@ -70,7 +73,7 @@ bool Declaration::analyze()
         return false;
 
     // everything ok. so insert the local
-    local_ = new Local(type_->clone(), id_, line_, 0);
+    local_ = new Local(type_->clone(), id_, line_);
     local_->regNr_ = symtab->newVarNr();
     symtab->insert(local_);
     symtab->insertLocalByRegNr(local_);
@@ -81,14 +84,6 @@ bool Declaration::analyze()
 #endif // SWIFT_DEBUG
 
     return true;
-}
-
-std::string Declaration::toString() const
-{
-    std::ostringstream oss;
-    oss << type_->toString() << " " << *id_ << exprList_->toString();
-
-    return oss.str();
 }
 
 //------------------------------------------------------------------------------
@@ -267,12 +262,12 @@ bool AssignStatement::analyze()
         {
             Method* create = iter->second;
 
-            if ( create->signature_.params_.size() != argList.size() )
+            if ( create->proc_.sig_.params_.size() != argList.size() )
                 continue; // the number of arguments does not match
 
             // -> number of arguments fits, so check types
             ArgList::Node* argIter = argList.first();
-            Method::Signature::Params::Node* createIter = create->signature_.params_.first();
+            Sig::Params::Node* createIter = create->proc_.sig_.params_.first();
 
             bool argCheckResult = true;
 
@@ -296,14 +291,6 @@ bool AssignStatement::analyze()
     }
 
     return false;
-}
-
-std::string AssignStatement::toString() const
-{
-    std::ostringstream oss;
-    oss << expr_->toString() << " = " << exprList_->toString();
-
-    return oss.str();
 }
 
 //------------------------------------------------------------------------------

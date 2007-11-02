@@ -12,23 +12,24 @@ struct Expr;
 
 struct Expr : public Node
 {
-    bool        lvalue_;
-    Type*       type_;
+    bool    lvalue_;
+    Type*   type_;
 
     /// this var holds the PseudoReg where the result is stored
     PseudoReg*  reg_;
 
-    Expr(int line)
-        : Node(line)
-        , lvalue_(false)
-        , type_(0)
-    {}
-    ~Expr();
+/*
+    constructor and destructor
+*/
 
-    std::string toString() const { return ""; }
+    Expr(int line);
+    virtual ~Expr();
+
+/*
+    further methods
+*/
 
     virtual bool analyze() = 0;
-    virtual void genSSA() = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -65,41 +66,51 @@ struct Literal : public Expr
         void*       ptr_;
     };
 
-    Literal(int kind, int line = NO_LINE)
-        : Expr(line)
-        , kind_(kind)
-    {}
+/*
+    constructor
+*/
+
+    Literal(int kind, int line = NO_LINE);
+
+/*
+    further methods
+*/
 
     PseudoReg::RegType toRegType() const;
-    std::string toString() const;
-
-    bool analyze();
+    virtual bool analyze();
     void genSSA();
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * This class represents an identifier.
+*/
 struct Id : public Expr
 {
     std::string* id_;
 
-    Id(std::string* id, int line = NO_LINE)
-        : Expr(line)
-        , id_(id)
-    {}
-    ~Id()
-    {
-        delete id_;
-    }
+/*
+    constructor and destructor
+*/
 
-    std::string toString() const { return *id_; }
+    Id(std::string* id, int line = NO_LINE);
+    virtual ~Id();
 
-    bool analyze();
-    void genSSA();
+/*
+    further methods
+*/
+
+    virtual bool analyze();
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * This class represents an unary Expression. This is either
+ * unary minus or NOT.
+*/
 struct UnExpr : public Expr
 {
     enum
@@ -115,25 +126,31 @@ struct UnExpr : public Expr
 
     Expr* op_;
 
-    UnExpr(int kind, Expr* op, int line = NO_LINE)
-        : Expr(line)
-        , kind_(kind)
-        , op_(op)
-    {}
-    ~UnExpr()
-    {
-        delete op_;
-    }
+/*
+    constructor and destructor
+*/
 
-    bool analyze();
+    UnExpr(int kind, Expr* op, int line = NO_LINE);
+    virtual ~UnExpr();
+
+/*
+    further methods
+*/
+
+    virtual bool analyze();
     void genSSA();
 };
 
 //------------------------------------------------------------------------------
 
+/**
+ * This class represents a binary expression. This is either
+ * +, -, *, /, MOD, DIV, AND, OR, XOR, <, >, <=, >=, ==, or <>. TODO
+ */
 struct BinExpr : public Expr
 {
-    union {
+    union
+    {
         int kind_;
         char c_;
     };
@@ -141,21 +158,20 @@ struct BinExpr : public Expr
     Expr* op1_;
     Expr* op2_;
 
-    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE)
-        : Expr(line)
-        , kind_(kind)
-        , op1_(op1)
-        , op2_(op2)
-    {}
-    ~BinExpr()
-    {
-        delete op1_;
-        delete op2_;
-    }
+/*
+    constructor and destructor
+*/
+
+    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE);
+    virtual ~BinExpr();
+
+/*
+    further methods
+*/
 
     std::string getExprName() const;
     std::string getOpString() const;
-    bool analyze();
+    virtual bool analyze();
     void genSSA();
 };
 
@@ -194,31 +210,34 @@ struct AssignExpr : public Expr
 
 //------------------------------------------------------------------------------
 
-/// Actually not a Expr, but belongs to expressions
+/**
+ * This class represents a comma sperated list of Expr instances used in
+ * function/method/contructor calls.
+ * This is actually not a Expr, but belongs to expressions
+ * so it is in this file.
+ */
 struct ExprList : public Node
 {
     Expr*       expr_;  ///< the Expr owned by this instance
     ExprList*   next_;  ///< next element in the list
 
-    ExprList(Expr* expr, ExprList* next = 0, int line = NO_LINE)
-        : Node(line)
-        , expr_(expr)
-        , next_(next)
-    {}
-    ~ExprList()
-    {
-        delete expr_;
-        if (next_)
-            delete next_;
-    }
+/*
+    constructor and destructor
+*/
 
-    std::string toString() const { return "TODO"; }
-    bool analyze();
-    void genSSA();
+    ExprList(Expr* expr, ExprList* next = 0, int line = NO_LINE);
+    virtual ~ExprList();
+
+/*
+    further methods
+*/
+
+    virtual bool analyze();
 };
 
 //------------------------------------------------------------------------------
 
+// TODO
 struct FunctionCall : public Expr
 {
     std::string*    id_;

@@ -6,10 +6,12 @@
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/lexer.h"
+#include "fe/method.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
+#include "fe/var.h"
 
 
 int pointercount = -1;
@@ -239,7 +241,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->statements_ = $9;
+            $$->proc_.statements_ = $9;
         }
     | OPERATOR operator
         {
@@ -250,7 +252,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->statements_ = $9;
+            $$->proc_.statements_ = $9;
         }
     | CREATE
         {
@@ -261,7 +263,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>2;
-            $$->statements_ = $7;
+            $$->proc_.statements_ = $7;
         }
     ;
 
@@ -341,8 +343,8 @@ statement
     | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
     | type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }
 
-    | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement(0,    $2, $4,  0, currentLine); }
-    | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement(ELSE, $2, $4, $7, currentLine); }
+    | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement($2, $4,  0, currentLine); }
+    | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine); }
     ;
 
 /*

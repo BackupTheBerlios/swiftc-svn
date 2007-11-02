@@ -5,8 +5,10 @@
 #include "utils/assert.h"
 
 #include "fe/error.h"
+#include "fe/method.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
+#include "fe/type.h"
 
 #include "me/functab.h"
 #include "me/ssa.h"
@@ -15,7 +17,7 @@
     constructor and destructor
 */
 
-Class::Class(std::string* id, int line = NO_LINE, Node* parent = 0)
+Class::Class(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
     : Definition(line, parent)
     , id_(id)
 {}
@@ -52,7 +54,7 @@ bool Class::analyze()
                 check whether there is method with the same name and the same signature
             */
             typedef Class::MethodMap::iterator Iter;
-            Iter methodIter = methods_.find(method->id_);
+            Iter methodIter = methods_.find(method->proc_.id_);
 
             // move iter to point to method
             while (methodIter->second != method)
@@ -62,7 +64,7 @@ bool Class::analyze()
             ++methodIter;
 
             // find element behind the last one
-            Iter last = methods_.upper_bound(method->id_);
+            Iter last = methods_.upper_bound(method->proc_.id_);
 
             for (; methodIter != last; ++methodIter)
             {
@@ -70,27 +72,28 @@ bool Class::analyze()
                 if (methodIter->second->methodQualifier_ != method->methodQualifier_)
                     continue;
 
-                if ( Method::Signature::check(methodIter->second->signature_, method->signature_) )
+                if ( Sig::check(methodIter->second->proc_.sig_, method->proc_.sig_) )
                 {
                     std::stack<std::string> idStack;
 
-                    for (Node* nodeIter = methodIter->second->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
-                        idStack.push( nodeIter->toString() );
-
-                    std::ostringstream oss;
-
-                    while ( !idStack.empty() )
-                    {
-                        oss << idStack.top();
-                        idStack.pop();
-
-                        if ( !idStack.empty() )
-                            oss << '.';
-                    }
+// TODO
+//                     for (Node* nodeIter = methodIter->second->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
+//                         idStack.push( nodeIter->toString() );
+//
+//                     std::ostringstream oss;
+//
+//                     while ( !idStack.empty() )
+//                     {
+//                         oss << idStack.top();
+//                         idStack.pop();
+//
+//                         if ( !idStack.empty() )
+//                             oss << '.';
+//                     }
 
                     errorf(methodIter->second->line_, "there is already a method '%s' defined in '%s' line %i",
                         method->toString().c_str(),
-                        oss.str().c_str(), method->line_);
+                        methodIter->second->toString().c_str(), method->line_); // TODO
 
                     result = false;
 
@@ -118,12 +121,12 @@ std::string Class::toString() const
     constructor and destructor
 */
 
-ClassMember::ClassMember(int line, Node* parent = 0)
+ClassMember::ClassMember(int line, Node* parent /*= 0*/)
     : Node(line, parent)
     , next_(0)
 {}
 
-~ClassMember::ClassMember()
+ClassMember::~ClassMember()
 {
     delete next_;
 }
@@ -134,7 +137,7 @@ ClassMember::ClassMember(int line, Node* parent = 0)
     constructor and destructor
 */
 
-MemberVar::MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0)
+MemberVar::MemberVar(Type* type, std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
     : ClassMember(line, parent)
     , type_(type)
     , id_(id)
@@ -154,13 +157,4 @@ bool MemberVar::analyze()
     // TODO
 
     return true;
-}
-
-std::string MemberVar::toString() const
-{
-    std::ostringstream oss;
-
-    oss << type_->toString() << " " << *id_;
-
-    return oss.str();
 }

@@ -8,9 +8,14 @@
 
 // forward declarations
 struct Class;
+struct Local;
+struct MemberVar;
 struct Method;
 struct Module;
+struct Param;
 struct Scope;
+struct Sig;
+struct Var;
 
 /**
  * This is the symbol table which is used in the front-end. It is a global
@@ -100,13 +105,22 @@ struct SymbolTable
     Class* lookupClass(std::string* id);
 
     /**
-     * @param inSig ingoing parameters
+     * Looks up a method.
+     *
+     * @param classId The identifier of the method's class.
+     * @param methodId The identifier of the method to be lookuped.
+     * @param methodQualifier Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
+     * @param sig Signature the method should have.
+     * @param line the line number of the method call.
+     * @param justIngoingPart If this is set to true the SymbolTable tries to
+     *      find a unique method by just comparing the ingoing part.
      */
     Method* lookupMethod(std::string* classId,
                          std::string* methodId,
                          int methodQualifier,
                          Sig& sig,
-                         int line);
+                         int line,
+                         bool justIngoingPart);
 
 /*
     further methods

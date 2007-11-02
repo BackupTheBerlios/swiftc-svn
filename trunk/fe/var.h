@@ -16,12 +16,17 @@ struct Var
 {
     Type* type_;
     std::string* id_;
+    int line_;
 
+    enum
+    {
+        NO_LINE = -1
+    };
 /*
     constructor and destructor
 */
 
-    Var(Type* type, std::string* id);
+    Var(Type* type, std::string* id, int line = NO_LINE);
     virtual ~Var();
 
 /*
@@ -37,7 +42,7 @@ struct Var
  * This class represents either an ordinary local variable used by the
  * programmer or a compiler generated variable used to store a temporary value.
  */
-struct Local : struct Var
+struct Local : public Var
 {
     /**
      * regNr_ > 0   a TEMP with nr regNr <br>
@@ -55,7 +60,7 @@ struct Local : struct Var
     constructor
 */
 
-    Local(Type* type, std::string* id);
+    Local(Type* type, std::string* id, int line = NO_LINE);
 };
 
 //------------------------------------------------------------------------------
@@ -82,7 +87,7 @@ struct Param : public Var
     constructor
 */
 
-    Param(Kind kind, Type* type, std::string* id = 0);
+    Param(Kind kind, Type* type, std::string* id = 0, int line = NO_LINE);
 
 /*
     further methods
@@ -90,6 +95,9 @@ struct Param : public Var
 
     /// Check whether the type of both Param objects fit.
     static bool check(const Param* param1, const Param* param2);
+
+    /// Check whether this Param has a correct Type.
+    bool analyze() const;
 };
 
 #endif // SWIFT_VAR_H

@@ -7,7 +7,6 @@
 #include "utils/list.h"
 
 #include "fe/module.h"
-#include "fe/syntaxtree.h"
 
 
 // forward declarations
@@ -44,8 +43,8 @@ struct Class : public Definition
     further methods
 */
 
-    virtual std::string toString() const;
     virtual bool analyze();
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +67,6 @@ struct ClassMember : public Node
 */
 
     virtual bool analyze() = 0;
-    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -92,7 +90,6 @@ struct MemberVar : public ClassMember
     further methods
 */
 
-    virtual std::string toString() const;
     virtual bool analyze();
 };
 

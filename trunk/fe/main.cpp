@@ -9,6 +9,7 @@
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"
 #include "fe/lexer.h"
+#include "fe/module.h"
 #include "fe/parser.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"

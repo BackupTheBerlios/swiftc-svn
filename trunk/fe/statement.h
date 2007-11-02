@@ -51,13 +51,7 @@ struct Declaration : public Statement
     constructor and destructor
 */
 
-    Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE)
-        : Statement(line)
-        , type_(type)
-        , id_(id)
-        , exprList_(exprList)
-        , local_(0)
-    {}
+    Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE);
     virtual ~Declaration();
 
 /*
@@ -65,7 +59,6 @@ struct Declaration : public Statement
 */
 
     virtual bool analyze();
-    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -161,7 +154,6 @@ struct AssignStatement : public Statement
 */
 
     virtual bool analyze();
-    virtual std::string toString() const;
 };
 
 #endif // SWIFT_STATEMENT_H

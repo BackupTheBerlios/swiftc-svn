@@ -11,6 +11,7 @@
 #include "fe/method.h"
 #include "fe/type.h"
 #include "fe/symtab.h"
+#include "fe/var.h"
 
 #include "me/functab.h"
 #include "me/pseudoreg.h"
@@ -29,6 +30,16 @@
 
 //------------------------------------------------------------------------------
 
+/*
+    constructor and destructor
+*/
+
+Expr::Expr(int line)
+    : Node(line)
+    , lvalue_(false)
+    , type_(0)
+{}
+
 Expr::~Expr()
 {
     delete type_;
@@ -36,63 +47,18 @@ Expr::~Expr()
 
 //------------------------------------------------------------------------------
 
-std::string Literal::toString() const
-{
-    std::ostringstream oss;
+/*
+    constructor
+*/
 
-    switch (kind_)
-    {
-        case L_INDEX:   oss << index_       << "x";     break;
+Literal::Literal(int kind, int line /*= NO_LINE*/)
+    : Expr(line)
+    , kind_(kind)
+{}
 
-        case L_INT:     oss << int_;                    break;
-        case L_INT8:    oss << int(int8_)   << "b";     break;
-        case L_INT16:   oss << int16_       << "w";     break;
-        case L_INT32:   oss << int32_       << "d";     break;
-        case L_INT64:   oss << int64_       << "q";     break;
-        case L_SAT8:    oss << int(sat8_)   << "sb";    break;
-        case L_SAT16:   oss << sat16_       << "sw";    break;
-
-        case L_UINT:    oss << uint_;                   break;
-        case L_UINT8:   oss << int(uint8_)  << "ub";    break;
-        case L_UINT16:  oss << uint16_      << "uw";    break;
-        case L_UINT32:  oss << uint32_      << "ud";    break;
-        case L_UINT64:  oss << uint64_      << "uq";    break;
-        case L_USAT8:   oss << int(usat8_)  << "usb";   break;
-        case L_USAT16:  oss << usat16_      << "usw";   break;
-
-        case L_TRUE:    oss << "true";                  break;
-        case L_FALSE:   oss << "false";                 break;
-
-        case L_NIL:     oss << "nil";                   break;
-
-        // hence it is real, real32 or real64
-
-        case L_REAL:
-            oss << real_;
-        break;
-        case L_REAL32:
-            oss << real32_;
-            if ( fmod(real32_, 1.0) == 0.0 )
-                oss << ".d";
-            else
-                oss << "d";
-            break;
-        case L_REAL64:
-            oss << real64_;
-            if ( fmod(real64_, 1.0) == 0.0 )
-                oss << ".q";
-            else
-                oss << "q"; // FIXME
-                std::cout << "fjkdlfjkdjfdl" << fmod(real64_, 1.0) << std::endl;
-            break;
-
-        default:
-            swiftAssert(false, "illegal case value");
-            return "";
-    }
-
-    return oss.str();
-}
+/*
+    further methods
+*/
 
 PseudoReg::RegType Literal::toRegType() const
 {
@@ -233,7 +199,139 @@ void Literal::genSSA()
     }
 }
 
+std::string Literal::toString() const
+{
+    std::ostringstream oss;
+
+    switch (kind_)
+    {
+        case L_INDEX:   oss << index_       << "x";     break;
+
+        case L_INT:     oss << int_;                    break;
+        case L_INT8:    oss << int(int8_)   << "b";     break;
+        case L_INT16:   oss << int16_       << "w";     break;
+        case L_INT32:   oss << int32_       << "d";     break;
+        case L_INT64:   oss << int64_       << "q";     break;
+        case L_SAT8:    oss << int(sat8_)   << "sb";    break;
+        case L_SAT16:   oss << sat16_       << "sw";    break;
+
+        case L_UINT:    oss << uint_;                   break;
+        case L_UINT8:   oss << int(uint8_)  << "ub";    break;
+        case L_UINT16:  oss << uint16_      << "uw";    break;
+        case L_UINT32:  oss << uint32_      << "ud";    break;
+        case L_UINT64:  oss << uint64_      << "uq";    break;
+        case L_USAT8:   oss << int(usat8_)  << "usb";   break;
+        case L_USAT16:  oss << usat16_      << "usw";   break;
+
+        case L_TRUE:    oss << "true";                  break;
+        case L_FALSE:   oss << "false";                 break;
+
+        case L_NIL:     oss << "nil";                   break;
+
+        // hence it is real, real32 or real64
+
+        case L_REAL:
+            oss << real_;
+        break;
+        case L_REAL32:
+            oss << real32_;
+            if ( fmod(real32_, 1.0) == 0.0 )
+                oss << ".d";
+            else
+                oss << "d";
+            break;
+        case L_REAL64:
+            oss << real64_;
+            if ( fmod(real64_, 1.0) == 0.0 )
+                oss << ".q";
+            else
+                oss << "q"; // FIXME
+                std::cout << "fjkdlfjkdjfdl" << fmod(real64_, 1.0) << std::endl;
+            break;
+
+        default:
+            swiftAssert(false, "illegal case value");
+            return "";
+    }
+
+    return oss.str();
+}
+
 //------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+Id::Id(std::string* id, int line /*= NO_LINE*/)
+    : Expr(line)
+    , id_(id)
+{}
+
+Id::~Id()
+{
+    delete id_;
+}
+
+/*
+    further methods
+*/
+
+bool Id::analyze()
+{
+    lvalue_ = true;
+    Var* var = symtab->lookupVar(id_);
+
+    if (var == 0)
+    {
+        errorf(line_, "'%s' was not declared in this scope", id_->c_str());
+        return false;
+    }
+    else
+        type_ = var->type_->clone();
+
+    if (gencode)
+    {
+        swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
+        Local* local = (Local*) var;
+        reg_ = functab->lookupReg(local->regNr_);
+
+        if (reg_ == 0)
+        {
+#ifdef SWIFT_DEBUG
+            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_, id_ );
+#else // SWIFT_DEBUG
+            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_ );
+#endif // SWIFT_DEBUG
+            local->regNr_ = reg_->regNr_;
+            symtab->insertLocalByRegNr(local);
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+
+/*
+    constructor and destructor
+*/
+
+UnExpr::UnExpr(int kind, Expr* op, int line /*= NO_LINE*/)
+    : Expr(line)
+    , kind_(kind)
+    , op_(op)
+{}
+
+UnExpr::~UnExpr()
+{
+    delete op_;
+}
+
+/*
+    further methods
+*/
 
 bool UnExpr::analyze()
 {
@@ -296,6 +394,27 @@ void UnExpr::genSSA()
 
 //------------------------------------------------------------------------------
 
+/*
+    constructor and destructor
+*/
+
+BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, int line /*= NO_LINE*/)
+    : Expr(line)
+    , kind_(kind)
+    , op1_(op1)
+    , op2_(op2)
+{}
+
+BinExpr::~BinExpr()
+{
+    delete op1_;
+    delete op2_;
+}
+
+/*
+    further methods
+*/
+
 std::string BinExpr::getExprName() const
 {
     if (c_ == '[')
@@ -330,17 +449,18 @@ bool BinExpr::analyze()
     }
 
     // checker whether there is an operator which fits
-    Method::Signature sig;
+    Sig sig;
     sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
     sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
-    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_);
+    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_, true);
 
     if (!method)
         return false;
     // else
 
     // find first out parameter and clone this type
-    type_ = method->signature_.findFirstOut()->type_->clone();
+    type_ = method->proc_.sig_.findFirstOut()->type_->clone();
+    swiftAssert(type_, "an operator should always return a type");
 
     if (gencode)
         genSSA();
@@ -419,46 +539,26 @@ void AssignExpr::genSSA()
 
 //------------------------------------------------------------------------------
 
-bool Id::analyze()
+/*
+    constructor and destructor
+*/
+
+ExprList::ExprList(Expr* expr, ExprList* next /*= 0*/, int line /*= NO_LINE*/)
+    : Node(line)
+    , expr_(expr)
+    , next_(next)
+{}
+
+ExprList::~ExprList()
 {
-    lvalue_ = true;
-    type_ = symtab->lookupType(id_);
-
-    if (type_ == 0)
-    {
-        errorf(line_, "'%s' was not declared in this scope", id_->c_str());
-        return false;
-    }
-
-    type_ = type_->clone();
-
-    if (gencode)
-        genSSA();
-
-    return true;
+    delete expr_;
+    if (next_)
+        delete next_;
 }
 
-void Id::genSSA()
-{
-    SymTabEntry* entry = symtab->lookupVar(id_);
-    swiftAssert( typeid(*entry) == typeid(Local), "This is not a Local!");
-    reg_ = functab->lookupReg(entry->regNr_);
-
-    if (!reg_)
-    {
-        // do the first revision
-        Local* local = (Local*) entry;
-#ifdef SWIFT_DEBUG
-        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_, id_ );
-#else // SWIFT_DEBUG
-        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_ );
-#endif // SWIFT_DEBUG
-        local->regNr_ = reg_->regNr_;
-        symtab->insertLocalByRegNr(local);
-    }
-}
-
-//------------------------------------------------------------------------------
+/*
+    further methods
+*/
 
 bool ExprList::analyze()
 {

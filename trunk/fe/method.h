@@ -4,14 +4,8 @@
 #include <map>
 #include <string>
 
-#include "utils/stringhelper.h"
-
 #include "fe/class.h"
-#include "fe/syntaxtree.h"
-#include "fe/type.h"
-#include "fe/statement.h"
-
-#include "me/pseudoreg.h"
+#include "fe/proc.h"
 
 // forward declaration
 struct Param;
@@ -24,24 +18,22 @@ struct Param;
 */
 struct Method : public ClassMember
 {
-    int methodQualifier_; ///< Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
     Proc proc_;           ///< Handles the logic.
+    int methodQualifier_; ///< Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
 
 /*
-    constructor and destructor
+    constructor
 */
 
     Method(int methodQualifier, std::string* id, int line = NO_LINE, Node* parent = 0);
-    virtual ~Method();
 
 /*
     further methods
 */
 
     void appendParam(Param* param);
-
-    virtual std::string toString() const;
     virtual bool analyze();
+    std::string toString() const;
 };
 
 #endif // SWIFT_METHOD_H

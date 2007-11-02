@@ -12,27 +12,19 @@ struct BaseType : public Node
     std::string* id_;
     bool builtin_;
 
-    BaseType(std::string* id, int line = NO_LINE)
-        : Node(line)
-        , id_(id)
-        , builtin_(false)
-    {}
-    ~BaseType()
-    {
-        if (id_)
-            delete id_;
-    }
+/*
+    constructor and destructor
+*/
 
+    BaseType(std::string* id, int line = NO_LINE);
+    ~BaseType();
+
+/*
+    further methods
+*/
+    BaseType* clone() const;
     PseudoReg::RegType toRegType() const;
-    BaseType* clone() const
-    {
-        return new BaseType( new std::string(*id_), NO_LINE);
-    }
-
-    std::string toString() const
-    {
-        return *id_;
-    }
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -42,24 +34,19 @@ struct Type : public Node
     BaseType*   baseType_;
     int         pointerCount_;
 
-    Type(BaseType* baseType, int pointerCount, int line = NO_LINE)
-        : Node(line)
-        , baseType_(baseType)
-        , pointerCount_(pointerCount)
-    {}
-    ~Type()
-    {
-        delete baseType_;
-    }
+/*
+    constructor and destructor
+*/
+
+    Type(BaseType* baseType, int pointerCount, int line = NO_LINE);
+    virtual ~Type();
+
+/*
+    further methods
+*/
 
     /// Creates a copy of this Type
-    Type* clone() const
-    {
-        return new Type(baseType_->clone(), pointerCount_, NO_LINE);
-    }
-
-    std::string toString() const;
-    bool analyze();
+    Type* clone() const;
 
     /**
      * Check Type \p t1 and Type \p t2 for consistency
@@ -70,10 +57,12 @@ struct Type : public Node
     static bool check(Type* t1, Type* t2);
 
     /// Checks whether a given type exists
-    bool validate();
+    bool validate() const;
 
     /// Checks whether this Type is the builtin bool Type
-    bool isBool();
+    bool isBool() const;
+
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

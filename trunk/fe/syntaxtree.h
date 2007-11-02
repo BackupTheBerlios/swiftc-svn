@@ -36,12 +36,6 @@ struct Node
         , parent_(parent)
     {}
     virtual ~Node() {}
-
-/*
-    further methods
-*/
-
-    virtual std::string toString() const = 0;
 };
 
 //------------------------------------------------------------------------------

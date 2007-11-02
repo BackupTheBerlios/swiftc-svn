@@ -8,7 +8,7 @@
     constructor and destructor
 */
 
-Module::Module(std::string* id, int line = NO_LINE, Node* parent = 0)
+Module::Module(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
     : Node(line, parent)
     , id_(id)
 {}
@@ -24,11 +24,6 @@ Module::~Module()
     further methods
 */
 
-std::string Module::toString() const
-{
-    return *id_;
-}
-
 bool Module::analyze()
 {
     bool result = true;
@@ -39,3 +34,18 @@ bool Module::analyze()
 
     return result;
 }
+
+std::string Module::toString() const
+{
+    return *id_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor
+*/
+
+Definition::Definition(int line, Node* parent /*= 0*/)
+    : Node(line, parent)
+{}

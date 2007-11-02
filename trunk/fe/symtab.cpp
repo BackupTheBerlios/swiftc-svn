@@ -9,6 +9,8 @@
 #include "fe/error.h"
 #include "fe/syntaxtree.h"
 #include "fe/class.h"
+#include "fe/method.h"
+#include "fe/var.h"
 
 /*
     TODO remove all error handling here
@@ -23,13 +25,13 @@ SymTab* symtab = 0;
     constructor and init stuff
 */
 
-SymbolTable()
+SymbolTable::SymbolTable()
     : varCounter_(-1) // 0 is reserved for literals
 {
     reset();
 }
 
-void reset()
+void SymbolTable::reset()
 {
 //     module_ = 0; TODO
     class_  = 0;
@@ -59,26 +61,27 @@ bool SymbolTable::insert(Class* _class)
     {
         // insertion was not successfull
 
-        // build full class name with module names: module1.module2.Class1.Class2 etc
-        stack<string> idStack;
-        idStack.push(*_class->id_);
-
-        for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
-            idStack.push( iter->toString() );
-
-        ostringstream oss;
-
-        while ( !idStack.empty() )
-        {
-            oss << idStack.top();
-            idStack.pop();
-
-            if ( !idStack.empty() )
-                oss << '.';
-        }
+//         // build full class name with module names: module1.module2.Class1.Class2 etc
+//         stack<string> idStack;
+//         idStack.push(*_class->id_);
+//
+//         for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
+//             idStack.push( iter->toString() );
+//
+//         ostringstream oss;
+//
+//         while ( !idStack.empty() )
+//         {
+//             oss << idStack.top();
+//             idStack.pop();
+//
+//             if ( !idStack.empty() )
+//                 oss << '.';
+//         }
+// TODO
 
         // give proper error
-        errorf(_class->line_, "there there is already a class '%s' defined in line %i", oss.str().c_str(), p.first->second->line_);
+        errorf(_class->line_, "there there is already a class '%s' defined in line %i", p.first->second->id_->c_str(), p.first->second->line_);
 
         return false;
     }
@@ -98,24 +101,24 @@ bool SymbolTable::insert(MemberVar* memberVar)
     {
         // insertion was not successfull
 
-        // build full class name with module names: module1.module2.Class1.Class2 etc
-        stack<string> idStack;
-
-        for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
-            idStack.push( iter->toString() );
-
-        ostringstream oss;
-
-        while ( !idStack.empty() )
-        {
-            oss << idStack.top();
-            idStack.pop();
-
-            if ( !idStack.empty() )
-                oss << '.';
-        }
-
-        errorf(memberVar->line_, "there is already a member '%s' defined in '%s' line %i", memberVar->id_->c_str(), oss.str().c_str(), p.first->second->line_);
+//         // build full class name with module names: module1.module2.Class1.Class2 etc
+//         stack<string> idStack;
+//
+//         for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
+//             idStack.push( iter->toString() );
+//
+//         ostringstream oss;
+//
+//         while ( !idStack.empty() )
+//         {
+//             oss << idStack.top();
+//             idStack.pop();
+//
+//             if ( !idStack.empty() )
+//                 oss << '.';
+//         }
+// TODO
+        errorf(memberVar->line_, "there is already a member '%s' defined in '%s' line %i", memberVar->id_->c_str(), p.first->second->id_, p.first->second->line_);
 
         return false;
     }
@@ -126,21 +129,20 @@ bool SymbolTable::insert(MemberVar* memberVar)
 void SymbolTable::insert(Method* method)
 {
     Class::MethodMap::iterator iter
-        = class_->methods_.insert( std::make_pair(method->id_, method) );
+        = class_->methods_.insert( std::make_pair(method->proc_.id_, method) );
 
     // set current method scope
     method_ = method;
 }
 
-bool SymbolTable::insert(Param* Param)
+bool SymbolTable::insert(Param* param)
 {
-    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
+    PARAMS_EACH(iter, method_->proc_.sig_.params_)
     {
-
-        if (*parameter->id_ == *(*iter)->id_)
+        if (*param->id_ == *iter->value_->id_)
         {
-            errorf(parameter->line_, "there is already a parameter '%s' defined in this procedure",
-                parameter->id_->c_str());
+            errorf(param->line_, "there is already a parameter '%s' defined in this procedure",
+                param->id_->c_str());
 
             return false;
         }
@@ -164,9 +166,9 @@ bool SymbolTable::insert(Local* local)
         return false;
     }
 
-    for (Method::Params::iterator iter = method_->params_.begin(); iter != method_->params_.end(); ++iter)
+    PARAMS_EACH(iter, method_->proc_.sig_.params_)
     {
-        if (*local->id_ == *(*iter)->id_)
+        if (*local->id_ == *iter->value_->id_)
         {
             errorf(local->line_, "local '%s' shadows a parameter", local->id_->c_str());
             return false;
@@ -211,7 +213,7 @@ void SymbolTable::enterMethod(Method* method)
 {
     method_ = method;
 
-    scopeStack_.push(method_->rootScope_);
+    scopeStack_.push(method_->proc_.rootScope_);
 }
 
 void SymbolTable::leaveMethod()
@@ -255,7 +257,7 @@ Var* SymbolTable::lookupVar(string* id)
 
 Var* SymbolTable::lookupVar(int varNr)
 {
-    return currentScope()->lookupLocal(regNr);
+    return currentScope()->lookupLocal(varNr);
 }
 
 Class* SymbolTable::lookupClass(string* id)
@@ -269,11 +271,12 @@ Class* SymbolTable::lookupClass(string* id)
     return 0;
 }
 
-Method* SymbolTable::lookupMethod(  std::string* classId,
-                                    std::string* methodId,
-                                    int methodQualifier,
-                                    Method::Signature& sig,
-                                    int line)
+Method* SymbolTable::lookupMethod(std::string* classId,
+                                  std::string* methodId,
+                                  int methodQualifier,
+                                  Sig& sig,
+                                  int line,
+                                  bool justIngoingPart)
 {
     // lookup class
     Class* _class = symtab->lookupClass(classId);
@@ -298,10 +301,17 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
     {
         method = iter->second;
 
-        if ( method->signature_.checkIngoing(sig) )
-            break;
+        bool sigCheck;
+
+        if (justIngoingPart)
+            sigCheck = method->proc_.sig_.checkIngoing(sig);
         else
-            method = 0; // mark as not found
+            sigCheck = Sig::check(method->proc_.sig_, sig);
+
+            if (sigCheck)
+                break;
+            else
+                method = 0; // mark as not found
     }
 
     if ( !method )
@@ -314,12 +324,12 @@ Method* SymbolTable::lookupMethod(  std::string* classId,
     further methods
 */
 
-Scope* Scope::currentScope()
+Scope* SymbolTable::currentScope()
 {
     return scopeStack_.top();
 }
 
-int Scope::newVarNr()
+int SymbolTable::newVarNr()
 {
     return varCounter_--;
 }

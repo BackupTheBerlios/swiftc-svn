@@ -1,14 +1,45 @@
-#inlude "proc.h"
+#include "proc.h"
 
 #include <sstream>
 
 #include "utils/assert.h"
 
+#include "fe/class.h"
+#include "fe/method.h"
+#include "fe/parser.h"
+#include "fe/statement.h"
+#include "fe/symtab.h"
 #include "fe/var.h"
+
+#include "me/functab.h"
 
 //------------------------------------------------------------------------------
 
-bool Sig::check(const Method::Sig& sig1, const Method::Sig& sig2)
+/*
+    destructor
+*/
+
+Sig::~Sig()
+{
+    PARAMS_EACH(iter, params_)
+        delete iter->value_;
+}
+
+/*
+    further methods
+*/
+
+bool Sig::analyze() const
+{
+    bool result = true;
+
+    PARAMS_CONST_EACH(iter, params_)
+        result &= iter->value_->analyze();
+
+    return result;
+}
+
+bool Sig::check(const Sig& sig1, const Sig& sig2)
 {
     // if the sizes do not match the Sig is obviously different
     if ( sig1.params_.size() != sig2.params_.size() )
@@ -32,8 +63,38 @@ bool Sig::check(const Method::Sig& sig1, const Method::Sig& sig2)
     return result;
 }
 
-const Param* Sig::findFirstOut() const
+bool Sig::checkIngoing(const Sig& insig) const
 {
+    // count the number of ingoing paramters
+    size_t numIn;
+    // and find first outcoming parameter of this signatur
+    const Param* firstOut = findFirstOut(numIn);
+
+    // if the sizes do not match the signature is obviously different
+    if ( numIn != insig.params_.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    const Sig::Params::Node* thisParam = params_.first();
+    const Sig::Params::Node* inParam   = insig.params_.first();
+
+    while (result && inParam != insig.params_.sentinel() && thisParam->value_ != firstOut)
+    {
+        result = Param::check(thisParam->value_, inParam->value_);
+
+        // traverse both nodes to the next node
+        thisParam = thisParam->next();
+        inParam   = inParam->next();
+    }
+
+    return result;
+}
+
+const Param* Sig::findFirstOut(size_t& numIn) const
+{
+    numIn = 0;
     // shall hold the result
     Param* firstOut = 0;
 
@@ -43,9 +104,17 @@ const Param* Sig::findFirstOut() const
 
         if (firstOut->kind_ != Param::ARG)
             break; // found first out
+        else
+            ++numIn;
     }
 
     return firstOut;
+}
+
+const Param* Sig::findFirstOut() const
+{
+    size_t dummy;
+    return findFirstOut(dummy);
 }
 
 std::string Sig::toString() const
@@ -79,17 +148,13 @@ std::string Sig::toString() const
 Proc::Proc(std::string* id, Method* method)
     : id_(id)
     , rootScope_( new Scope(0) )
-    , kind_(METHOD)
+//     , kind_(METHOD)
     , method_(method)
 {}
 
 Proc::~Proc()
 {
     delete rootScope_;
-
-    // delete each parameter
-    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
-        delete *iter;
 }
 
 /*
@@ -110,9 +175,9 @@ void Proc::appendParam(Param* param)
     sig_.params_.append(param);
 }
 
-Param* Param::findParem(std::string* id)
+Param* Proc::findParam(std::string* id)
 {
-    PARAM_EACH(iter, sig_.param_)
+    PARAMS_EACH(iter, sig_.params_)
     {
         if (*iter->value_->id_ == *id_)
             return iter->value_;
@@ -122,18 +187,14 @@ Param* Param::findParem(std::string* id)
     return 0;
 }
 
-std::string Proc::toString() const
-{
-    return *id + sig_.toString();
-}
-
 bool Proc::analyze()
 {
-    static int counter = 0;
-
     bool result = true;
 
-    symtab->enterMethod(this);
+    /*
+        it is assumed here that the symtab already points to the correct
+        method and a function for the functab hast been created.
+    */
 
     if (gencode)
     {
@@ -146,10 +207,12 @@ bool Proc::analyze()
 
         oss << *symtab->class_->id_ << '#';
 
-        if (methodQualifier_ == OPERATOR)
+        if (getMethod()->methodQualifier_ == OPERATOR)
             oss << "operator";
         else
             oss << *id_;
+
+        static int counter = 0;
 
         oss << '#' << counter;
         ++counter;
@@ -158,90 +221,6 @@ bool Proc::analyze()
 
         // insert the first label since every function must start with one
         functab->appendInstr( new LabelInstr() );
-    }
-
-    // validate each parameter
-    for (Params::iterator iter = params_.begin(); iter != params_.end(); ++iter)
-        result &= (*iter)->type_->validate();
-
-    // is it an operator?
-    if (methodQualifier_ == OPERATOR)
-    {
-        /*
-            check signature
-        */
-        if (signature_.params_.size() >= 1)
-        {
-            // check whether the first type matches the type of the current class
-            if ( *symtab->class_->id_ != *signature_.params_.first()->value_->type_->baseType_->id_ )
-            {
-                errorf( line_, "The the first parameter of this operator must be of type %s",
-                    symtab->class_->id_->c_str() );
-                result = false;
-            }
-        }
-
-        // minus needs special handling -> can be unary or binary
-        bool unaryMinus = false;
-
-        if (   *id_ == "+"
-            || *id_ == "-"
-            || *id_ == "*"
-            || *id_ == "/"
-            || *id_ == "mod"
-            || *id_ == "div"
-            || *id_ == "=="
-            || *id_ == "<>"
-            || *id_ == "<"
-            || *id_ == ">"
-            || *id_ == "<="
-            || *id_ == ">="
-            || *id_ == "and"
-            || *id_ == "or"
-            || *id_ == "xor")
-        {
-            Signature::Params::Node* param1 = signature_.params_.first();
-            Signature::Params::Node* param2 = param1->next();
-            Signature::Params::Node* param3 = param2->next();
-
-            if (   signature_.params_.size() != 3
-                || param1->value_->kind_ != Param::ARG
-                || param2->value_->kind_ != Param::ARG
-                || param3->value_->kind_ != Param::RES)
-            {
-                if (*id_ == "-")
-                    unaryMinus = true;
-                else
-                {
-                    errorf( line_, "The '%s'-operator must exactly have two incoming and one outgoing parameter",
-                        id_->c_str() );
-                    result = false;
-                }
-            }
-
-        }
-        if (*id_ == "not" || unaryMinus)
-        {
-            Signature::Params::Node* param1 = signature_.params_.first();
-            Signature::Params::Node* param2 = param1->next();
-
-            if (   signature_.params_.size() != 2
-                || param1->value_->kind_ != Parameter::ARG
-                || param2->value_->kind_ != Parameter::RES)
-            {
-                if (*id_ == "-")
-                {
-                    errorf(line_,
-                        "The '-'-operator must either have exactly two incoming and one outgoing or one incoming and one outgoing parameter");
-                }
-                else
-                {
-                    errorf( line_, "The '%s'-operator must exactly have one incoming and one outgoing parameter",
-                        id_->c_str() );
-                }
-                result = false;
-            }
-        }
     }
 
     // analyze each statement
@@ -255,6 +234,11 @@ bool Proc::analyze()
     symtab->leaveMethod();
 
     return result;
+}
+
+std::string Proc::toString() const
+{
+    return *id_ + sig_.toString();
 }
 
 //------------------------------------------------------------------------------

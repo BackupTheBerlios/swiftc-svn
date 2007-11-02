@@ -39,7 +39,7 @@ struct Module : public Node
 */
 
     bool analyze();
-    virtual std::string toString() const;
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -49,12 +49,11 @@ struct Module : public Node
  */
 struct Definition : public Node
 {
+
 /*
     constructor
 */
-    Definition(int line, Node* parent = 0)
-        : Node(id, line, parent)
-    {}
+    Definition(int line, Node* parent = 0);
 
 /*
     further methods

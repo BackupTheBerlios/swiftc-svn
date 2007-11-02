@@ -1,0 +1,8 @@
+- clean up std::string toString() stuff
+- const correctness
+- getters and setters + private use and better capsulation
+- better syntax handling
+- Param handling
+- memberVar handling
+- better constant concept for Operator kinds
+- generate stack of names: module.class.method etc.

@@ -6,12 +6,13 @@
     constructor and destructor
 */
 
-Var::Var(Type* type, std::string* id)
+Var::Var(Type* type, std::string* id, int line /*= NO_LINE*/)
     : type_(type)
     , id_(id)
+    , line_(line)
 {}
 
-virtual ~Var()
+Var::~Var()
 {
     delete id_;
     delete type_;
@@ -21,7 +22,7 @@ virtual ~Var()
     further methods
 */
 
-std::string Local::toString() const
+std::string Var::toString() const
 {
     return *id_;
 }
@@ -32,8 +33,8 @@ std::string Local::toString() const
     constructor
 */
 
-Local::Local(Type* type, std::string* id)
-    : Var(type, id)
+Local::Local(Type* type, std::string* id, int line /*= NO_LINE*/)
+    : Var(type, id, line)
     , regNr_(0) // start with an invalid value
 {}
 
@@ -43,8 +44,8 @@ Local::Local(Type* type, std::string* id)
     constructor and destructor
 */
 
-Param::Param(Kind kind, Type* type, std::string* id /*= 0*/)
-    : Var(type, id)
+Param::Param(Kind kind, Type* type, std::string* id /*= 0*/, int line /*= NO_LINE*/)
+    : Var(type, id, line)
     , kind_(kind)
 {}
 
@@ -64,4 +65,9 @@ bool Param::check(const Param* param1, const Param* param2)
 
     // else
     return false;
+}
+
+bool Param::analyze() const
+{
+    return type_->validate();
 }

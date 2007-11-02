@@ -10,55 +10,29 @@
 #include "fe/expr.h"
 #include "fe/symtab.h"
 
-
-std::string Type::toString() const
-{
-    std::ostringstream oss;
-
-    oss << baseType_->toString();
-    for (int i = 0; 0 < pointerCount_; ++i)
-        oss << '^';
-
-    return oss.str();
-}
-
-bool Type::check(Type* t1, Type* t2)
-{
-    if (t1->pointerCount_ != t2->pointerCount_)
-        return false; // pointerCount_ does not match
-
-    Class* class1 = symtab->lookupClass(t1->baseType_->id_);
-    Class* class2 = symtab->lookupClass(t2->baseType_->id_);
-
-    // both classes must exist
-    swiftAssert(class1, "first class not found in the symbol table");
-    swiftAssert(class2, "second class not found in the symbol table");
-
-    if (class1 != class2) {
-        // different pointers -> hence different types
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * checks whether this is a valid type
+/*
+    constructor and destructor
 */
-bool Type::validate()
-{
-    if ( symtab->lookupClass(baseType_->id_) == 0 )
-    {
-        errorf( line_, "class '%s' is not defined in this module", baseType_->id_->c_str() );
-        return false;
-    }
 
-    return true;
+BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
+    : Node(line)
+    , id_(id)
+    , builtin_(false)
+{}
+
+BaseType::~BaseType()
+{
+    if (id_)
+        delete id_;
 }
 
-bool Type::isBool()
+/*
+    further methods
+*/
+
+BaseType* BaseType::clone() const
 {
-    return *baseType_->id_ == "bool";
+    return new BaseType( new std::string(*id_), NO_LINE);
 }
 
 PseudoReg::RegType BaseType::toRegType() const
@@ -108,4 +82,82 @@ PseudoReg::RegType BaseType::toRegType() const
         return PseudoReg::R_BOOL;
     else
         return PseudoReg::R_STRUCT;
+}
+
+std::string BaseType::toString() const
+{
+    return *id_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+Type::Type(BaseType* baseType, int pointerCount, int line /*= NO_LINE*/)
+    : Node(line)
+    , baseType_(baseType)
+    , pointerCount_(pointerCount)
+{}
+
+Type::~Type()
+{
+    delete baseType_;
+}
+
+/*
+    further methods
+*/
+
+Type* Type::clone() const
+{
+    return new Type(baseType_->clone(), pointerCount_, line_);
+};
+
+std::string Type::toString() const
+{
+    std::ostringstream oss;
+
+    oss << baseType_->toString();
+    for (int i = 0; 0 < pointerCount_; ++i)
+        oss << '^';
+
+    return oss.str();
+}
+
+bool Type::check(Type* t1, Type* t2)
+{
+    if (t1->pointerCount_ != t2->pointerCount_)
+        return false; // pointerCount_ does not match
+
+    Class* class1 = symtab->lookupClass(t1->baseType_->id_);
+    Class* class2 = symtab->lookupClass(t2->baseType_->id_);
+
+    // both classes must exist
+    swiftAssert(class1, "first class not found in the symbol table");
+    swiftAssert(class2, "second class not found in the symbol table");
+
+    if (class1 != class2) {
+        // different pointers -> hence different types
+        return false;
+    }
+
+    return true;
+}
+
+bool Type::validate() const
+{
+    if ( symtab->lookupClass(baseType_->id_) == 0 )
+    {
+        errorf( line_, "class '%s' is not defined in this module", baseType_->id_->c_str() );
+        return false;
+    }
+
+    return true;
+}
+
+bool Type::isBool() const
+{
+    return *baseType_->id_ == "bool";
 }

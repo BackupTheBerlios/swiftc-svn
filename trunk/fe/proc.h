@@ -1,20 +1,23 @@
 #ifndef SWIFT_PROC
 #define SWIFT_PROC
 
+#include <map>
 #include <string>
 
 #include "utils/list.h"
+#include "utils/stringhelper.h"
 
 // forward declaraions
 struct Param;
 struct Statement;
 struct Scope;
+struct Local;
 struct Method;
 
 //------------------------------------------------------------------------------
 
 /**
- * This class abstracts a Signature of a method, routine etc. It has a
+ * This class abstracts a signature of a method, routine etc. It has a
  * List of Param objects and some useful methods.
 */
 struct Sig
@@ -23,20 +26,44 @@ struct Sig
 
     /**
      * This list stores the Param objects. The parameters are sorted from left
-     * to right as given in the Signature of the procedure. Thus first are the
+     * to right as given in the Sig of the procedure. Thus first are the
      * ARG then the RES and RES_INOUT (in no special order) Param objects.
      */
     Params params_;
 
 /*
+    destructor
+*/
+
+    ~Sig();
+
+/*
     methods
 */
 
-    /// Analyses this Signature for correct syntax.
+    /// Analyses this Sig for correct syntax.
     bool analyze() const;
 
     /// Check whether two given signatures fit.
-    static bool check(const Signature& sig1, const Signature& sig2);
+    static bool check(const Sig& sig1, const Sig& sig2);
+
+    /**
+     * Check whether the ingoint part of the given Sig matches.
+     *
+     * @param inSig The Sig which should be checked. It is assumed that this
+     *      this Sig only has an ingoing part.
+     * @return true -> it fits, flase -> otherwise.
+     */
+    bool checkIngoing(const Sig& inSig) const;
+
+    /**
+     * Finds first RES or RES_INOUT Param in the Params List.
+     *
+     * @param numIn The number of ingoing parameters.
+     * @return The first RES or RES_INOUT Param, 0 if there exists no outgoing
+     *      Param.
+     */
+    const Param* findFirstOut(size_t& numIn) const;
 
     /**
      * Finds first RES or RES_INOUT Param in the Params List.
@@ -68,13 +95,14 @@ struct Proc
     Scope* rootScope_;      ///< The root Scope where vars of this Proc are stored.
     Sig sig_;               ///< The signature of this Proc.
 
-    enum Kind
-    {
-        METHOD,
-        ROUTINE
-    };
-
-    Kind kind_; ///< Is this an aggregate of a Method or a Routine?
+// TODO
+//     enum Kind
+//     {
+//         METHOD,
+//         ROUTINE
+//     };
+//
+//     Kind kind_; ///< Is this an aggregate of a Method or a Routine?
 
     union
     {
@@ -105,7 +133,7 @@ struct Proc
      *
      * @return The Param or 0 if it was not found.
      */
-    Param* findParem(std::string* id);
+    Param* findParam(std::string* id);
 
     /// Analyses this Proc for correct syntax
     bool analyze();
