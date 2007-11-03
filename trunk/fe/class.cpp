@@ -18,8 +18,7 @@
 */
 
 Class::Class(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : Definition(line, parent)
-    , id_(id)
+    : Definition(id, line, parent)
 {}
 
 Class::~Class()
@@ -108,11 +107,6 @@ bool Class::analyze()
     symtab->leaveClass();
 
     return result;
-}
-
-std::string Class::toString() const
-{
-    return *id_;
 }
 
 //------------------------------------------------------------------------------

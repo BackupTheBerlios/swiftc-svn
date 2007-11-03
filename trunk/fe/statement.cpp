@@ -73,14 +73,12 @@ bool Declaration::analyze()
         return false;
 
     // everything ok. so insert the local
-    local_ = new Local(type_->clone(), id_, line_);
-    local_->regNr_ = symtab->newVarNr();
-    symtab->insert(local_);
-    symtab->insertLocalByRegNr(local_);
+    local_ = symtab->createNewLocal(type_->clone(), id_, line_);
+
 #ifdef SWIFT_DEBUG
-    functab->newVar( local_->type_->baseType_->toRegType(), local_->regNr_, local_->id_ );
+    functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    functab->newVar( local_->type_->baseType_->toRegType(), local_->regNr_ );
+    functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
 #endif // SWIFT_DEBUG
 
     return true;

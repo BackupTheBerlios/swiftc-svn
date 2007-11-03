@@ -6,11 +6,12 @@
 
 #include "utils/assert.h"
 
-#include "fe/error.h"
-#include "fe/syntaxtree.h"
 #include "fe/class.h"
+#include "fe/error.h"
 #include "fe/method.h"
 #include "fe/var.h"
+#include "fe/syntaxtree.h"
+#include "fe/type.h"
 
 /*
     TODO remove all error handling here
@@ -178,11 +179,11 @@ bool SymbolTable::insert(Local* local)
     return true;
 }
 
-void SymbolTable::insertLocalByRegNr(Local* local)
+void SymbolTable::insertLocalByVarNr(Local* local)
 {
-    pair<Scope::RegNrMap::iterator, bool> p
-        = currentScope()->regNrs_.insert( std::make_pair(local->regNr_, local) );
-    swiftAssert(p.second, "there is already a local with this regNr in the map");
+    pair<Scope::VarNrMap::iterator, bool> p
+        = currentScope()->varNrs_.insert( std::make_pair(local->varNr_, local) );
+    swiftAssert(p.second, "there is already a local with this varNr in the map");
 }
 
 /*
@@ -276,7 +277,7 @@ Method* SymbolTable::lookupMethod(std::string* classId,
                                   int methodQualifier,
                                   Sig& sig,
                                   int line,
-                                  bool justIngoingPart)
+                                  SigCheckingStyle sigCheckingStyle)
 {
     // lookup class
     Class* _class = symtab->lookupClass(classId);
@@ -303,15 +304,20 @@ Method* SymbolTable::lookupMethod(std::string* classId,
 
         bool sigCheck;
 
-        if (justIngoingPart)
-            sigCheck = method->proc_.sig_.checkIngoing(sig);
-        else
-            sigCheck = Sig::check(method->proc_.sig_, sig);
-
-            if (sigCheck)
+        switch (sigCheckingStyle)
+        {
+            case CHECK_JUST_INGOING:
+                sigCheck = method->proc_.sig_.checkIngoing(sig);
                 break;
-            else
-                method = 0; // mark as not found
+            case CHECK_ALL:
+                sigCheck = Sig::check(method->proc_.sig_, sig);
+                break;
+        }
+
+        if (sigCheck)
+            break;
+        else
+            method = 0; // mark as not found
     }
 
     if ( !method )
@@ -333,3 +339,16 @@ int SymbolTable::newVarNr()
 {
     return varCounter_--;
 }
+
+Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /*= NO_LINE*/)
+{
+    // create Local
+    Local* local = new Local(type->clone(), id, newVarNr(), line);
+
+    // insert into both maps
+    symtab->insert(local);
+    symtab->insertLocalByVarNr(local);
+
+    return local;
+}
+

@@ -44,7 +44,6 @@ struct Class : public Definition
 */
 
     virtual bool analyze();
-    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

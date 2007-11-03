@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "fe/syntaxtree.h"
+
 // forward declaration
 struct Type;
 
@@ -12,11 +14,9 @@ struct Type;
  * This class is the base for a Local or a Param. It is the return value
  * for symtab lookups.
  */
-struct Var
+struct Var : public Symbol
 {
     Type* type_;
-    std::string* id_;
-    int line_;
 
     enum
     {
@@ -28,12 +28,6 @@ struct Var
 
     Var(Type* type, std::string* id, int line = NO_LINE);
     virtual ~Var();
-
-/*
-    further methods
-*/
-
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -45,22 +39,22 @@ struct Var
 struct Local : public Var
 {
     /**
-     * regNr_ > 0   a TEMP with nr regNr <br>
-     * regNr_ = 0   invalid (is reserved for literals) <br>
-     * regNr_ < 0   a VAR with nr -regNr <br>
+     * varNr_ > 0   a TEMP with nr varNr_ <br>
+     * varNr_ = 0   invalid (is reserved for literals) <br>
+     * varNr_ < 0   a VAR with nr -varNr_ <br>
      *
      * TEMP -> a variable created by the compiler so it is only
      *      defined once (it already has SSA property) <br>
      * VAR -> an ordinary variable defined by the programmer
      *      (SSA form must be generated for this Local)
      */
-    int regNr_;
+    int varNr_;
 
 /*
     constructor
 */
 
-    Local(Type* type, std::string* id, int line = NO_LINE);
+    Local(Type* type, std::string* id, int varNr, int line = NO_LINE);
 };
 
 //------------------------------------------------------------------------------

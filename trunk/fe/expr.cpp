@@ -294,17 +294,17 @@ bool Id::analyze()
     {
         swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
         Local* local = (Local*) var;
-        reg_ = functab->lookupReg(local->regNr_);
+        reg_ = functab->lookupReg(local->varNr_);
 
         if (reg_ == 0)
         {
 #ifdef SWIFT_DEBUG
-            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_, id_ );
+            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
 #else // SWIFT_DEBUG
-            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->regNr_ );
+            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
 #endif // SWIFT_DEBUG
-            local->regNr_ = reg_->regNr_;
-            symtab->insertLocalByRegNr(local);
+            local->varNr_ = reg_->regNr_;
+            symtab->insertLocalByVarNr(local);
         }
     }
 
@@ -452,7 +452,7 @@ bool BinExpr::analyze()
     Sig sig;
     sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
     sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
-    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_, true);
+    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
 
     if (!method)
         return false;

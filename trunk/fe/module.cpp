@@ -46,6 +46,6 @@ std::string Module::toString() const
     constructor
 */
 
-Definition::Definition(int line, Node* parent /*= 0*/)
-    : Node(line, parent)
+Definition::Definition(std::string* id, int line, Node* parent /*= 0*/)
+    : Symbol(id, line, parent)
 {}

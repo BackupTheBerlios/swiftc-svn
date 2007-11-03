@@ -7,24 +7,13 @@
 */
 
 Var::Var(Type* type, std::string* id, int line /*= NO_LINE*/)
-    : type_(type)
-    , id_(id)
-    , line_(line)
+    : Symbol(id, line, 0) // Vars (Params or Locals) never have parents
+    , type_(type)
 {}
 
 Var::~Var()
 {
-    delete id_;
     delete type_;
-}
-
-/*
-    further methods
-*/
-
-std::string Var::toString() const
-{
-    return *id_;
 }
 
 //------------------------------------------------------------------------------
@@ -33,9 +22,9 @@ std::string Var::toString() const
     constructor
 */
 
-Local::Local(Type* type, std::string* id, int line /*= NO_LINE*/)
+Local::Local(Type* type, std::string* id, int varNr, int line /*= NO_LINE*/)
     : Var(type, id, line)
-    , regNr_(0) // start with an invalid value
+    , varNr_(varNr)
 {}
 
 //------------------------------------------------------------------------------

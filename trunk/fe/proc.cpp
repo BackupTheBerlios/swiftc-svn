@@ -277,16 +277,16 @@ Local* Scope::lookupLocal(std::string* id)
     }
 }
 
-Local* Scope::lookupLocal(int regNr)
+Local* Scope::lookupLocal(int varNr)
 {
-    RegNrMap::iterator iter = regNrs_.find(regNr);
-    if ( iter != regNrs_.end() )
+    VarNrMap::iterator iter = varNrs_.find(varNr);
+    if ( iter != varNrs_.end() )
         return iter->second;
     else
     {
         // try to find in parent scope
         if (parent_)
-            return parent_->lookupLocal(regNr);
+            return parent_->lookupLocal(varNr);
         else
             return 0;
     }

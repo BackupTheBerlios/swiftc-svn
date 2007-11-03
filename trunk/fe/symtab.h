@@ -15,6 +15,7 @@ struct Module;
 struct Param;
 struct Scope;
 struct Sig;
+struct Type;
 struct Var;
 
 /**
@@ -39,6 +40,17 @@ struct SymbolTable
 
     int varCounter_; ///< Counter which gives new var numbers.
 
+    enum
+    {
+        NO_LINE = -1
+    };
+
+    enum SigCheckingStyle
+    {
+        CHECK_JUST_INGOING,
+        CHECK_ALL
+    };
+
 /*
     constructor and init stuff
 */
@@ -57,8 +69,7 @@ struct SymbolTable
     bool insert(Param* param);
     bool insert(Local* local);
 
-    // TODO really neccessary to have this and insert(Local*)?
-    void insertLocalByRegNr(Local* local);
+    void insertLocalByVarNr(Local* local);
 
 /*
     enter and leave methods
@@ -120,7 +131,7 @@ struct SymbolTable
                          int methodQualifier,
                          Sig& sig,
                          int line,
-                         bool justIngoingPart);
+                         SigCheckingStyle sigCheckingStyle);
 
 /*
     further methods
@@ -131,6 +142,16 @@ struct SymbolTable
 
     /// Returns a new int which can be used as VarNr.
     int newVarNr();
+
+    /**
+     * Creates a new Local with Type \p type, \p id and an optional \p line
+     * number.
+     *
+     * @param type Type the new Local should have. It will be cloned via Type::clone().
+     * @param id Identifier the new Local should have.
+     * @param line An optional line number the Local should have.
+     */
+    Local* createNewLocal(const Type* type, std::string* id, int line = NO_LINE);
 };
 
 typedef SymbolTable SymTab;

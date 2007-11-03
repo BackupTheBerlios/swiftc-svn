@@ -47,13 +47,12 @@ struct Module : public Node
 /**
  * A Definition is either a Class or other things which are still TODO
  */
-struct Definition : public Node
+struct Definition : public Symbol
 {
-
 /*
     constructor
 */
-    Definition(int line, Node* parent = 0);
+    Definition(std::string* id, int line, Node* parent = 0);
 
 /*
     further methods

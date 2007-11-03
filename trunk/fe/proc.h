@@ -48,7 +48,7 @@ struct Sig
     static bool check(const Sig& sig1, const Sig& sig2);
 
     /**
-     * Check whether the ingoint part of the given Sig matches.
+     * Check whether the ingoing part of the given Sig matches.
      *
      * @param inSig The Sig which should be checked. It is assumed that this
      *      this Sig only has an ingoing part.
@@ -151,12 +151,12 @@ struct Scope
 {
     typedef List<Scope*> ScopeList;
     typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
-    typedef std::map<int, Local*> RegNrMap;
+    typedef std::map<int, Local*> VarNrMap;
 
     Scope* parent_;         ///< 0 if root.
     ScopeList childScopes_; ///< List of child scopes.
     LocalMap locals_;       ///< Map of locals in this scope sorted by identifier.
-    RegNrMap regNrs_;       ///< Map of locals in this scope sorted by RegNr.
+    VarNrMap varNrs_;       ///< Map of locals in this scope sorted by varNr.
 
 /*
     constructor and destructor
@@ -172,8 +172,8 @@ struct Scope
     /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(std::string* id);
 
-    /// Returns the local by regNr, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(int);
+    /// Returns the local by varNr, of this scope or parent scopes. 0 if nothing was found.
+    Local* lookupLocal(int varNr);
 };
 
 #endif //SWIFT_PROC

@@ -31,11 +31,36 @@ struct Node
     constructor and destructor
 */
 
-    Node(int line = NO_LINE, Node* parent = 0)
-        : line_(line)
-        , parent_(parent)
-    {}
+    Node(int line = NO_LINE, Node* parent = 0);
     virtual ~Node() {}
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * A Symbol is a Node which also has an \a id_ and a \a toString method.
+ */
+struct Symbol : public Node
+{
+    std::string* id_;
+
+/*
+    constructor and destructor
+*/
+
+    Symbol(std::string* id, int line = NO_LINE, Node* parent = 0);
+    ~Symbol();
+
+/*
+    further methods
+*/
+    /// Returns the \a id_ of this Symbol.
+    std::string toString() const;
+
+    /**
+     * Returns the full name of the symbol.
+     */
+    std::string getFullName() const;
 };
 
 //------------------------------------------------------------------------------
@@ -47,7 +72,15 @@ struct SyntaxTree
 {
     Module* rootModule_;
 
+/*
+    destructor
+*/
+
     ~SyntaxTree();
+
+/*
+    further methods
+*/
 
     bool analyze();
 };
