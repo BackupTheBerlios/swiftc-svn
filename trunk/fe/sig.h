@@ -73,6 +73,14 @@ struct Sig
      */
     const Param* findFirstOut() const;
 
+    /**
+     * Find a Param by name.
+     *
+     * @return The Param or 0 if it was not found.
+     */
+    Param* findParam(std::string* id);
+
+
     std::string toString() const;
 };
 
@@ -90,55 +98,6 @@ struct Sig
 */
 struct Proc
 {
-    std::string* id_;       ///< The identifier of this Proc.
-    Statement* statements_; ///< The statements_ inside this Proc.
-    Scope* rootScope_;      ///< The root Scope where vars of this Proc are stored.
-    Sig sig_;               ///< The signature of this Proc.
-
-// TODO
-//     enum Kind
-//     {
-//         METHOD,
-//         ROUTINE
-//     };
-//
-//     Kind kind_; ///< Is this an aggregate of a Method or a Routine?
-
-    union
-    {
-        Method* method_; ///< Used if this is an aggregate of a Method.
-    };
-
-/*
-    constructor and destructor
-*/
-
-    Proc(std::string* id, Method* method);
-    ~Proc();
-
-/*
-    getters and setters
-*/
-
-    Method* getMethod();
-
-/*
-    further methods
-*/
-    /// Appends a Param to \a sig_.
-    void appendParam(Param* param);
-
-    /**
-     * Find a Param by name.
-     *
-     * @return The Param or 0 if it was not found.
-     */
-    Param* findParam(std::string* id);
-
-    /// Analyses this Proc for correct syntax
-    bool analyze();
-
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

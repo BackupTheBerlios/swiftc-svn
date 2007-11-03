@@ -53,7 +53,7 @@ bool Class::analyze()
                 check whether there is method with the same name and the same signature
             */
             typedef Class::MethodMap::iterator Iter;
-            Iter methodIter = methods_.find(method->proc_.id_);
+            Iter methodIter = methods_.find(method->id_);
 
             // move iter to point to method
             while (methodIter->second != method)
@@ -63,7 +63,7 @@ bool Class::analyze()
             ++methodIter;
 
             // find element behind the last one
-            Iter last = methods_.upper_bound(method->proc_.id_);
+            Iter last = methods_.upper_bound(method->id_);
 
             for (; methodIter != last; ++methodIter)
             {
@@ -71,7 +71,7 @@ bool Class::analyze()
                 if (methodIter->second->methodQualifier_ != method->methodQualifier_)
                     continue;
 
-                if ( Sig::check(methodIter->second->proc_.sig_, method->proc_.sig_) )
+                if ( Sig::check(methodIter->second->sig_, method->sig_) )
                 {
                     std::stack<std::string> idStack;
 
@@ -115,8 +115,8 @@ bool Class::analyze()
     constructor and destructor
 */
 
-ClassMember::ClassMember(int line, Node* parent /*= 0*/)
-    : Node(line, parent)
+ClassMember::ClassMember(std::string* id, int line, Node* parent /*= 0*/)
+    : Symbol(id, line, parent)
     , next_(0)
 {}
 
@@ -132,9 +132,8 @@ ClassMember::~ClassMember()
 */
 
 MemberVar::MemberVar(Type* type, std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : ClassMember(line, parent)
+    : ClassMember(id, line, parent)
     , type_(type)
-    , id_(id)
 {}
 
 MemberVar::~MemberVar()

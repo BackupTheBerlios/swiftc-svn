@@ -51,14 +51,14 @@ struct Class : public Definition
 /**
  * This class represents either a MemberVar or a Method.
 */
-struct ClassMember : public Node
+struct ClassMember : public Symbol
 {
     ClassMember* next_; ///< Linked List of class members.
 
 /*
     constructor and destructor
 */
-    ClassMember(int line, Node* parent = 0);
+    ClassMember(std::string* id, int line, Node* parent = 0);
     virtual ~ClassMember();
 
 /*
@@ -76,7 +76,6 @@ struct ClassMember : public Node
 struct MemberVar : public ClassMember
 {
     Type* type_;
-    std::string* id_;
 
 /*
     constructor and destructor

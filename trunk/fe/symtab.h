@@ -35,6 +35,7 @@ struct SymbolTable
     Module* module_;     ///< Current Module.
     Class*  class_;      ///< Current Class.
     Method* method_;     ///< Current Method.
+    Sig*    sig_;        ///< Current Sig.
 
     ScopeStack scopeStack_; ///< Top of stack knows the current Scope.
 

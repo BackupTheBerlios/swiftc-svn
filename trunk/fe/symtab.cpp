@@ -37,6 +37,7 @@ void SymbolTable::reset()
 //     module_ = 0; TODO
     class_  = 0;
     method_ = 0;
+    sig_ = 0;
 }
 
 /*
@@ -130,15 +131,18 @@ bool SymbolTable::insert(MemberVar* memberVar)
 void SymbolTable::insert(Method* method)
 {
     Class::MethodMap::iterator iter
-        = class_->methods_.insert( std::make_pair(method->proc_.id_, method) );
+        = class_->methods_.insert( std::make_pair(method->id_, method) );
 
     // set current method scope
     method_ = method;
+
+    // set current signature scope
+    sig_ = &method->sig_;
 }
 
 bool SymbolTable::insert(Param* param)
 {
-    PARAMS_EACH(iter, method_->proc_.sig_.params_)
+    PARAMS_EACH(iter, sig_->params_)
     {
         if (*param->id_ == *iter->value_->id_)
         {
@@ -149,7 +153,7 @@ bool SymbolTable::insert(Param* param)
         }
     }
 
-    method_->appendParam(param);
+    sig_->params_.append(param);
 
     return true;
 }
@@ -167,7 +171,7 @@ bool SymbolTable::insert(Local* local)
         return false;
     }
 
-    PARAMS_EACH(iter, method_->proc_.sig_.params_)
+    PARAMS_EACH(iter, sig_->params_)
     {
         if (*local->id_ == *iter->value_->id_)
         {
@@ -213,13 +217,15 @@ void SymbolTable::leaveClass()
 void SymbolTable::enterMethod(Method* method)
 {
     method_ = method;
+    sig_ = &method->sig_;
 
-    scopeStack_.push(method_->proc_.rootScope_);
+    scopeStack_.push(method_->rootScope_);
 }
 
 void SymbolTable::leaveMethod()
 {
     method_ = 0;
+    sig_ = 0;
 }
 
 void SymbolTable::enterScope(Scope* scope)
@@ -253,7 +259,7 @@ Var* SymbolTable::lookupVar(string* id)
         return local;
 
     // no - perhaps a parameter?
-    return method_->proc_.findParam(id); // will return 0, if not found
+    return sig_->findParam(id); // will return 0, if not found
 }
 
 Var* SymbolTable::lookupVar(int varNr)
@@ -307,10 +313,10 @@ Method* SymbolTable::lookupMethod(std::string* classId,
         switch (sigCheckingStyle)
         {
             case CHECK_JUST_INGOING:
-                sigCheck = method->proc_.sig_.checkIngoing(sig);
+                sigCheck = method->sig_.checkIngoing(sig);
                 break;
             case CHECK_ALL:
-                sigCheck = Sig::check(method->proc_.sig_, sig);
+                sigCheck = Sig::check(method->sig_, sig);
                 break;
         }
 

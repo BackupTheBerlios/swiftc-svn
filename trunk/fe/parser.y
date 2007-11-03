@@ -241,7 +241,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->proc_.statements_ = $9;
+            $$->statements_ = $9;
         }
     | OPERATOR operator
         {
@@ -252,7 +252,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>3;
-            $$->proc_.statements_ = $9;
+            $$->statements_ = $9;
         }
     | CREATE
         {
@@ -263,7 +263,7 @@ method
         EOL statement_list END EOL
         {
             $$ = $<method_>2;
-            $$->proc_.statements_ = $7;
+            $$->statements_ = $7;
         }
     ;
 

@@ -1,4 +1,4 @@
-#include "proc.h"
+#include "sig.h"
 
 #include <sstream>
 
@@ -117,6 +117,18 @@ const Param* Sig::findFirstOut() const
     return findFirstOut(dummy);
 }
 
+Param* Sig::findParam(std::string* id)
+{
+    PARAMS_EACH(iter, params_)
+    {
+        if (*iter->value_->id_ == *id)
+            return iter->value_;
+    }
+
+    // -> not found, so return 0
+    return 0;
+}
+
 std::string Sig::toString() const
 {
     std::ostringstream oss;
@@ -137,108 +149,6 @@ std::string Sig::toString() const
 //         }
 //     }
     return oss.str();
-}
-
-//------------------------------------------------------------------------------
-
-/*
-    constructor and destructor
-*/
-
-Proc::Proc(std::string* id, Method* method)
-    : id_(id)
-    , rootScope_( new Scope(0) )
-//     , kind_(METHOD)
-    , method_(method)
-{}
-
-Proc::~Proc()
-{
-    delete rootScope_;
-}
-
-/*
-    getters and setters
-*/
-
-Method* Proc::getMethod()
-{
-    return method_;
-}
-
-/*
-    further methods
-*/
-
-void Proc::appendParam(Param* param)
-{
-    sig_.params_.append(param);
-}
-
-Param* Proc::findParam(std::string* id)
-{
-    PARAMS_EACH(iter, sig_.params_)
-    {
-        if (*iter->value_->id_ == *id_)
-            return iter->value_;
-    }
-
-    // -> not found, so return 0
-    return 0;
-}
-
-bool Proc::analyze()
-{
-    bool result = true;
-
-    /*
-        it is assumed here that the symtab already points to the correct
-        method and a function for the functab hast been created.
-    */
-
-    if (gencode)
-    {
-        /*
-            build a function name for the functab consisting of the class name,
-            the method name and a counted number to prevent name clashes
-            due to overloading
-        */
-        std::ostringstream oss;
-
-        oss << *symtab->class_->id_ << '#';
-
-        if (getMethod()->methodQualifier_ == OPERATOR)
-            oss << "operator";
-        else
-            oss << *id_;
-
-        static int counter = 0;
-
-        oss << '#' << counter;
-        ++counter;
-
-        functab->insertFunction( new std::string(oss.str()) );
-
-        // insert the first label since every function must start with one
-        functab->appendInstr( new LabelInstr() );
-    }
-
-    // analyze each statement
-    for (Statement* iter = statements_; iter != 0; iter = iter->next_)
-        result &= iter->analyze();
-
-    // insert the last label since every function must end with one
-    if (gencode)
-        functab->appendInstr( new LabelInstr() );
-
-    symtab->leaveMethod();
-
-    return result;
-}
-
-std::string Proc::toString() const
-{
-    return *id_ + sig_.toString();
 }
 
 //------------------------------------------------------------------------------

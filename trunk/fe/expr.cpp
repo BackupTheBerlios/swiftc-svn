@@ -459,7 +459,7 @@ bool BinExpr::analyze()
     // else
 
     // find first out parameter and clone this type
-    type_ = method->proc_.sig_.findFirstOut()->type_->clone();
+    type_ = method->sig_.findFirstOut()->type_->clone();
     swiftAssert(type_, "an operator should always return a type");
 
     if (gencode)

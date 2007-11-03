@@ -24,14 +24,12 @@ struct Node
     };
 
     int line_;///< the line number which this node is mapped to
-    /// NULL if root
-    Node*   parent_;
 
 /*
     constructor and destructor
 */
 
-    Node(int line = NO_LINE, Node* parent = 0);
+    Node(int line = NO_LINE);
     virtual ~Node() {}
 };
 
@@ -43,12 +41,13 @@ struct Node
 struct Symbol : public Node
 {
     std::string* id_;
+    Node*   parent_; ///< 0 if root.
 
 /*
     constructor and destructor
 */
 
-    Symbol(std::string* id, int line = NO_LINE, Node* parent = 0);
+    Symbol(std::string* id, Symbol* parent, int line = NO_LINE);
     ~Symbol();
 
 /*

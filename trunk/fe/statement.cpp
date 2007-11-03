@@ -260,12 +260,12 @@ bool AssignStatement::analyze()
         {
             Method* create = iter->second;
 
-            if ( create->proc_.sig_.params_.size() != argList.size() )
+            if ( create->sig_.params_.size() != argList.size() )
                 continue; // the number of arguments does not match
 
             // -> number of arguments fits, so check types
             ArgList::Node* argIter = argList.first();
-            Sig::Params::Node* createIter = create->proc_.sig_.params_.first();
+            Sig::Params::Node* createIter = create->sig_.params_.first();
 
             bool argCheckResult = true;
 

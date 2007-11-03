@@ -20,9 +20,8 @@ SyntaxTree* syntaxtree = 0;
     constructor
 */
 
-Node::Node(int line = NO_LINE, Node* parent /*= 0*/)
+Node::Node(int line /*= NO_LINE*/)
     : line_(line)
-    , parent_(parent)
 {}
 
 //------------------------------------------------------------------------------
@@ -31,9 +30,10 @@ Node::Node(int line = NO_LINE, Node* parent /*= 0*/)
     constructor
 */
 
-Symbol::Symbol(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : Node(line, parent)
+Symbol::Symbol(std::string* id, Node* parent, int line /*= NO_LINE*/)
+    : Node(line)
     , id_(id)
+    , parent_(parent)
 {}
 
 Symbol::~Symbol()
@@ -50,14 +50,13 @@ std::string Symbol::toString() const
     return *id_;
 }
 
-std::string Symbol::getFullName(const Node*) const
+std::string Symbol::getFullName() const
 {
     // build full class name with module names: module1.module2.Class1.Class2 etc
     std::stack<std::string*> idStack;
-    idStack.push(*_class->id_);
 
     // put all identifiers on the stack
-    for (Symbol* iter = this; iter != 0; iter = iter->parent_)
+    for (const Symbol* iter = this; iter != 0; iter = iter->parent_)
         idStack.push(iter->id_);
 
     std::ostringstream oss;
