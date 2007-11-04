@@ -30,7 +30,7 @@ Node::Node(int line /*= NO_LINE*/)
     constructor
 */
 
-Symbol::Symbol(std::string* id, Node* parent, int line /*= NO_LINE*/)
+Symbol::Symbol(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Node(line)
     , id_(id)
     , parent_(parent)
@@ -64,7 +64,7 @@ std::string Symbol::getFullName() const
     // and build string
     while ( !idStack.empty() )
     {
-        oss << idStack.top();
+        oss << *idStack.top();
         idStack.pop();
 
         if ( !idStack.empty() )

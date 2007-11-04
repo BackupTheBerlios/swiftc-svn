@@ -7,7 +7,7 @@
 */
 
 Var::Var(Type* type, std::string* id, int line /*= NO_LINE*/)
-    : Symbol(id, line, 0) // Vars (Params or Locals) never have parents
+    : Symbol(id, 0, line) // Vars (Params or Locals) never have parents
     , type_(type)
 {}
 

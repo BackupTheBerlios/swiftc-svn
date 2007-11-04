@@ -27,7 +27,7 @@ struct Method : public ClassMember
     constructor and destructor
 */
 
-    Method(int methodQualifier, std::string* id, int line = NO_LINE, Node* parent = 0);
+    Method(int methodQualifier, std::string* id, Symbol* parent, int line = NO_LINE);
     ~Method();
 
 /*

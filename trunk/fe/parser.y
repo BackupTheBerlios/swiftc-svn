@@ -179,7 +179,7 @@ definitions
 class_definition
     : CLASS ID EOL
         {
-            $$ = new Class($2, currentLine);
+            $$ = new Class($2, symtab->module_, currentLine);
             symtab->insert($<class_>$);
         }
         class_body END EOL
@@ -189,7 +189,7 @@ class_definition
         }
     | CLASS ID EOL
         {
-            $$ = new Class($2, currentLine);
+            $$ = new Class($2, symtab->module_, currentLine);
             symtab->insert($<class_>$);
         }
         '{' template_list '}' class_body END EOL
@@ -234,7 +234,7 @@ method_qualifier
 method
     : method_qualifier ID
         {
-            $$ = new Method( $1, $2, getKeyLine() );
+            $$ = new Method( $1, $2, symtab->class_, getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list ')' arrow_return_type_list
@@ -245,7 +245,7 @@ method
         }
     | OPERATOR operator
         {
-            $$ = new Method( OPERATOR, operatorToString($2), getKeyLine() );
+            $$ = new Method( OPERATOR, operatorToString($2), symtab->class_, getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list ')' arrow_return_type_list
@@ -256,7 +256,7 @@ method
         }
     | CREATE
         {
-            $$ = new Method( CREATE, new std::string("create"), getKeyLine() );
+            $$ = new Method( CREATE, new std::string("create"), symtab->class_, getKeyLine() );
             symtab->insert($$);
         }
         '(' parameter_list')'
@@ -320,7 +320,7 @@ return_type
 member_var
     : type ID EOL
         {
-            $$ = new MemberVar($1, $2, currentLine);
+            $$ = new MemberVar($1, $2, symtab->class_, currentLine);
             symtab->insert($$);
         }
     ;

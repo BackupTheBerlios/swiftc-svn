@@ -8,9 +8,8 @@
     constructor and destructor
 */
 
-Module::Module(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : Node(line, parent)
-    , id_(id)
+Module::Module(std::string* id, int line /*= NO_LINE*/)
+    : Symbol(id, 0, line) // modules don't have parents
 {}
 
 Module::~Module()
@@ -46,6 +45,6 @@ std::string Module::toString() const
     constructor
 */
 
-Definition::Definition(std::string* id, int line, Node* parent /*= 0*/)
-    : Symbol(id, line, parent)
+Definition::Definition(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+    : Symbol(id, parent, line)
 {}

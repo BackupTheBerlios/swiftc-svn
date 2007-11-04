@@ -63,27 +63,9 @@ bool SymbolTable::insert(Class* _class)
     {
         // insertion was not successfull
 
-//         // build full class name with module names: module1.module2.Class1.Class2 etc
-//         stack<string> idStack;
-//         idStack.push(*_class->id_);
-//
-//         for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
-//             idStack.push( iter->toString() );
-//
-//         ostringstream oss;
-//
-//         while ( !idStack.empty() )
-//         {
-//             oss << idStack.top();
-//             idStack.pop();
-//
-//             if ( !idStack.empty() )
-//                 oss << '.';
-//         }
-// TODO
-
         // give proper error
-        errorf(_class->line_, "there there is already a class '%s' defined in line %i", p.first->second->id_->c_str(), p.first->second->line_);
+        errorf(_class->line_, "there there is already a class '%s' defined in line %i",
+            p.first->second->getFullName().c_str(), p.first->second->line_);
 
         return false;
     }
@@ -103,24 +85,8 @@ bool SymbolTable::insert(MemberVar* memberVar)
     {
         // insertion was not successfull
 
-//         // build full class name with module names: module1.module2.Class1.Class2 etc
-//         stack<string> idStack;
-//
-//         for (Node* iter = class_->parent_; iter != 0; iter = iter->parent_)
-//             idStack.push( iter->toString() );
-//
-//         ostringstream oss;
-//
-//         while ( !idStack.empty() )
-//         {
-//             oss << idStack.top();
-//             idStack.pop();
-//
-//             if ( !idStack.empty() )
-//                 oss << '.';
-//         }
-// TODO
-        errorf(memberVar->line_, "there is already a member '%s' defined in '%s' line %i", memberVar->id_->c_str(), p.first->second->id_, p.first->second->line_);
+        errorf(memberVar->line_, "there is already a member '%s' defined in '%s' line %i",
+            p.first->second->id_, memberVar->getFullName().c_str(), p.first->second->line_);
 
         return false;
     }
@@ -226,6 +192,9 @@ void SymbolTable::leaveMethod()
 {
     method_ = 0;
     sig_ = 0;
+    scopeStack_.pop();
+
+    swiftAssert(scopeStack_.empty(), "stack must be empty here");
 }
 
 void SymbolTable::enterScope(Scope* scope)
@@ -242,7 +211,7 @@ Scope* SymbolTable::createAndEnterNewScope()
 {
     Scope* newScope = new Scope( currentScope() );
     currentScope()->childScopes_.append(newScope);
-    symtab->enterScope(newScope);
+    enterScope(newScope);
 
     return newScope;
 }
@@ -338,7 +307,8 @@ Method* SymbolTable::lookupMethod(std::string* classId,
 
 Scope* SymbolTable::currentScope()
 {
-    return scopeStack_.top();
+    Scope* s = scopeStack_.top();
+    return s;
 }
 
 int SymbolTable::newVarNr()

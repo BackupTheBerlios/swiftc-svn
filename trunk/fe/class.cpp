@@ -17,8 +17,8 @@
     constructor and destructor
 */
 
-Class::Class(std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : Definition(id, line, parent)
+Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+    : Definition(id, parent, line)
 {}
 
 Class::~Class()
@@ -73,26 +73,9 @@ bool Class::analyze()
 
                 if ( Sig::check(methodIter->second->sig_, method->sig_) )
                 {
-                    std::stack<std::string> idStack;
-
-// TODO
-//                     for (Node* nodeIter = methodIter->second->parent_; nodeIter != 0; nodeIter = nodeIter->parent_)
-//                         idStack.push( nodeIter->toString() );
-//
-//                     std::ostringstream oss;
-//
-//                     while ( !idStack.empty() )
-//                     {
-//                         oss << idStack.top();
-//                         idStack.pop();
-//
-//                         if ( !idStack.empty() )
-//                             oss << '.';
-//                     }
-
                     errorf(methodIter->second->line_, "there is already a method '%s' defined in '%s' line %i",
-                        method->toString().c_str(),
-                        methodIter->second->toString().c_str(), method->line_); // TODO
+                        methodIter->second->toString().c_str(),
+                        method->getFullName().c_str(), method->line_);
 
                     result = false;
 
@@ -115,8 +98,8 @@ bool Class::analyze()
     constructor and destructor
 */
 
-ClassMember::ClassMember(std::string* id, int line, Node* parent /*= 0*/)
-    : Symbol(id, line, parent)
+ClassMember::ClassMember(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+    : Symbol(id, parent, line)
     , next_(0)
 {}
 
@@ -131,8 +114,8 @@ ClassMember::~ClassMember()
     constructor and destructor
 */
 
-MemberVar::MemberVar(Type* type, std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : ClassMember(id, line, parent)
+MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+    : ClassMember(id, parent, line)
     , type_(type)
 {}
 

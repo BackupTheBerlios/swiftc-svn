@@ -41,7 +41,7 @@ struct Node
 struct Symbol : public Node
 {
     std::string* id_;
-    Node*   parent_; ///< 0 if root.
+    Symbol* parent_; ///< 0 if root.
 
 /*
     constructor and destructor

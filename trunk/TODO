@@ -5,4 +5,3 @@
 - Param handling
 - memberVar handling
 - better constant concept for Operator kinds
-- generate stack of names: module.class.method etc.

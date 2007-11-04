@@ -93,16 +93,6 @@ struct Sig
 //------------------------------------------------------------------------------
 
 /**
- * This class abstracts a a method, routine etc. It knows has a
- * List of Param objects and has some useful methods.
-*/
-struct Proc
-{
-};
-
-//------------------------------------------------------------------------------
-
-/**
  * This represents the Scope of a Proc. It can have child scopes and knows of
  * its \a locals_ which are defined there.
  */

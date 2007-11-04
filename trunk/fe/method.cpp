@@ -15,9 +15,10 @@
     constructor and destructor
 */
 
-Method::Method(int methodQualifier, std::string* id, int line /*= NO_LINE*/, Node* parent /*= 0*/)
-    : ClassMember(id, line, parent)
+Method::Method(int methodQualifier, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+    : ClassMember(id, parent, line)
     , methodQualifier_(methodQualifier)
+    , rootScope_( new Scope(0) )
 {}
 
 Method::~Method()

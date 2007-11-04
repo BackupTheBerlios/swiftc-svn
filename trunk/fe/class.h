@@ -26,7 +26,6 @@ struct Class : public Definition
     typedef MethodMap::iterator MethodIter;
     typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
-    std::string* id_;
     ClassMember* classMember_; ///< Linked list of class members.
 
     MethodMap methods_; ///< Methods defined in this class.
@@ -36,7 +35,7 @@ struct Class : public Definition
     constructor and destructor
 */
 
-    Class(std::string* id, int line = NO_LINE, Node* parent = 0);
+    Class(std::string* id, Symbol* parent, int line = NO_LINE);
     virtual ~Class();
 
 /*
@@ -58,7 +57,7 @@ struct ClassMember : public Symbol
 /*
     constructor and destructor
 */
-    ClassMember(std::string* id, int line, Node* parent = 0);
+    ClassMember(std::string* id, Symbol* parent, int line = NO_LINE);
     virtual ~ClassMember();
 
 /*
@@ -81,7 +80,7 @@ struct MemberVar : public ClassMember
     constructor and destructor
 */
 
-    MemberVar(Type* type, std::string* id, int line = NO_LINE, Node* parent = 0);
+    MemberVar(Type* type, std::string* id, Symbol* parent = 0, int line = NO_LINE);
     virtual ~MemberVar();
 
 /*
