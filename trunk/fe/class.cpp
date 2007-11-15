@@ -19,6 +19,7 @@
 
 Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Definition(id, parent, line)
+    , hasCreate_(false)
 {}
 
 Class::~Class()
@@ -30,20 +31,43 @@ Class::~Class()
     further methods
 */
 
+void Class::createDefaultConstructor()
+{
+return; // TODO
+    swiftAssert(hasCreate_ == false, "hasCreate_ must be true");
+
+    Method* create = new Method(CREATE, new std::string("create"), this, -1);
+
+    // link with this class
+    if (classMember_ == 0)
+        classMember_ = create;
+    else
+    {
+        // prepend default constructor
+        create->next_ = classMember_;
+        classMember_ = create;
+    }
+}
+
 bool Class::analyze()
 {
-    symtab->enterClass(this);
-
     // assume true as initial state
     bool result = true;
+
+    symtab->enterClass(this);
+
+    // points to the last classMember of this class after the loop below
+    ClassMember* lastClassMember = 0;
 
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
     {
+        lastClassMember = iter;
+
         /*
             TODO since this is an O(n^2) algorithm it should be checked
             whether in real-world-programms an O(n log n) algorithm with sorting
-            ist faster
+            is faster
         */
         if ( typeid(*iter) == typeid(Method) )
         {

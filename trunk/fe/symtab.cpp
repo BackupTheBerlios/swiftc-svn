@@ -295,9 +295,6 @@ Method* SymbolTable::lookupMethod(std::string* classId,
             method = 0; // mark as not found
     }
 
-    if ( !method )
-        errorf(line, "no method found for this class with the given arguments"); // TODO better error handling
-
     return method;
 }
 

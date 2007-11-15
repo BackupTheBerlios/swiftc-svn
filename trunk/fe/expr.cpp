@@ -439,7 +439,7 @@ bool BinExpr::analyze()
     lvalue_ = false;
 
     // return false when syntax is wrong
-    if ( !op1_->analyze() || !op2_->analyze() )
+    if ( !op1_->analyze() | !op2_->analyze() ) // analyze both ops in all cases
         return false;
 
     if ( (op1_->type_->pointerCount_ >= 1 || op2_->type_->pointerCount_ >= 1) )
@@ -455,7 +455,13 @@ bool BinExpr::analyze()
     Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
 
     if (!method)
+    {
+        errorf( line_, "no operator %c (%s, %s) defined in class %s",
+            c_, op1_->type_->toString().c_str(),
+            op2_->type_->toString().c_str(),
+            op1_->type_->toString().c_str() );
         return false;
+    }
     // else
 
     // find first out parameter and clone this type

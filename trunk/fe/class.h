@@ -31,6 +31,12 @@ struct Class : public Definition
     MethodMap methods_; ///< Methods defined in this class.
     MemberVarMap memberVars_; ///< MemberVars defined in this class.
 
+    /**
+     * Knows whether the given class defines a constructor,
+     * if this is not the case a default constructor must be created artifically
+     */
+    bool hasCreate_;
+
 /*
     constructor and destructor
 */
@@ -42,6 +48,8 @@ struct Class : public Definition
     further methods
 */
 
+    /// Is called when a defaul constructor must be created artifically i.e. hasCreate_ == false
+    void createDefaultConstructor();
     virtual bool analyze();
 };
 

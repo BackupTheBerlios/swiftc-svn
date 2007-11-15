@@ -84,11 +84,6 @@ PseudoReg::RegType BaseType::toRegType() const
         return PseudoReg::R_STRUCT;
 }
 
-std::string BaseType::toString() const
-{
-    return *id_;
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -119,7 +114,7 @@ std::string Type::toString() const
 {
     std::ostringstream oss;
 
-    oss << baseType_->toString();
+    oss << *baseType_->id_;
     for (int i = 0; 0 < pointerCount_; ++i)
         oss << '^';
 

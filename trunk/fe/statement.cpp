@@ -281,6 +281,8 @@ bool AssignStatement::analyze()
             if (argCheckResult)
             {
                 // -> we found a constructor
+                genSSA();
+
                 return true;
             }
         }
@@ -289,6 +291,12 @@ bool AssignStatement::analyze()
     }
 
     return false;
+}
+
+void AssignStatement::genSSA()
+{
+    Var* entry = symtab->lookupVar(expr_->reg_->regNr_);
+    functab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
 }
 
 //------------------------------------------------------------------------------

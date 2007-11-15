@@ -154,6 +154,7 @@ struct AssignStatement : public Statement
 */
 
     virtual bool analyze();
+    void genSSA();
 };
 
 #endif // SWIFT_STATEMENT_H

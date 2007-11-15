@@ -186,6 +186,8 @@ class_definition
         {
             $$ = $<class_>4;
             $<class_>$->classMember_= $5;
+            if ( !$<class_>$->hasCreate_ )
+                $<class_>$->createDefaultConstructor();
         }
     | CLASS ID EOL
         {
@@ -196,6 +198,9 @@ class_definition
         {
             $$ = $<class_>4;
             $<class_>$->classMember_= $8;
+
+            if ( !$<class_>$->hasCreate_ )
+                $<class_>$->createDefaultConstructor();
         }
     ;
 
@@ -258,12 +263,14 @@ method
         {
             $$ = new Method( CREATE, new std::string("create"), symtab->class_, getKeyLine() );
             symtab->insert($$);
+            symtab->class_->hasCreate_ = true;
         }
         '(' parameter_list')'
         EOL statement_list END EOL
         {
             $$ = $<method_>2;
             $$->statements_ = $7;
+            symtab->class_->hasCreate_ = true;
         }
     ;
 

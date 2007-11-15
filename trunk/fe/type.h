@@ -24,7 +24,6 @@ struct BaseType : public Node
 */
     BaseType* clone() const;
     PseudoReg::RegType toRegType() const;
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
