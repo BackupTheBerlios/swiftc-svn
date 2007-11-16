@@ -31,6 +31,97 @@ Statement::~Statement()
 
 //------------------------------------------------------------------------------
 
+ExprStatement::~ExprStatement()
+{
+    delete expr_;
+}
+
+bool ExprStatement::analyze()
+{
+    return expr_->analyze();
+}
+
+//------------------------------------------------------------------------------
+
+/**
+ * Used internally by Declaration and AssignStatement.
+ */
+struct Assignment
+{
+    Type*       type_;      ///< Type of the rvalue.
+    ExprList*   exprList_;  ///< The rvalue.
+    int line_;
+
+/*
+    constructor
+*/
+
+    Assignment(Type* type, ExprList* exprList, int line)
+        : type_(type)
+        , exprList_(exprList)
+        , line_(line)
+    {}
+
+/*
+    further methods
+*/
+    bool analyze();
+};
+
+bool Assignment::analyze()
+{
+    bool result = true;
+    result &= exprList_->analyze();
+
+    if (result == false)
+        return false;
+
+    // put the exprList_ in a more comfortable List
+    typedef List<Expr*> ArgList;
+    ArgList argList;
+    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
+        argList.append(iter->expr_);
+
+    Class* _class = symtab->lookupClass(type_->baseType_->id_);
+
+    std::string createStr("create");
+    Class::MethodIter iter = _class->methods_.find(&createStr);
+    swiftAssert( iter != _class->methods_.end(), "TODO");
+    Class::MethodIter last = _class->methods_.upper_bound(&createStr);
+
+    for (; iter != last; ++iter)
+    {
+        Method* create = iter->second;
+
+        if ( create->sig_.params_.size() != argList.size() )
+            continue; // the number of arguments does not match
+
+        // -> number of arguments fits, so check types
+        ArgList::Node* argIter = argList.first();
+        Sig::Params::Node* createIter = create->sig_.params_.first();
+
+        bool argCheckResult = true;
+
+        while ( argIter != argList.sentinel() && argCheckResult )
+        {
+            argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
+
+            // move forward
+            argIter = argIter->next_;
+            createIter = createIter->next_;
+        }
+
+        if (argCheckResult)
+            return true;
+    }
+
+    errorf(line_, "no constructor found for this class with the given arguments");
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+
 /*
     constructor and destructor
 */
@@ -65,35 +156,80 @@ bool Declaration::analyze()
     // do we have an initialization here?
     if (exprList_)
     {
-        if ( !exprList_->analyze() )
-            return false;
+        Assignment assignment(type_, exprList_, line_);
+        result &= assignment.analyze();
     }
 
     if (!result)
         return false;
 
     // everything ok. so insert the local
-    local_ = symtab->createNewLocal(type_->clone(), id_, line_);
+    local_ = symtab->createNewLocal(type_, id_, line_);
 
 #ifdef SWIFT_DEBUG
-    functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
+    PseudoReg* reg = functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
+    PseudoReg* reg = functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
 #endif // SWIFT_DEBUG
+
+    if (exprList_)
+    {
+        if ( type_->isBuiltin() )
+            functab->appendInstr( new AssignInstr('=', reg, exprList_->expr_->reg_) );
+        else
+            swiftAssert(false, "TODO");
+    }
 
     return true;
 }
 
 //------------------------------------------------------------------------------
 
-ExprStatement::~ExprStatement()
+/*
+    constructor and destructor
+*/
+
+AssignStatement::AssignStatement(int kind, Expr* expr, ExprList* exprList, int line /*= NO_LINE*/)
+    : Statement(line)
+    , kind_(kind)
+    , expr_(expr)
+    , exprList_(exprList)
+{}
+
+AssignStatement::~AssignStatement()
 {
     delete expr_;
+    delete exprList_;
 }
 
-bool ExprStatement::analyze()
+/*
+    further methods
+*/
+
+bool AssignStatement::analyze()
 {
-    return expr_->analyze();
+    bool result = expr_->analyze();
+
+    Assignment assignment(expr_->type_, exprList_, line_);
+    result &= assignment.analyze();
+
+    if (result)
+    {
+        genSSA();
+
+        return true;
+    }
+    // else
+
+    return false;
+}
+
+void AssignStatement::genSSA()
+{
+    if ( expr_->type_->isBuiltin() )
+        functab->appendInstr( new AssignInstr(kind_ , expr_->reg_, exprList_->expr_->reg_) );
+    else
+        swiftAssert(false, "TODO");
 }
 
 //------------------------------------------------------------------------------
@@ -219,169 +355,3 @@ bool IfElStatement::analyze()
 
     return result;
 }
-
-
-//------------------------------------------------------------------------------
-
-AssignStatement::~AssignStatement()
-{
-    delete expr_;
-    delete exprList_;
-}
-
-bool AssignStatement::analyze()
-{
-    bool result = expr_->analyze();
-    result &= exprList_->analyze();
-
-    // put the exprList_ in a more comfortable std::vector
-    typedef List<Expr*> ArgList;
-    ArgList argList;
-    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
-        argList.append(iter->expr_);
-
-    // only continue when analyze was correct
-    if (result)
-    {
-        if (!expr_->lvalue_)
-        {
-            errorf(line_, "invalid lvalue in assignment");
-            return false;
-        }
-
-        Class* _class = symtab->lookupClass(expr_->type_->baseType_->id_);
-
-        std::string createStr("create");
-        Class::MethodIter iter = _class->methods_.find(&createStr);
-        swiftAssert( iter != _class->methods_.end(), "TODO");
-        Class::MethodIter last = _class->methods_.upper_bound(&createStr);
-
-        for (; iter != last; ++iter)
-        {
-            Method* create = iter->second;
-
-            if ( create->sig_.params_.size() != argList.size() )
-                continue; // the number of arguments does not match
-
-            // -> number of arguments fits, so check types
-            ArgList::Node* argIter = argList.first();
-            Sig::Params::Node* createIter = create->sig_.params_.first();
-
-            bool argCheckResult = true;
-
-            while ( argIter != argList.sentinel() && argCheckResult )
-            {
-                argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
-
-                // move forward
-                argIter = argIter->next_;
-                createIter = createIter->next_;
-            }
-
-            if (argCheckResult)
-            {
-                // -> we found a constructor
-                genSSA();
-
-                return true;
-            }
-        }
-
-        errorf(line_, "no constructor found for this class with the given arguments");
-    }
-
-    return false;
-}
-
-void AssignStatement::genSSA()
-{
-    Var* entry = symtab->lookupVar(expr_->reg_->regNr_);
-    functab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
-}
-
-//------------------------------------------------------------------------------
-
-// InitList::~InitList()
-// {
-//     delete child_;
-//     delete next_;
-//     delete expr_;
-// }
-//
-// bool InitList::analyze()
-// {
-//     bool result = true;
-//
-//     std::vector<InitList*> initList;
-//     for (InitList* iter = this; iter != 0; iter = iter->next_)
-//         initList.push_back(iter);
-//
-//     typedef Class::Methods::iterator Iter;
-//     Iter iter = symtab->class_->methods.find("create");
-//     Iter last =  symtab->class_->methods.upper_bound("create");
-//
-//     std::vector<Method*> constructors;
-//     for (; iter != last; ++iter)
-//     {
-//         if ( iter->second->params_.size() == initList.size() )
-//             constructors.push_back(iter->second);
-//     }
-//
-//     if ( constructors.empty() )
-//         errorf( "no constructor for class %s found with %i arguments", class_->id_->c_str(), (int) initList.size() );
-//
-//     // try if one contructor fits
-// }
-//
-// bool InitList::analyze()
-// {
-//     // check whether this is a leaf item
-//     if (expr_)
-//     {
-//         swiftAssert(child_ == 0, "child_ must be zero, when there is an expr_");
-//
-//         // -> yes, it is
-//         result = expr_->analyze();
-//
-//         // take type of this expression
-//         type_ = expr_->type_->clone();
-//
-//         return result;
-//     }
-//
-//     // This list keeps track of all types in this InitList
-//     typedef List<Type*> TypeList;
-//     TypeList typeList;
-//
-//     /*
-//         find out all types of the init list in this level, check syntax
-//         and do all this stuff recursively
-//     */
-//     for (InitList* iter = next_; iter != 0; iter = iter->next_)
-//     {
-//         // propagate to next level
-//         result &= iter->child_->analyze();
-//         // and take over the type
-//         iter->type_ = iter->child_->type_;
-//
-//         typeList.append(iter->type_);
-//     }
-//
-//     return result;
-// }
-//
-// std::string InitList::toString() const
-// {
-//     std::ostringstream oss;
-//     oss << "{";
-//
-//     if (child_)
-//         oss << child_->toString();
-//     else
-//         oss << expr_->toString();
-//
-//     if (next_)
-//         oss << next_->toString() << ' ';
-//
-//     return oss.str();
-// }

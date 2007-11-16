@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 /**
- * @brief Base class for all instructions
+ * Base class for all instructions.
  */
 struct InstrBase
 {
@@ -34,8 +34,7 @@ typedef List<InstrBase*> InstrList;
 //------------------------------------------------------------------------------
 
 /**
- * @brief Implements phi functions
- * These instructions can artificially increase the life time of PseudoReg
+ * Implements phi functions.
  */
 struct PhiInstr : public InstrBase
 {

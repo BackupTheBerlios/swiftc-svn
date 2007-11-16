@@ -16,7 +16,6 @@
 
 int pointercount = -1;
 bool parseerror  = false;
-bool gencode     = true;
 
 std::string* operatorToString(int _operator)
 {

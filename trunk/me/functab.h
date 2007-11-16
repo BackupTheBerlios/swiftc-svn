@@ -59,7 +59,6 @@ struct Function
     /**
      * This method creates a new temp PseudoReg.
      * @param regType the type of the PseudoReg
-     * @param id name of the original var
     */
     PseudoReg* newTemp(PseudoReg::RegType regType, std::string* id);
 
@@ -108,6 +107,12 @@ struct FunctionTable
     PseudoReg* newTemp(PseudoReg::RegType regType);
 
 #ifdef SWIFT_DEBUG
+
+    /**
+     * This method creates a new temp PseudoReg.
+     * @param regType the type of the PseudoReg
+    */
+    PseudoReg* newTemp(PseudoReg::RegType regType, std::string* id);
 
     /**
      * This method creates a new var PseudoReg.

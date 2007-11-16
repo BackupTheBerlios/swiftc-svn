@@ -1,4 +1,4 @@
-#include "class.h"
+#include "fe/class.h"
 
 #include <sstream>
 
@@ -33,7 +33,6 @@ Class::~Class()
 
 void Class::createDefaultConstructor()
 {
-return; // TODO
     swiftAssert(hasCreate_ == false, "hasCreate_ must be true");
 
     Method* create = new Method(CREATE, new std::string("create"), this, -1);
@@ -46,24 +45,32 @@ return; // TODO
         // prepend default constructor
         create->next_ = classMember_;
         classMember_ = create;
+        symtab->insert(create);
     }
 }
 
 bool Class::analyze()
 {
+    const std::string& id = *id_;
+    if (   id ==  "int" || id ==  "int8" || id ==  "int16" || id ==  "int32" || id ==  "int64"
+        || id == "uint" || id == "uint8" || id == "uint16" || id == "uint32" || id == "uint64"
+        || id == "sat8" || id == "sat16" || id ==  "usat8" || id == "usat16"
+        || id == "real" || id == "real32"|| id ==  "real64"
+        || id == "bool")
+    {
+        // skip builtin types.
+        return true;
+    }
+
+
     // assume true as initial state
     bool result = true;
 
     symtab->enterClass(this);
 
-    // points to the last classMember of this class after the loop below
-    ClassMember* lastClassMember = 0;
-
     // for each class member
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
     {
-        lastClassMember = iter;
-
         /*
             TODO since this is an O(n^2) algorithm it should be checked
             whether in real-world-programms an O(n log n) algorithm with sorting

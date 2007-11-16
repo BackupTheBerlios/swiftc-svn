@@ -1,4 +1,4 @@
-#include "cfg.h"
+#include "me/cfg.h"
 
 #include "me/functab.h"
 
@@ -374,7 +374,7 @@ void CFG::renameVars()
         postOrder_[i]->value_->vars_.clear();
 
     // for all vars, no temps
-    REGMAP_EACH(iter, vars)
+    for (RegMap::iterator iter = vars.begin(); iter->first < 0 && iter != vars.end(); ++iter)
     {
         delete iter->second;
         vars.erase(iter);
@@ -401,6 +401,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
             swiftAssert(size_t(-phi->oldResultVar_) < names.size(), "index out of bounds");
             names[ -phi->oldResultVar_ ].push(reg);
             phi->result_ = reg;
+
             continue;
         }
         else if ( typeid(*instr) == typeid(AssignInstr) )

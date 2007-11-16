@@ -1,4 +1,4 @@
-#include "pseudoreg.h"
+#include "me/pseudoreg.h"
 
 #include <iostream>
 #include <cmath> // for fmod
@@ -57,7 +57,7 @@ std::string PseudoReg::toString() const
                     oss << ".q";
                 else
                     oss << "q"; // FIXME
-                    std::cout << "fjkdlfjkdjfdl" << fmod(value_.real64_, 1.0) << std::endl;
+                    std::cout << "TODO" << fmod(value_.real64_, 1.0) << std::endl;
                 break;
             default:
                 swiftAssert(false, "VR_* not implemented yet");
@@ -75,7 +75,6 @@ std::string PseudoReg::toString() const
     else
     {
         // -> it is a temp
-
 #ifdef SWIFT_DEBUG
         if ( id_ == std::string("") )
             oss << "tmp";

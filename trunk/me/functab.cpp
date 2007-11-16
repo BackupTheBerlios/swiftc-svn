@@ -1,4 +1,4 @@
-#include "functab.h"
+#include "me/functab.h"
 
 #include <algorithm>
 #include <sstream>
@@ -50,7 +50,6 @@ PseudoReg* Function::newTemp(PseudoReg::RegType regType)
 
     return reg;
 }
-
 
 #ifdef SWIFT_DEBUG
 
@@ -140,7 +139,17 @@ Function* FunctionTable::insertFunction(string* id)
     return current_;
 }
 
+PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
+{
+    return current_->newTemp(regType);
+}
+
 #ifdef SWIFT_DEBUG
+
+PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType, std::string* id)
+{
+    return current_->newTemp(regType, id);
+}
 
 PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr, std::string* id)
 {
@@ -155,11 +164,6 @@ PseudoReg* FunctionTable::newVar(PseudoReg::RegType regType, int varNr)
 }
 
 #endif // SWIFT_DEBUG
-
-PseudoReg* FunctionTable::newTemp(PseudoReg::RegType regType)
-{
-    return current_->newTemp(regType);
-}
 
 PseudoReg* FunctionTable::lookupReg(int regNr)
 {

@@ -112,7 +112,7 @@ int start(int argc, char** argv)
         std::cerr << "error" << std::endl;
         return EXIT_FAILURE; // abort on error
     }
-return 0;
+
     /*
         build up middle-end:
 
@@ -182,8 +182,6 @@ return 0;
 
 void readBuiltinTypes()
 {
-    gencode = false;
-
     /*
         read builtin types
     */
@@ -221,6 +219,4 @@ void readBuiltinTypes()
         swiftparse();
         fclose(file);
     }
-
-    gencode = true;
 }

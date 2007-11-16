@@ -177,39 +177,6 @@ struct BinExpr : public Expr
 
 //------------------------------------------------------------------------------
 
-/* replaced by AssignStatement
-
-struct AssignExpr : public Expr
-{
-    union
-    {
-        int kind_;
-        char c_;
-    };
-
-    Expr* result_;
-    Expr* expr_;
-
-    AssignExpr(int kind, Expr* result, Expr* expr, int line = NO_LINE)
-        : Expr(line)
-        , kind_(kind)
-        , result_(result)
-        , expr_(expr)
-    {}
-    ~AssignExpr()
-    {
-        delete result_;
-        delete expr_;
-    }
-
-    bool analyze();
-    void genSSA();
-};
-
-*/
-
-//------------------------------------------------------------------------------
-
 /**
  * This class represents a comma sperated list of Expr instances used in
  * function/method/contructor calls.

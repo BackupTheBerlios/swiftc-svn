@@ -82,7 +82,6 @@ std::string Symbol::getFullName() const
 
 SyntaxTree::~SyntaxTree()
 {
-std::cout << "destroy..." << std::endl;
     delete rootModule_;
 }
 

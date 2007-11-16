@@ -35,6 +35,33 @@ struct Statement : public Node
 //------------------------------------------------------------------------------
 
 /**
+ * An ExprStatement is an Statement which holds an Expr.
+ */
+struct ExprStatement : public Statement
+{
+    Expr* expr_;
+
+/*
+    constructor and destructor
+*/
+
+    ExprStatement(Expr* expr, int line = NO_LINE)
+        : Statement(line)
+        , expr_(expr)
+    {}
+    virtual ~ExprStatement();
+
+/*
+    further methods
+*/
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
+//------------------------------------------------------------------------------
+
+/**
  * This is Declaration, consisting of a Type, an Identifier and an ExprList.
  * Furthermore it will create a Local which will be inserted in the SymbolTable.
  */
@@ -64,28 +91,33 @@ struct Declaration : public Statement
 //------------------------------------------------------------------------------
 
 /**
- * An ExprStatement is an Statement which holds an Expr.
+ * This is an ordinary assignment. In contrast to other languages assignments in
+ * Swift are no expresions but statements.
  */
-struct ExprStatement : public Statement
+struct AssignStatement : public Statement
 {
-    Expr* expr_;
+    union
+    {
+        int kind_;
+        char c_; ///< '=', others will follow.
+    };
+
+    Expr*       expr_;      ///< The lvalue.
+    ExprList*   exprList_;  ///< The rvalue.
 
 /*
     constructor and destructor
 */
 
-    ExprStatement(Expr* expr, int line = NO_LINE)
-        : Statement(line)
-        , expr_(expr)
-    {}
-    virtual ~ExprStatement();
+    AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE);
+    virtual ~AssignStatement();
 
 /*
     further methods
 */
 
     virtual bool analyze();
-    virtual std::string toString() const { return std::string(""); }
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -120,41 +152,5 @@ struct IfElStatement : public Statement
     virtual std::string toString() const { return std::string(""); }
 };
 
-
-//------------------------------------------------------------------------------
-
-/**
- * This is an ordinary assignment. In contrast to other languages assignments in
- * Swift are no expresions but statements.
- */
-struct AssignStatement : public Statement
-{
-    union
-    {
-        int kind_;
-        char c_; ///< '=', others will follow.
-    };
-
-    Expr*       expr_;      ///< The lvalue.
-    ExprList*   exprList_;  ///< The rvalue.
-
-/*
-    constructor and destructor
-*/
-
-    AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE)
-        : Statement(line)
-        , expr_(expr)
-        , exprList_(exprList)
-    {}
-    virtual ~AssignStatement();
-
-/*
-    further methods
-*/
-
-    virtual bool analyze();
-    void genSSA();
-};
 
 #endif // SWIFT_STATEMENT_H

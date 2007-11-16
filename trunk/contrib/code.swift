@@ -21,7 +21,7 @@ class Test
     end
 
     routine test(Foo foo) -> real re, int rs, inout int bs
-        int e = 4, 7.0, 6
+        int e = 4
         int b = 8
         int a = 5 * 6 + 7
         int c
@@ -80,6 +80,8 @@ class Test
 end
 
 class Foo
-    int i
+    create ()
+        int i = 6
+    end
 end
 

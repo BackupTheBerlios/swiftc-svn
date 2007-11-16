@@ -1,4 +1,4 @@
-#include "type.h"
+#include "fe/type.h"
 
 #include <iostream>
 #include <sstream>
@@ -18,6 +18,19 @@ BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
     : Node(line)
     , id_(id)
     , builtin_(false)
+{
+    builtin_ =
+           *id ==  "int" || *id ==  "int8" || *id ==  "int16" || *id ==  "int32" || *id ==  "int64"
+        || *id == "uint" || *id == "uint8" || *id == "uint16" || *id == "uint32" || *id == "uint64"
+        || *id == "sat8" || *id == "sat16" || *id ==  "usat8" || *id == "usat16"
+        || *id == "real" || *id == "real32"|| *id ==  "real64"
+        || *id == "bool";
+}
+
+BaseType::BaseType(std::string* id, bool builtin)
+    : Node(-1)
+    , id_(id)
+    , builtin_(builtin)
 {}
 
 BaseType::~BaseType()
@@ -32,7 +45,7 @@ BaseType::~BaseType()
 
 BaseType* BaseType::clone() const
 {
-    return new BaseType( new std::string(*id_), NO_LINE);
+    return new BaseType( new std::string(*id_), builtin_ );
 }
 
 PseudoReg::RegType BaseType::toRegType() const
@@ -41,7 +54,7 @@ PseudoReg::RegType BaseType::toRegType() const
 
     if (id == "index")
         return PseudoReg::R_INDEX;
-    else if (id == "INT")
+    else if (id == "int")
         return PseudoReg::R_INT;
     else if (id == "int8")
         return PseudoReg::R_INT8;
@@ -82,6 +95,11 @@ PseudoReg::RegType BaseType::toRegType() const
         return PseudoReg::R_BOOL;
     else
         return PseudoReg::R_STRUCT;
+}
+
+bool BaseType::isBuiltin() const
+{
+    return builtin_;
 }
 
 //------------------------------------------------------------------------------
@@ -156,3 +174,9 @@ bool Type::isBool() const
 {
     return *baseType_->id_ == "bool";
 }
+
+bool Type::isBuiltin() const
+{
+    return baseType_->isBuiltin() && pointerCount_ == 0;
+}
+

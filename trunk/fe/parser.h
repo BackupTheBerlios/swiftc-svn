@@ -21,7 +21,6 @@ struct Expr;
 //------------------------------------------------------------------------------
 
 extern bool parseerror;
-extern bool gencode;
 
 extern "C" int swiftparse();
 

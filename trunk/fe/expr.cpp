@@ -1,4 +1,4 @@
-#include "expr.h"
+#include "fe/expr.h"
 
 #include <cmath>
 #include <iostream>
@@ -153,8 +153,7 @@ bool Literal::analyze()
             swiftAssert(false, "illegal switch-case-value");
     }
 
-    if (gencode)
-        genSSA();
+    genSSA();
 
     return true;
 }
@@ -162,8 +161,7 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate PseudoReg
-    if (gencode)
-        reg_ = new PseudoReg( toRegType() );
+    reg_ = new PseudoReg( toRegType() );
 
     switch (kind_)
     {
@@ -290,22 +288,19 @@ bool Id::analyze()
     else
         type_ = var->type_->clone();
 
-    if (gencode)
-    {
-        swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
-        Local* local = (Local*) var;
-        reg_ = functab->lookupReg(local->varNr_);
+    swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
+    Local* local = (Local*) var;
+    reg_ = functab->lookupReg(local->varNr_);
 
-        if (reg_ == 0)
-        {
+    if (reg_ == 0)
+    {
 #ifdef SWIFT_DEBUG
-            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
+        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
 #else // SWIFT_DEBUG
-            reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
+        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
 #endif // SWIFT_DEBUG
-            local->varNr_ = reg_->regNr_;
-            symtab->insertLocalByVarNr(local);
-        }
+        local->varNr_ = reg_->regNr_;
+        symtab->insertLocalByVarNr(local);
     }
 
     return true;
@@ -364,8 +359,7 @@ bool UnExpr::analyze()
         }
     }
 
-    if (gencode)
-        genSSA();
+    genSSA();
 
     return true;
 }
@@ -452,7 +446,9 @@ bool BinExpr::analyze()
     Sig sig;
     sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
     sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
-    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, operatorToString(kind_), OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
+    std::string* opString = operatorToString(kind_); // TODO remove pointer stuff here
+    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, opString, OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
+    delete opString;
 
     if (!method)
     {
@@ -468,8 +464,7 @@ bool BinExpr::analyze()
     type_ = method->sig_.findFirstOut()->type_->clone();
     swiftAssert(type_, "an operator should always return a type");
 
-    if (gencode)
-        genSSA();
+    genSSA();
 
     return true;
 }
@@ -498,50 +493,11 @@ void BinExpr::genSSA()
             kind = kind_;
     }
 
-    functab->appendInstr( new AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+    if ( op1_->type_->isBuiltin() )
+        functab->appendInstr( new AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+    else
+        swiftAssert(false, "TODO");
 }
-
-//------------------------------------------------------------------------------
-
-/* replaced by AssignStatement
-
-bool AssignExpr::analyze()
-{
-    // return false when syntax is wrong
-    if ( !result_->analyze() || !expr_->analyze() )
-        return false;
-
-
-    if ( !Type::check(result_->type_, expr_->type_) )
-    {
-        errorf( result_->line_, "assign expression used with different types" );
-        return false;
-    }
-
-    type_ = result_->type_->clone();
-
-    lvalue_ = false;
-
-    genSSA();
-
-    return true;
-}
-
-void AssignExpr::genSSA()
-{
-    SymTabEntry* entry = symtab->lookupVar(result_->reg_->regNr_);
-
-    // cast to local
-    swiftAssert( typeid(*entry) == typeid(Local), "TODO: What if it is not a Local*?" );
-    Local* local = (Local*) entry;
-
-    swiftAssert( typeid(*local->type_->baseType_) == typeid(SimpleType), "TODO" );
-
-    reg_ = result_->reg_;//functab->newVar( ((SimpleType*) local->type_->baseType_)->toRegType(), local->regNr_ );
-    functab->appendInstr( new AssignInstr(kind_, reg_, expr_->reg_) );
-}
-
-*/
 
 //------------------------------------------------------------------------------
 

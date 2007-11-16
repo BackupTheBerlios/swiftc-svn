@@ -1,4 +1,4 @@
-#include "method.h"
+#include "fe/method.h"
 
 #include <sstream>
 
@@ -24,6 +24,7 @@ Method::Method(int methodQualifier, std::string* id, Symbol* parent, int line /*
 Method::~Method()
 {
     delete rootScope_;
+    delete statements_;
 }
 
 /*
@@ -36,32 +37,28 @@ bool Method::analyze()
 
     symtab->enterMethod(this);
 
-    if (gencode)
-    {
-        /*
-            build a function name for the functab consisting of the class name,
-            the method name and a counted number to prevent name clashes
-            due to overloading
-        */
-        std::ostringstream oss;
+    /*
+        build a function name for the functab consisting of the class name,
+        the method name and a counted number to prevent name clashes
+        due to overloading
+    */
+    std::ostringstream oss;
 
-        oss << *symtab->class_->id_ << '#';
+    oss << *symtab->class_->id_ << '#';
 
-        if (methodQualifier_ == OPERATOR)
-            oss << "operator";
-        else
-            oss << *id_;
+    if (methodQualifier_ == OPERATOR)
+        oss << "operator";
+    else
+        oss << *id_;
 
-        static int counter = 0;
+    static int counter = 0;
 
-        oss << '#' << counter;
-        ++counter;
+    oss << '#' << counter;
+    ++counter;
 
-        functab->insertFunction( new std::string(oss.str()) );
-
-        // insert the first label since every function must start with one
-        functab->appendInstr( new LabelInstr() );
-    }
+    functab->insertFunction( new std::string(oss.str()) );
+    // insert the first label since every function must start with one
+    functab->appendInstr( new LabelInstr() );
 
     // is it an operator?
     if (methodQualifier_ == OPERATOR)
@@ -149,8 +146,7 @@ bool Method::analyze()
         result &= iter->analyze();
 
     // insert the last label since every function must end with one
-    if (gencode)
-        functab->appendInstr( new LabelInstr() );
+    functab->appendInstr( new LabelInstr() );
 
     symtab->leaveMethod();
 
@@ -160,7 +156,7 @@ bool Method::analyze()
 // std::string Method::toString() const
 // {
 //     std::ostringstream oss;
-// 
+//
 //     switch (methodQualifier_)
 //     {
 //         case CREATE:                        break;
@@ -172,6 +168,6 @@ bool Method::analyze()
 //             swiftAssert(false, "illegal case value");
 //             return "";
 //     }
-// 
+//
 //     return oss.str() + sig_.toString();
 // }

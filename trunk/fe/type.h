@@ -13,10 +13,11 @@ struct BaseType : public Node
     bool builtin_;
 
 /*
-    constructor and destructor
+    constructors and destructor
 */
 
     BaseType(std::string* id, int line = NO_LINE);
+    BaseType(std::string* id, bool builtin);
     ~BaseType();
 
 /*
@@ -24,6 +25,13 @@ struct BaseType : public Node
 */
     BaseType* clone() const;
     PseudoReg::RegType toRegType() const;
+
+    /**
+     * Checks whether this is a builtin type.
+     *
+     * @return True if this is a built in type, false otherwise
+     */
+    bool isBuiltin() const;
 };
 
 //------------------------------------------------------------------------------
@@ -60,6 +68,13 @@ struct Type : public Node
 
     /// Checks whether this Type is the builtin bool Type
     bool isBool() const;
+
+    /**
+     * Checks whether this is a builtin type.
+     *
+     * @return True if this is a built in type, false otherwise
+     */
+    bool isBuiltin() const;
 
     std::string toString() const;
 };
