@@ -117,6 +117,12 @@ std::string AssignInstr::getOpString() const
         case GE:
             opString = ">=";
             break;
+        case '<':
+            opString = "\\<"; // must be escaped for graphviz' dot
+            break;
+        case '>':
+            opString = "\\>"; // must be escaped for graphviz' dot
+            break;
         default:
             opString = c_;
     }

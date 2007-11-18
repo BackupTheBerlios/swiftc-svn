@@ -328,15 +328,18 @@ void Graph<T>::dumpDot(const std::string& baseFilename)
     // prepare graphviz dot file
     ofs << "digraph " << this->name() << " {" << std::endl << std::endl;
 
+    // set nodes to record shape
+    ofs << "node [shape=record]" << std::endl << std::endl;
+
     // iterate over all nodes
     for (Relative* iter = nodes_.first(); iter != nodes_.sentinel(); iter = iter->next())
     {
         Node* n = iter->value_;
         // start a new node
-        ofs << n->value_->name() << " [shape=box, label=\"\\" << std::endl;
+        ofs << n->value_->name() << " [label=\"{\\" << std::endl;
         ofs << n->value_->toString();
         // close this node
-        ofs << "\"]" << std::endl << std::endl;
+        ofs << "}\"]" << std::endl << std::endl;
     }
 
     // iterate over all nodes in order to print connections
