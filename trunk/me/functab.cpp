@@ -196,6 +196,8 @@ void FunctionTable::buildUpME()
         function->cfg_.calcDomFrontier();
         function->cfg_.placePhiFunctions();
         function->cfg_.renameVars();
+        function->cfg_.calcDef();
+        function->cfg_.calcUse();
     }
 }
 

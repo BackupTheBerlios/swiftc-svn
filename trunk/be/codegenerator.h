@@ -26,11 +26,25 @@ struct CodeGenerator
 
     void genCode();
 
-//private:
+private:
+
+/*
+    liveness stuff
+*/
+    /// Knows during the liveness analysis which basic blocks have already been visted
+    typedef std::set<BBNode*> BBSet;
+    BBSet walked_;
+
+    void livenessAnalysis();
+    void liveOutAtBlock(BBNode* bb, PseudoReg* var);
+    void liveInAtInstr (InstrBase* instr, PseudoReg* var);
+    void liveInOutInstr(InstrBase* instr, PseudoReg* var);
 
     void spill();
+
     void color();
     void colorRecursive(BBNode* bb);
+
     void coalesce();
 };
 

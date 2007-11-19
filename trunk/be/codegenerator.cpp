@@ -16,9 +16,63 @@ Spiller* CodeGenerator::spiller_ = 0;
 
 void CodeGenerator::genCode()
 {
+    livenessAnalysis();
     spill();
     color();
     coalesce();
+}
+
+/*
+    liveness stuff
+*/
+
+void CodeGenerator::livenessAnalysis()
+{
+    // for each var
+    REGMAP_EACH(iter, function_->vars_)
+    {
+        PseudoReg* var = iter->second;
+
+        // for each use of var
+        USELIST_EACH(iter, var->uses_)
+        {
+            DefUse& use = iter->value_;
+            BBNode* bb = use.bbNode_;
+            InstrBase* instr = use.instr_;
+
+            if ( typeid(*instr) == typeid(PhiInstr) )
+            {
+                PhiInstr* phi = (PhiInstr*) phi;
+
+                // find the predecessor basic block
+                size_t i = 0;
+                while (phi->args_[i] != var)
+                    ++i;
+
+                BBNode* pred = phi->sourceBBs_[i];
+
+                // examine the found block
+                liveOutAtBlock(pred, var);
+            }
+            else
+                liveInAtInstr(instr, var);
+        }
+    }
+
+    // clean up
+    walked_.clear();
+}
+
+void CodeGenerator::liveOutAtBlock(BBNode* bb, PseudoReg* var)
+{
+}
+
+void CodeGenerator::liveInAtInstr (InstrBase* instr, PseudoReg* var)
+{
+}
+
+void CodeGenerator::liveInOutInstr(InstrBase* instr, PseudoReg* var)
+{
 }
 
 void CodeGenerator::spill()

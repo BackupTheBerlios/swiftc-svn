@@ -20,8 +20,6 @@ CFG::~CFG()
     methods
 */
 
-// TODO remove labelNode2BBNode_
-
 void CFG::calcCFG()
 {
     swiftAssert( typeid( *instrList_.first()->value_ ) == typeid(LabelInstr),
@@ -534,10 +532,13 @@ void CFG::calcUse()
     }
 }
 
-void CFG::calcUse(PseudoReg* var, BBNode* bb)
+void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
 {
+    BasicBlock* bb = bbNode->value_;
+    if (bb->value_->isEntry() || bb->value_->isExit())
+        goto cont;
     // iterate over the instruction list in this bb and find all uses
-    for (InstrList::Node* iter = bb->value_->begin_; iter != bb->value_->end_; iter = iter->next())
+    for (InstrList::Node* iter = bb->begin_; iter != bb->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
 
@@ -547,12 +548,12 @@ void CFG::calcUse(PseudoReg* var, BBNode* bb)
 
             // note that a = b + b can cause a double entry in the list
             if (ai->op1_ == var)
-                var->uses_.append( DefUse(instr, bb) );
+                var->uses_.append( DefUse(instr, bbNode) );
             if (ai->op1_ == var)
-                var->uses_.append( DefUse(instr, bb) );
+                var->uses_.append( DefUse(instr, bbNode) );
         }
     }
-
+cont:
     // for each child of bb in the dominator tree
     BBLIST_EACH(iter, bb->value_->domChildren_)
         calcUse(var, iter->value_);

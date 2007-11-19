@@ -29,7 +29,7 @@ struct DefUse
 typedef List<DefUse> UseList;
 
 #define USELIST_EACH(iter, useList) \
-    for (DefUse::Node* (iter) = (useList).first(); (iter) != (useList).sentinel(); (iter) = (iter)->next())
+    for (UseList::Node* (iter) = (useList).first(); (iter) != (useList).sentinel(); (iter) = (iter)->next())
 
 
 #endif // SWIFT_DEFUSE_H
