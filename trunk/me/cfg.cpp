@@ -510,15 +510,16 @@ void CFG::calcDef()
     // knows the current BB in the iteration
     BBNode* currentBB;
 
-    // iterate over the instruction list and find all definitions
-    INSTRLIST_EACH(iter, instrList_)
+    // iterate over the instruction list except the last LabelInstr and find all definitions
+    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel()->prev(); iter = iter->next())
     {
         InstrBase* instr = iter->value_;
-
-        if ( typeid(*instr) == typeid(AssignInstr) )
-            ((AssignInstr*) instr)->result_->def_.set(instr, currentBB); // store def
-        else if (typeid(*instr) == typeid(LabelInstr) )
+        if (typeid(*instr) == typeid(LabelInstr) )
             currentBB = labelNode2BBNode_[iter]; // new basic block
+        else if ( typeid(*instr) == typeid(AssignInstr) )
+            ((AssignInstr*) instr)->result_->def_.set(instr, currentBB); // store def
+        else if ( typeid(*instr) == typeid(PhiInstr) )
+            ((PhiInstr*) instr)->result_->def_.set(instr, currentBB); // store def
     }
 }
 
@@ -535,27 +536,29 @@ void CFG::calcUse()
 void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
-    if (bb->value_->isEntry() || bb->value_->isExit())
-        goto cont;
-    // iterate over the instruction list in this bb and find all uses
-    for (InstrList::Node* iter = bb->begin_; iter != bb->end_; iter = iter->next())
+
+    if ( !bb->isEntry() && !bb->isExit() )
     {
-        InstrBase* instr = iter->value_;
-
-        if ( typeid(*instr) == typeid(AssignInstr) )
+        // iterate over the instruction list in this bb and find all uses
+        for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
-            AssignInstr* ai = (AssignInstr*) instr;
+            InstrBase* instr = iter->value_;
 
-            // note that a = b + b can cause a double entry in the list
-            if (ai->op1_ == var)
-                var->uses_.append( DefUse(instr, bbNode) );
-            if (ai->op1_ == var)
-                var->uses_.append( DefUse(instr, bbNode) );
+            if ( typeid(*instr) == typeid(AssignInstr) )
+            {
+                AssignInstr* ai = (AssignInstr*) instr;
+
+                // note that a = b + b can cause a double entry in the list
+                if (ai->op1_ == var)
+                    var->uses_.append( DefUse(instr, bbNode) );
+                if (ai->op1_ == var)
+                    var->uses_.append( DefUse(instr, bbNode) );
+            }
         }
     }
-cont:
+
     // for each child of bb in the dominator tree
-    BBLIST_EACH(iter, bb->value_->domChildren_)
+    BBLIST_EACH(iter, bb->domChildren_)
         calcUse(var, iter->value_);
 }
 
