@@ -20,7 +20,7 @@ struct CFG : public Graph<BasicBlock>
     Function* function_;
     InstrList& instrList_;
 
-    typedef std::map<InstrList::Node*, BBNode*> LabelNode2BBNodeMap;
+    typedef std::map<InstrNode, BBNode*> LabelNode2BBNodeMap;
     /// with this data structure we can quickly find a BB with a given starting label
     LabelNode2BBNodeMap labelNode2BBNode_;
 
@@ -61,5 +61,8 @@ struct CFG : public Graph<BasicBlock>
     std::string dumpDomChildren() const;
     std::string dumpDomFrontier() const;
 };
+
+#define CFG_RELATIVES_EACH(iter, relatives) \
+    for (CFG::Relative* (iter) = (relatives).first(); (iter) != (relatives).sentinel(); (iter) = (iter)->next())
 
 #endif // SWIFT_CFG_H

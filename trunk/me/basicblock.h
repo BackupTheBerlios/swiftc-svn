@@ -16,8 +16,8 @@
 
 struct BasicBlock
 {
-    InstrList::Node* begin_;
-    InstrList::Node* end_;
+    InstrNode begin_;
+    InstrNode end_;
 
     size_t index_;
 
@@ -26,10 +26,12 @@ struct BasicBlock
 
     /// keeps acount of the vars which are assigned to in this basic block last
     RegMap vars_;
+    RegMap liveIn_;
+    RegMap liveOut_;
 
     BasicBlock() {}
 
-    BasicBlock(InstrList::Node* begin, InstrList::Node* end)
+    BasicBlock(InstrNode begin, InstrNode end)
         : begin_(begin)
         , end_(end)
     {}

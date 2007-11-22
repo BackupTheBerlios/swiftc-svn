@@ -16,6 +16,7 @@ struct Function;
 
 struct InstrBase;
 typedef List<InstrBase*> InstrList;
+typedef InstrList::Node* InstrNode;
 
 struct PseudoReg;
 typedef List<PseudoReg*> RegList;

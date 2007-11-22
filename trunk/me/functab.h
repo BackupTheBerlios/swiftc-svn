@@ -136,7 +136,7 @@ struct FunctionTable
     PseudoReg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
-    void appendInstrNode(InstrList::Node* node);
+    void appendInstrNode(InstrNode node);
     void buildUpME();
 
     void dumpSSA();

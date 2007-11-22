@@ -33,7 +33,7 @@ std::string BasicBlock::toString() const
         oss << '\t' << begin_->value_->toString() << "|\\" << std::endl; // print instruction
 
         // for all instructions in this basic block except the first and the last LabelInstr
-        for (InstrList::Node* instrIter = begin_->next(); instrIter != end_; instrIter = instrIter->next())
+        for (InstrNode instrIter = begin_->next(); instrIter != end_; instrIter = instrIter->next())
             oss << '\t' << instrIter->value_->toString() << "\\l\\" << std::endl; // print instruction
     }
 

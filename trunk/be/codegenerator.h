@@ -32,13 +32,13 @@ private:
     liveness stuff
 */
     /// Knows during the liveness analysis which basic blocks have already been visted
-    typedef std::set<BBNode*> BBSet;
+    typedef std::set<BasicBlock*> BBSet;
     BBSet walked_;
 
     void livenessAnalysis();
-    void liveOutAtBlock(BBNode* bb, PseudoReg* var);
-    void liveInAtInstr (InstrBase* instr, PseudoReg* var);
-    void liveInOutInstr(InstrBase* instr, PseudoReg* var);
+    void liveOutAtBlock(BBNode* bbNode, PseudoReg* var);
+    void liveInAtInstr (InstrNode instr, PseudoReg* var);
+    void liveOutAtInstr(InstrNode instr, PseudoReg* var);
 
     void spill();
 

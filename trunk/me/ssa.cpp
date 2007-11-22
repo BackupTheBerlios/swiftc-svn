@@ -31,7 +31,7 @@ PhiInstr::PhiInstr(PseudoReg* result, size_t argc)
     , oldResultVar_(result->regNr_)
 {
     memset(args_, 0, sizeof(PseudoReg*) * argc);
-    memset(args_, 0, sizeof(InstrList::Node*) * argc);
+    memset(args_, 0, sizeof(InstrNode) * argc);
 }
 
 PhiInstr::~PhiInstr()
@@ -177,7 +177,7 @@ std::string GotoInstr::toString() const
 
 //------------------------------------------------------------------------------
 
-BranchInstr::BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode)
+BranchInstr::BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode)
     : boolReg_(boolReg)
     , trueLabelNode_(trueLabelNode)
     , falseLabelNode_(falseLabelNode)

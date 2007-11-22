@@ -15,7 +15,7 @@ FuncTab* functab = 0;
 Function::~Function()
 {
     // delete all instructions
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    for (InstrNode iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
         delete iter->value_;
 
     // delete all pseudo regs
@@ -97,7 +97,7 @@ void Function::dumpSSA(ofstream& ofs)
     ofs << *id_ << ":" << endl;
 
     // for all instructions in this function
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
+    for (InstrNode iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
     {
         // don't print a tab character if this is a label
         if ( typeid(*iter->value_) != typeid(LabelInstr) )
@@ -180,7 +180,7 @@ void FunctionTable::appendInstr(InstrBase* instr)
     current_->instrList_.append(instr);
 }
 
-void FunctionTable::appendInstrNode(InstrList::Node* node)
+void FunctionTable::appendInstrNode(InstrNode node)
 {
     current_->instrList_.append(node);
 }

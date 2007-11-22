@@ -257,8 +257,8 @@ bool IfElStatement::analyze()
     }
 
     // create labels
-    InstrList::Node* trueLabelNode  = new InstrList::Node( new LabelInstr() );
-    InstrList::Node* nextLabelNode  = new InstrList::Node( new LabelInstr() );
+    InstrNode trueLabelNode  = new InstrList::Node( new LabelInstr() );
+    InstrNode nextLabelNode  = new InstrList::Node( new LabelInstr() );
 
     if (!elBranch_)
     {
@@ -308,7 +308,7 @@ bool IfElStatement::analyze()
             nextLabelNode:
                 //...
         */
-        InstrList::Node* falseLabelNode = new InstrList::Node( new LabelInstr() );
+        InstrNode falseLabelNode = new InstrList::Node( new LabelInstr() );
 
         if (result)
         {

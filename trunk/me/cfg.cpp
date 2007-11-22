@@ -27,8 +27,8 @@ void CFG::calcCFG()
     swiftAssert( typeid( *instrList_.last ()->value_ ) == typeid(LabelInstr),
         "last instruction of a function must be a LabelInstr");
 
-    InstrList::Node* end = 0;
-    InstrList::Node* begin = 0;
+    InstrNode end = 0;
+    InstrNode begin = 0;
     BBNode* prevBB = 0;
 
     // iterate over the instruction list and find basic blocks
@@ -382,7 +382,7 @@ void CFG::renameVars()
 void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
 {
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
-    for (InstrList::Node* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
 
@@ -452,7 +452,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
         size_t j = succ->whichPred(bb);
 
         // for each phi function in succ -> start with the first instruction which is followed by the leading LabelInstr
-        for (InstrList::Node* iter = succ->value_->begin_->next(); iter != succ->value_->end_; iter = iter->next())
+        for (InstrNode iter = succ->value_->begin_->next(); iter != succ->value_->end_; iter = iter->next())
         {
             PhiInstr* phi = dynamic_cast<PhiInstr*>(iter->value_);
 
@@ -480,7 +480,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     }
 
     // for each AssignInstr in bb
-    for (InstrList::Node* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
 
@@ -511,15 +511,15 @@ void CFG::calcDef()
     BBNode* currentBB;
 
     // iterate over the instruction list except the last LabelInstr and find all definitions
-    for (InstrList::Node* iter = instrList_.first(); iter != instrList_.sentinel()->prev(); iter = iter->next())
+    for (InstrNode iter = instrList_.first(); iter != instrList_.sentinel()->prev(); iter = iter->next())
     {
         InstrBase* instr = iter->value_;
         if (typeid(*instr) == typeid(LabelInstr) )
             currentBB = labelNode2BBNode_[iter]; // new basic block
         else if ( typeid(*instr) == typeid(AssignInstr) )
-            ((AssignInstr*) instr)->result_->def_.set(instr, currentBB); // store def
+            ((AssignInstr*) instr)->result_->def_.set(iter, currentBB); // store def
         else if ( typeid(*instr) == typeid(PhiInstr) )
-            ((PhiInstr*) instr)->result_->def_.set(instr, currentBB); // store def
+            ((PhiInstr*) instr)->result_->def_.set(iter, currentBB); // store def
     }
 }
 
@@ -540,7 +540,7 @@ void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
     if ( !bb->isEntry() && !bb->isExit() )
     {
         // iterate over the instruction list in this bb and find all uses
-        for (InstrList::Node* iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
+        for (InstrNode iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
             InstrBase* instr = iter->value_;
 
@@ -550,9 +550,9 @@ void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
 
                 // note that a = b + b can cause a double entry in the list
                 if (ai->op1_ == var)
-                    var->uses_.append( DefUse(instr, bbNode) );
+                    var->uses_.append( DefUse(iter, bbNode) );
                 if (ai->op1_ == var)
-                    var->uses_.append( DefUse(instr, bbNode) );
+                    var->uses_.append( DefUse(iter, bbNode) );
             }
         }
     }

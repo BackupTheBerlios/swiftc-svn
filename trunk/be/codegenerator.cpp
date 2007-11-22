@@ -2,6 +2,7 @@
 
 #include <typeinfo>
 
+#include "me/cfg.h"
 #include "me/functab.h"
 
 /*
@@ -37,8 +38,7 @@ void CodeGenerator::livenessAnalysis()
         USELIST_EACH(iter, var->uses_)
         {
             DefUse& use = iter->value_;
-            BBNode* bb = use.bbNode_;
-            InstrBase* instr = use.instr_;
+            InstrBase* instr = use.instr_->value_;
 
             if ( typeid(*instr) == typeid(PhiInstr) )
             {
@@ -55,7 +55,7 @@ void CodeGenerator::livenessAnalysis()
                 liveOutAtBlock(pred, var);
             }
             else
-                liveInAtInstr(instr, var);
+                liveInAtInstr(use.instr_, var);
         }
     }
 
@@ -63,17 +63,78 @@ void CodeGenerator::livenessAnalysis()
     walked_.clear();
 }
 
-void CodeGenerator::liveOutAtBlock(BBNode* bb, PseudoReg* var)
+void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
 {
+    BasicBlock* bb = bbNode->value_;
+
+    // var is live-out at bb
+    bb->liveOut_.insert( std::make_pair(var->regNr_, var) );
+
+    // if bb not in var
+    if ( walked_.find(bb) == walked_.end() )
+    {
+        walked_.insert(bb);
+        liveOutAtInstr(bb->end_->prev(), var);
+    }
 }
 
-void CodeGenerator::liveInAtInstr (InstrBase* instr, PseudoReg* var)
+void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
 {
+    // var ist live-in at instr
+    instr->value_->liveIn_.insert( std::make_pair(var->regNr_, var) );
+
+    // is instr the first statement of basic block?
+    if ( typeid(*instr->value_) == typeid(LabelInstr) )
+    {
+        BBNode* bb = function_->cfg_.labelNode2BBNode_[instr];
+        if (bb)
+            bb->value_->liveIn_.insert( std::make_pair(var->regNr_, var) );
+
+        // for each predecessor of bb
+        CFG_RELATIVES_EACH(iter, bb->pred_)
+            liveOutAtBlock(iter->value_, var);
+    }
+    else
+    {
+        // get preceding statement to instr
+        InstrNode preInstr = instr->prev();
+        if ( preInstr != function_->instrList_.sentinel() )
+            liveOutAtInstr(preInstr, var);
+    }
 }
 
-void CodeGenerator::liveInOutInstr(InstrBase* instr, PseudoReg* var)
+void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 {
+    // var ist live-out at instr
+    instr->value_->liveOut_.insert( std::make_pair(var->regNr_, var) );
+
+    // for each reg v, that instr defines
+    if ( typeid(*instr->value_) == typeid(AssignInstr) )
+    {
+        AssignInstr* ai = (AssignInstr*) instr->value_;
+
+        if ( ai->result_ != var )
+        {
+            // add (v, w) to interference graph
+            liveInAtInstr(instr, var);
+        }
+    }
+    // for each reg v, that instr defines
+    else if ( typeid(*instr->value_) == typeid(PhiInstr) )
+    {
+        PhiInstr* phi = (PhiInstr*) instr->value_;
+
+        if ( phi->result_ != var )
+        {
+            // add (v, w) to interference graph
+            liveInAtInstr(instr, var);
+        }
+    }
 }
+
+/*
+    coloring
+*/
 
 void CodeGenerator::spill()
 {
@@ -92,7 +153,7 @@ void CodeGenerator::color()
 void CodeGenerator::colorRecursive(BBNode* bb)
 {
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
-    for (InstrList::Node* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
 

@@ -15,6 +15,9 @@
  */
 struct InstrBase
 {
+    RegMap liveIn_;
+    RegMap liveOut_;
+
     /**
      * Only LITERAL PseudoRegs must be deleted here. Other (true) PseudoReg
      * will be deleted by the functab.
@@ -25,9 +28,10 @@ struct InstrBase
 };
 
 typedef List<InstrBase*> InstrList;
+typedef InstrList::Node* InstrNode;
 
 #define INSTRLIST_EACH(iter, instrList) \
-    for (InstrList::Node* (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
+    for (InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -168,10 +172,10 @@ struct LabelInstr : public InstrBase
  */
 struct GotoInstr : public InstrBase
 {
-    InstrList::Node* labelNode_;
+    InstrNode labelNode_;
     BBNode* succBB_;
 
-    GotoInstr(InstrList::Node* labelNode)
+    GotoInstr(InstrNode labelNode)
         : labelNode_(labelNode)
     {
         swiftAssert( typeid(*labelNode->value_) == typeid(LabelInstr),
@@ -196,13 +200,13 @@ struct BranchInstr : public InstrBase
 {
     PseudoReg* boolReg_;
 
-    InstrList::Node* trueLabelNode_;
-    InstrList::Node* falseLabelNode_;
+    InstrNode trueLabelNode_;
+    InstrNode falseLabelNode_;
 
     BBNode* trueBB_;
     BBNode* falseBB_;
 
-    BranchInstr(PseudoReg* boolReg, InstrList::Node* trueLabelNode, InstrList::Node* falseLabelNode);
+    BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode);
     ~BranchInstr();
 
     LabelInstr* trueLabel()
