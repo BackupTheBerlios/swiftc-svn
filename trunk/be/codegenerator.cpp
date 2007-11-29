@@ -17,6 +17,7 @@ Spiller* CodeGenerator::spiller_ = 0;
 
 void CodeGenerator::genCode()
 {
+    std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
     spill();
     color();
@@ -115,6 +116,7 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 
         if ( ai->result_ != var )
         {
+            std::cout << ai->result_->toString() << " -- " << var->toString() << std::endl;
             // add (v, w) to interference graph
             liveInAtInstr(instr, var);
         }
@@ -126,6 +128,7 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 
         if ( phi->result_ != var )
         {
+            std::cout << phi->result_->toString() << " -- " << var->toString() << std::endl;
             // add (v, w) to interference graph
             liveInAtInstr(instr, var);
         }
