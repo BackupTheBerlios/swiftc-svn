@@ -12,6 +12,8 @@
 // forward declaration
 struct Struct;
 struct InstrBase;
+struct IVar;
+typedef Graph<IVar>::Node VarNode;
 
 // -----------------------------------------------------------------------------
 
@@ -107,6 +109,10 @@ struct PseudoReg
 
     DefUse def_;   ///< knows where the var is defined
     UseList uses_; ///< knows all uses of this var
+
+#ifdef SWIFT_DEBUG
+    VarNode* varNode_;
+#endif // SWIFT_DEBUG
 
 #ifdef SWIFT_DEBUG
     PseudoReg(RegType regType, int regNr, std::string* id = 0)

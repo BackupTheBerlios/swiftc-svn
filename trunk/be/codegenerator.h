@@ -9,6 +9,7 @@
 
 // forward declarations
 struct CFG;
+struct IGraph;
 
 struct CodeGenerator
 {
@@ -17,12 +18,21 @@ struct CodeGenerator
     Function*       function_;
     CFG*            cfg_;
     std::ofstream&  ofs_;
+#ifdef SWIFT_DEBUG
+    IGraph*         ig_;
+#endif // SWIFT_DEBUG
 
-    CodeGenerator(std::ofstream& ofs, Function* function)
-        : function_(function)
-        , cfg_(&function->cfg_)
-        , ofs_(ofs)
-    {}
+/*
+    constructor and destructor
+*/
+    CodeGenerator(std::ofstream& ofs, Function* function);
+#ifdef SWIFT_DEBUG
+    ~CodeGenerator();
+#endif // SWIFT_DEBUG
+
+/*
+    methods
+*/
 
     void genCode();
 
@@ -40,6 +50,9 @@ private:
     void liveInAtInstr (InstrNode instr, PseudoReg* var);
     void liveOutAtInstr(InstrNode instr, PseudoReg* var);
 
+/*
+    register allocation
+*/
     void spill();
 
     void color();

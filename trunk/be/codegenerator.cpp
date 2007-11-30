@@ -5,6 +5,55 @@
 #include "me/cfg.h"
 #include "me/functab.h"
 
+//------------------------------------------------------------------------------
+
+#ifdef SWIFT_DEBUG
+
+struct IVar {
+    PseudoReg* var_;
+
+    IVar() {}
+    IVar(PseudoReg* var)
+        : var_(var)
+    {}
+
+    std::string name() const
+    {
+        return var_->toString();
+    }
+
+    std::string toString() const
+    {
+        return var_->toString();
+    }
+};
+
+struct IGraph : public Graph<IVar> {
+    IGraph(const std::string& name)
+        : name_(name)
+    {
+        // make the id readable for dot
+        for (size_t i = 0; i < name_.size(); ++i)
+        {
+            if (name_[i] == '#')
+                name_[i] = '_';
+        }
+    }
+
+    virtual std::string name() const
+    {
+        return std::string("ig_") + name_;
+    }
+
+    std::string name_;
+};
+
+typedef Graph<IVar>::Node VarNode;
+
+#endif // SWIFT_DEBUG
+
+//------------------------------------------------------------------------------
+
 /*
     init statics
 */
@@ -12,13 +61,35 @@
 Spiller* CodeGenerator::spiller_ = 0;
 
 /*
+    constructor and destructor
+*/
+
+CodeGenerator::CodeGenerator(std::ofstream& ofs, Function* function)
+    : function_(function)
+    , cfg_(&function->cfg_)
+    , ofs_(ofs)
+#ifdef SWIFT_DEBUG
+    , ig_( new IGraph(*function->id_) )
+#endif // SWIFT_DEBUG
+{}
+
+#ifdef SWIFT_DEBUG
+
+CodeGenerator::~CodeGenerator()
+{
+    delete ig_;
+}
+
+#endif // SWIFT_DEBUG
+
+/*
     methods
 */
 
 void CodeGenerator::genCode()
 {
-    std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
+    ig_->dumpDot( ig_->name() );
     spill();
     color();
     coalesce();
@@ -30,6 +101,17 @@ void CodeGenerator::genCode()
 
 void CodeGenerator::livenessAnalysis()
 {
+#ifdef SWIFT_DEBUG
+    // create var nodes
+    REGMAP_EACH(iter, function_->vars_)
+    {
+        PseudoReg* var = iter->second;
+
+        VarNode* varNode = ig_->insert( new IVar(var) );
+        var->varNode_ = varNode;
+    }
+#endif // SWIFT_DEBUG
+
     // for each var
     REGMAP_EACH(iter, function_->vars_)
     {
@@ -116,8 +198,8 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 
         if ( ai->result_ != var )
         {
-            std::cout << ai->result_->toString() << " -- " << var->toString() << std::endl;
             // add (v, w) to interference graph
+            var->varNode_->link(ai->result_->varNode_);
             liveInAtInstr(instr, var);
         }
     }
@@ -128,7 +210,7 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 
         if ( phi->result_ != var )
         {
-            std::cout << phi->result_->toString() << " -- " << var->toString() << std::endl;
+            var->varNode_->link(phi->result_->varNode_);
             // add (v, w) to interference graph
             liveInAtInstr(instr, var);
         }
