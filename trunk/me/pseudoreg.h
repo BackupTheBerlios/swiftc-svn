@@ -70,6 +70,8 @@ struct PseudoReg
      */
     int regNr_;
 
+    /// The color after coloring; -1 if it was not assigned already.
+    int color_;
 #ifdef SWIFT_DEBUG
     std::string id_; ///< this var stores the name of the orignal var in the debug version
 #endif
@@ -118,12 +120,14 @@ struct PseudoReg
     PseudoReg(RegType regType, int regNr, std::string* id = 0)
         : regType_(regType)
         , regNr_(regNr)
+        , color_(-1)
         , id_( id ? *id : "" )
     {}
 #else // SWIFT_DEBUG
     PseudoReg(RegType regType, int regNr)
         : regType_(regType)
         , regNr_(regNr)
+        , color_(-1)
     {}
 #endif // SWIFT_DEBUG
 
@@ -132,6 +136,7 @@ struct PseudoReg
     PseudoReg(RegType regType)
         : regType_(regType)
         , regNr_(LITERAL)
+        , color_(-1)
     {}
 
     bool isLiteral() const
@@ -157,11 +162,16 @@ struct PseudoReg
 };
 
 typedef std::map<int, PseudoReg*> RegMap;
+typedef std::set<PseudoReg*> RegSet;
+typedef List<PseudoReg*> RegList;
 
 /// Use this macro in order to easily visit all elements of a RegMap
 #define REGMAP_EACH(iter, regMap) \
     for (RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
 
-typedef List<PseudoReg*> RegList;
+/// Use this macro in order to easily visit all elements of a RegSet
+#define REGSET_EACH(iter, regSet) \
+    for (RegSet::iterator (iter) = (regSet).begin(); (iter) != (regSet).end(); ++(iter))
+
 
 #endif // SWIFT_PSEUDOREG_H

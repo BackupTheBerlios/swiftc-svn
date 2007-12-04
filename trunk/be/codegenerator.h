@@ -55,6 +55,9 @@ private:
 */
     void spill();
 
+    typedef std::set<int> Colors;
+    static int findFirstFreeColorAndAllocate(Colors& colors);
+
     void color();
     void colorRecursive(BBNode* bb);
 

@@ -2,6 +2,7 @@
 #define SWIFT_FORWARD_H
 
 #include <map>
+#include <set>
 
 #include "utils/list.h"
 #include "utils/graph.h"
@@ -21,5 +22,6 @@ typedef InstrList::Node* InstrNode;
 struct PseudoReg;
 typedef List<PseudoReg*> RegList;
 typedef std::map<int, PseudoReg*> RegMap;
+typedef std::set<PseudoReg*> RegSet;
 
 #endif // SWIFT_FORWARD_H

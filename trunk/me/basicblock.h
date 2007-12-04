@@ -26,8 +26,8 @@ struct BasicBlock
 
     /// keeps acount of the vars which are assigned to in this basic block last
     RegMap vars_;
-    RegMap liveIn_;
-    RegMap liveOut_;
+    RegSet liveIn_;
+    RegSet liveOut_;
 
     BasicBlock() {}
 

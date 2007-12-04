@@ -15,8 +15,8 @@
  */
 struct InstrBase
 {
-    RegMap liveIn_;
-    RegMap liveOut_;
+    RegSet liveIn_;
+    RegSet liveOut_;
 
     /**
      * Only LITERAL PseudoRegs must be deleted here. Other (true) PseudoReg

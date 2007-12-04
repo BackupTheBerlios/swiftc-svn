@@ -9,6 +9,8 @@
 
 #ifdef SWIFT_DEBUG
 
+#include <sstream>
+
 struct IVar {
     PseudoReg* var_;
 
@@ -24,7 +26,9 @@ struct IVar {
 
     std::string toString() const
     {
-        return var_->toString();
+        std::ostringstream oss;
+        oss << var_->toString() << " : " << var_->color_;
+        return oss.str();
     }
 };
 
@@ -88,10 +92,11 @@ CodeGenerator::~CodeGenerator()
 
 void CodeGenerator::genCode()
 {
+    std::cout << *function_->id_ << std::endl;
     livenessAnalysis();
-    ig_->dumpDot( ig_->name() );
     spill();
     color();
+    ig_->dumpDot( ig_->name() );
     coalesce();
 }
 
@@ -151,7 +156,7 @@ void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
     BasicBlock* bb = bbNode->value_;
 
     // var is live-out at bb
-    bb->liveOut_.insert( std::make_pair(var->regNr_, var) );
+    bb->liveOut_.insert(var);
 
     // if bb not in var
     if ( walked_.find(bb) == walked_.end() )
@@ -164,14 +169,14 @@ void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
 void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
 {
     // var ist live-in at instr
-    instr->value_->liveIn_.insert( std::make_pair(var->regNr_, var) );
+    instr->value_->liveIn_.insert(var);
 
     // is instr the first statement of basic block?
     if ( typeid(*instr->value_) == typeid(LabelInstr) )
     {
         BBNode* bb = function_->cfg_.labelNode2BBNode_[instr];
         if (bb)
-            bb->value_->liveIn_.insert( std::make_pair(var->regNr_, var) );
+            bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
         CFG_RELATIVES_EACH(iter, bb->pred_)
@@ -189,7 +194,7 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
 void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 {
     // var ist live-out at instr
-    instr->value_->liveOut_.insert( std::make_pair(var->regNr_, var) );
+    instr->value_->liveOut_.insert(var);
 
     // for each reg v, that instr defines
     if ( typeid(*instr->value_) == typeid(AssignInstr) )
@@ -221,6 +226,21 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
     coloring
 */
 
+int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
+{
+    int firstFreeColor = 0;
+    for (Colors::iterator iter = colors.begin(); iter != colors.end(); ++iter)
+    {
+        if (*iter != firstFreeColor)
+            break; // found a color
+        ++firstFreeColor;
+    }
+
+    // either allocate the found color in the set or insert a new slot in the set
+    colors.insert(firstFreeColor);
+    return firstFreeColor;
+}
+
 void CodeGenerator::spill()
 {
     spiller_->spill();
@@ -237,6 +257,14 @@ void CodeGenerator::color()
 
 void CodeGenerator::colorRecursive(BBNode* bb)
 {
+    Colors colors;
+    REGSET_EACH(iter, bb->value_->liveIn_)
+    {
+        int color = (*iter)->color_;
+        swiftAssert(color != -1, "color must be assigned here");
+        colors.insert(color);
+    }
+
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
@@ -246,9 +274,27 @@ void CodeGenerator::colorRecursive(BBNode* bb)
         if ( typeid(*instr) == typeid(AssignInstr) )
         {
             AssignInstr* ai = (AssignInstr*) instr;
+            // for each var on the right hand side
+            if ( ai->liveOut_.find(ai->op1_) != ai->liveOut_.end() )
+            {
+                // -> its the last use of op1
+                Colors::iterator iter = colors.find(ai->op1_->color_);
+                swiftAssert( iter != colors.end(), "colors must be found here");
+                colors.erase(iter); // last use of op1 so remove
+            }
+            if ( ai->op2_ && ai->liveOut_.find(ai->op2_) != ai->liveOut_.end() )
+            {
+                // -> its the last use of op2
+                Colors::iterator iter = colors.find(ai->op2_->color_);
+                swiftAssert( iter != colors.end(), "colors must be found here");
+                colors.erase(iter); // last use of op2 so remove
+            }
+            // for each var on the left hand side
+            // -> assign a color for result
+            ai->result_->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << ai->result_->color_ << std::endl;
         }
 
-        // for the left hand side
     }
 
     // for each child of bb in the dominator tree
