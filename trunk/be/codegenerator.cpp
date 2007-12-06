@@ -295,6 +295,27 @@ void CodeGenerator::colorRecursive(BBNode* bb)
             std::cout << ai->result_->color_ << std::endl;
         }
 
+        // for each var on the right hand side
+        if ( typeid(*instr) == typeid(PhiInstr) )
+        {
+            PhiInstr* phi = (PhiInstr*) instr;
+            // for each var on the right hand side
+            for (size_t i = 0; i < phi->argc_; ++i)
+            {
+                if ( phi->liveOut_.find(phi->args_[i]) != phi->liveOut_.end() )
+                {
+                    // -> its the last use of args_[i]
+                    Colors::iterator iter = colors.find(phi->args_[i]->color_);
+                    swiftAssert( iter != colors.end(), "colors must be found here");
+                    colors.erase(iter); // last use of op1 so remove
+                }
+            }
+            // for each var on the left hand side
+            // -> assign a color for result
+            phi->result_->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << phi->result_->color_ << std::endl;
+        }
+
     }
 
     // for each child of bb in the dominator tree
