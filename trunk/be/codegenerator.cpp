@@ -92,9 +92,9 @@ CodeGenerator::~CodeGenerator()
 
 void CodeGenerator::genCode()
 {
-//     std::cout << *function_->id_ << std::endl;
-    livenessAnalysis();
+    std::cout << *function_->id_ << std::endl;
     spill();
+    livenessAnalysis();
     color();
     ig_->dumpDot( ig_->name() );
     coalesce();
@@ -121,6 +121,7 @@ void CodeGenerator::livenessAnalysis()
     REGMAP_EACH(iter, function_->vars_)
     {
         PseudoReg* var = iter->second;
+        std::cout << var->toString() << std::endl;
 
         // for each use of var
         USELIST_EACH(iter, var->uses_)
@@ -158,7 +159,7 @@ void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
     // var is live-out at bb
     bb->liveOut_.insert(var);
 
-    // if bb not in var
+    // if bb not in walked_
     if ( walked_.find(bb) == walked_.end() )
     {
         walked_.insert(bb);
@@ -214,11 +215,13 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 
         if ( phi->result_ != var )
         {
-            var->varNode_->link(phi->result_->varNode_);
             // add (v, w) to interference graph
+            var->varNode_->link(phi->result_->varNode_);
             liveInAtInstr(instr, var);
         }
     }
+    else // -> var != result
+        liveInAtInstr(instr, var);
 }
 
 /*
@@ -256,12 +259,14 @@ void CodeGenerator::color()
 
 void CodeGenerator::colorRecursive(BBNode* bb)
 {
+    std::cout << "LIVE-IN: " << bb->value_->name() << std::endl;
     Colors colors;
     REGSET_EACH(iter, bb->value_->liveIn_)
     {
         int color = (*iter)->color_;
         swiftAssert(color != -1, "color must be assigned here");
         colors.insert(color);
+        std::cout << "\t" << (*iter)->toString() << ": " << color << std::endl;
     }
 
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
@@ -303,6 +308,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
             // for each var on the left hand side
             // -> assign a color for result
             ai->result_->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << ai->result_->toString() << ": " << ai->result_->color_ << std::endl;
         }
         // for each var on the right hand side
         else if ( typeid(*instr) == typeid(PhiInstr) )
@@ -332,6 +338,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
             // for each var on the left hand side
             // -> assign a color for result
             phi->result_->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << phi->result_->toString() << ": " << phi->result_->color_ << std::endl;
         }
     }
 
