@@ -548,10 +548,10 @@ void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
             {
                 AssignInstr* ai = (AssignInstr*) instr;
 
-                // note that a = b + b can cause a double entry in the list
                 if (ai->op1_ == var)
                     var->uses_.append( DefUse(iter, bbNode) );
-                if (ai->op2_ && ai->op2_ == var)
+                // use "else if" here in order to prevent double entries with instructions like a = b + b
+                else if (ai->op2_ && ai->op2_ == var)
                     var->uses_.append( DefUse(iter, bbNode) );
             }
         }

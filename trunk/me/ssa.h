@@ -10,6 +10,11 @@
 
 //------------------------------------------------------------------------------
 
+#define INSTRLIST_EACH(iter, instrList) \
+    for (InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
+
+//------------------------------------------------------------------------------
+
 /**
  * Base class for all instructions.
  */
@@ -24,14 +29,18 @@ struct InstrBase
     */
     virtual ~InstrBase() {}
 
+    /**
+     * Computes whether this \p instr ist the first instruction which does not
+     * have \p var in the \a liveOut_.
+     *
+     * @param instr The instruction which should be tested. \p instr must have
+     *      a predecessor.
+     * @param var The PseudoReg which should be tested.
+     */
+    static bool isLastUse(InstrNode instrNode, PseudoReg* var);
+
     virtual std::string toString() const = 0;
 };
-
-typedef List<InstrBase*> InstrList;
-typedef InstrList::Node* InstrNode;
-
-#define INSTRLIST_EACH(iter, instrList) \
-    for (InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------

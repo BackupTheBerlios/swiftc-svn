@@ -92,7 +92,7 @@ CodeGenerator::~CodeGenerator()
 
 void CodeGenerator::genCode()
 {
-    std::cout << *function_->id_ << std::endl;
+//     std::cout << *function_->id_ << std::endl;
     livenessAnalysis();
     spill();
     color();
@@ -145,10 +145,10 @@ void CodeGenerator::livenessAnalysis()
             else
                 liveInAtInstr(use.instr_, var);
         }
-    }
 
-    // clean up
-    walked_.clear();
+        // clean up
+        walked_.clear();
+    }
 }
 
 void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
@@ -170,13 +170,13 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
 {
     // var ist live-in at instr
     instr->value_->liveIn_.insert(var);
+    InstrNode prevInstr = instr->prev();
 
     // is instr the first statement of basic block?
-    if ( typeid(*instr->value_) == typeid(LabelInstr) )
+    if ( typeid(*prevInstr->value_) == typeid(LabelInstr) )
     {
-        BBNode* bb = function_->cfg_.labelNode2BBNode_[instr];
-        if (bb)
-            bb->value_->liveIn_.insert(var);
+        BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
         CFG_RELATIVES_EACH(iter, bb->pred_)
@@ -186,14 +186,13 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
     {
         // get preceding statement to instr
         InstrNode preInstr = instr->prev();
-        if ( preInstr != function_->instrList_.sentinel() )
-            liveOutAtInstr(preInstr, var);
+        liveOutAtInstr(preInstr, var);
     }
 }
 
 void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
 {
-    // var ist live-out at instr
+    // var is live-out at instr
     instr->value_->liveOut_.insert(var);
 
     // for each reg v, that instr defines
@@ -273,49 +272,67 @@ void CodeGenerator::colorRecursive(BBNode* bb)
         // for each var on the right hand side
         if ( typeid(*instr) == typeid(AssignInstr) )
         {
+            /*
+                REMARK for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
+                    instrNode has an predecessor in all cases because iter is initialized with the
+                    first instructin which is followed by the leading LabelInstr of this basic
+                    block. Thus the first instruction which is considered here will always be
+                    preceded by a LabelInstr.
+
+                    Furthermore Literals are no problems here since they are not found via
+                    isLastUse.
+            */
             AssignInstr* ai = (AssignInstr*) instr;
+
             // for each var on the right hand side
-            if ( ai->liveOut_.find(ai->op1_) != ai->liveOut_.end() )
+            if ( InstrBase::isLastUse(iter, ai->op1_) )
             {
                 // -> its the last use of op1
-                Colors::iterator iter = colors.find(ai->op1_->color_);
-                swiftAssert( iter != colors.end(), "colors must be found here");
-                colors.erase(iter); // last use of op1 so remove
+                Colors::iterator colorIter = colors.find(ai->op1_->color_);
+                swiftAssert( colorIter != colors.end(), "color must be found here");
+                colors.erase(colorIter); // last use of op1 so remove
             }
-            if ( ai->op2_ && ai->liveOut_.find(ai->op2_) != ai->liveOut_.end() )
+            // use "else if" here in order to prevent double entries with instructions like a = b + b
+            else if ( ai->op2_ && InstrBase::isLastUse(iter, ai->op2_) )
             {
                 // -> its the last use of op2
-                Colors::iterator iter = colors.find(ai->op2_->color_);
-                swiftAssert( iter != colors.end(), "colors must be found here");
-                colors.erase(iter); // last use of op2 so remove
+                Colors::iterator colorIter = colors.find(ai->op2_->color_);
+                swiftAssert( colorIter != colors.end(), "color must be found here");
+                colors.erase(colorIter); // last use of op2 so remove
             }
             // for each var on the left hand side
             // -> assign a color for result
             ai->result_->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << ai->result_->color_ << std::endl;
         }
-
         // for each var on the right hand side
-        if ( typeid(*instr) == typeid(PhiInstr) )
+        else if ( typeid(*instr) == typeid(PhiInstr) )
         {
+            /*
+                REMARK for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
+                    instrNode has an predecessor in all cases because iter is initialized with the
+                    first instructin which is followed by the leading LabelInstr of this basic
+                    block. Thus the first instruction which is considered here will always be
+                    preceded by a LabelInstr.
+
+                    Furthermore Literals are no problems here since they are not found via
+                    isLastUse.
+            */
             PhiInstr* phi = (PhiInstr*) instr;
             // for each var on the right hand side
             for (size_t i = 0; i < phi->argc_; ++i)
             {
-                if ( phi->liveOut_.find(phi->args_[i]) != phi->liveOut_.end() )
+                if (InstrBase::isLastUse(iter, phi->args_[i]) )
                 {
-                    // -> its the last use of args_[i]
-                    Colors::iterator iter = colors.find(phi->args_[i]->color_);
-                    swiftAssert( iter != colors.end(), "colors must be found here");
-                    colors.erase(iter); // last use of op1 so remove
+                    // -> its the last use of op1
+                    Colors::iterator colorIter = colors.find(phi->args_[i]->color_);
+                    swiftAssert( colorIter != colors.end(), "color must be found here");
+                    colors.erase(colorIter); // last use of op1 so remove
                 }
             }
             // for each var on the left hand side
             // -> assign a color for result
             phi->result_->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << phi->result_->color_ << std::endl;
         }
-
     }
 
     // for each child of bb in the dominator tree

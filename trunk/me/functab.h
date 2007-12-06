@@ -34,8 +34,8 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    size_t      numBBs_;
-    CFG         cfg_;
+    size_t  numBBs_;
+    CFG     cfg_;
 
     Function(std::string* id)
         : id_(id)

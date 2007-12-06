@@ -10,6 +10,17 @@
 
 //------------------------------------------------------------------------------
 
+bool InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var)
+{
+    InstrBase* instr = instrNode->value_;
+    InstrBase* prev  = instrNode->prev()->value_;
+
+    return instr->liveOut_.find(var) == instr->liveOut_.end()  // mustn't be in the current instruction
+        &&  prev->liveOut_.find(var) !=  prev->liveOut_.end(); // must be in the previous one
+}
+
+//------------------------------------------------------------------------------
+
 int LabelInstr::counter_ = 0;
 
 LabelInstr::LabelInstr()
