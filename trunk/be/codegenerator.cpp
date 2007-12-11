@@ -176,6 +176,9 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
     // is instr the first statement of basic block?
     if ( typeid(*prevInstr->value_) == typeid(LabelInstr) )
     {
+        // var is live-out at the leading labelInstr
+        prevInstr->value_->liveOut_.insert(var);
+
         BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
         bb->value_->liveIn_.insert(var);
 
@@ -273,12 +276,13 @@ void CodeGenerator::colorRecursive(BBNode* bb)
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
+        std::cout << instr->toString() << std::endl;
 
         // for each var on the right hand side
         if ( typeid(*instr) == typeid(AssignInstr) )
         {
             /*
-                REMARK for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
+                NOTE for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
                     instrNode has an predecessor in all cases because iter is initialized with the
                     first instructin which is followed by the leading LabelInstr of this basic
                     block. Thus the first instruction which is considered here will always be
@@ -305,24 +309,34 @@ void CodeGenerator::colorRecursive(BBNode* bb)
                 swiftAssert( colorIter != colors.end(), "color must be found here");
                 colors.erase(colorIter); // last use of op2 so remove
             }
-            // for each var on the left hand side
-            // -> assign a color for result
-            ai->result_->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << ai->result_->toString() << ": " << ai->result_->color_ << std::endl;
+
+            /*
+                for each var on the left hand side
+                    -> assign a color for result
+            */
+            PseudoReg* reg = ai->result_;
+            reg->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << reg->toString() << ": " << reg->color_ << std::endl;
+
+            if ( reg->uses_.empty() )
+            {
+                /*
+                    In the case of a pointless definition a color should be
+                    assigned and immediately released afterwards.
+                    A pointless definition is for example
+                    a = b + c
+                    an never use 'a' again. The register allocator would assign a color for 'a'
+                    and will never release it since there will be no known last use of 'a'.
+                */
+                Colors::iterator colorIter = colors.find(reg->color_);
+                swiftAssert( colorIter != colors.end(), "color must be found here");
+                colors.erase(colorIter); // last use of op2 so remove
+            }
         }
         // for each var on the right hand side
         else if ( typeid(*instr) == typeid(PhiInstr) )
         {
-            /*
-                REMARK for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
-                    instrNode has an predecessor in all cases because iter is initialized with the
-                    first instructin which is followed by the leading LabelInstr of this basic
-                    block. Thus the first instruction which is considered here will always be
-                    preceded by a LabelInstr.
-
-                    Furthermore Literals are no problems here since they are not found via
-                    isLastUse.
-            */
+            // NOTE see above for details
             PhiInstr* phi = (PhiInstr*) instr;
             // for each var on the right hand side
             for (size_t i = 0; i < phi->argc_; ++i)
@@ -335,10 +349,22 @@ void CodeGenerator::colorRecursive(BBNode* bb)
                     colors.erase(colorIter); // last use of op1 so remove
                 }
             }
-            // for each var on the left hand side
-            // -> assign a color for result
-            phi->result_->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << phi->result_->toString() << ": " << phi->result_->color_ << std::endl;
+
+            /*
+                for each var on the left hand side
+                    -> assign a color for result
+            */
+            PseudoReg* reg = phi->result_;
+            reg->color_ = findFirstFreeColorAndAllocate(colors);
+            std::cout << reg->toString() << ": " << reg->color_ << std::endl;
+
+            if ( reg->uses_.empty() )
+            {
+                // see above for details
+                Colors::iterator colorIter = colors.find(reg->color_);
+                swiftAssert( colorIter != colors.end(), "color must be found here");
+                colors.erase(colorIter); // last use of op2 so remove
+            }
         }
     }
 

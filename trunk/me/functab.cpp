@@ -189,15 +189,15 @@ void FunctionTable::buildUpME()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
-        Function* function = iter->second;
+        CFG& cfg = iter->second->cfg_;
 
-        function->cfg_.calcCFG();
-        function->cfg_.calcDomTree();
-        function->cfg_.calcDomFrontier();
-        function->cfg_.placePhiFunctions();
-        function->cfg_.renameVars();
-        function->cfg_.calcDef();
-        function->cfg_.calcUse();
+        cfg.calcCFG();
+        cfg.calcDomTree();
+        cfg.calcDomFrontier();
+        cfg.placePhiFunctions();
+        cfg.renameVars();
+        cfg.calcDef();
+        cfg.calcUse();
     }
 }
 

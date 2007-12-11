@@ -15,6 +15,13 @@ bool InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var)
     InstrBase* instr = instrNode->value_;
     InstrBase* prev  = instrNode->prev()->value_;
 
+//     std::cout << "current:" << std::endl;
+//     REGSET_EACH(iter, instr->liveOut_)
+//             std::cout << "\t" << (*iter)->toString() << std::endl;
+//     std::cout << "prev:" << std::endl;
+//     REGSET_EACH(iter, prev->liveOut_)
+//             std::cout << "\t" << (*iter)->toString() << std::endl;
+
     return instr->liveOut_.find(var) == instr->liveOut_.end()  // mustn't be in the current instruction
         &&  prev->liveOut_.find(var) !=  prev->liveOut_.end(); // must be in the previous one
 }
