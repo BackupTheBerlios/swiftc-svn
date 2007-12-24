@@ -15,19 +15,13 @@ bool InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var)
     InstrBase* instr = instrNode->value_;
     InstrBase* prev  = instrNode->prev()->value_;
 
-//     std::cout << "current:" << std::endl;
-//     REGSET_EACH(iter, instr->liveOut_)
-//             std::cout << "\t" << (*iter)->toString() << std::endl;
-//     std::cout << "prev:" << std::endl;
-//     REGSET_EACH(iter, prev->liveOut_)
-//             std::cout << "\t" << (*iter)->toString() << std::endl;
-
     return instr->liveOut_.find(var) == instr->liveOut_.end()  // mustn't be in the current instruction
         &&  prev->liveOut_.find(var) !=  prev->liveOut_.end(); // must be in the previous one
 }
 
 //------------------------------------------------------------------------------
 
+// init static
 int LabelInstr::counter_ = 0;
 
 LabelInstr::LabelInstr()
@@ -41,38 +35,109 @@ LabelInstr::LabelInstr()
 
 //------------------------------------------------------------------------------
 
-PhiInstr::PhiInstr(PseudoReg* result, size_t argc)
-    : result_(result)
-    , args_( new PseudoReg*[argc] )
-    , sourceBBs_( new BBNode*[argc] )
-    , argc_(argc)
-    , oldResultVar_(result->regNr_)
+std::string GotoInstr::toString() const
 {
-    memset(args_, 0, sizeof(PseudoReg*) * argc);
-    memset(args_, 0, sizeof(InstrNode) * argc);
+    std::ostringstream oss;
+    oss << "GOTO " << label()->toString();
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
+    : lhs_( new PseudoReg*[numLhs] )
+    , lhsOldVarNr_( new int[numLhs] )
+    , numLhs_(numLhs)
+    , rhs_( new PseudoReg*[numRhs] )
+    , numRhs_(numRhs)
+{}
+
+AssignmentBase::~AssignmentBase()
+{
+    // delete all literals
+    for (size_t i = 0; i < numRhs_; ++i)
+    {
+        if ( rhs_[i]->isLiteral() )
+            delete rhs_[i];
+    }
+
+    delete[] lhs_;
+    delete[] rhs_;
+
+    destroyLhsOldVarNrs(); // TODO this should be done earlier
+}
+
+/*
+    further methods
+*/
+void AssignmentBase::destroyLhsOldVarNrs()
+{
+    delete[] lhsOldVarNr_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+PhiInstr::PhiInstr(PseudoReg* result, size_t numRhs)
+    : AssignmentBase(1, numRhs) // phi functions always have one result
+    , sourceBBs_( new BBNode*[numRhs] )
+{
+    // init result
+    lhs_[0] = result;
+    lhsOldVarNr_[0] = result->regNr_;
 }
 
 PhiInstr::~PhiInstr()
 {
-    delete[] args_;
     delete[] sourceBBs_;
 }
+
+/*
+    getters and setters
+*/
+
+// PseudoReg* PhiInstr::result()
+// {
+//     return lhs_[0];
+// }
+// 
+// const PseudoReg* PhiInstr::result() const
+// {
+//     return lhs_[0];
+// }
+// 
+// int PhiInstr::resultOldVarNr() const
+// {
+//     return lhsOldVarNr_[0];
+// }
+
+/*
+    further methods
+*/
 
 std::string PhiInstr::toString() const
 {
     std::ostringstream oss;
-    oss << result_->toString() << "\t= phi(";
+    oss << lhs_[0]->toString() << "\t= phi(";
 
-    for (size_t i = 0; i < argc_ - 1; ++i)
+    for (size_t i = 0; i < numRhs_ - 1; ++i)
     {
-        if (args_[i])
-            oss << args_[i]->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
+        if (rhs_[i])
+            oss << rhs_[i]->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
         else
             oss << "-, ";
     }
 
-    if (args_[argc_ - 1])
-        oss << args_[argc_-1]->toString() << '(' << sourceBBs_[argc_-1]->value_->name()  << ')';
+    if (rhs_[numRhs_ - 1])
+        oss << rhs_[numRhs_-1]->toString() << '(' << sourceBBs_[numRhs_-1]->value_->name()  << ')';
     else
         oss << '-';
 
@@ -83,25 +148,26 @@ std::string PhiInstr::toString() const
 
 //------------------------------------------------------------------------------
 
+/*
+    constructor
+*/
+
 AssignInstr::AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 /*= 0*/)
-    : kind_(kind)
-    , result_(result)
-    , op1_(op1)
-    , op2_(op2)
-    , oldResultVar_(result->regNr_)
+    : AssignmentBase(1, op2 ? 2 : 1) // An AssignInstr always have exactly one result and one or two args
+    , kind_(kind)
 {
-    swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    swiftAssert( result->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    lhs_[0] = result;
+    lhsOldVarNr_[0] = result->regNr_;
+
+    rhs_[0] = op1;
+    if (op2)
+        rhs_[1] = op2;
 }
 
-AssignInstr::~AssignInstr()
-{
-    swiftAssert( result_->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
-
-    if ( op1_->isLiteral() )
-        delete op1_;
-    if ( op2_ && op2_->isLiteral() )
-        delete op2_;
-}
+/*
+    further methods
+*/
 
 std::string AssignInstr::getOpString() const
 {
@@ -152,17 +218,17 @@ std::string AssignInstr::toString() const
 {
     std::string opString = getOpString();
     std::ostringstream oss;
-    oss << result_->toString() << '\t';
+    oss << lhs_[0]->toString() << '\t';
 
     // is this a binary, an unary instruction or an assignment?
-    if (op2_)
+    if (numRhs_ == 2)
     {
         // it is a binary instruction
-        oss << "= " << op1_->toString() << " " << opString << " " << op2_->toString();
+        oss << "= " << rhs_[0]->toString() << " " << opString << " " << rhs_[1]->toString();
     }
     else
     {
-        if ( isUnaryInstr() )
+        if ( kind_ == NOT || kind_ == UNARY_MINUS || kind_ == '^' )
         {
             // it is an unary instruction
             oss << "= " << opString;
@@ -172,7 +238,7 @@ std::string AssignInstr::toString() const
             // it is an assignment
             oss << opString;
         }
-        oss << ' ' << op1_->toString();
+        oss << ' ' << rhs_[0]->toString();
     }
 
     return oss.str();
@@ -185,38 +251,32 @@ void AssignInstr::genCode(std::ofstream& ofs)
 
 //------------------------------------------------------------------------------
 
-std::string GotoInstr::toString() const
-{
-    std::ostringstream oss;
-    oss << "GOTO " << label()->toString();
-
-    return oss.str();
-}
-
-//------------------------------------------------------------------------------
+/*
+    constructor
+*/
 
 BranchInstr::BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode)
-    : boolReg_(boolReg)
+    : AssignmentBase(0, 1) // BranchInstr always have exactly one rhs var and no results
     , trueLabelNode_(trueLabelNode)
     , falseLabelNode_(falseLabelNode)
 {
     swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
+    rhs_[0] = boolReg;
+
     swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),
         "trueLabelNode must be a node to a LabelInstr");
     swiftAssert( typeid(*falseLabelNode->value_) == typeid(LabelInstr),
         "falseLabelNode must be a node to a LabelInstr");
 }
 
-BranchInstr::~BranchInstr()
-{
-    if ( boolReg_->isLiteral() )
-        delete boolReg_;
-}
+/*
+    further methods
+*/
 
 std::string BranchInstr::toString() const
 {
     std::ostringstream oss;
-    oss << "IF " << boolReg_->toString()
+    oss << "IF " << rhs_[0]->toString()
         << " THEN " << trueLabel()->toString()
         << " ELSE " << falseLabel()->toString();
 
@@ -225,7 +285,7 @@ std::string BranchInstr::toString() const
 
 //------------------------------------------------------------------------------
 
-std::string InvokeInstr::toString() const
+/*std::string InvokeInstr::toString() const
 {
     std::string result = "INVOKE ";
     result += *function_->id_;
@@ -253,3 +313,4 @@ std::string InvokeInstr::toString() const
 
     return result;
 }
+*/

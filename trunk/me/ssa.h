@@ -20,136 +20,30 @@
  */
 struct InstrBase
 {
-    RegSet liveIn_;
-    RegSet liveOut_;
+    RegSet liveIn_; /// vars that are live-in  at this instruction.
+    RegSet liveOut_;/// vars that are live-out at this instruction.
 
-    /**
-     * Only LITERAL PseudoRegs must be deleted here. Other (true) PseudoReg
-     * will be deleted by the functab.
-    */
+/*
+    destructor
+*/
+
     virtual ~InstrBase() {}
+
+/*
+    further methods
+*/
 
     /**
      * Computes whether this \p instr ist the first instruction which does not
      * have \p var in the \a liveOut_.
      *
      * @param instr The instruction which should be tested. \p instr must have
-     *      a predecessor.
+     *      a predecessor and must contain a BaseAssignInstr.
      * @param var The PseudoReg which should be tested.
      */
     static bool isLastUse(InstrNode instrNode, PseudoReg* var);
 
     virtual std::string toString() const = 0;
-};
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-/**
- * Implements phi functions.
- */
-struct PhiInstr : public InstrBase
-{
-    PseudoReg* result_;
-
-    PseudoReg** args_;
-    BBNode**    sourceBBs_;
-    size_t      argc_;
-
-    int oldResultVar_;
-
-    PhiInstr(PseudoReg* result, size_t argc);
-    ~PhiInstr();
-
-    std::string toString() const;
-    void genCode(std::ofstream& /*ofs*/) {}
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * This Instruction represents either an unary, a binary Instruction or
- * just an assignment.
- *
- * Assignments have a op2_ value of 0. \a assignment_ is set to true.
- * Possible unary operations and the corresponding \a kind_ value: <br>
- *
- * result =  op1 -> '='<br>
- * result += op1 -> '+' <br>
- * result -= op1 -> '-' <br>
- * result *= op1 -> '*' <br>
- * result /= op1 -> '/' <br>
- * result %= op1 -> '%' <br>
- * <br>
- *
- * Unary instructions have a op2_ value of 0.
- * Possible unary operations and the corresponding \a kind_ value: <br>
- *
- * result = - op1 -> UNARY_MINUS <br>
- * result = ^ op1 -> '^' <br>
- * result = not op1 -> NOT <br>
- * <br>
- *
- * Possible binary operations and the corresponding \a kind_ value: <br>
- *
- * result = op1 + op2 -> '+'<br>
- * result = op1 - op2 -> '-' <br>
- * result = op1 * op2 -> '*' <br>
- * result = op1 / op2 -> '/' <br>
- * result = op1 % op2 -> '%' <br>
- * <br>
- * result = op1 AND op2 -> AND <br>
- * result = op1 OR  op2 -> OR <br>
- * result = op1 XOR op2 -> XOR <br>
- * <br>
- * result = op1 == op2 -> EQ <br>
- * result = op1 != op2 -> NQ <br>
- * result = op1 \< op2 -> '<' <br>
- * result = op1 >  op2 -> '>' <br>
- * result = op1 <= op2 -> LE <br>
- * result = op1 >= op2 -> GE <br>
-*/
-struct AssignInstr : public InstrBase
-{
-    enum
-    {
-        // be sure not to collide with ascii codes
-        EQ = 256, NE,
-        LE, GE,
-        AND, OR, XOR,
-        NOT, UNARY_MINUS
-    };
-
-    union
-    {
-        int kind_;
-        char c_;
-    };
-
-    PseudoReg* result_;
-    PseudoReg* op1_;
-    PseudoReg* op2_;
-
-    int oldResultVar_;
-
-    AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0);
-    ~AssignInstr();
-
-    std::string toString() const;
-    void genCode(std::ofstream& ofs);
-
-    /**
-     * Returns whether this is an unary Instruction i.e. kind_ is
-     * NOT, UNARY_MINUS or DEREF
-    */
-    bool isUnaryInstr()  const {
-        return op2_ == 0 && (kind_ == NOT || kind_ == UNARY_MINUS || kind_ == '^');
-    }
-
-    std::string getOpString() const;
-
-    void replaceVar();
 };
 
 //------------------------------------------------------------------------------
@@ -205,19 +99,164 @@ struct GotoInstr : public InstrBase
 
 //------------------------------------------------------------------------------
 
-struct BranchInstr : public InstrBase
+/**
+ * This is the base class for all instructions with in and out-going arguments.
+ * TODO documentation for inout args.
+ */
+struct AssignmentBase : public InstrBase
 {
-    PseudoReg* boolReg_;
+    PseudoReg** lhs_;           ///< left hand side vars
+    int*        lhsOldVarNr_;   ///< left hand side old varNrs
+    size_t      numLhs_;        ///< number of left hand side args.
 
+    PseudoReg** rhs_;           ///< right hand side vars
+    size_t      numRhs_;        ///< number of righthand side args.
+
+/*
+    constructor and destructor
+*/
+
+    AssignmentBase(size_t numLhs, size_t numRhs);
+    ~AssignmentBase();
+
+/*
+    further methods
+*/
+
+    /**
+     * When fully in SSA form the old var numbers are not needed anymore and
+     * can be destroyed.
+    */
+    void destroyLhsOldVarNrs();
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Implements phi functions.
+ */
+struct PhiInstr : public AssignmentBase
+{
+    BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
+
+/*
+    constructor and destructor
+*/
+
+    PhiInstr(PseudoReg* result, size_t numRhs);
+    ~PhiInstr();
+
+/*
+    getters and setters
+*/
+
+//     PseudoReg* result();
+//     const PseudoReg* result() const;
+//     int resultOldVarNr() const;
+
+/*
+    further methods
+*/
+
+    std::string toString() const;
+    void genCode(std::ofstream& /*ofs*/) {}
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * This Instruction represents either an unary, a binary Instruction or
+ * just an assignment.
+ *
+ * Assignments have a op2_ value of 0. \a assignment_ is set to true.
+ * Possible unary operations and the corresponding \a kind_ value: <br>
+ *
+ * result =  op1 -> '='<br>
+ * result += op1 -> '+' <br>
+ * result -= op1 -> '-' <br>
+ * result *= op1 -> '*' <br>
+ * result /= op1 -> '/' <br>
+ * result %= op1 -> '%' <br>
+ * <br>
+ *
+ * Unary instructions have a op2_ value of 0.
+ * Possible unary operations and the corresponding \a kind_ value: <br>
+ *
+ * result = - op1 -> UNARY_MINUS <br>
+ * result = ^ op1 -> '^' <br>
+ * result = not op1 -> NOT <br>
+ * <br>
+ *
+ * Possible binary operations and the corresponding \a kind_ value: <br>
+ *
+ * result = op1 + op2 -> '+'<br>
+ * result = op1 - op2 -> '-' <br>
+ * result = op1 * op2 -> '*' <br>
+ * result = op1 / op2 -> '/' <br>
+ * result = op1 % op2 -> '%' <br>
+ * <br>
+ * result = op1 AND op2 -> AND <br>
+ * result = op1 OR  op2 -> OR <br>
+ * result = op1 XOR op2 -> XOR <br>
+ * <br>
+ * result = op1 == op2 -> EQ <br>
+ * result = op1 != op2 -> NQ <br>
+ * result = op1 \< op2 -> '<' <br>
+ * result = op1 >  op2 -> '>' <br>
+ * result = op1 <= op2 -> LE <br>
+ * result = op1 >= op2 -> GE <br>
+*/
+struct AssignInstr : public AssignmentBase
+{
+    enum
+    {
+        // be sure not to collide with ascii codes
+        EQ = 256, NE,
+        LE, GE,
+        AND, OR, XOR,
+        NOT, UNARY_MINUS
+    };
+
+    union
+    {
+        int kind_;
+        char c_;
+    };
+
+/*
+    constructor
+*/
+
+    AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0);
+
+/*
+    further methods
+*/
+
+    std::string toString() const;
+    void genCode(std::ofstream& ofs);
+
+    std::string getOpString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct BranchInstr : public AssignmentBase
+{
     InstrNode trueLabelNode_;
     InstrNode falseLabelNode_;
 
     BBNode* trueBB_;
     BBNode* falseBB_;
 
+/*
+    constructor
+*/
     BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode);
-    ~BranchInstr();
 
+/*
+    further methods
+*/
     LabelInstr* trueLabel()
     {
         return (LabelInstr*) trueLabelNode_->value_;
@@ -244,33 +283,33 @@ struct BranchInstr : public InstrBase
  * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
  * around other Instr won't invalidate pointers in basic blocks.
  */
-struct InvokeInstr : public InstrBase
-{
-    /// This type is used to specify calling conventions
-    enum Conventions
-    {
-        C_CALL,
-        PASCAL_CALL,
-        STD_CALL,
-        SWIFT_CALL
-    };
-
-    Function* function_;
-    Conventions conventions_;
-
-    RegList args_;  ///< all arguments
-    RegList in_;    ///< incoming arguments
-    RegList out_;   ///< outgoing arguments
-    RegList inout_; ///< in and outgoing arguments
-
-    InvokeInstr(Function* function, Conventions conventions)
-        : function_(function)
-        , conventions_(conventions)
-    {}
-
-    virtual std::string toString() const;
-};
-
+// struct InvokeInstr : public InstrBase
+// {
+//     /// This type is used to specify calling conventions
+//     enum Conventions
+//     {
+//         C_CALL,
+//         PASCAL_CALL,
+//         STD_CALL,
+//         SWIFT_CALL
+//     };
+// 
+//     Function* function_;
+//     Conventions conventions_;
+// 
+//     RegList args_;  ///< all arguments
+//     RegList in_;    ///< incoming arguments
+//     RegList out_;   ///< outgoing arguments
+//     RegList inout_; ///< in and outgoing arguments
+// 
+//     InvokeInstr(Function* function, Conventions conventions)
+//         : function_(function)
+//         , conventions_(conventions)
+//     {}
+// 
+//     virtual std::string toString() const;
+// };
+// 
 
 //------------------------------------------------------------------------------
 

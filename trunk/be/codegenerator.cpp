@@ -11,7 +11,8 @@
 
 #include <sstream>
 
-struct IVar {
+struct IVar
+{
     PseudoReg* var_;
 
     IVar() {}
@@ -32,7 +33,8 @@ struct IVar {
     }
 };
 
-struct IGraph : public Graph<IVar> {
+struct IGraph : public Graph<IVar>
+{
     IGraph(const std::string& name)
         : name_(name)
     {
@@ -121,7 +123,6 @@ void CodeGenerator::livenessAnalysis()
     REGMAP_EACH(iter, function_->vars_)
     {
         PseudoReg* var = iter->second;
-        std::cout << var->toString() << std::endl;
 
         // for each use of var
         USELIST_EACH(iter, var->uses_)
@@ -131,13 +132,15 @@ void CodeGenerator::livenessAnalysis()
 
             if ( typeid(*instr) == typeid(PhiInstr) )
             {
-                PhiInstr* phi = (PhiInstr*) phi;
+                PhiInstr* phi = (PhiInstr*) instr;
 
                 // find the predecessor basic block
                 size_t i = 0;
-                while (phi->args_[i] != var)
+                std::cout << phi->numRhs_ << std::endl;
+                while (phi->rhs_[i] != var)
                     ++i;
 
+                swiftAssert(i < phi->numRhs_, "i to large here");
                 BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
@@ -199,28 +202,18 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
     // var is live-out at instr
     instr->value_->liveOut_.insert(var);
 
-    // for each reg v, that instr defines
-    if ( typeid(*instr->value_) == typeid(AssignInstr) )
+    AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr->value_);
+    // for each reg v, that ab defines
+    if (ab)
     {
-        AssignInstr* ai = (AssignInstr*) instr->value_;
-
-        if ( ai->result_ != var )
+        for (size_t i = 0; i < ab->numLhs_; ++i)
         {
-            // add (v, w) to interference graph
-            var->varNode_->link(ai->result_->varNode_);
-            liveInAtInstr(instr, var);
-        }
-    }
-    // for each reg v, that instr defines
-    else if ( typeid(*instr->value_) == typeid(PhiInstr) )
-    {
-        PhiInstr* phi = (PhiInstr*) instr->value_;
-
-        if ( phi->result_ != var )
-        {
-            // add (v, w) to interference graph
-            var->varNode_->link(phi->result_->varNode_);
-            liveInAtInstr(instr, var);
+            if ( ab->lhs_[i] != var )
+            {
+                // add (v, w) to interference graph
+                var->varNode_->link(ab->lhs_[i]->varNode_);
+                liveInAtInstr(instr, var);
+            }
         }
     }
     else // -> var != result
@@ -255,7 +248,7 @@ void CodeGenerator::color()
 {
     /*
         start with the first true basic block
-        and perform a post-order walk of the dominator tree
+        and perform a pre-order walk of the dominator tree
     */
     colorRecursive( cfg_->entry_->succ_.first()->value_ );
 }
@@ -275,11 +268,9 @@ void CodeGenerator::colorRecursive(BBNode* bb)
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
-        InstrBase* instr = iter->value_;
-        std::cout << instr->toString() << std::endl;
+        AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
-        // for each var on the right hand side
-        if ( typeid(*instr) == typeid(AssignInstr) )
+        if (ab)
         {
             /*
                 NOTE for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
@@ -291,82 +282,49 @@ void CodeGenerator::colorRecursive(BBNode* bb)
                     Furthermore Literals are no problems here since they are not found via
                     isLastUse.
             */
-            AssignInstr* ai = (AssignInstr*) instr;
 
             // for each var on the right hand side
-            if ( InstrBase::isLastUse(iter, ai->op1_) )
+            for (size_t i = 0; i < ab->numRhs_; ++i)
             {
-                // -> its the last use of op1
-                Colors::iterator colorIter = colors.find(ai->op1_->color_);
-                swiftAssert( colorIter != colors.end(), "color must be found here");
-                colors.erase(colorIter); // last use of op1 so remove
-            }
-            // use "else if" here in order to prevent double entries with instructions like a = b + b
-            else if ( ai->op2_ && InstrBase::isLastUse(iter, ai->op2_) )
-            {
-                // -> its the last use of op2
-                Colors::iterator colorIter = colors.find(ai->op2_->color_);
-                swiftAssert( colorIter != colors.end(), "color must be found here");
-                colors.erase(colorIter); // last use of op2 so remove
-            }
+                PseudoReg* reg = ab->rhs_[i];
 
-            /*
-                for each var on the left hand side
-                    -> assign a color for result
-            */
-            PseudoReg* reg = ai->result_;
-            reg->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << reg->toString() << ": " << reg->color_ << std::endl;
-
-            if ( reg->uses_.empty() )
-            {
-                /*
-                    In the case of a pointless definition a color should be
-                    assigned and immediately released afterwards.
-                    A pointless definition is for example
-                    a = b + c
-                    an never use 'a' again. The register allocator would assign a color for 'a'
-                    and will never release it since there will be no known last use of 'a'.
-                */
-                Colors::iterator colorIter = colors.find(reg->color_);
-                swiftAssert( colorIter != colors.end(), "color must be found here");
-                colors.erase(colorIter); // last use of op2 so remove
-            }
-        }
-        // for each var on the right hand side
-        else if ( typeid(*instr) == typeid(PhiInstr) )
-        {
-            // NOTE see above for details
-            PhiInstr* phi = (PhiInstr*) instr;
-            // for each var on the right hand side
-            for (size_t i = 0; i < phi->argc_; ++i)
-            {
-                if (InstrBase::isLastUse(iter, phi->args_[i]) )
+                if ( InstrBase::isLastUse(iter, reg) )
                 {
                     // -> its the last use of op1
-                    Colors::iterator colorIter = colors.find(phi->args_[i]->color_);
+                    Colors::iterator colorIter = colors.find(reg->color_);
                     swiftAssert( colorIter != colors.end(), "color must be found here");
                     colors.erase(colorIter); // last use of op1 so remove
+                    /*
+                        use "break" here in order to prevent confusionwhich can be
+                        caused by double entries with instructions like a = b + b
+                    */
+                    break;
                 }
             }
 
-            /*
-                for each var on the left hand side
-                    -> assign a color for result
-            */
-            PseudoReg* reg = phi->result_;
-            reg->color_ = findFirstFreeColorAndAllocate(colors);
-            std::cout << reg->toString() << ": " << reg->color_ << std::endl;
-
-            if ( reg->uses_.empty() )
+            // for each var on the left hand side -> assign a color for result
+            for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                // see above for details
-                Colors::iterator colorIter = colors.find(reg->color_);
-                swiftAssert( colorIter != colors.end(), "color must be found here");
-                colors.erase(colorIter); // last use of op2 so remove
+                PseudoReg* reg = ab->lhs_[i];
+                reg->color_ = findFirstFreeColorAndAllocate(colors);
+
+                if ( reg->uses_.empty() )
+                {
+                    /*
+                        In the case of a pointless definition a color should be
+                        assigned and immediately released afterwards.
+                        A pointless definition is for example
+                        a = b + c
+                        an never use 'a' again. The register allocator would assign a color for 'a'
+                        and will never release it since there will be no known last use of 'a'.
+                    */
+                    Colors::iterator colorIter = colors.find(reg->color_);
+                    swiftAssert( colorIter != colors.end(), "color must be found here");
+                    colors.erase(colorIter); // last use of op2 so remove
+                }
             }
         }
-    }
+    } // for each instruction
 
     // for each child of bb in the dominator tree
     for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())

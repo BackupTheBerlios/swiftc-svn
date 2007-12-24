@@ -216,5 +216,43 @@ class Foo
     end
 end
 
-
 Foo f = { vec2(5.0, 6.0) }
+
+class Test
+    routine main() -> inout array{string} args, int result
+        for string str in args
+            print(str)
+    end
+
+    int main(char** argv, int argc) {
+        for (int i = 0; i < argc; ++i)
+            print(argv[i]);
+    }
+end
+
+/*
+    inout support
+*/
+
+foo() -> inout int i
+    i += 3
+end
+
+int i2 = foo(int i1)
+    i2 = i1 + 3
+end
+
+foo
+    add 3, i
+end
+
+----------------
+
+int a = 5
+inout a = foo()
+
+a1 = 5
+a2 = foo(a1)
+
+mov 5, a1
+call foo

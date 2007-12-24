@@ -111,21 +111,32 @@ void CFG::calcCFG()
             bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
             currentBB->link(bi->trueBB_);
         }
-        else if ( typeid(*instr) == typeid(AssignInstr) )
+        else
         {
-            // if we have an assignment to a var update this in the map
-            AssignInstr* ai = (AssignInstr*) instr;
-
-            if ( ai->result_->isVar() )
+            AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
+            if (ab)
             {
-                int resultNr = ai->result_->regNr_;
-                currentBB->value_->vars_[resultNr] = ai->result_;
+                // if we have an assignment to a var update this in the map
 
-                if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
-                    firstOccurance_[resultNr] = currentBB;
+                // for each var on the left hand side
+                for (size_t i = 0; i < ab->numRhs_; ++i)
+                {
+                    if ( ab->rhs_[i]->isVar() )
+                    {
+                        int resultNr = ab->rhs_[i]->regNr_;
+                        currentBB->value_->vars_[resultNr] = ab->rhs_[i];
+
+                        if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
+                            firstOccurance_[resultNr] = currentBB;
+                    }
+                }
             }
-        }
-    }
+            else
+            {
+                swiftAssert(false, "unkown ssa instruction type here");
+            }
+        } // type checks
+    } // INSTRLIST_EACH
 
     /*
         Create the two additional blocks ENTRY and EXIT.
@@ -384,66 +395,42 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
-        InstrBase* instr = iter->value_;
+        AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
-        if ( typeid(*instr) == typeid(PhiInstr) )
+        if (ab)
         {
-            PhiInstr* phi = (PhiInstr*) instr;
+            // if ab is an ordinary assignment
+            if ( typeid(*ab) != typeid(PhiInstr) )
+            {
+                // replace vars on the right hand side
+                for (size_t i = 0; i < ab->numRhs_; ++i)
+                {
+                    if ( ab->rhs_[i]->isVar() )
+                    {
+                        swiftAssert( !names[ ab->rhs_[i]->var2Index() ].empty(), "stack is empty here");
+                        ab->rhs_[i] = names[ ab->rhs_[i]->var2Index() ].top();
+                    }
+                }
+            }
 
+            // replace var on the left hand side in all cases
+            for (size_t i = 0; i < ab->numLhs_; ++i)
+            {
+                if ( ab->lhs_[i]->isVar() )
+                {
 #ifdef SWIFT_DEBUG
-            PseudoReg* reg = function_->newTemp(phi->result_->regType_, &phi->result_->id_);
+                    PseudoReg* reg = function_->newTemp(ab->lhs_[i]->regType_, &ab->lhs_[i]->id_);
 #else // SWIFT_DEBUG
-            PseudoReg* reg = function_->newTemp(phi->result_->regType_);
+                    PseudoReg* reg = function_->newTemp(ab->lhs_[i]->regType_);
 #endif // SWIFT_DEBUG
 
-            swiftAssert(size_t(-phi->oldResultVar_) < names.size(), "index out of bounds");
-            names[ -phi->oldResultVar_ ].push(reg);
-            phi->result_ = reg;
-
-            continue;
-        }
-        else if ( typeid(*instr) == typeid(AssignInstr) )
-        {
-            AssignInstr* ai = (AssignInstr*) instr;
-
-            // replace vars on the right hand side
-            if ( ai->op1_->isVar() )
-            {
-                swiftAssert( !names[ ai->op1_->var2Index() ].empty(), "stack is empty here");
-                ai->op1_ = names[ ai->op1_->var2Index() ].top();
+                    swiftAssert(size_t(-ab->lhsOldVarNr_[i]) < names.size(), "index out of bounds");
+                    names[ -ab->lhsOldVarNr_[i] ].push(reg);
+                    ab->lhs_[i] = reg;
+                }
             }
-            if ( ai->op2_ && ai->op2_->isVar() )
-            {
-                swiftAssert( !names[ ai->op2_->var2Index() ].empty(), "stack is empty here");
-                ai->op2_ = names[ ai->op2_->var2Index() ].top();
-            }
-
-            // replace var on the left hand side
-            if ( ai->result_->isVar() )
-            {
-#ifdef SWIFT_DEBUG
-                PseudoReg* reg = function_->newTemp(ai->result_->regType_, &ai->result_->id_);
-#else // SWIFT_DEBUG
-                PseudoReg* reg = function_->newTemp(ai->result_->regType_);
-#endif // SWIFT_DEBUG
-
-                swiftAssert(size_t(-ai->oldResultVar_) < names.size(), "index out of bounds");
-                names[ -ai->oldResultVar_ ].push(reg);
-                ai->result_ = reg;
-            }
-        }
-        else if ( typeid(*instr) == typeid(BranchInstr) )
-        {
-            BranchInstr* bi = (BranchInstr*) instr;
-
-            // replace boolean var
-            if ( bi->boolReg_->isVar() )
-            {
-                swiftAssert( !names[ bi->boolReg_->var2Index() ].empty(), "stack is empty here");
-                bi->boolReg_ = names[ bi->boolReg_->var2Index() ].top();
-            }
-        }
-    }
+        }  // type checking
+    } // for each instruction
 
     // for each successor of bb
     RELATIVES_EACH(iter, bb->succ_)
@@ -459,10 +446,10 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
             if (!phi)
                 break; // no further phi functions in this basic block
 
-            if ( names[ -phi->oldResultVar_ ].empty() )
+            if ( names[ -phi->lhsOldVarNr_[0] ].empty() )
                 continue; // var not found
 
-            phi->args_[j] = names[ -phi->oldResultVar_ ].top();
+            phi->rhs_[j] = names[ -phi->lhsOldVarNr_[0] ].top();
             phi->sourceBBs_[j] = bb;
         }
     }
@@ -479,31 +466,29 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
         rename(domChild, names);
     }
 
-    // for each AssignInstr in bb
+    // for each AssignmentBase in bb
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
-        InstrBase* instr = iter->value_;
+        AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
-        if ( typeid(*instr) == typeid(PhiInstr) )
+        if (ab)
         {
-            PhiInstr* phi = (PhiInstr*) instr;
-
-            swiftAssert(phi->oldResultVar_ < 0, "this should be a var");
-            swiftAssert( names[-phi->oldResultVar_].size() > 0, "cannot pop here");
-            names[- phi->oldResultVar_].pop();
-        }
-        else if ( typeid(*instr) == typeid(AssignInstr) )
-        {
-            AssignInstr* ai = dynamic_cast<AssignInstr*>(instr);
-
-            if (ai->oldResultVar_ < 0) // if this is a var
+            // for each var on the left hand side
+            for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                swiftAssert( names[- ai->oldResultVar_].size() > 0, "cannot pop here");
-                names[- ai->oldResultVar_].pop();
-            }
-        }
-    }
+                if (ab->lhsOldVarNr_[i] < 0) // if this is a var
+                {
+                    swiftAssert( names[- ab->lhsOldVarNr_[i]].size() > 0, "cannot pop here");
+                    names[ - ab->lhsOldVarNr_[i] ].pop();
+                }
+            } // for ech var on the left hand side
+        } // type checking
+    } // for each AssignmentBase
 }
+
+/*
+    def-use-chains
+*/
 
 void CFG::calcDef()
 {
@@ -516,10 +501,18 @@ void CFG::calcDef()
         InstrBase* instr = iter->value_;
         if (typeid(*instr) == typeid(LabelInstr) )
             currentBB = labelNode2BBNode_[iter]; // new basic block
-        else if ( typeid(*instr) == typeid(AssignInstr) )
-            ((AssignInstr*) instr)->result_->def_.set(iter, currentBB); // store def
-        else if ( typeid(*instr) == typeid(PhiInstr) )
-            ((PhiInstr*) instr)->result_->def_.set(iter, currentBB); // store def
+        else
+        {
+            AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
+
+            if (ab)
+            {
+                // TODO currently only one lhs var is supported
+                // for each var on the lhs
+                for (size_t i = 0; i < ab->numLhs_; ++i)
+                    ab->lhs_[i]->def_.set(iter, currentBB); // store def
+            }
+        }
     }
 }
 
@@ -543,18 +536,22 @@ void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
         for (InstrNode iter = bb->begin_->next(); iter != bb->end_; iter = iter->next())
         {
             InstrBase* instr = iter->value_;
+            AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
 
-            if ( typeid(*instr) == typeid(AssignInstr) )
+            if (ab)
             {
-                AssignInstr* ai = (AssignInstr*) instr;
-
-                if (ai->op1_ == var)
-                    var->uses_.append( DefUse(iter, bbNode) );
-                // use "else if" here in order to prevent double entries with instructions like a = b + b
-                else if (ai->op2_ && ai->op2_ == var)
-                    var->uses_.append( DefUse(iter, bbNode) );
+                // for each var on the rhs
+                for (size_t i = 0; i < ab->numRhs_; ++i)
+                {
+                    if (ab->rhs_[i] == var)
+                    {
+                        var->uses_.append( DefUse(iter, bbNode) );
+                        // use "break" here in order to prevent double entries with instructions like a = b + b
+                        break;
+                    }
+                }
             }
-        }
+        } // for each instruction
     }
 
     // for each child of bb in the dominator tree

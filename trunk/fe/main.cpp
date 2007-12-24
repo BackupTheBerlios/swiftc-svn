@@ -18,7 +18,7 @@
 #include "me/optimizer.h"
 
 #include "be/codegenerator.h"
-#include "be/amd64/spiller.h"
+#include "be/x86_64/spiller.h"
 
 //------------------------------------------------------------------------------
 
@@ -151,7 +151,7 @@ int start(int argc, char** argv)
     /*
         build up back-end and generate assembly code
     */
-    CodeGenerator::spiller_ = new Amd64Spiller();
+    CodeGenerator::spiller_ = new X86_64Spiller();
 
     std::ostringstream oss;
     oss << cmdLineParser.filename_ << ".asm";
