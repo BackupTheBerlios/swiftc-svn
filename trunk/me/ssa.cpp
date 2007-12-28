@@ -88,7 +88,7 @@ void AssignmentBase::destroyLhsOldVarNrs()
 
 PhiInstr::PhiInstr(PseudoReg* result, size_t numRhs)
     : AssignmentBase(1, numRhs) // phi functions always have one result
-    , sourceBBs_( new BBNode*[numRhs] )
+    , sourceBBs_( new BBNode[numRhs] )
 {
     // init result
     lhs_[0] = result;

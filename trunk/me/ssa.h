@@ -76,7 +76,7 @@ struct LabelInstr : public InstrBase
 struct GotoInstr : public InstrBase
 {
     InstrNode labelNode_;
-    BBNode* succBB_;
+    BBNode succBB_;
 
     GotoInstr(InstrNode labelNode)
         : labelNode_(labelNode)
@@ -137,7 +137,7 @@ struct AssignmentBase : public InstrBase
  */
 struct PhiInstr : public AssignmentBase
 {
-    BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
+    BBNode* sourceBBs_; ///< predecessor basic block of each rhs-arg
 
 /*
     constructor and destructor
@@ -246,8 +246,8 @@ struct BranchInstr : public AssignmentBase
     InstrNode trueLabelNode_;
     InstrNode falseLabelNode_;
 
-    BBNode* trueBB_;
-    BBNode* falseBB_;
+    BBNode trueBB_;
+    BBNode falseBB_;
 
 /*
     constructor

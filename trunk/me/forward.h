@@ -10,8 +10,8 @@
 // include this file for useful forward declarations
 
 struct BasicBlock;
-typedef Graph<BasicBlock>::Node BBNode;
-typedef List<BBNode*> BBList;
+typedef Graph<BasicBlock>::Node* BBNode;
+typedef List<BBNode> BBList;
 
 struct Function;
 

@@ -244,7 +244,7 @@ public:
      * @return The node which contains t if found.
      * If t was not found sentinel() is returned.
      */
-    Node* search(const T& t)
+    Node* find(const T& t)
     {
         Node* n = sentinel_->next_;
 

@@ -39,14 +39,14 @@ struct CodeGenerator
 private:
 
 /*
-    liveness stuff
+    liveness analysis
 */
     /// Knows during the liveness analysis which basic blocks have already been visted
     typedef std::set<BasicBlock*> BBSet;
     BBSet walked_;
 
     void livenessAnalysis();
-    void liveOutAtBlock(BBNode* bbNode, PseudoReg* var);
+    void liveOutAtBlock(BBNode bbNode, PseudoReg* var);
     void liveInAtInstr (InstrNode instr, PseudoReg* var);
     void liveOutAtInstr(InstrNode instr, PseudoReg* var);
 
@@ -59,7 +59,7 @@ private:
     static int findFirstFreeColorAndAllocate(Colors& colors);
 
     void color();
-    void colorRecursive(BBNode* bb);
+    void colorRecursive(BBNode bb);
 
     void coalesce();
 };

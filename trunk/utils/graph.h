@@ -117,6 +117,10 @@ public:
         }
     };
 
+    Graph(bool noDigraph = false)
+        : noDigraph_(noDigraph)
+    {}
+
     virtual ~Graph();
 
     Node* insert(Node* n)
@@ -146,6 +150,8 @@ public:
     }
 
     virtual std::string name() const = 0;
+
+    bool noDigraph_;
 
     Relatives nodes_;
 
@@ -330,6 +336,8 @@ void Graph<T>::dumpDot(const std::string& baseFilename)
 
     // set nodes to record shape
     ofs << "node [shape=record]" << std::endl << std::endl;
+    if (noDigraph_) // HACK
+        ofs << "edge [arrowhead=none]" << std::endl << std::endl;
 
     // iterate over all nodes
     for (Relative* iter = nodes_.first(); iter != nodes_.sentinel(); iter = iter->next())

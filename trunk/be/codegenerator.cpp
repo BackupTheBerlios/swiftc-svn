@@ -36,7 +36,8 @@ struct IVar
 struct IGraph : public Graph<IVar>
 {
     IGraph(const std::string& name)
-        : name_(name)
+        : Graph<IVar>(true)
+        , name_(name)
     {
         // make the id readable for dot
         for (size_t i = 0; i < name_.size(); ++i)
@@ -54,7 +55,7 @@ struct IGraph : public Graph<IVar>
     std::string name_;
 };
 
-typedef Graph<IVar>::Node VarNode;
+typedef Graph<IVar>::Node* VarNode;
 
 #endif // SWIFT_DEBUG
 
@@ -94,11 +95,13 @@ CodeGenerator::~CodeGenerator()
 
 void CodeGenerator::genCode()
 {
-    std::cout << *function_->id_ << std::endl;
+    std::cout << std::endl << *function_->id_ << std::endl;
     spill();
     livenessAnalysis();
     color();
+#ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
+#endif // SWIFT_DEBUG
     coalesce();
 }
 
@@ -114,7 +117,7 @@ void CodeGenerator::livenessAnalysis()
     {
         PseudoReg* var = iter->second;
 
-        VarNode* varNode = ig_->insert( new IVar(var) );
+        VarNode varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
     }
 #endif // SWIFT_DEBUG
@@ -136,12 +139,11 @@ void CodeGenerator::livenessAnalysis()
 
                 // find the predecessor basic block
                 size_t i = 0;
-                std::cout << phi->numRhs_ << std::endl;
                 while (phi->rhs_[i] != var)
                     ++i;
 
-                swiftAssert(i < phi->numRhs_, "i to large here");
-                BBNode* pred = phi->sourceBBs_[i];
+                swiftAssert(i < phi->numRhs_, "i too large here");
+                BBNode pred = phi->sourceBBs_[i];
 
                 // examine the found block
                 liveOutAtBlock(pred, var);
@@ -155,7 +157,7 @@ void CodeGenerator::livenessAnalysis()
     }
 }
 
-void CodeGenerator::liveOutAtBlock(BBNode* bbNode, PseudoReg* var)
+void CodeGenerator::liveOutAtBlock(BBNode bbNode, PseudoReg* var)
 {
     BasicBlock* bb = bbNode->value_;
 
@@ -182,7 +184,7 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
         // var is live-out at the leading labelInstr
         prevInstr->value_->liveOut_.insert(var);
 
-        BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        BBNode bb = function_->cfg_.labelNode2BBNode_[prevInstr];
         bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
@@ -202,21 +204,34 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
     // var is live-out at instr
     instr->value_->liveOut_.insert(var);
 
+    // knows whether var is defined in instr
+    bool varInLhs = false;
+
     AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr->value_);
-    // for each reg v, that ab defines
+    // for each reg v, that ab defines and is not var itself
     if (ab)
     {
         for (size_t i = 0; i < ab->numLhs_; ++i)
         {
             if ( ab->lhs_[i] != var )
             {
-                // add (v, w) to interference graph
-                var->varNode_->link(ab->lhs_[i]->varNode_);
-                liveInAtInstr(instr, var);
+#ifdef SWIFT_DEBUG
+                PseudoReg* res = ab->lhs_[i];
+
+                // add (v, w) to interference graph if it does not already exist
+                if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
+                    && var->varNode_->succ_.find(res->varNode_) == var->varNode_->succ_.sentinel() )
+                {
+                    var->varNode_->link(res->varNode_);
+                }
+#endif // SWIFT_DEBUG
             }
+            else
+                varInLhs = true;
         }
     }
-    else // -> var != result
+
+    if (!varInLhs)
         liveInAtInstr(instr, var);
 }
 
@@ -235,6 +250,7 @@ int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
     }
 
     // either allocate the found color in the set or insert a new slot in the set
+    std::cout << "\tinsert: " << firstFreeColor << std::endl;
     colors.insert(firstFreeColor);
     return firstFreeColor;
 }
@@ -253,9 +269,9 @@ void CodeGenerator::color()
     colorRecursive( cfg_->entry_->succ_.first()->value_ );
 }
 
-void CodeGenerator::colorRecursive(BBNode* bb)
+void CodeGenerator::colorRecursive(BBNode bb)
 {
-    std::cout << "LIVE-IN: " << bb->value_->name() << std::endl;
+    std::cout << "LIVE-IN at " << bb->value_->name() << std::endl;
     Colors colors;
     REGSET_EACH(iter, bb->value_->liveIn_)
     {
@@ -268,6 +284,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
+        std::cout << iter->value_->toString() << std::endl;
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
         if (ab)
@@ -283,6 +300,14 @@ void CodeGenerator::colorRecursive(BBNode* bb)
                     isLastUse.
             */
 
+#ifdef SWIFT_DEBUG
+            /*
+                In the debug version this set knows vars which were already
+                removed. This allows more precise assertions (see below).
+            */
+            RegSet erased;
+#endif // SWIFT_DEBUG
+
             // for each var on the right hand side
             for (size_t i = 0; i < ab->numRhs_; ++i)
             {
@@ -290,15 +315,24 @@ void CodeGenerator::colorRecursive(BBNode* bb)
 
                 if ( InstrBase::isLastUse(iter, reg) )
                 {
-                    // -> its the last use of op1
+                    // -> its the last use of reg
                     Colors::iterator colorIter = colors.find(reg->color_);
-                    swiftAssert( colorIter != colors.end(), "color must be found here");
-                    colors.erase(colorIter); // last use of op1 so remove
+#ifdef SWIFT_DEBUG
+                    // has this reg already been erased due to a double entry like a = b + b?
+                    if ( erased.find(reg) != erased.end() ) 
+                        continue;
+
+                    swiftAssert( colorIter != colors.end(), "color must be found here" );
+                    colors.erase(colorIter); // last use of reg
+                    erased.insert(reg);
+#else // SWIFT_DEBUG
+                    if ( colorIter == colors.end() );
+                        colors.erase(colorIter); // last use of reg
                     /*
-                        use "break" here in order to prevent confusionwhich can be
-                        caused by double entries with instructions like a = b + b
+                        else -> the reg must already been removed which must
+                            be caused by a double entry like a = b + b
                     */
-                    break;
+#endif // SWIFT_DEBUG
                 }
             }
 
@@ -320,6 +354,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
                     */
                     Colors::iterator colorIter = colors.find(reg->color_);
                     swiftAssert( colorIter != colors.end(), "color must be found here");
+                    std::cout << "\terase: " << *colorIter << std::endl;
                     colors.erase(colorIter); // last use of op2 so remove
                 }
             }
@@ -329,7 +364,7 @@ void CodeGenerator::colorRecursive(BBNode* bb)
     // for each child of bb in the dominator tree
     for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
     {
-        BBNode* domChild = iter->value_;
+        BBNode domChild = iter->value_;
 
         // omit special exit node
         if ( domChild->value_->isExit() )

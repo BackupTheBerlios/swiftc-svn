@@ -13,22 +13,51 @@ struct Function;
 
 //------------------------------------------------------------------------------
 
+/**
+ * Inherit from this class if you want to get callbacks for errors which are
+ * discoverd during control flow analysis.
+*/
+struct CFErrorHandler
+{
+    enum CFError
+    {
+        VAR_NOT_INITIALIZED,
+        TODO
+    };
+
+/*
+    destructor
+*/
+
+    virtual ~CFErrorHandler();
+
+/*
+    further methods
+*/
+
+    virtual void error(CFError cfError, int varNr) = 0;
+};
+
+//------------------------------------------------------------------------------
+
 struct CFG : public Graph<BasicBlock>
 {
-    BBNode** idoms_;
+    BBNode* idoms_;
 
     Function* function_;
     InstrList& instrList_;
 
-    typedef std::map<InstrNode, BBNode*> LabelNode2BBNodeMap;
+    typedef std::map<InstrNode, BBNode> LabelNode2BBNodeMap;
     /// with this data structure we can quickly find a BB with a given starting label
     LabelNode2BBNodeMap labelNode2BBNode_;
 
-    typedef std::map<int, BBNode*> FirstOccurance;
+    typedef std::map<int, BBNode> FirstOccurance;
     FirstOccurance firstOccurance_;
 
-    BBNode* entry_;
-    BBNode* exit_;
+    BBNode entry_;
+    BBNode exit_;
+
+    CFErrorHandler* cfErrorHandler_;
 
 /*
     constructor and destructor
@@ -38,19 +67,35 @@ struct CFG : public Graph<BasicBlock>
     ~CFG();
 
 /*
-    methods
+    graph creation
 */
 
     void calcCFG();
     void calcDomTree();
-    BBNode* intersect(BBNode* b1, BBNode* b2);
+    BBNode intersect(BBNode b1, BBNode b2);
     void calcDomFrontier();
+
+/*
+    error handling related to control flow
+*/
+
+    void installCFErrorHandler(CFErrorHandler* cfErrorHandler);
+
+/*
+    phi functions
+*/
+
     void placePhiFunctions();
     void renameVars();
-    void rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names);
+    void rename(BBNode bb, std::vector< std::stack<PseudoReg*> >& names);
+
+/*
+    def-use-chains
+*/
+
     void calcDef();
     void calcUse();
-    void calcUse(PseudoReg* var, BBNode* bb);
+    void calcUse(PseudoReg* var, BBNode bb);
 
 /*
     dump methods

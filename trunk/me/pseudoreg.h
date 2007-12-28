@@ -12,8 +12,11 @@
 // forward declaration
 struct Struct;
 struct InstrBase;
+
+#ifdef SWIFT_DEBUG
 struct IVar;
-typedef Graph<IVar>::Node VarNode;
+typedef Graph<IVar>::Node* VarNode;
+#endif // SWIFT_DEBUG
 
 // -----------------------------------------------------------------------------
 
@@ -113,7 +116,7 @@ struct PseudoReg
     UseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
-    VarNode* varNode_;
+    VarNode varNode_;
 #endif // SWIFT_DEBUG
 
 #ifdef SWIFT_DEBUG

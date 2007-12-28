@@ -9,6 +9,7 @@
 CFG::CFG(Function* function)
     : function_(function)
     , instrList_(function->instrList_)
+    , cfErrorHandler_(0)
 {}
 
 CFG::~CFG()
@@ -17,7 +18,7 @@ CFG::~CFG()
 }
 
 /*
-    methods
+    graph creation
 */
 
 void CFG::calcCFG()
@@ -29,7 +30,7 @@ void CFG::calcCFG()
 
     InstrNode end = 0;
     InstrNode begin = 0;
-    BBNode* prevBB = 0;
+    BBNode prevBB = 0;
 
     // iterate over the instruction list and find basic blocks
     INSTRLIST_EACH(iter, instrList_)
@@ -43,7 +44,7 @@ void CFG::calcCFG()
 
             if (begin) // we have found the next basic block
             {
-                BBNode* bb = insert( new BasicBlock(begin, end) );
+                BBNode bb = insert( new BasicBlock(begin, end) );
 
                 // keep acount of the label node and the basic block in the map
                 labelNode2BBNode_[begin] = bb;
@@ -68,7 +69,7 @@ void CFG::calcCFG()
         so let us calculate the CFG
     */
 
-    BBNode* currentBB = 0;
+    BBNode currentBB = 0;
 
     // iterate once again over the instruction list in order to connect the blocks properly
     INSTRLIST_EACH(iter, instrList_)
@@ -77,7 +78,7 @@ void CFG::calcCFG()
 
         if ( typeid(*instr) == typeid(LabelInstr) )
         {
-            BBNode* prevBB = currentBB;
+            BBNode prevBB = currentBB;
             // we have found a new basic block
             currentBB = labelNode2BBNode_[iter];
 
@@ -85,7 +86,7 @@ void CFG::calcCFG()
                 break; // -> this is the last label
 
             // check whether there is already a connection between currentBB and prevBB
-            if ( prevBB && currentBB->pred_.search(prevBB) == currentBB->pred_.sentinel() )
+            if ( prevBB && currentBB->pred_.find(prevBB) == currentBB->pred_.sentinel() )
             {
                 // no -> test whether a connection is needed
                 InstrBase* lastInstrOfPrevBB = prevBB->value_->end_->prev()->value_;
@@ -145,11 +146,11 @@ void CFG::calcCFG()
     exit_  = insert( new BasicBlock(instrList_.last(), 0) );
 
     // connect entry with first regular basic block
-    BBNode* firstBB = labelNode2BBNode_[instrList_.first()];
+    BBNode firstBB = labelNode2BBNode_[instrList_.first()];
     entry_->link(firstBB);
 
     // connect exit with last regular basic block
-    BBNode* lastBB = prevBB; // prevBB holds the last basic block
+    BBNode lastBB = prevBB; // prevBB holds the last basic block
     lastBB->link(exit_);
 
     calcPostOrder(entry_);
@@ -158,8 +159,8 @@ void CFG::calcCFG()
 void CFG::calcDomTree()
 {
     // init dom array
-    idoms_ = new BBNode*[size()];
-    memset(idoms_, 0, sizeof(BBNode*) * size());
+    idoms_ = new BBNode[size()];
+    memset(idoms_, 0, sizeof(BBNode) * size());
 
     idoms_[entry_->postOrderIndex_] = entry_;
 
@@ -173,14 +174,14 @@ void CFG::calcDomTree()
         for (size_t i = size() - 2; long(i) >= 0; --i) // void entry node
         {
             // current node
-            BBNode* bb = postOrder_[i];
+            BBNode bb = postOrder_[i];
             swiftAssert(bb != entry_, "do not process the entry node");
 
             // pick one which has been processed
-            BBNode* newIdom = 0;
+            BBNode newIdom = 0;
             for (Relative* iter = bb->pred_.first(); iter != bb->pred_.sentinel(); iter = iter->next())
             {
-                BBNode* processedBB = iter->value_;
+                BBNode processedBB = iter->value_;
 
                 if ( processedBB->postOrderIndex_ > i)
                 {
@@ -195,7 +196,7 @@ void CFG::calcDomTree()
             // for all other predecessors
             RELATIVES_EACH(iter, bb->pred_)
             {
-                BBNode* predBB = iter->value_;
+                BBNode predBB = iter->value_;
 
                 if (bb == newIdom)
                     continue;
@@ -220,20 +221,20 @@ void CFG::calcDomTree()
 
     for (size_t i = 0; i < size(); ++i)
     {
-        BBNode* bb = postOrder_[i];
+        BBNode bb = postOrder_[i];
         swiftAssert(i == bb->postOrderIndex_, "i and postOrderIndex_ bust be consistent");
         idoms_[i]->value_->domChildren_.append(bb); // append child
     }
 
     // remove the entry -> entry cycle from the domChildren_
-    entry_->value_->domChildren_.erase( entry_->value_->domChildren_.search(entry_) );
+    entry_->value_->domChildren_.erase( entry_->value_->domChildren_.find(entry_) );
     swiftAssert(entry_->value_->domChildren_.size() == 1, "the entry must have exactly 1 child");
 }
 
-BBNode* CFG::intersect(BBNode* b1, BBNode* b2)
+BBNode CFG::intersect(BBNode b1, BBNode b2)
 {
-    BBNode* finger1 = b1;
-    BBNode* finger2 = b2;
+    BBNode finger1 = b1;
+    BBNode finger2 = b2;
 
     while (finger1->postOrderIndex_ != finger2->postOrderIndex_)
     {
@@ -250,7 +251,7 @@ void CFG::calcDomFrontier()
 {
     for (size_t i = 0; i < size(); ++i)
     {
-        BBNode* bb = postOrder_[i];
+        BBNode bb = postOrder_[i];
 
         // if the number of predecessors >= 2
         if (bb->pred_.size() >= 2)
@@ -258,7 +259,7 @@ void CFG::calcDomFrontier()
             // for all predecessors of bb
             RELATIVES_EACH(iter, bb->pred_)
             {
-                BBNode* runner = iter->value_;
+                BBNode runner = iter->value_;
 
                 while ( runner != idoms_[bb->postOrderIndex_] )
                 {
@@ -270,6 +271,19 @@ void CFG::calcDomFrontier()
         }
     }
 }
+
+/*
+    error handling related to control flow
+*/
+
+void CFG::installCFErrorHandler(CFErrorHandler* cfErrorHandler)
+{
+    cfErrorHandler_ = cfErrorHandler;
+}
+
+/*
+    phi functions
+*/
 
 void CFG::placePhiFunctions()
 {
@@ -309,7 +323,7 @@ void CFG::placePhiFunctions()
         // init work list with all basic blocks which assign to var
         for (size_t i = 0; i < size(); ++i)
         {
-            BBNode* bb = postOrder_[i];
+            BBNode bb = postOrder_[i];
 
             if ( bb->value_->vars_.find(var->regNr_) != bb->value_->vars_.end() )
             {
@@ -323,7 +337,7 @@ void CFG::placePhiFunctions()
             mark dominance frontier of the basic block with the first occurance
             of var as hasAlready
         */
-        BBNode* firstBB = firstOccurance_.find(var->regNr_)->second;
+        BBNode firstBB = firstOccurance_.find(var->regNr_)->second;
 
         // for each basic block from DF(fristBB)
         BBLIST_EACH(iter, firstBB->value_->domFrontier_)
@@ -333,14 +347,14 @@ void CFG::placePhiFunctions()
         while ( !work.empty() )
         {
             // take a basic block from the list
-            BBNode* bb = work.first()->value_;
+            BBNode bb = work.first()->value_;
             work.removeFirst();
 
 
             // for each basic block from DF(bb)
             BBLIST_EACH(iter, bb->value_->domFrontier_)
             {
-                BBNode* df = iter->value_;
+                BBNode df = iter->value_;
 
                 // do we already have a phi function for this node and this var?
                 if ( hasAlready[df->postOrderIndex_] >= iterCount )
@@ -390,7 +404,7 @@ void CFG::renameVars()
     }
 }
 
-void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
+void CFG::rename(BBNode bb, std::vector< std::stack<PseudoReg*> >& names)
 {
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
@@ -435,7 +449,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     // for each successor of bb
     RELATIVES_EACH(iter, bb->succ_)
     {
-        BBNode* succ = iter->value_;
+        BBNode succ = iter->value_;
         size_t j = succ->whichPred(bb);
 
         // for each phi function in succ -> start with the first instruction which is followed by the leading LabelInstr
@@ -457,7 +471,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
     // for each child of bb in the dominator tree
     BBLIST_EACH(iter, bb->value_->domChildren_)
     {
-        BBNode* domChild = iter->value_;
+        BBNode domChild = iter->value_;
 
         // omit special exit node
         if ( domChild->value_->isExit() )
@@ -493,13 +507,14 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<PseudoReg*> >& names)
 void CFG::calcDef()
 {
     // knows the current BB in the iteration
-    BBNode* currentBB;
+    BBNode currentBB;
 
     // iterate over the instruction list except the last LabelInstr and find all definitions
     for (InstrNode iter = instrList_.first(); iter != instrList_.sentinel()->prev(); iter = iter->next())
     {
         InstrBase* instr = iter->value_;
-        if (typeid(*instr) == typeid(LabelInstr) )
+
+        if ( typeid(*instr) == typeid(LabelInstr) )
             currentBB = labelNode2BBNode_[iter]; // new basic block
         else
         {
@@ -507,7 +522,6 @@ void CFG::calcDef()
 
             if (ab)
             {
-                // TODO currently only one lhs var is supported
                 // for each var on the lhs
                 for (size_t i = 0; i < ab->numLhs_; ++i)
                     ab->lhs_[i]->def_.set(iter, currentBB); // store def
@@ -526,7 +540,7 @@ void CFG::calcUse()
     }
 }
 
-void CFG::calcUse(PseudoReg* var, BBNode* bbNode)
+void CFG::calcUse(PseudoReg* var, BBNode bbNode)
 {
     BasicBlock* bb = bbNode->value_;
 
@@ -593,7 +607,7 @@ std::string CFG::dumpDomChildren() const
 
     for (size_t i = 0; i < size(); ++i)
     {
-        BBNode* bb = postOrder_[i];
+        BBNode bb = postOrder_[i];
 
         oss << '\t' << bb->value_->name() << ":\t";
 
@@ -612,7 +626,7 @@ std::string CFG::dumpDomFrontier() const
 
     for (size_t i = 0; i < size(); ++i)
     {
-        BBNode* bb = postOrder_[i];
+        BBNode bb = postOrder_[i];
 
         oss << '\t' << bb->value_->name() << ":\t";
 
