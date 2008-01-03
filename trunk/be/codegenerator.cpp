@@ -326,7 +326,7 @@ void CodeGenerator::colorRecursive(BBNode bb)
                     colors.erase(colorIter); // last use of reg
                     erased.insert(reg);
 #else // SWIFT_DEBUG
-                    if ( colorIter == colors.end() );
+                    if ( colorIter == colors.end() )
                         colors.erase(colorIter); // last use of reg
                     /*
                         else -> the reg must already been removed which must
