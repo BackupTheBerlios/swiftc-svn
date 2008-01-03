@@ -13,6 +13,8 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -165,3 +167,5 @@ bool MemberVar::analyze()
 
     return true;
 }
+
+} // namespace swift

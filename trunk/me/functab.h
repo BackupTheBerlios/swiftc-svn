@@ -1,5 +1,5 @@
-#ifndef SWIFT_FUNCTAB_H
-#define SWIFT_FUNCTAB_H
+#ifndef ME_FUNCTAB_H
+#define ME_FUNCTAB_H
 
 #include <fstream>
 #include <iostream>
@@ -13,6 +13,8 @@
 #include "me/cfg.h" // TODO move to .cpp
 #include "me/pseudoreg.h"
 #include "me/ssa.h"
+
+namespace me {
 
 //------------------------------------------------------------------------------
 
@@ -148,4 +150,6 @@ struct FunctionTable
 typedef FunctionTable FuncTab;
 extern FuncTab* functab;
 
-#endif // SWIFT_FUNCTAB_H
+} // namespace me
+
+#endif // ME_FUNCTAB_H

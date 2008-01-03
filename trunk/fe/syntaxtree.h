@@ -7,6 +7,8 @@
 #include "utils/assert.h"
 #include "fe/parser.h"
 
+namespace swift {
+
 // forward declaration
 struct Class;
 
@@ -87,5 +89,7 @@ struct SyntaxTree
 //------------------------------------------------------------------------------
 
 extern SyntaxTree* syntaxtree;
+
+} // namespace swift
 
 #endif // SWIFT_SYNTAXTREE_H

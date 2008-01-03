@@ -1,5 +1,5 @@
-#ifndef SWIFT_BASIC_BLOCK_H
-#define SWIFT_BASIC_BLOCK_H
+#ifndef ME_BASIC_BLOCK_H
+#define ME_BASIC_BLOCK_H
 
 #include <fstream>
 #include <string>
@@ -10,9 +10,10 @@
 
 #include "me/ssa.h"
 
+namespace me {
 
 #define BBLIST_EACH(iter, bbList) \
-    for (BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
+    for (me::BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
 
 struct BasicBlock
 {
@@ -55,4 +56,6 @@ struct BasicBlock
     std::string toString() const;
 };
 
-#endif // SWIFT_BASIC_BLOCK_H
+} // namespace me
+
+#endif // ME_BASIC_BLOCK_H

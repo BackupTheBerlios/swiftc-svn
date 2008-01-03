@@ -4,6 +4,8 @@
 
 #include "fe/class.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -48,3 +50,5 @@ std::string Module::toString() const
 Definition::Definition(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Symbol(id, parent, line)
 {}
+
+} // namespace swift

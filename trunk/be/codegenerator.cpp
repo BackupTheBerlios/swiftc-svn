@@ -5,6 +5,8 @@
 #include "me/cfg.h"
 #include "me/functab.h"
 
+namespace be {
+
 //------------------------------------------------------------------------------
 
 #ifdef SWIFT_DEBUG
@@ -13,10 +15,10 @@
 
 struct IVar
 {
-    PseudoReg* var_;
+    me::PseudoReg* var_;
 
     IVar() {}
-    IVar(PseudoReg* var)
+    IVar(me::PseudoReg* var)
         : var_(var)
     {}
 
@@ -71,7 +73,7 @@ Spiller* CodeGenerator::spiller_ = 0;
     constructor and destructor
 */
 
-CodeGenerator::CodeGenerator(std::ofstream& ofs, Function* function)
+CodeGenerator::CodeGenerator(std::ofstream& ofs, me::Function* function)
     : function_(function)
     , cfg_(&function->cfg_)
     , ofs_(ofs)
@@ -115,7 +117,7 @@ void CodeGenerator::livenessAnalysis()
     // create var nodes
     REGMAP_EACH(iter, function_->vars_)
     {
-        PseudoReg* var = iter->second;
+        me::PseudoReg* var = iter->second;
 
         VarNode varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
@@ -125,17 +127,17 @@ void CodeGenerator::livenessAnalysis()
     // for each var
     REGMAP_EACH(iter, function_->vars_)
     {
-        PseudoReg* var = iter->second;
+        me::PseudoReg* var = iter->second;
 
         // for each use of var
         USELIST_EACH(iter, var->uses_)
         {
-            DefUse& use = iter->value_;
-            InstrBase* instr = use.instr_->value_;
+            me::DefUse& use = iter->value_;
+            me::InstrBase* instr = use.instr_->value_;
 
-            if ( typeid(*instr) == typeid(PhiInstr) )
+            if ( typeid(*instr) == typeid(me::PhiInstr) )
             {
-                PhiInstr* phi = (PhiInstr*) instr;
+                me::PhiInstr* phi = (me::PhiInstr*) instr;
 
                 // find the predecessor basic block
                 size_t i = 0;
@@ -143,7 +145,7 @@ void CodeGenerator::livenessAnalysis()
                     ++i;
 
                 swiftAssert(i < phi->numRhs_, "i too large here");
-                BBNode pred = phi->sourceBBs_[i];
+                me::BBNode pred = phi->sourceBBs_[i];
 
                 // examine the found block
                 liveOutAtBlock(pred, var);
@@ -157,9 +159,9 @@ void CodeGenerator::livenessAnalysis()
     }
 }
 
-void CodeGenerator::liveOutAtBlock(BBNode bbNode, PseudoReg* var)
+void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::PseudoReg* var)
 {
-    BasicBlock* bb = bbNode->value_;
+    me::BasicBlock* bb = bbNode->value_;
 
     // var is live-out at bb
     bb->liveOut_.insert(var);
@@ -172,19 +174,19 @@ void CodeGenerator::liveOutAtBlock(BBNode bbNode, PseudoReg* var)
     }
 }
 
-void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
+void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::PseudoReg* var)
 {
     // var ist live-in at instr
     instr->value_->liveIn_.insert(var);
-    InstrNode prevInstr = instr->prev();
+    me::InstrNode prevInstr = instr->prev();
 
     // is instr the first statement of basic block?
-    if ( typeid(*prevInstr->value_) == typeid(LabelInstr) )
+    if ( typeid(*prevInstr->value_) == typeid(me::LabelInstr) )
     {
         // var is live-out at the leading labelInstr
         prevInstr->value_->liveOut_.insert(var);
 
-        BBNode bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        me::BBNode bb = function_->cfg_.labelNode2BBNode_[prevInstr];
         bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
@@ -194,12 +196,12 @@ void CodeGenerator::liveInAtInstr(InstrNode instr, PseudoReg* var)
     else
     {
         // get preceding statement to instr
-        InstrNode preInstr = instr->prev();
+        me::InstrNode preInstr = instr->prev();
         liveOutAtInstr(preInstr, var);
     }
 }
 
-void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
+void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::PseudoReg* var)
 {
     // var is live-out at instr
     instr->value_->liveOut_.insert(var);
@@ -207,7 +209,7 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
     // knows whether var is defined in instr
     bool varInLhs = false;
 
-    AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr->value_);
+    me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instr->value_);
     // for each reg v, that ab defines and is not var itself
     if (ab)
     {
@@ -216,7 +218,7 @@ void CodeGenerator::liveOutAtInstr(InstrNode instr, PseudoReg* var)
             if ( ab->lhs_[i] != var )
             {
 #ifdef SWIFT_DEBUG
-                PseudoReg* res = ab->lhs_[i];
+                me::PseudoReg* res = ab->lhs_[i];
 
                 // add (v, w) to interference graph if it does not already exist
                 if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
@@ -269,7 +271,7 @@ void CodeGenerator::color()
     colorRecursive( cfg_->entry_->succ_.first()->value_ );
 }
 
-void CodeGenerator::colorRecursive(BBNode bb)
+void CodeGenerator::colorRecursive(me::BBNode bb)
 {
     std::cout << "LIVE-IN at " << bb->value_->name() << std::endl;
     Colors colors;
@@ -281,20 +283,20 @@ void CodeGenerator::colorRecursive(BBNode bb)
         std::cout << "\t" << (*iter)->toString() << ": " << color << std::endl;
     }
 
-    // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
-    for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    // for each instruction -> start with the first instruction which is followed by the leading me::LabelInstr
+    for (me::InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         std::cout << iter->value_->toString() << std::endl;
-        AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
+        me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(iter->value_);
 
         if (ab)
         {
             /*
-                NOTE for the InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var) used below:
+                NOTE for the me::InstrBase::isLastUse(me::InstrNode instrNode, PseudoReg* var) used below:
                     instrNode has an predecessor in all cases because iter is initialized with the
-                    first instructin which is followed by the leading LabelInstr of this basic
+                    first instructin which is followed by the leading me::LabelInstr of this basic
                     block. Thus the first instruction which is considered here will always be
-                    preceded by a LabelInstr.
+                    preceded by a me::LabelInstr.
 
                     Furthermore Literals are no problems here since they are not found via
                     isLastUse.
@@ -311,9 +313,9 @@ void CodeGenerator::colorRecursive(BBNode bb)
             // for each var on the right hand side
             for (size_t i = 0; i < ab->numRhs_; ++i)
             {
-                PseudoReg* reg = ab->rhs_[i];
+                me::PseudoReg* reg = ab->rhs_[i];
 
-                if ( InstrBase::isLastUse(iter, reg) )
+                if ( me::InstrBase::isLastUse(iter, reg) )
                 {
                     // -> its the last use of reg
                     Colors::iterator colorIter = colors.find(reg->color_);
@@ -339,7 +341,7 @@ void CodeGenerator::colorRecursive(BBNode bb)
             // for each var on the left hand side -> assign a color for result
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                PseudoReg* reg = ab->lhs_[i];
+                me::PseudoReg* reg = ab->lhs_[i];
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
 
                 if ( reg->uses_.empty() )
@@ -362,9 +364,9 @@ void CodeGenerator::colorRecursive(BBNode bb)
     } // for each instruction
 
     // for each child of bb in the dominator tree
-    for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
+    for (me::BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
     {
-        BBNode domChild = iter->value_;
+        me::BBNode domChild = iter->value_;
 
         // omit special exit node
         if ( domChild->value_->isExit() )
@@ -377,3 +379,5 @@ void CodeGenerator::colorRecursive(BBNode bb)
 void CodeGenerator::coalesce()
 {
 }
+
+} // namespace be

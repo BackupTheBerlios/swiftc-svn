@@ -1,5 +1,5 @@
-#ifndef SWIFT_PSEUDOREG_H
-#define SWIFT_PSEUDOREG_H
+#ifndef ME_PSEUDOREG_H
+#define ME_PSEUDOREG_H
 
 #include <map>
 #include <string>
@@ -8,6 +8,8 @@
 #include "utils/list.h"
 
 #include "me/defuse.h"
+
+namespace me {
 
 // forward declaration
 struct Struct;
@@ -170,11 +172,12 @@ typedef List<PseudoReg*> RegList;
 
 /// Use this macro in order to easily visit all elements of a RegMap
 #define REGMAP_EACH(iter, regMap) \
-    for (RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
+    for (me::RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
 
 /// Use this macro in order to easily visit all elements of a RegSet
 #define REGSET_EACH(iter, regSet) \
-    for (RegSet::iterator (iter) = (regSet).begin(); (iter) != (regSet).end(); ++(iter))
+    for (me::RegSet::iterator (iter) = (regSet).begin(); (iter) != (regSet).end(); ++(iter))
 
+} // namespace me
 
-#endif // SWIFT_PSEUDOREG_H
+#endif // ME_PSEUDOREG_H

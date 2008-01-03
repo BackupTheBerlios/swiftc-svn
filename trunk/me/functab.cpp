@@ -8,6 +8,8 @@
 
 using namespace std;
 
+namespace me {
+
 FuncTab* functab = 0;
 
 // -----------------------------------------------------------------------------
@@ -221,3 +223,5 @@ void FunctionTable::dumpDot()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_ + '.' + *iter->second->id_);
 }
+
+} // namespace me

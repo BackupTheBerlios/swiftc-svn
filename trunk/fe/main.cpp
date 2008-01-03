@@ -20,6 +20,8 @@
 #include "be/codegenerator.h"
 #include "be/x86_64/spiller.h"
 
+using namespace swift;
+
 //------------------------------------------------------------------------------
 
 // forward declarations
@@ -66,7 +68,7 @@ int start(int argc, char** argv)
     symtab->insert(syntaxtree->rootModule_);
 
     error = new ErrorHandler(cmdLineParser.filename_);
-    functab = new FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
+    me::functab = new me::FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
 
     // populate symtab with builtin types
     readBuiltinTypes();
@@ -123,20 +125,20 @@ int start(int argc, char** argv)
         calculate the dominance frontier,
         place phi-functions in SSA form and update vars
     */
-    functab->buildUpME();
+    me::functab->buildUpME();
 
     /*
         optimize if applicable
     */
     if (cmdLineParser.optimize_)
     {
-        Optimizer::commonSubexprElimination_    = true;
-        Optimizer::deadCodeElimination_         = true;
-        Optimizer::constantPropagation_         = true;
+        me::Optimizer::commonSubexprElimination_    = true;
+        me::Optimizer::deadCodeElimination_         = true;
+        me::Optimizer::constantPropagation_         = true;
 
-        for (FunctionTable::FunctionMap::iterator iter = functab->functions_.begin(); iter != functab->functions_.end(); ++iter)
+        for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
         {
-            Optimizer optimizer(iter->second);
+            me::Optimizer optimizer(iter->second);
             optimizer.optimize();
         }
     }
@@ -145,22 +147,22 @@ int start(int argc, char** argv)
     /*
         debug output
     */
-    functab->dumpSSA();
-    functab->dumpDot();
+    me::functab->dumpSSA();
+    me::functab->dumpDot();
 
     /*
         build up back-end and generate assembly code
     */
-    CodeGenerator::spiller_ = new X86_64Spiller();
+    be::CodeGenerator::spiller_ = new be::X86_64Spiller();
 
     std::ostringstream oss;
     oss << cmdLineParser.filename_ << ".asm";
 
     std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
-    for (FunctionTable::FunctionMap::iterator iter = functab->functions_.begin(); iter != functab->functions_.end(); ++iter)
+    for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
     {
-        CodeGenerator cg(ofs, iter->second);
+        be::CodeGenerator cg(ofs, iter->second);
         cg.genCode();
     }
 
@@ -170,12 +172,12 @@ int start(int argc, char** argv)
     /*
         clean up middle-end
     */
-    delete functab;
+    delete me::functab;
 
     /*
         clean up back-end
     */
-    delete CodeGenerator::spiller_;
+    delete be::CodeGenerator::spiller_;
 
     return 0;
 }

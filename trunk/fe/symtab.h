@@ -6,6 +6,8 @@
 #include <stack>
 #include <map>
 
+namespace swift {
+
 // forward declarations
 struct Class;
 struct Local;
@@ -157,5 +159,7 @@ struct SymbolTable
 
 typedef SymbolTable SymTab;
 extern SymTab* symtab;
+
+} // namespace swift
 
 #endif // SWIFT_SYMBOLTABLE_H

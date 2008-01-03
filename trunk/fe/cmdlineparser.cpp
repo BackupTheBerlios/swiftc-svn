@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+namespace swift {
+
 CmdLineParser::CmdLineParser(int argc, char** argv)
     : argc_(argc)
     , argv_(argv)
@@ -27,3 +29,5 @@ CmdLineParser::CmdLineParser(int argc, char** argv)
     }
 
 }
+
+} // namespace swift

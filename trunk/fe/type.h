@@ -5,6 +5,8 @@
 
 #include "me/pseudoreg.h"
 
+namespace swift {
+
 //------------------------------------------------------------------------------
 
 struct BaseType : public Node
@@ -24,7 +26,7 @@ struct BaseType : public Node
     further methods
 */
     BaseType* clone() const;
-    PseudoReg::RegType toRegType() const;
+    me::PseudoReg::RegType toRegType() const;
 
     /**
      * Checks whether this is a builtin type.
@@ -80,5 +82,7 @@ struct Type : public Node
 };
 
 //------------------------------------------------------------------------------
+
+} // namespace swift
 
 #endif // SWIFT_TYPE_H

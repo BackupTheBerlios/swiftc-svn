@@ -4,6 +4,7 @@
 
 #include "utils/assert.h"
 
+namespace me {
 
 std::string BasicBlock::name() const
 {
@@ -39,3 +40,5 @@ std::string BasicBlock::toString() const
 
     return oss.str();
 }
+
+} // namespace me

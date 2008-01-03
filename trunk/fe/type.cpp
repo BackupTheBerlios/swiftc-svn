@@ -10,6 +10,8 @@
 #include "fe/expr.h"
 #include "fe/symtab.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -48,53 +50,53 @@ BaseType* BaseType::clone() const
     return new BaseType( new std::string(*id_), builtin_ );
 }
 
-PseudoReg::RegType BaseType::toRegType() const
+me::PseudoReg::RegType BaseType::toRegType() const
 {
     const std::string& id = *id_;
 
     if (id == "index")
-        return PseudoReg::R_INDEX;
+        return me::PseudoReg::R_INDEX;
     else if (id == "int")
-        return PseudoReg::R_INT;
+        return me::PseudoReg::R_INT;
     else if (id == "int8")
-        return PseudoReg::R_INT8;
+        return me::PseudoReg::R_INT8;
     else if (id == "int16")
-        return PseudoReg::R_INT16;
+        return me::PseudoReg::R_INT16;
     else if (id == "int32")
-        return PseudoReg::R_INT32;
+        return me::PseudoReg::R_INT32;
     else if (id == "int64")
-        return PseudoReg::R_INT64;
+        return me::PseudoReg::R_INT64;
     else if (id == "sat8")
-        return PseudoReg::R_SAT8;
+        return me::PseudoReg::R_SAT8;
     else if (id == "sat16")
-        return PseudoReg::R_SAT16;
+        return me::PseudoReg::R_SAT16;
 
     else if (id == "uint")
-        return PseudoReg::R_UINT;
+        return me::PseudoReg::R_UINT;
     else if (id == "uint8")
-        return PseudoReg::R_UINT8;
+        return me::PseudoReg::R_UINT8;
     else if (id == "uint16")
-        return PseudoReg::R_UINT16;
+        return me::PseudoReg::R_UINT16;
     else if (id == "uint32")
-        return PseudoReg::R_UINT32;
+        return me::PseudoReg::R_UINT32;
     else if (id == "uint64")
-        return PseudoReg::R_UINT64;
+        return me::PseudoReg::R_UINT64;
     else if (id == "usat8")
-        return PseudoReg::R_USAT8;
+        return me::PseudoReg::R_USAT8;
     else if (id == "usat16")
-        return PseudoReg::R_USAT16;
+        return me::PseudoReg::R_USAT16;
 
     else if (id == "real")
-        return PseudoReg::R_REAL;
+        return me::PseudoReg::R_REAL;
     else if (id == "real32")
-        return PseudoReg::R_REAL32;
+        return me::PseudoReg::R_REAL32;
     else if (id == "real64")
-        return PseudoReg::R_REAL64;
+        return me::PseudoReg::R_REAL64;
 
     else if (id == "bool")
-        return PseudoReg::R_BOOL;
+        return me::PseudoReg::R_BOOL;
     else
-        return PseudoReg::R_STRUCT;
+        return me::PseudoReg::R_STRUCT;
 }
 
 bool BaseType::isBuiltin() const
@@ -180,3 +182,4 @@ bool Type::isBuiltin() const
     return baseType_->isBuiltin() && pointerCount_ == 0;
 }
 
+} // namespace swift

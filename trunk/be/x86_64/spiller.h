@@ -1,7 +1,9 @@
-#ifndef SWIFT_X86_64_SPILLER_H
-#define SWIFT_X86_64_SPILLER_H
+#ifndef BE_X86_64_SPILLER_H
+#define BE_X86_64_SPILLER_H
 
 #include "be/spiller.h"
+
+namespace be {
 
 struct X86_64Spiller : public Spiller
 {
@@ -11,4 +13,6 @@ struct X86_64Spiller : public Spiller
     virtual void spill();
 };
 
-#endif // SWIFT_AMD64_SPILLER_H
+} // namespace be
+
+#endif // BE_AMD64_SPILLER_H

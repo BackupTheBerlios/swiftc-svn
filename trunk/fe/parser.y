@@ -13,6 +13,7 @@
 #include "fe/type.h"
 #include "fe/var.h"
 
+namespace swift {
 
 int pointercount = -1;
 bool parseerror  = false;
@@ -60,29 +61,34 @@ std::string* operatorToString(int _operator)
     return str;
 }
 
+} // namespace swift
+
+void yyerror(char *s);
+
+using namespace swift;
 
 %}
 
 %union
 {
-    int             int_;
+    int                 int_;
 
-    std::string*    id_;
+    std::string*        id_;
 
-    Module*         module_;
-    Definition*     definition_;
+    swift::Module*      module_;
+    swift::Definition*  definition_;
 
-    Class*          class_;
-    ClassMember*    classMember_;
-    MemberVar*      memberVar_;
-    Method*         method_;
+    swift::Class*       class_;
+    swift::ClassMember* classMember_;
+    swift::MemberVar*   memberVar_;
+    swift::Method*      method_;
 
-    Type*           type_;
-    BaseType*       baseType_;
+    swift::Type*        type_;
+    swift::BaseType*    baseType_;
 
-    Statement*      statement_;
-    Expr*           expr_;
-    ExprList*       exprList_;
+    swift::Statement*   statement_;
+    swift::Expr*        expr_;
+    swift::ExprList*    exprList_;
 };
 
 /*

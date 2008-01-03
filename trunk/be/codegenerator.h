@@ -1,5 +1,5 @@
-#ifndef SWIFT_CODEGENERATOR_H
-#define SWIFT_CODEGENERATOR_H
+#ifndef BE_CODEGENERATOR_H
+#define BE_CODEGENERATOR_H
 
 #include <fstream>
 
@@ -8,15 +8,20 @@
 #include "be/spiller.h"
 
 // forward declarations
-struct CFG;
+namespace me {
+    struct CFG;
+}
+
+namespace be {
+
 struct IGraph;
 
 struct CodeGenerator
 {
     static Spiller* spiller_;
 
-    Function*       function_;
-    CFG*            cfg_;
+    me::Function*   function_;
+    me::CFG*        cfg_;
     std::ofstream&  ofs_;
 #ifdef SWIFT_DEBUG
     IGraph*         ig_;
@@ -25,7 +30,7 @@ struct CodeGenerator
 /*
     constructor and destructor
 */
-    CodeGenerator(std::ofstream& ofs, Function* function);
+    CodeGenerator(std::ofstream& ofs, me::Function* function);
 #ifdef SWIFT_DEBUG
     ~CodeGenerator();
 #endif // SWIFT_DEBUG
@@ -42,13 +47,13 @@ private:
     liveness analysis
 */
     /// Knows during the liveness analysis which basic blocks have already been visted
-    typedef std::set<BasicBlock*> BBSet;
+    typedef std::set<me::BasicBlock*> BBSet;
     BBSet walked_;
 
     void livenessAnalysis();
-    void liveOutAtBlock(BBNode bbNode, PseudoReg* var);
-    void liveInAtInstr (InstrNode instr, PseudoReg* var);
-    void liveOutAtInstr(InstrNode instr, PseudoReg* var);
+    void liveOutAtBlock(me::BBNode bbNode,   me::PseudoReg* var);
+    void liveInAtInstr (me::InstrNode instr, me::PseudoReg* var);
+    void liveOutAtInstr(me::InstrNode instr, me::PseudoReg* var);
 
 /*
     register allocation
@@ -59,9 +64,11 @@ private:
     static int findFirstFreeColorAndAllocate(Colors& colors);
 
     void color();
-    void colorRecursive(BBNode bb);
+    void colorRecursive(me::BBNode bb);
 
     void coalesce();
 };
 
-#endif // SWIFT_CODEGENERATOR_H
+} // namespace be
+
+#endif // BE_CODEGENERATOR_H

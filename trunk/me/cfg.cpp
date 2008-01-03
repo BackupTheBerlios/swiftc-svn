@@ -2,6 +2,8 @@
 
 #include "me/functab.h"
 
+namespace me {
+
 /*
     constructor and destructor
 */
@@ -638,3 +640,5 @@ std::string CFG::dumpDomFrontier() const
 
     return oss.str();
 }
+
+} // namespace me

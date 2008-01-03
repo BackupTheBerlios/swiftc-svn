@@ -5,6 +5,7 @@
 
 #include "utils/stringhelper.h"
 
+namespace me {
 
 std::string PseudoReg::toString() const
 {
@@ -88,3 +89,5 @@ std::string PseudoReg::toString() const
 
     return oss.str();
 }
+
+} // namespace me

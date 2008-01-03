@@ -1,5 +1,7 @@
-#ifndef SWIFT_OPTIMIZER_H
-#define SWIFT_OPTIMIZER_H
+#ifndef ME_OPTIMIZER_H
+#define ME_OPTIMIZER_H
+
+namespace me {
 
 // forward declarations
 struct Function;
@@ -20,4 +22,6 @@ struct Optimizer
     void optimize();
 };
 
-#endif // SWIFT_OPTIMIZER_H
+} // namespace me
+
+#endif // ME_OPTIMIZER_H

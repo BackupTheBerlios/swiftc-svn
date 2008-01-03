@@ -13,13 +13,15 @@
 #include "fe/parser.h"
 #include "fe/syntaxtree.h"
 
+using namespace swift;
+
 int keyLine = -1;
 int commentLevel = 0;
 int indentationLevel = 0;
 
-int currentLine = 1;
+int swift::currentLine = 1;
 
-int getKeyLine()
+int swift::getKeyLine()
 {
     int result = keyLine;
     keyLine = -1;
@@ -169,11 +171,12 @@ nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Litera
 
 %%
 
-int yywrap() {
+int yywrap()
+{
     return 1;
 }
 
-FILE* lexerInit(const char* filename) {
+FILE* swift::lexerInit(const char* filename) {
     currentLine = 1;
     yyin = fopen(filename, "r");
     return yyin;

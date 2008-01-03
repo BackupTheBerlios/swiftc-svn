@@ -1,9 +1,13 @@
-#ifndef SWIFT_STRUCT_H
-#define SWIFT_STRUCT_H
+#ifndef ME_STRUCT_H
+#define ME_STRUCT_H
+
+// TODO
 
 #include <string>
 
-#inlude "pseudoreg.h"
+#include "pseudoreg.h"
+
+namespace me {
 
 struct Struct
 {
@@ -21,4 +25,6 @@ struct Struct
     std::string* id_;
 };
 
-#endif SWIFT_STRUCT_H
+} // namespace me
+
+#endif ME_STRUCT_H

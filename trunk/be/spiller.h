@@ -1,5 +1,7 @@
-#ifndef SWIFT_SPILLER_H
-#define SWIFT_SPILLER_H
+#ifndef BE_SPILLER_H
+#define BE_SPILLER_H
+
+namespace be {
 
 struct Spiller
 {
@@ -9,4 +11,6 @@ struct Spiller
     virtual void spill() = 0;
 };
 
-#endif // SWIFT_SPILLER_H
+} // namespace be
+
+#endif // BE_SPILLER_H

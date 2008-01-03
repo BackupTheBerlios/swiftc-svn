@@ -9,6 +9,8 @@
 #include "fe/syntaxtree.h"
 #include "fe/parser.h"
 
+namespace swift {
+
 // forward declarations
 struct Definition;
 
@@ -59,5 +61,7 @@ struct Definition : public Symbol
 
     virtual bool analyze() = 0;
 };
+
+} // namespace swift
 
 #endif // SWIFT_MODULE_H

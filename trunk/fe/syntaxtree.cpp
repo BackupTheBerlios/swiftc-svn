@@ -11,6 +11,7 @@
 
 #include "me/ssa.h"
 
+namespace swift {
 
 SyntaxTree* syntaxtree = 0;
 
@@ -100,3 +101,5 @@ bool SyntaxTree::analyze()
 
     return result;
 }
+
+} // namespace swift

@@ -7,6 +7,8 @@
 #include "fe/class.h"
 #include "fe/sig.h"
 
+namespace swift {
+
 // forward declaration
 struct Param;
 
@@ -36,5 +38,7 @@ struct Method : public ClassMember
 
     virtual bool analyze();
 };
+
+} // namespace swift
 
 #endif // SWIFT_METHOD_H

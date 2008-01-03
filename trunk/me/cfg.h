@@ -1,5 +1,5 @@
-#ifndef SWIFT_CFG_H
-#define SWIFT_CFG_H
+#ifndef ME_CFG_H
+#define ME_CFG_H
 
 #include <map>
 #include <stack>
@@ -7,6 +7,8 @@
 #include "utils/graph.h"
 
 #include "me/basicblock.h"
+
+namespace me {
 
 // forward declarations
 struct Function;
@@ -108,6 +110,8 @@ struct CFG : public Graph<BasicBlock>
 };
 
 #define CFG_RELATIVES_EACH(iter, relatives) \
-    for (CFG::Relative* (iter) = (relatives).first(); (iter) != (relatives).sentinel(); (iter) = (iter)->next())
+    for (me::CFG::Relative* (iter) = (relatives).first(); (iter) != (relatives).sentinel(); (iter) = (iter)->next())
 
-#endif // SWIFT_CFG_H
+} // namespace me
+
+#endif // ME_CFG_H

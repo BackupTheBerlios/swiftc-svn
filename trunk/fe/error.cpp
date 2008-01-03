@@ -4,6 +4,8 @@
 
 #include "utils/assert.h"
 
+namespace swift {
+
 ErrorHandler* error = 0;
 
 void ErrorHandler::setFilename(const char* filename)
@@ -42,3 +44,5 @@ void warningf(int line, const char* fs, ...)
     va_end(argptr);
     fprintf(stderr, "\n");
 }
+
+} // namespace swift

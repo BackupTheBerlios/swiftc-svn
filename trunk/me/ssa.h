@@ -1,5 +1,5 @@
-#ifndef SWIFT_SSA_H
-#define SWIFT_SSA_H
+#ifndef ME_SSA_H
+#define ME_SSA_H
 
 #include <fstream>
 
@@ -8,10 +8,12 @@
 
 #include "me/forward.h"
 
+namespace me {
+
 //------------------------------------------------------------------------------
 
 #define INSTRLIST_EACH(iter, instrList) \
-    for (InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
+    for (me::InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
 
 //------------------------------------------------------------------------------
 
@@ -313,4 +315,6 @@ struct BranchInstr : public AssignmentBase
 
 //------------------------------------------------------------------------------
 
-#endif // SWIFT_SSA_H
+} // namespace me
+
+#endif // ME_SSA_H

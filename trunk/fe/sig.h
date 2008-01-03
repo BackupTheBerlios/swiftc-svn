@@ -7,6 +7,8 @@
 #include "utils/list.h"
 #include "utils/stringhelper.h"
 
+namespace swift {
+
 // forward declaraions
 struct Param;
 struct Statement;
@@ -124,5 +126,7 @@ struct Scope
     /// Returns the local by varNr, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(int varNr);
 };
+
+} // namespace swift
 
 #endif //SWIFT_PROC

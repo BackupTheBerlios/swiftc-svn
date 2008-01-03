@@ -1,11 +1,13 @@
-#ifndef SWIFT_DEFUSE_H
-#define SWIFT_DEFUSE_H
+#ifndef ME_DEFUSE_H
+#define ME_DEFUSE_H
 
 #include "utils/list.h"
 #include "utils/graph.h"
 
 #include "me/basicblock.h"
 #include "me/forward.h"
+
+namespace me {
 
 /// This class can be used to reference def and use information
 struct DefUse
@@ -29,7 +31,8 @@ struct DefUse
 typedef List<DefUse> UseList;
 
 #define USELIST_EACH(iter, useList) \
-    for (UseList::Node* (iter) = (useList).first(); (iter) != (useList).sentinel(); (iter) = (iter)->next())
+    for (me::UseList::Node* (iter) = (useList).first(); (iter) != (useList).sentinel(); (iter) = (iter)->next())
 
+} // namespace me
 
-#endif // SWIFT_DEFUSE_H
+#endif // ME_DEFUSE_H

@@ -8,6 +8,8 @@
 #include "me/functab.h"
 #include "me/pseudoreg.h"
 
+namespace me {
+
 //------------------------------------------------------------------------------
 
 bool InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var)
@@ -314,3 +316,5 @@ std::string BranchInstr::toString() const
     return result;
 }
 */
+
+} // namespace me

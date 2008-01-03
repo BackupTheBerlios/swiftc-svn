@@ -14,6 +14,8 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -167,15 +169,15 @@ bool Declaration::analyze()
     local_ = symtab->createNewLocal(type_, id_, line_);
 
 #ifdef SWIFT_DEBUG
-    PseudoReg* reg = functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
+    me::PseudoReg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    PseudoReg* reg = functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
+    me::PseudoReg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
 #endif // SWIFT_DEBUG
 
     if (exprList_)
     {
         if ( type_->isBuiltin() )
-            functab->appendInstr( new AssignInstr('=', reg, exprList_->expr_->reg_) );
+            me::functab->appendInstr( new me::AssignInstr('=', reg, exprList_->expr_->reg_) );
         else
             swiftAssert(false, "TODO");
     }
@@ -227,7 +229,7 @@ bool AssignStatement::analyze()
 void AssignStatement::genSSA()
 {
     if ( expr_->type_->isBuiltin() )
-        functab->appendInstr( new AssignInstr(kind_ , expr_->reg_, exprList_->expr_->reg_) );
+        me::functab->appendInstr( new me::AssignInstr(kind_ , expr_->reg_, exprList_->expr_->reg_) );
     else
         swiftAssert(false, "TODO");
 }
@@ -257,8 +259,8 @@ bool IfElStatement::analyze()
     }
 
     // create labels
-    InstrNode trueLabelNode  = new InstrList::Node( new LabelInstr() );
-    InstrNode nextLabelNode  = new InstrList::Node( new LabelInstr() );
+    me::InstrNode trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
 
     if (!elBranch_)
     {
@@ -274,9 +276,9 @@ bool IfElStatement::analyze()
         */
         if (result)
         {
-            // generate BranchInstr if types are correct
-            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabelNode, nextLabelNode) );
-            functab->appendInstrNode(trueLabelNode);
+            // generate me::BranchInstr if types are correct
+            me::functab->appendInstr( new me::BranchInstr(expr_->reg_, trueLabelNode, nextLabelNode) );
+            me::functab->appendInstrNode(trueLabelNode);
         }
 
         // update scoping
@@ -291,7 +293,7 @@ bool IfElStatement::analyze()
 
         // generate instructions as you can see above
         if (result)
-            functab->appendInstrNode(nextLabelNode);
+            me::functab->appendInstrNode(nextLabelNode);
     }
     else
     {
@@ -308,13 +310,13 @@ bool IfElStatement::analyze()
             nextLabelNode:
                 //...
         */
-        InstrNode falseLabelNode = new InstrList::Node( new LabelInstr() );
+        me::InstrNode falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
 
         if (result)
         {
-            // generate BranchInstr if types are correct
-            functab->appendInstr( new BranchInstr(expr_->reg_, trueLabelNode, falseLabelNode) );
-            functab->appendInstrNode(trueLabelNode);
+            // generate me::BranchInstr if types are correct
+            me::functab->appendInstr( new me::BranchInstr(expr_->reg_, trueLabelNode, falseLabelNode) );
+            me::functab->appendInstrNode(trueLabelNode);
         }
 
         // update scoping
@@ -330,8 +332,8 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate instructions as you can see above
-            functab->appendInstr( new GotoInstr(nextLabelNode) );
-            functab->appendInstrNode(falseLabelNode);
+            me::functab->appendInstr( new me::GotoInstr(nextLabelNode) );
+            me::functab->appendInstrNode(falseLabelNode);
         }
 
         /*
@@ -350,8 +352,10 @@ bool IfElStatement::analyze()
 
         // generate instructions as you can see above
         if (result)
-            functab->appendInstrNode(nextLabelNode);
+            me::functab->appendInstrNode(nextLabelNode);
     }
 
     return result;
 }
+
+} // namespace swift

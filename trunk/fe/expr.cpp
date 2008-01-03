@@ -28,6 +28,8 @@
     - return false otherwise
 */
 
+namespace swift {
+
 //------------------------------------------------------------------------------
 
 /*
@@ -60,59 +62,59 @@ Literal::Literal(int kind, int line /*= NO_LINE*/)
     further methods
 */
 
-PseudoReg::RegType Literal::toRegType() const
+me::PseudoReg::RegType Literal::toRegType() const
 {
     switch (kind_)
     {
         case L_INDEX:
-            return PseudoReg::R_INDEX;
+            return me::PseudoReg::R_INDEX;
 
         case L_INT:
-            return PseudoReg::R_INT;
+            return me::PseudoReg::R_INT;
         case L_INT8:
-            return PseudoReg::R_INT8;
+            return me::PseudoReg::R_INT8;
         case L_INT16:
-            return PseudoReg::R_INT16;
+            return me::PseudoReg::R_INT16;
         case L_INT32:
-            return PseudoReg::R_INT32;
+            return me::PseudoReg::R_INT32;
         case L_INT64:
-            return PseudoReg::R_INT64;
+            return me::PseudoReg::R_INT64;
         case L_SAT8:
-            return PseudoReg::R_SAT8;
+            return me::PseudoReg::R_SAT8;
         case L_SAT16:
-            return PseudoReg::R_SAT16;
+            return me::PseudoReg::R_SAT16;
 
        case L_UINT:
-            return PseudoReg::R_UINT;
+            return me::PseudoReg::R_UINT;
         case L_UINT8:
-            return PseudoReg::R_UINT8;
+            return me::PseudoReg::R_UINT8;
         case L_UINT16:
-            return PseudoReg::R_UINT16;
+            return me::PseudoReg::R_UINT16;
         case L_UINT32:
-            return PseudoReg::R_UINT32;
+            return me::PseudoReg::R_UINT32;
         case L_UINT64:
-            return PseudoReg::R_UINT64;
+            return me::PseudoReg::R_UINT64;
         case L_USAT8:
-            return PseudoReg::R_USAT8;
+            return me::PseudoReg::R_USAT8;
         case L_USAT16:
-            return PseudoReg::R_USAT16;
+            return me::PseudoReg::R_USAT16;
 
         case L_REAL:
-            return PseudoReg::R_REAL;
+            return me::PseudoReg::R_REAL;
         case L_REAL32:
-            return PseudoReg::R_REAL32;
+            return me::PseudoReg::R_REAL32;
         case L_REAL64:
-            return PseudoReg::R_REAL64;
+            return me::PseudoReg::R_REAL64;
 
         case L_TRUE:
         case L_FALSE:
-            return PseudoReg::R_BOOL;
+            return me::PseudoReg::R_BOOL;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
 
-    return PseudoReg::R_INDEX; // avoid warning here
+    return me::PseudoReg::R_INDEX; // avoid warning here
 }
 
 bool Literal::analyze()
@@ -161,7 +163,7 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate PseudoReg
-    reg_ = new PseudoReg( toRegType() );
+    reg_ = new me::PseudoReg( toRegType() );
 
     switch (kind_)
     {
@@ -290,14 +292,14 @@ bool Id::analyze()
 
     swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
     Local* local = (Local*) var;
-    reg_ = functab->lookupReg(local->varNr_);
+    reg_ = me::functab->lookupReg(local->varNr_);
 
     if (reg_ == 0)
     {
 #ifdef SWIFT_DEBUG
-        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
+        reg_ = me::functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
 #else // SWIFT_DEBUG
-        reg_ = functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
+        reg_ = me::functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
 #endif // SWIFT_DEBUG
         local->varNr_ = reg_->regNr_;
         symtab->insertLocalByVarNr(local);
@@ -366,24 +368,24 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-    reg_ = functab->newTemp( type_->baseType_->toRegType() );
+    reg_ = me::functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
 
     switch (kind_)
     {
         case '-':
-            kind = AssignInstr::UNARY_MINUS;
+            kind = me::AssignInstr::UNARY_MINUS;
             break;
         case NOT_OP:
-            kind = AssignInstr::NOT;
+            kind = me::AssignInstr::NOT;
             break;
         default:
             swiftAssert(kind_ == '^', "impossible switch/case value");
             kind = kind_;
     }
 
-    functab->appendInstr( new AssignInstr(kind, reg_, op_->reg_) );
+    me::functab->appendInstr( new me::AssignInstr(kind, reg_, op_->reg_) );
 }
 
 //------------------------------------------------------------------------------
@@ -471,30 +473,30 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-    reg_ = functab->newTemp( type_->baseType_->toRegType() );
+    reg_ = me::functab->newTemp( type_->baseType_->toRegType() );
 
     int kind;
 
     switch (kind_)
     {
         case EQ_OP:
-            kind = AssignInstr::EQ;
+            kind = me::AssignInstr::EQ;
             break;
         case NE_OP:
-            kind = AssignInstr::NE;
+            kind = me::AssignInstr::NE;
             break;
         case LE_OP:
-            kind = AssignInstr::LE;
+            kind = me::AssignInstr::LE;
             break;
         case GE_OP:
-            kind = AssignInstr::GE;
+            kind = me::AssignInstr::GE;
             break;
         default:
             kind = kind_;
     }
 
     if ( op1_->type_->isBuiltin() )
-        functab->appendInstr( new AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+        me::functab->appendInstr( new me::AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
     else
         swiftAssert(false, "TODO");
 }
@@ -549,3 +551,5 @@ void FunctionCall::genSSA()
     std::cout << "not yet implemented" << std::endl;
 //     place_ = new std::string("TODO");
 };
+
+} // namespace swift

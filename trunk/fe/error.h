@@ -4,6 +4,8 @@
 #include <cstdarg>
 #include <cstring>
 
+namespace swift {
+
 void errorf(int line, const char* fs, ...);
 void warningf(int line, const char* fs, ...);
 
@@ -26,5 +28,7 @@ struct ErrorHandler
 };
 
 extern ErrorHandler* error;
+
+} // namespace swift
 
 #endif // SWIFT_ERROR_H

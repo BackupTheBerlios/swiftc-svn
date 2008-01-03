@@ -2,6 +2,8 @@
 
 #include "fe/type.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -60,3 +62,5 @@ bool Param::analyze() const
 {
     return type_->validate();
 }
+
+} // namespace swift

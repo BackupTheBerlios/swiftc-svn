@@ -11,6 +11,8 @@
 #include "me/functab.h"
 #include "me/ssa.h"
 
+namespace swift {
+
 /*
     constructor and destructor
 */
@@ -38,7 +40,7 @@ bool Method::analyze()
     symtab->enterMethod(this);
 
     /*
-        build a function name for the functab consisting of the class name,
+        build a function name for the me::functab consisting of the class name,
         the method name and a counted number to prevent name clashes
         due to overloading
     */
@@ -56,9 +58,9 @@ bool Method::analyze()
     oss << '#' << counter;
     ++counter;
 
-    functab->insertFunction( new std::string(oss.str()) );
+    me::functab->insertFunction( new std::string(oss.str()) );
     // insert the first label since every function must start with one
-    functab->appendInstr( new LabelInstr() );
+    me::functab->appendInstr( new me::LabelInstr() );
 
     // is it an operator?
     if (methodQualifier_ == OPERATOR)
@@ -146,7 +148,7 @@ bool Method::analyze()
         result &= iter->analyze();
 
     // insert the last label since every function must end with one
-    functab->appendInstr( new LabelInstr() );
+    me::functab->appendInstr( new me::LabelInstr() );
 
     symtab->leaveMethod();
 
@@ -171,3 +173,5 @@ bool Method::analyze()
 //
 //     return oss.str() + sig_.toString();
 // }
+
+} // namespace swift

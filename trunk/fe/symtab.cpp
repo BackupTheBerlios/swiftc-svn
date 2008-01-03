@@ -13,11 +13,13 @@
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
 
+using namespace std;
+
+namespace swift {
+
 /*
     TODO remove all error handling here
 */
-
-using namespace std;
 
 // init global
 SymTab* symtab = 0;
@@ -325,3 +327,4 @@ Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /
     return local;
 }
 
+} // namespace swift

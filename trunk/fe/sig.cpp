@@ -13,6 +13,8 @@
 
 #include "me/functab.h"
 
+namespace swift {
+
 //------------------------------------------------------------------------------
 
 /*
@@ -201,3 +203,5 @@ Local* Scope::lookupLocal(int varNr)
             return 0;
     }
 }
+
+} // namespace swift

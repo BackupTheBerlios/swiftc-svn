@@ -2,7 +2,10 @@
 #define SWIFT_STATEMENT_H
 
 #include "utils/assert.h"
+
 #include "fe/syntaxtree.h"
+
+namespace swift {
 
 // forward declarations
 struct Expr;
@@ -152,5 +155,6 @@ struct IfElStatement : public Statement
     virtual std::string toString() const { return std::string(""); }
 };
 
+} // namespace swift
 
 #endif // SWIFT_STATEMENT_H

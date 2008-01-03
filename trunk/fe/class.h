@@ -8,6 +8,7 @@
 
 #include "fe/module.h"
 
+namespace swift {
 
 // forward declarations
 struct ClassMember;
@@ -97,5 +98,7 @@ struct MemberVar : public ClassMember
 
     virtual bool analyze();
 };
+
+} // namespace swift
 
 #endif // SWIFT_CLASS_H

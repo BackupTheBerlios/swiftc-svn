@@ -5,6 +5,8 @@
 
 #include "me/pseudoreg.h"
 
+namespace swift {
+
 // forward declarations
 struct Expr;
 
@@ -16,7 +18,7 @@ struct Expr : public Node
     Type*   type_;
 
     /// this var holds the PseudoReg where the result is stored
-    PseudoReg*  reg_;
+    me::PseudoReg* reg_;
 
 /*
     constructor and destructor
@@ -76,7 +78,7 @@ struct Literal : public Expr
     further methods
 */
 
-    PseudoReg::RegType toRegType() const;
+    me::PseudoReg::RegType toRegType() const;
     virtual bool analyze();
     void genSSA();
     std::string toString() const;
@@ -223,5 +225,7 @@ struct FunctionCall : public Expr
     bool analyze();
     void genSSA();
 };
+
+} // namespace swift
 
 #endif // SWIFT_EXPR_H

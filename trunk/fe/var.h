@@ -5,6 +5,8 @@
 
 #include "fe/syntaxtree.h"
 
+namespace swift {
+
 // forward declaration
 struct Type;
 
@@ -93,5 +95,7 @@ struct Param : public Var
     /// Check whether this Param has a correct Type.
     bool analyze() const;
 };
+
+} // namespace swift
 
 #endif // SWIFT_VAR_H

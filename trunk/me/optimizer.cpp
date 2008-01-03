@@ -1,5 +1,7 @@
 #include "optimizer.h"
 
+namespace me {
+
 /*
     init statics
 */
@@ -16,3 +18,5 @@ void Optimizer::optimize()
 {
     // TODO
 }
+
+} // namespace me

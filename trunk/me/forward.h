@@ -1,5 +1,5 @@
-#ifndef SWIFT_FORWARD_H
-#define SWIFT_FORWARD_H
+#ifndef ME_FORWARD_H
+#define ME_FORWARD_H
 
 #include <map>
 #include <set>
@@ -8,6 +8,8 @@
 #include "utils/graph.h"
 
 // include this file for useful forward declarations
+
+namespace me {
 
 struct BasicBlock;
 typedef Graph<BasicBlock>::Node* BBNode;
@@ -24,4 +26,6 @@ typedef List<PseudoReg*> RegList;
 typedef std::map<int, PseudoReg*> RegMap;
 typedef std::set<PseudoReg*> RegSet;
 
-#endif // SWIFT_FORWARD_H
+} // namespace me
+
+#endif // ME_FORWARD_H
