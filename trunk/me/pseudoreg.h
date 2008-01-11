@@ -9,16 +9,21 @@
 
 #include "me/defuse.h"
 
-namespace me {
-
-// forward declaration
-struct Struct;
-struct InstrBase;
+// forward declarations
 
 #ifdef SWIFT_DEBUG
-struct IVar;
-typedef Graph<IVar>::Node* VarNode;
+
+namespace be {
+    struct IVar;
+    typedef Graph<IVar>::Node* VarNode;
+}
+
 #endif // SWIFT_DEBUG
+
+namespace me {
+
+struct Struct;
+struct InstrBase;
 
 // -----------------------------------------------------------------------------
 
@@ -118,7 +123,7 @@ struct PseudoReg
     UseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
-    VarNode varNode_;
+    be::VarNode varNode_;
 #endif // SWIFT_DEBUG
 
 #ifdef SWIFT_DEBUG

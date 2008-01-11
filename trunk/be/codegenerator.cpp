@@ -307,7 +307,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
                 In the debug version this set knows vars which were already
                 removed. This allows more precise assertions (see below).
             */
-            RegSet erased;
+            me::RegSet erased;
 #endif // SWIFT_DEBUG
 
             // for each var on the right hand side
@@ -321,7 +321,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
                     Colors::iterator colorIter = colors.find(reg->color_);
 #ifdef SWIFT_DEBUG
                     // has this reg already been erased due to a double entry like a = b + b?
-                    if ( erased.find(reg) != erased.end() ) 
+                    if ( erased.find(reg) != erased.end() )
                         continue;
 
                     swiftAssert( colorIter != colors.end(), "color must be found here" );
