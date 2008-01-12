@@ -51,9 +51,9 @@ private:
     BBSet walked_;
 
     void livenessAnalysis();
-    void liveOutAtBlock(me::BBNode bbNode,   me::PseudoReg* var);
-    void liveInAtInstr (me::InstrNode instr, me::PseudoReg* var);
-    void liveOutAtInstr(me::InstrNode instr, me::PseudoReg* var);
+    void liveOutAtBlock(me::BBNode bbNode,   me::Reg* var);
+    void liveInAtInstr (me::InstrNode instr, me::Reg* var);
+    void liveOutAtInstr(me::InstrNode instr, me::Reg* var);
 
 /*
     register allocation

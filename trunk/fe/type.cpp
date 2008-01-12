@@ -50,53 +50,53 @@ BaseType* BaseType::clone() const
     return new BaseType( new std::string(*id_), builtin_ );
 }
 
-me::PseudoReg::RegType BaseType::toRegType() const
+me::Reg::RegType BaseType::toRegType() const
 {
     const std::string& id = *id_;
 
     if (id == "index")
-        return me::PseudoReg::R_INDEX;
+        return me::Reg::R_INDEX;
     else if (id == "int")
-        return me::PseudoReg::R_INT;
+        return me::Reg::R_INT;
     else if (id == "int8")
-        return me::PseudoReg::R_INT8;
+        return me::Reg::R_INT8;
     else if (id == "int16")
-        return me::PseudoReg::R_INT16;
+        return me::Reg::R_INT16;
     else if (id == "int32")
-        return me::PseudoReg::R_INT32;
+        return me::Reg::R_INT32;
     else if (id == "int64")
-        return me::PseudoReg::R_INT64;
+        return me::Reg::R_INT64;
     else if (id == "sat8")
-        return me::PseudoReg::R_SAT8;
+        return me::Reg::R_SAT8;
     else if (id == "sat16")
-        return me::PseudoReg::R_SAT16;
+        return me::Reg::R_SAT16;
 
     else if (id == "uint")
-        return me::PseudoReg::R_UINT;
+        return me::Reg::R_UINT;
     else if (id == "uint8")
-        return me::PseudoReg::R_UINT8;
+        return me::Reg::R_UINT8;
     else if (id == "uint16")
-        return me::PseudoReg::R_UINT16;
+        return me::Reg::R_UINT16;
     else if (id == "uint32")
-        return me::PseudoReg::R_UINT32;
+        return me::Reg::R_UINT32;
     else if (id == "uint64")
-        return me::PseudoReg::R_UINT64;
+        return me::Reg::R_UINT64;
     else if (id == "usat8")
-        return me::PseudoReg::R_USAT8;
+        return me::Reg::R_USAT8;
     else if (id == "usat16")
-        return me::PseudoReg::R_USAT16;
+        return me::Reg::R_USAT16;
 
     else if (id == "real")
-        return me::PseudoReg::R_REAL;
+        return me::Reg::R_REAL;
     else if (id == "real32")
-        return me::PseudoReg::R_REAL32;
+        return me::Reg::R_REAL32;
     else if (id == "real64")
-        return me::PseudoReg::R_REAL64;
+        return me::Reg::R_REAL64;
 
     else if (id == "bool")
-        return me::PseudoReg::R_BOOL;
+        return me::Reg::R_BOOL;
     else
-        return me::PseudoReg::R_STRUCT;
+        return me::Reg::R_STRUCT;
 }
 
 bool BaseType::isBuiltin() const

@@ -89,7 +89,7 @@ struct CFG : public Graph<BasicBlock>
 
     void placePhiFunctions();
     void renameVars();
-    void rename(BBNode bb, std::vector< std::stack<PseudoReg*> >& names);
+    void rename(BBNode bb, std::vector< std::stack<Reg*> >& names);
 
 /*
     def-use-chains
@@ -97,7 +97,7 @@ struct CFG : public Graph<BasicBlock>
 
     void calcDef();
     void calcUse();
-    void calcUse(PseudoReg* var, BBNode bb);
+    void calcUse(Reg* var, BBNode bb);
 
 /*
     dump methods

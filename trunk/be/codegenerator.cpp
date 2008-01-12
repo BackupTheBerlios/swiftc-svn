@@ -15,10 +15,10 @@ namespace be {
 
 struct IVar
 {
-    me::PseudoReg* var_;
+    me::Reg* var_;
 
     IVar() {}
-    IVar(me::PseudoReg* var)
+    IVar(me::Reg* var)
         : var_(var)
     {}
 
@@ -117,7 +117,7 @@ void CodeGenerator::livenessAnalysis()
     // create var nodes
     REGMAP_EACH(iter, function_->vars_)
     {
-        me::PseudoReg* var = iter->second;
+        me::Reg* var = iter->second;
 
         VarNode varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
@@ -127,7 +127,7 @@ void CodeGenerator::livenessAnalysis()
     // for each var
     REGMAP_EACH(iter, function_->vars_)
     {
-        me::PseudoReg* var = iter->second;
+        me::Reg* var = iter->second;
 
         // for each use of var
         USELIST_EACH(iter, var->uses_)
@@ -159,7 +159,7 @@ void CodeGenerator::livenessAnalysis()
     }
 }
 
-void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::PseudoReg* var)
+void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::Reg* var)
 {
     me::BasicBlock* bb = bbNode->value_;
 
@@ -174,7 +174,7 @@ void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::PseudoReg* var)
     }
 }
 
-void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::PseudoReg* var)
+void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::Reg* var)
 {
     // var ist live-in at instr
     instr->value_->liveIn_.insert(var);
@@ -201,7 +201,7 @@ void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::PseudoReg* var)
     }
 }
 
-void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::PseudoReg* var)
+void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::Reg* var)
 {
     // var is live-out at instr
     instr->value_->liveOut_.insert(var);
@@ -218,7 +218,7 @@ void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::PseudoReg* var)
             if ( ab->lhs_[i] != var )
             {
 #ifdef SWIFT_DEBUG
-                me::PseudoReg* res = ab->lhs_[i];
+                me::Reg* res = ab->lhs_[i];
 
                 // add (v, w) to interference graph if it does not already exist
                 if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
@@ -292,7 +292,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
         if (ab)
         {
             /*
-                NOTE for the me::InstrBase::isLastUse(me::InstrNode instrNode, PseudoReg* var) used below:
+                NOTE for the me::InstrBase::isLastUse(me::InstrNode instrNode, Reg* var) used below:
                     instrNode has an predecessor in all cases because iter is initialized with the
                     first instructin which is followed by the leading me::LabelInstr of this basic
                     block. Thus the first instruction which is considered here will always be
@@ -313,7 +313,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
             // for each var on the right hand side
             for (size_t i = 0; i < ab->numRhs_; ++i)
             {
-                me::PseudoReg* reg = ab->rhs_[i];
+                me::Reg* reg = ab->rhs_[i];
 
                 if ( me::InstrBase::isLastUse(iter, reg) )
                 {
@@ -341,7 +341,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
             // for each var on the left hand side -> assign a color for result
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                me::PseudoReg* reg = ab->lhs_[i];
+                me::Reg* reg = ab->lhs_[i];
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
 
                 if ( reg->uses_.empty() )

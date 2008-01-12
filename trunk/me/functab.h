@@ -48,38 +48,38 @@ struct Function
     {}
     ~Function();
 
-    inline void insert(PseudoReg* reg);
+    inline void insert(Reg* reg);
 
     /**
-     * This method creates a new temp PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new temp Reg.
+     * @param regType the type of the Reg
     */
-    PseudoReg* newTemp(PseudoReg::RegType regType);
+    Reg* newTemp(Reg::RegType regType);
 
 #ifdef SWIFT_DEBUG
 
     /**
-     * This method creates a new temp PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new temp Reg.
+     * @param regType the type of the Reg
     */
-    PseudoReg* newTemp(PseudoReg::RegType regType, std::string* id);
+    Reg* newTemp(Reg::RegType regType, std::string* id);
 
     /**
-     * This method creates a new var PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new var Reg.
+     * @param regType the type of the Reg
      * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
     */
-    PseudoReg* newVar(PseudoReg::RegType regType, int varNr, std::string* id);
+    Reg* newVar(Reg::RegType regType, int varNr, std::string* id);
 
 #else // SWIFT_DEBUG
 
     /**
-     * This method creates a new var PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new var Reg.
+     * @param regType the type of the Reg
      * @param varNr the varNr of the var; must be positive.
     */
-    PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+    Reg* newVar(Reg::RegType regType, int varNr);
 
 #endif // SWIFT_DEBUG
 
@@ -103,39 +103,39 @@ struct FunctionTable
     Function* insertFunction(std::string* id);
 
     /**
-     * This method creates a new temp PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new temp Reg.
+     * @param regType the type of the Reg
     */
-    PseudoReg* newTemp(PseudoReg::RegType regType);
+    Reg* newTemp(Reg::RegType regType);
 
 #ifdef SWIFT_DEBUG
 
     /**
-     * This method creates a new temp PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new temp Reg.
+     * @param regType the type of the Reg
     */
-    PseudoReg* newTemp(PseudoReg::RegType regType, std::string* id);
+    Reg* newTemp(Reg::RegType regType, std::string* id);
 
     /**
-     * This method creates a new var PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new var Reg.
+     * @param regType the type of the Reg
      * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
     */
-    PseudoReg* newVar(PseudoReg::RegType regType, int varNr, std::string* id);
+    Reg* newVar(Reg::RegType regType, int varNr, std::string* id);
 
 #else // SWIFT_DEBUG
 
     /**
-     * This method creates a new var PseudoReg.
-     * @param regType the type of the PseudoReg
+     * This method creates a new var Reg.
+     * @param regType the type of the Reg
      * @param varNr the varNr of the var; must be positive.
     */
-    PseudoReg* newVar(PseudoReg::RegType regType, int varNr);
+    Reg* newVar(Reg::RegType regType, int varNr);
 
 #endif // SWIFT_DEBUG
 
-    PseudoReg* lookupReg(int regNr);
+    Reg* lookupReg(int regNr);
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode node);

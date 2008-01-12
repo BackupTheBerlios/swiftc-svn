@@ -7,7 +7,7 @@
 
 namespace me {
 
-std::string PseudoReg::toString() const
+std::string Reg::toString() const
 {
     std::ostringstream oss;
 

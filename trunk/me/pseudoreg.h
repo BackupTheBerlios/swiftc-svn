@@ -25,9 +25,12 @@ namespace me {
 struct Struct;
 struct InstrBase;
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-struct PseudoReg
+struct Var {
+};
+
+struct Reg : public Var
 {
     /// Types of pseudo registers / constants
     enum RegType
@@ -127,14 +130,14 @@ struct PseudoReg
 #endif // SWIFT_DEBUG
 
 #ifdef SWIFT_DEBUG
-    PseudoReg(RegType regType, int regNr, std::string* id = 0)
+    Reg(RegType regType, int regNr, std::string* id = 0)
         : regType_(regType)
         , regNr_(regNr)
         , color_(-1)
         , id_( id ? *id : "" )
     {}
 #else // SWIFT_DEBUG
-    PseudoReg(RegType regType, int regNr)
+    Reg(RegType regType, int regNr)
         : regType_(regType)
         , regNr_(regNr)
         , color_(-1)
@@ -143,7 +146,7 @@ struct PseudoReg
 
 
     /// use this constructor if you want to create a literal
-    PseudoReg(RegType regType)
+    Reg(RegType regType)
         : regType_(regType)
         , regNr_(LITERAL)
         , color_(-1)
@@ -153,7 +156,7 @@ struct PseudoReg
     {
         return regNr_ == 0;
     }
-    /// PseudoRegs with the same \a regNr_ belong to the same var originally
+    /// Regs with the same \a regNr_ belong to the same var originally
     bool isVar() const
     {
         return regNr_ < 0;
@@ -171,9 +174,9 @@ struct PseudoReg
     std::string toString() const;
 };
 
-typedef std::map<int, PseudoReg*> RegMap;
-typedef std::set<PseudoReg*> RegSet;
-typedef List<PseudoReg*> RegList;
+typedef std::map<int, Reg*> RegMap;
+typedef std::set<Reg*> RegSet;
+typedef List<Reg*> RegList;
 
 /// Use this macro in order to easily visit all elements of a RegMap
 #define REGMAP_EACH(iter, regMap) \

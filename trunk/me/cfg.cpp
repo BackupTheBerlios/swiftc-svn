@@ -312,7 +312,7 @@ void CFG::placePhiFunctions()
     {
         ++iterCount;
 
-        PseudoReg* var = iter->second;
+        Reg* var = iter->second;
 
         // if it is a temp continue
         if ( !var->isVar() )
@@ -383,7 +383,7 @@ void CFG::renameVars()
 {
     RegMap& vars = function_->vars_;
 
-    std::vector< std::stack<PseudoReg*> > names;
+    std::vector< std::stack<Reg*> > names;
     // since index 0 is reserved for literals the stack-array's size must be increased by one
     names.resize( -vars.begin()->first + 1 );
 
@@ -406,7 +406,7 @@ void CFG::renameVars()
     }
 }
 
-void CFG::rename(BBNode bb, std::vector< std::stack<PseudoReg*> >& names)
+void CFG::rename(BBNode bb, std::vector< std::stack<Reg*> >& names)
 {
     // for each instruction -> start with the first instruction which is followed by the leading LabelInstr
     for (InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
@@ -435,9 +435,9 @@ void CFG::rename(BBNode bb, std::vector< std::stack<PseudoReg*> >& names)
                 if ( ab->lhs_[i]->isVar() )
                 {
 #ifdef SWIFT_DEBUG
-                    PseudoReg* reg = function_->newTemp(ab->lhs_[i]->regType_, &ab->lhs_[i]->id_);
+                    Reg* reg = function_->newTemp(ab->lhs_[i]->regType_, &ab->lhs_[i]->id_);
 #else // SWIFT_DEBUG
-                    PseudoReg* reg = function_->newTemp(ab->lhs_[i]->regType_);
+                    Reg* reg = function_->newTemp(ab->lhs_[i]->regType_);
 #endif // SWIFT_DEBUG
 
                     swiftAssert(size_t(-ab->lhsOldVarNr_[i]) < names.size(), "index out of bounds");
@@ -536,13 +536,13 @@ void CFG::calcUse()
 {
     REGMAP_EACH(iter, function_->vars_)
     {
-        PseudoReg* var = iter->second;
+        Reg* var = iter->second;
 
         calcUse(var, var->def_.bbNode_);
     }
 }
 
-void CFG::calcUse(PseudoReg* var, BBNode bbNode)
+void CFG::calcUse(Reg* var, BBNode bbNode)
 {
     BasicBlock* bb = bbNode->value_;
 

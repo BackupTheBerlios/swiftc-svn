@@ -17,8 +17,8 @@ struct Expr : public Node
     bool    lvalue_;
     Type*   type_;
 
-    /// this var holds the PseudoReg where the result is stored
-    me::PseudoReg* reg_;
+    /// this var holds the Reg where the result is stored
+    me::Reg* reg_;
 
 /*
     constructor and destructor
@@ -78,7 +78,7 @@ struct Literal : public Expr
     further methods
 */
 
-    me::PseudoReg::RegType toRegType() const;
+    me::Reg::RegType toRegType() const;
     virtual bool analyze();
     void genSSA();
     std::string toString() const;

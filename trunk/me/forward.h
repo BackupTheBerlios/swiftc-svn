@@ -21,10 +21,10 @@ struct InstrBase;
 typedef List<InstrBase*> InstrList;
 typedef InstrList::Node* InstrNode;
 
-struct PseudoReg;
-typedef List<PseudoReg*> RegList;
-typedef std::map<int, PseudoReg*> RegMap;
-typedef std::set<PseudoReg*> RegSet;
+struct Reg;
+typedef List<Reg*> RegList;
+typedef std::map<int, Reg*> RegMap;
+typedef std::set<Reg*> RegSet;
 
 } // namespace me
 

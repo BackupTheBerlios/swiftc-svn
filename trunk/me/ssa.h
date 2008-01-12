@@ -41,9 +41,9 @@ struct InstrBase
      *
      * @param instr The instruction which should be tested. \p instr must have
      *      a predecessor and must contain a BaseAssignInstr.
-     * @param var The PseudoReg which should be tested.
+     * @param var The Reg which should be tested.
      */
-    static bool isLastUse(InstrNode instrNode, PseudoReg* var);
+    static bool isLastUse(InstrNode instrNode, Reg* var);
 
     virtual std::string toString() const = 0;
 };
@@ -107,11 +107,11 @@ struct GotoInstr : public InstrBase
  */
 struct AssignmentBase : public InstrBase
 {
-    PseudoReg** lhs_;           ///< left hand side vars
+    Reg** lhs_;           ///< left hand side vars
     int*        lhsOldVarNr_;   ///< left hand side old varNrs
     size_t      numLhs_;        ///< number of left hand side args.
 
-    PseudoReg** rhs_;           ///< right hand side vars
+    Reg** rhs_;           ///< right hand side vars
     size_t      numRhs_;        ///< number of righthand side args.
 
 /*
@@ -145,15 +145,15 @@ struct PhiInstr : public AssignmentBase
     constructor and destructor
 */
 
-    PhiInstr(PseudoReg* result, size_t numRhs);
+    PhiInstr(Reg* result, size_t numRhs);
     ~PhiInstr();
 
 /*
     getters and setters
 */
 
-//     PseudoReg* result();
-//     const PseudoReg* result() const;
+//     Reg* result();
+//     const Reg* result() const;
 //     int resultOldVarNr() const;
 
 /*
@@ -229,7 +229,7 @@ struct AssignInstr : public AssignmentBase
     constructor
 */
 
-    AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 = 0);
+    AssignInstr(int kind, Reg* result, Reg* op1, Reg* op2 = 0);
 
 /*
     further methods
@@ -254,7 +254,7 @@ struct BranchInstr : public AssignmentBase
 /*
     constructor
 */
-    BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode);
+    BranchInstr(Reg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode);
 
 /*
     further methods
@@ -295,23 +295,23 @@ struct BranchInstr : public AssignmentBase
 //         STD_CALL,
 //         SWIFT_CALL
 //     };
-// 
+//
 //     Function* function_;
 //     Conventions conventions_;
-// 
+//
 //     RegList args_;  ///< all arguments
 //     RegList in_;    ///< incoming arguments
 //     RegList out_;   ///< outgoing arguments
 //     RegList inout_; ///< in and outgoing arguments
-// 
+//
 //     InvokeInstr(Function* function, Conventions conventions)
 //         : function_(function)
 //         , conventions_(conventions)
 //     {}
-// 
+//
 //     virtual std::string toString() const;
 // };
-// 
+//
 
 //------------------------------------------------------------------------------
 

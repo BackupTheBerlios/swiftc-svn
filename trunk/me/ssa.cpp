@@ -12,7 +12,7 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
-bool InstrBase::isLastUse(InstrNode instrNode, PseudoReg* var)
+bool InstrBase::isLastUse(InstrNode instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
     InstrBase* prev  = instrNode->prev()->value_;
@@ -52,10 +52,10 @@ std::string GotoInstr::toString() const
 */
 
 AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
-    : lhs_( new PseudoReg*[numLhs] )
+    : lhs_( new Reg*[numLhs] )
     , lhsOldVarNr_( new int[numLhs] )
     , numLhs_(numLhs)
-    , rhs_( new PseudoReg*[numRhs] )
+    , rhs_( new Reg*[numRhs] )
     , numRhs_(numRhs)
 {}
 
@@ -88,7 +88,7 @@ void AssignmentBase::destroyLhsOldVarNrs()
     constructor and destructor
 */
 
-PhiInstr::PhiInstr(PseudoReg* result, size_t numRhs)
+PhiInstr::PhiInstr(Reg* result, size_t numRhs)
     : AssignmentBase(1, numRhs) // phi functions always have one result
     , sourceBBs_( new BBNode[numRhs] )
 {
@@ -106,16 +106,16 @@ PhiInstr::~PhiInstr()
     getters and setters
 */
 
-// PseudoReg* PhiInstr::result()
+// Reg* PhiInstr::result()
 // {
 //     return lhs_[0];
 // }
-// 
-// const PseudoReg* PhiInstr::result() const
+//
+// const Reg* PhiInstr::result() const
 // {
 //     return lhs_[0];
 // }
-// 
+//
 // int PhiInstr::resultOldVarNr() const
 // {
 //     return lhsOldVarNr_[0];
@@ -154,11 +154,11 @@ std::string PhiInstr::toString() const
     constructor
 */
 
-AssignInstr::AssignInstr(int kind, PseudoReg* result, PseudoReg* op1, PseudoReg* op2 /*= 0*/)
+AssignInstr::AssignInstr(int kind, Reg* result, Reg* op1, Reg* op2 /*= 0*/)
     : AssignmentBase(1, op2 ? 2 : 1) // An AssignInstr always have exactly one result and one or two args
     , kind_(kind)
 {
-    swiftAssert( result->regNr_ != PseudoReg::LITERAL, "this can't be a constant" );
+    swiftAssert( result->regNr_ != Reg::LITERAL, "this can't be a constant" );
     lhs_[0] = result;
     lhsOldVarNr_[0] = result->regNr_;
 
@@ -257,12 +257,12 @@ void AssignInstr::genCode(std::ofstream& ofs)
     constructor
 */
 
-BranchInstr::BranchInstr(PseudoReg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode)
+BranchInstr::BranchInstr(Reg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode)
     : AssignmentBase(0, 1) // BranchInstr always have exactly one rhs var and no results
     , trueLabelNode_(trueLabelNode)
     , falseLabelNode_(falseLabelNode)
 {
-    swiftAssert(boolReg->regType_ == PseudoReg::R_BOOL, "this is not a boolean pseudo reg");
+    swiftAssert(boolReg->regType_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
     rhs_[0] = boolReg;
 
     swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),

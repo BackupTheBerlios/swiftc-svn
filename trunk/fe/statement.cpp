@@ -169,9 +169,9 @@ bool Declaration::analyze()
     local_ = symtab->createNewLocal(type_, id_, line_);
 
 #ifdef SWIFT_DEBUG
-    me::PseudoReg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
+    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    me::PseudoReg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
+    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
 #endif // SWIFT_DEBUG
 
     if (exprList_)

@@ -63,7 +63,7 @@ ADD_EXECUTABLE (swift
     me/cfg.cpp
     me/functab.cpp
     me/optimizer.cpp
-    me/pseudoreg.cpp
+    me/var.cpp
     me/ssa.cpp
 
     be/codegenerator.cpp

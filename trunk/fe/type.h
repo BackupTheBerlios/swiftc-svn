@@ -26,7 +26,7 @@ struct BaseType : public Node
     further methods
 */
     BaseType* clone() const;
-    me::PseudoReg::RegType toRegType() const;
+    me::Reg::RegType toRegType() const;
 
     /**
      * Checks whether this is a builtin type.
