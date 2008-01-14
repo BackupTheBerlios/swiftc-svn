@@ -11,7 +11,7 @@
 
 #include "me/basicblock.h"
 #include "me/cfg.h" // TODO move to .cpp
-#include "me/var.h"
+#include "me/op.h"
 #include "me/ssa.h"
 
 namespace me {
