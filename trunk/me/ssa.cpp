@@ -6,7 +6,7 @@
 #include "utils/stringhelper.h"
 
 #include "me/functab.h"
-#include "me/pseudoreg.h"
+#include "me/var.h"
 
 namespace me {
 
@@ -55,7 +55,7 @@ AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
     : lhs_( new Reg*[numLhs] )
     , lhsOldVarNr_( new int[numLhs] )
     , numLhs_(numLhs)
-    , rhs_( new Reg*[numRhs] )
+    , rhs_( new Op*[numRhs] )
     , numRhs_(numRhs)
 {}
 
@@ -64,8 +64,10 @@ AssignmentBase::~AssignmentBase()
     // delete all literals
     for (size_t i = 0; i < numRhs_; ++i)
     {
-        if ( rhs_[i]->isLiteral() )
-            delete rhs_[i];
+        me::Literal* literal = dynamic_cast<me::Literal*>(rhs_[i]);
+
+        if ( literal )
+            delete literal;
     }
 
     delete[] lhs_;
@@ -94,7 +96,7 @@ PhiInstr::PhiInstr(Reg* result, size_t numRhs)
 {
     // init result
     lhs_[0] = result;
-    lhsOldVarNr_[0] = result->regNr_;
+    lhsOldVarNr_[0] = result->varNr_;
 }
 
 PhiInstr::~PhiInstr()
@@ -154,13 +156,12 @@ std::string PhiInstr::toString() const
     constructor
 */
 
-AssignInstr::AssignInstr(int kind, Reg* result, Reg* op1, Reg* op2 /*= 0*/)
+AssignInstr::AssignInstr(int kind, Reg* result, Op* op1, Op* op2 /*= 0*/)
     : AssignmentBase(1, op2 ? 2 : 1) // An AssignInstr always have exactly one result and one or two args
     , kind_(kind)
 {
-    swiftAssert( result->regNr_ != Reg::LITERAL, "this can't be a constant" );
     lhs_[0] = result;
-    lhsOldVarNr_[0] = result->regNr_;
+    lhsOldVarNr_[0] = result->varNr_;
 
     rhs_[0] = op1;
     if (op2)
@@ -257,13 +258,13 @@ void AssignInstr::genCode(std::ofstream& ofs)
     constructor
 */
 
-BranchInstr::BranchInstr(Reg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode)
+BranchInstr::BranchInstr(Op* boolOp, InstrNode trueLabelNode, InstrNode falseLabelNode)
     : AssignmentBase(0, 1) // BranchInstr always have exactly one rhs var and no results
     , trueLabelNode_(trueLabelNode)
     , falseLabelNode_(falseLabelNode)
 {
-    swiftAssert(boolReg->regType_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
-    rhs_[0] = boolReg;
+    swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
+    rhs_[0] = boolOp;
 
     swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),
         "trueLabelNode must be a node to a LabelInstr");

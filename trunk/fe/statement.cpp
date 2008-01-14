@@ -169,15 +169,15 @@ bool Declaration::analyze()
     local_ = symtab->createNewLocal(type_, id_, line_);
 
 #ifdef SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_, local_->id_ );
+    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toType(), local_->varNr_, local_->id_ );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toRegType(), local_->varNr_ );
+    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toType(), local_->varNr_ );
 #endif // SWIFT_DEBUG
 
     if (exprList_)
     {
         if ( type_->isBuiltin() )
-            me::functab->appendInstr( new me::AssignInstr('=', reg, exprList_->expr_->reg_) );
+            me::functab->appendInstr( new me::AssignInstr('=', reg, exprList_->expr_->place_) );
         else
             swiftAssert(false, "TODO");
     }
@@ -229,7 +229,10 @@ bool AssignStatement::analyze()
 void AssignStatement::genSSA()
 {
     if ( expr_->type_->isBuiltin() )
-        me::functab->appendInstr( new me::AssignInstr(kind_ , expr_->reg_, exprList_->expr_->reg_) );
+    {
+        swiftAssert( dynamic_cast<me::Reg*>(expr_->place_), "expr_->place must be a me::Reg*");
+        me::functab->appendInstr( new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+    }
     else
         swiftAssert(false, "TODO");
 }
@@ -277,7 +280,7 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate me::BranchInstr if types are correct
-            me::functab->appendInstr( new me::BranchInstr(expr_->reg_, trueLabelNode, nextLabelNode) );
+            me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
             me::functab->appendInstrNode(trueLabelNode);
         }
 
@@ -315,7 +318,7 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate me::BranchInstr if types are correct
-            me::functab->appendInstr( new me::BranchInstr(expr_->reg_, trueLabelNode, falseLabelNode) );
+            me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, falseLabelNode) );
             me::functab->appendInstrNode(trueLabelNode);
         }
 

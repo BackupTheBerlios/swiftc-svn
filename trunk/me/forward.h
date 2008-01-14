@@ -21,6 +21,10 @@ struct InstrBase;
 typedef List<InstrBase*> InstrList;
 typedef InstrList::Node* InstrNode;
 
+struct Op;
+struct Literal;
+struct Var;
+struct Mem;
 struct Reg;
 typedef List<Reg*> RegList;
 typedef std::map<int, Reg*> RegMap;

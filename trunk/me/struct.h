@@ -15,7 +15,7 @@ struct Struct
     {
         union
         {
-            Reg::RegType* regType_;
+            Op::Type* type_;
             Struct* struct_;
         };
 

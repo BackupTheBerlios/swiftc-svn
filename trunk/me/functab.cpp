@@ -35,17 +35,15 @@ Function::~Function()
 
 inline void Function::insert(Reg* reg)
 {
-    swiftAssert(reg->regNr_ != Reg::LITERAL, "reg is a LITERAL");
-
     pair<RegMap::iterator, bool> p
-        = vars_.insert( make_pair(reg->regNr_, reg) );
+        = vars_.insert( make_pair(reg->varNr_, reg) );
 
-    swiftAssert(p.second, "there is already a reg with this regNr in the map");
+    swiftAssert(p.second, "there is already a reg with this varNr in the map");
 }
 
-Reg* Function::newTemp(Reg::RegType regType)
+Reg* Function::newSSA(Op::Type type)
 {
-    Reg* reg = new Reg(regType, regCounter_);
+    Reg* reg = new Reg(type, regCounter_);
     insert(reg);
 
     ++regCounter_;
@@ -55,9 +53,9 @@ Reg* Function::newTemp(Reg::RegType regType)
 
 #ifdef SWIFT_DEBUG
 
-Reg* Function::newTemp(Reg::RegType regType, std::string* id)
+Reg* Function::newSSA(Op::Type type, std::string* id)
 {
-    Reg* reg = new Reg(regType, regCounter_, id);
+    Reg* reg = new Reg(type, regCounter_, id);
     insert(reg);
 
     ++regCounter_;
@@ -65,10 +63,10 @@ Reg* Function::newTemp(Reg::RegType regType, std::string* id)
     return reg;
 }
 
-Reg* Function::newVar(Reg::RegType regType, int varNr, std::string* id)
+Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = new Reg(regType, varNr, id);
+    Reg* reg = new Reg(type, varNr, id);
     insert(reg);
 
     return reg;
@@ -76,10 +74,10 @@ Reg* Function::newVar(Reg::RegType regType, int varNr, std::string* id)
 
 #else // SWIFT_DEBUG
 
-Reg* Function::newVar(Reg::RegType regType, int varNr)
+Reg* Function::newVar(Op::Type type, int varNr)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = new Reg(regType, varNr);
+    Reg* reg = new Reg(type, varNr);
     insert(reg);
 
     return reg;
@@ -141,35 +139,35 @@ Function* FunctionTable::insertFunction(string* id)
     return current_;
 }
 
-Reg* FunctionTable::newTemp(Reg::RegType regType)
+Reg* FunctionTable::newSSA(Op::Type type)
 {
-    return current_->newTemp(regType);
+    return current_->newSSA(type);
 }
 
 #ifdef SWIFT_DEBUG
 
-Reg* FunctionTable::newTemp(Reg::RegType regType, std::string* id)
+Reg* FunctionTable::newSSA(Op::Type type, std::string* id)
 {
-    return current_->newTemp(regType, id);
+    return current_->newSSA(type, id);
 }
 
-Reg* FunctionTable::newVar(Reg::RegType regType, int varNr, std::string* id)
+Reg* FunctionTable::newVar(Op::Type type, int varNr, std::string* id)
 {
-    return current_->newVar(regType, varNr, id);
+    return current_->newVar(type, varNr, id);
 }
 
 #else // SWIFT_DEBUG
 
-Reg* FunctionTable::newVar(Reg::RegType regType, int varNr)
+Reg* FunctionTable::newVar(Op::Type type, int varNr)
 {
-    return current_->newVar(regType, varNr);
+    return current_->newVar(type, varNr);
 }
 
 #endif // SWIFT_DEBUG
 
-Reg* FunctionTable::lookupReg(int regNr)
+Reg* FunctionTable::lookupReg(int varNr)
 {
-    RegMap::iterator regIter = current_->vars_.find(regNr);
+    RegMap::iterator regIter = current_->vars_.find(varNr);
 
     if ( regIter == current_->vars_.end() )
         return 0;

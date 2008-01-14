@@ -14,7 +14,7 @@
 #include "fe/var.h"
 
 #include "me/functab.h"
-#include "me/pseudoreg.h"
+#include "me/var.h"
 #include "me/ssa.h"
 
 /*
@@ -62,7 +62,7 @@ Literal::Literal(int kind, int line /*= NO_LINE*/)
     further methods
 */
 
-me::Reg::RegType Literal::toRegType() const
+me::Op::Type Literal::toType() const
 {
     switch (kind_)
     {
@@ -84,7 +84,7 @@ me::Reg::RegType Literal::toRegType() const
         case L_SAT16:
             return me::Reg::R_SAT16;
 
-       case L_UINT:
+        case L_UINT:
             return me::Reg::R_UINT;
         case L_UINT8:
             return me::Reg::R_UINT8;
@@ -163,36 +163,37 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate Reg
-    reg_ = new me::Reg( toRegType() );
+    me::Literal* literal = new me::Literal( toType() );
+    place_ = literal;
 
     switch (kind_)
     {
-        case L_INDEX:   reg_->value_.index_     = index_;   break;
+        case L_INDEX:   literal->value_.index_     = index_;   break;
 
-        case L_INT:     reg_->value_.int_       = int_;     break;
-        case L_INT8:    reg_->value_.int8_      = int8_;    break;
-        case L_INT16:   reg_->value_.int16_     = int16_;   break;
-        case L_INT32:   reg_->value_.int32_     = int32_;   break;
-        case L_INT64:   reg_->value_.int64_     = int64_;   break;
-        case L_SAT8:    reg_->value_.sat8_      = sat8_;    break;
-        case L_SAT16:   reg_->value_.sat16_     = sat16_;   break;
+        case L_INT:     literal->value_.int_       = int_;     break;
+        case L_INT8:    literal->value_.int8_      = int8_;    break;
+        case L_INT16:   literal->value_.int16_     = int16_;   break;
+        case L_INT32:   literal->value_.int32_     = int32_;   break;
+        case L_INT64:   literal->value_.int64_     = int64_;   break;
+        case L_SAT8:    literal->value_.sat8_      = sat8_;    break;
+        case L_SAT16:   literal->value_.sat16_     = sat16_;   break;
 
-        case L_UINT:    reg_->value_.uint_      = uint_;    break;
-        case L_UINT8:   reg_->value_.uint8_     = uint8_;   break;
-        case L_UINT16:  reg_->value_.uint16_    = uint16_;  break;
-        case L_UINT32:  reg_->value_.uint32_    = uint32_;  break;
-        case L_UINT64:  reg_->value_.uint64_    = uint64_;  break;
-        case L_USAT8:   reg_->value_.usat8_     = usat8_;   break;
-        case L_USAT16:  reg_->value_.usat16_    = usat16_;  break;
+        case L_UINT:    literal->value_.uint_      = uint_;    break;
+        case L_UINT8:   literal->value_.uint8_     = uint8_;   break;
+        case L_UINT16:  literal->value_.uint16_    = uint16_;  break;
+        case L_UINT32:  literal->value_.uint32_    = uint32_;  break;
+        case L_UINT64:  literal->value_.uint64_    = uint64_;  break;
+        case L_USAT8:   literal->value_.usat8_     = usat8_;   break;
+        case L_USAT16:  literal->value_.usat16_    = usat16_;  break;
 
-        case L_REAL:    reg_->value_.real_      = real_;    break;
-        case L_REAL32:  reg_->value_.real32_    = real32_;  break;
-        case L_REAL64:  reg_->value_.real64_    = real64_;  break;
+        case L_REAL:    literal->value_.real_      = real_;    break;
+        case L_REAL32:  literal->value_.real32_    = real32_;  break;
+        case L_REAL64:  literal->value_.real64_    = real64_;  break;
 
         case L_TRUE: // like L_FALSE
-        case L_FALSE:   reg_->value_.bool_      = bool_;    break;
+        case L_FALSE:   literal->value_.bool_      = bool_;    break;
 
-        case L_NIL:     reg_->value_.ptr_       = ptr_;     break;
+        case L_NIL:     literal->value_.ptr_       = ptr_;     break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -292,16 +293,19 @@ bool Id::analyze()
 
     swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
     Local* local = (Local*) var;
-    reg_ = me::functab->lookupReg(local->varNr_);
+    place_ = me::functab->lookupReg(local->varNr_);
 
-    if (reg_ == 0)
+    if (place_ == 0)
     {
+        me::Reg* reg;
 #ifdef SWIFT_DEBUG
-        reg_ = me::functab->newVar( local->type_->baseType_->toRegType(), local->varNr_, id_ );
+        reg = me::functab->newVar( local->type_->baseType_->toType(), local->varNr_, id_ );
 #else // SWIFT_DEBUG
-        reg_ = me::functab->newVar( local->type_->baseType_->toRegType(), local->varNr_ );
+        reg = me::functab->newVar( local->type_->baseType_->toType(), local->varNr_ );
 #endif // SWIFT_DEBUG
-        local->varNr_ = reg_->regNr_;
+        place_ = reg;
+
+        local->varNr_ = reg->varNr_;
         symtab->insertLocalByVarNr(local);
     }
 
@@ -368,7 +372,8 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-    reg_ = me::functab->newTemp( type_->baseType_->toRegType() );
+    me::Reg* reg = me::functab->newSSA( type_->baseType_->toType() );
+    place_ = reg;
 
     int kind;
 
@@ -385,7 +390,7 @@ void UnExpr::genSSA()
             kind = kind_;
     }
 
-    me::functab->appendInstr( new me::AssignInstr(kind, reg_, op_->reg_) );
+    me::functab->appendInstr( new me::AssignInstr(kind, reg, op_->place_) );
 }
 
 //------------------------------------------------------------------------------
@@ -473,7 +478,8 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-    reg_ = me::functab->newTemp( type_->baseType_->toRegType() );
+    me::Reg* reg = me::functab->newSSA( type_->baseType_->toType() );
+    place_ = reg;
 
     int kind;
 
@@ -496,7 +502,7 @@ void BinExpr::genSSA()
     }
 
     if ( op1_->type_->isBuiltin() )
-        me::functab->appendInstr( new me::AssignInstr(kind, reg_, op1_->reg_, op2_->reg_) );
+        me::functab->appendInstr( new me::AssignInstr(kind, reg, op1_->place_, op2_->place_) );
     else
         swiftAssert(false, "TODO");
 }

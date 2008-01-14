@@ -3,7 +3,7 @@
 
 #include "fe/syntaxtree.h"
 
-#include "me/pseudoreg.h"
+#include "me/var.h"
 
 namespace swift {
 
@@ -17,8 +17,8 @@ struct Expr : public Node
     bool    lvalue_;
     Type*   type_;
 
-    /// this var holds the Reg where the result is stored
-    me::Reg* reg_;
+    /// this me::Op knows where the result is stored
+    me::Op* place_;
 
 /*
     constructor and destructor
@@ -78,7 +78,7 @@ struct Literal : public Expr
     further methods
 */
 
-    me::Reg::RegType toRegType() const;
+    me::Op::Type toType() const;
     virtual bool analyze();
     void genSSA();
     std::string toString() const;

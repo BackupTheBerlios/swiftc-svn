@@ -124,10 +124,12 @@ void CFG::calcCFG()
                 // for each var on the left hand side
                 for (size_t i = 0; i < ab->numRhs_; ++i)
                 {
-                    if ( ab->rhs_[i]->isVar() )
+                    me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
+
+                    if (reg && !reg->isSSA() )
                     {
-                        int resultNr = ab->rhs_[i]->regNr_;
-                        currentBB->value_->vars_[resultNr] = ab->rhs_[i];
+                        int resultNr = reg->varNr_;
+                        currentBB->value_->vars_[resultNr] = reg;
 
                         if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
                             firstOccurance_[resultNr] = currentBB;
@@ -307,18 +309,18 @@ void CFG::placePhiFunctions()
 
     int iterCount = 0;
 
-    // for each var
+    // for each var not in SSA form TODO
     REGMAP_EACH(iter, function_->vars_)
     {
         ++iterCount;
 
         Reg* var = iter->second;
 
-        // if it is a temp continue
-        if ( !var->isVar() )
+        // if it is already in SSA temp continue
+        if ( var->isSSA() )
             continue;
 
-        swiftAssert(var->regNr_, "this is not a var");
+        swiftAssert(var->varNr_, "this is not a var");
 
         BBList work;
 
@@ -327,7 +329,7 @@ void CFG::placePhiFunctions()
         {
             BBNode bb = postOrder_[i];
 
-            if ( bb->value_->vars_.find(var->regNr_) != bb->value_->vars_.end() )
+            if ( bb->value_->vars_.find(var->varNr_) != bb->value_->vars_.end() )
             {
                 hasBeenAdded[bb->postOrderIndex_] = iterCount;
                 work.append(bb);
@@ -339,7 +341,7 @@ void CFG::placePhiFunctions()
             mark dominance frontier of the basic block with the first occurance
             of var as hasAlready
         */
-        BBNode firstBB = firstOccurance_.find(var->regNr_)->second;
+        BBNode firstBB = firstOccurance_.find(var->varNr_)->second;
 
         // for each basic block from DF(fristBB)
         BBLIST_EACH(iter, firstBB->value_->domFrontier_)
@@ -391,7 +393,7 @@ void CFG::renameVars()
     rename( entry_->value_->domChildren_.first()->value_, names );
 
     /*
-        all vars i.e. regNr < 0 are not needed anymore from this point
+        all vars i.e. varNr < 0 are not needed anymore from this point
     */
 
     // for each basic block
@@ -421,10 +423,12 @@ void CFG::rename(BBNode bb, std::vector< std::stack<Reg*> >& names)
                 // replace vars on the right hand side
                 for (size_t i = 0; i < ab->numRhs_; ++i)
                 {
-                    if ( ab->rhs_[i]->isVar() )
+                    me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
+
+                    if ( reg && !reg->isSSA() )
                     {
-                        swiftAssert( !names[ ab->rhs_[i]->var2Index() ].empty(), "stack is empty here");
-                        ab->rhs_[i] = names[ ab->rhs_[i]->var2Index() ].top();
+                        swiftAssert( !names[ reg->var2Index() ].empty(), "stack is empty here");
+                        ab->rhs_[i] = names[ reg->var2Index() ].top();
                     }
                 }
             }
@@ -432,12 +436,12 @@ void CFG::rename(BBNode bb, std::vector< std::stack<Reg*> >& names)
             // replace var on the left hand side in all cases
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                if ( ab->lhs_[i]->isVar() )
+                if ( !ab->lhs_[i]->isSSA() )
                 {
 #ifdef SWIFT_DEBUG
-                    Reg* reg = function_->newTemp(ab->lhs_[i]->regType_, &ab->lhs_[i]->id_);
+                    Reg* reg = function_->newSSA(ab->lhs_[i]->type_, &ab->lhs_[i]->id_);
 #else // SWIFT_DEBUG
-                    Reg* reg = function_->newTemp(ab->lhs_[i]->regType_);
+                    Reg* reg = function_->newSSA(ab->lhs_[i]->type_);
 #endif // SWIFT_DEBUG
 
                     swiftAssert(size_t(-ab->lhsOldVarNr_[i]) < names.size(), "index out of bounds");

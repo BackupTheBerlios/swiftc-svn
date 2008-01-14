@@ -22,8 +22,8 @@ namespace me {
  */
 struct InstrBase
 {
-    RegSet liveIn_; /// vars that are live-in  at this instruction.
-    RegSet liveOut_;/// vars that are live-out at this instruction.
+    RegSet liveIn_; /// regs that are live-in  at this instruction.
+    RegSet liveOut_;/// regs that are live-out at this instruction.
 
 /*
     destructor
@@ -107,12 +107,12 @@ struct GotoInstr : public InstrBase
  */
 struct AssignmentBase : public InstrBase
 {
-    Reg** lhs_;           ///< left hand side vars
-    int*        lhsOldVarNr_;   ///< left hand side old varNrs
-    size_t      numLhs_;        ///< number of left hand side args.
+    Reg**   lhs_;           ///< Left hand side Regs.
+    int*    lhsOldVarNr_;   ///< Left hand side old varNrs.
+    size_t  numLhs_;        ///< Number of left hand side args.
 
-    Reg** rhs_;           ///< right hand side vars
-    size_t      numRhs_;        ///< number of righthand side args.
+    Op**    rhs_;           ///< Right hand side Ops.
+    size_t  numRhs_;        ///< Number of righthand side args.
 
 /*
     constructor and destructor
@@ -229,7 +229,7 @@ struct AssignInstr : public AssignmentBase
     constructor
 */
 
-    AssignInstr(int kind, Reg* result, Reg* op1, Reg* op2 = 0);
+    AssignInstr(int kind, Reg* result, Op* op1, Op* op2 = 0);
 
 /*
     further methods
@@ -254,7 +254,7 @@ struct BranchInstr : public AssignmentBase
 /*
     constructor
 */
-    BranchInstr(Reg* boolReg, InstrNode trueLabelNode, InstrNode falseLabelNode);
+    BranchInstr(Op* boolOp, InstrNode trueLabelNode, InstrNode falseLabelNode);
 
 /*
     further methods

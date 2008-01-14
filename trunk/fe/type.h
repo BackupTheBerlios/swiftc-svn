@@ -3,7 +3,7 @@
 
 #include "fe/syntaxtree.h"
 
-#include "me/pseudoreg.h"
+#include "me/var.h"
 
 namespace swift {
 
@@ -26,7 +26,7 @@ struct BaseType : public Node
     further methods
 */
     BaseType* clone() const;
-    me::Reg::RegType toRegType() const;
+    me::Op::Type toType() const;
 
     /**
      * Checks whether this is a builtin type.

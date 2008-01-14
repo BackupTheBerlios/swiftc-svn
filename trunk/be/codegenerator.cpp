@@ -313,9 +313,9 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
             // for each var on the right hand side
             for (size_t i = 0; i < ab->numRhs_; ++i)
             {
-                me::Reg* reg = ab->rhs_[i];
+                me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
 
-                if ( me::InstrBase::isLastUse(iter, reg) )
+                if ( reg && me::InstrBase::isLastUse(iter, reg) )
                 {
                     // -> its the last use of reg
                     Colors::iterator colorIter = colors.find(reg->color_);

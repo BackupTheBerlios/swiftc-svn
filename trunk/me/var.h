@@ -27,13 +27,10 @@ struct InstrBase;
 
 //------------------------------------------------------------------------------
 
-struct Var {
-};
-
-struct Reg : public Var
+struct Op
 {
     /// Types of pseudo registers / constants
-    enum RegType
+    enum Type
     {
         R_INDEX,
         R_INT,  R_INT8,  R_INT16,  R_INT32,  R_INT64,  R_SAT8,  R_SAT16,
@@ -67,30 +64,29 @@ struct Reg : public Var
         VR_REAL64= -R_REAL64
     };
 
-    enum
+    Type type_;
+
+/*
+    constructor and destructor
+*/
+    Op(Type type)
+        : type_(type)
+    {}
+    virtual ~Op() {}
+
+/*
+    further methods
+*/
+
+    virtual std::string toString() const = 0;
+};
+
+//------------------------------------------------------------------------------
+
+struct Literal : public Op
+{
+    union Value
     {
-        LITERAL = 0
-    };
-
-    RegType regType_;
-
-    /**
-     * regNr_ > 0   a temp with nr regNr <br>
-     * regNr_ = 0   a literal <br>
-     * regNr_ < 0   a var with nr -regNr <br>
-     *
-     * When in SSA-Form all regNr_ < 0 will be replaced by names > 0
-     */
-    int regNr_;
-
-    /// The color after coloring; -1 if it was not assigned already.
-    int color_;
-#ifdef SWIFT_DEBUG
-    std::string id_; ///< this var stores the name of the orignal var in the debug version
-#endif
-
-    /// for constants
-    union Value {
         size_t      index_;
 
         int         int_;
@@ -116,63 +112,110 @@ struct Reg : public Var
         bool        bool_;
 
         void*       ptr_;
-
-        Struct*     struct_;
     };
 
     Value value_;
+
+/*
+    constructor
+*/
+
+    Literal(Type type)
+        : Op(type)
+    {}
+
+/*
+    further methods
+*/
+
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct Reg : public Op
+{
+    enum
+    {
+        NOT_COLORED_YET,
+        MEMORY_LOCATION
+    };
+
+    /**
+     * varNr_ >= 0 a variable which is already defined only once <br>
+     * varNr_ < 0  a variable which must be converted to SSA form <br>
+     *
+     * When in SSA-Form all varNr_ < 0 will be replaced by names > 0
+     */
+    int varNr_;
+
+    /**
+     * The color after coloring; <br>
+     * -1 if it was not assigned already.
+     * -2 if it is a memory location and thus needn't be colored
+     */
+    int color_;
 
     DefUse def_;   ///< knows where the var is defined
     UseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
-    be::VarNode varNode_;
+    std::string id_; ///< This stores the name of the orignal var in the debug version.
+    be::VarNode varNode_; ///< This stores the graph node of the IG in the debug version.
 #endif // SWIFT_DEBUG
+
+/*
+    constructor and destructor
+*/
 
 #ifdef SWIFT_DEBUG
-    Reg(RegType regType, int regNr, std::string* id = 0)
-        : regType_(regType)
-        , regNr_(regNr)
+    Reg(Type type, int varNr, std::string* id = 0)
+        : Op(type)
+        , varNr_(varNr)
         , color_(-1)
-        , id_( id ? *id : "" )
+        , id_( id ? *id : "")
     {}
 #else // SWIFT_DEBUG
-    Reg(RegType regType, int regNr)
-        : regType_(regType)
-        , regNr_(regNr)
+    Reg(Type type, int varNr)
+        : Op(type)
+        , varNr_(varNr)
         , color_(-1)
     {}
 #endif // SWIFT_DEBUG
 
+/*
+    further methods
+*/
 
-    /// use this constructor if you want to create a literal
-    Reg(RegType regType)
-        : regType_(regType)
-        , regNr_(LITERAL)
-        , color_(-1)
-    {}
-
-    bool isLiteral() const
+    /// Returns whether this Var is only defined once
+    bool isSSA() const
     {
-        return regNr_ == 0;
-    }
-    /// Regs with the same \a regNr_ belong to the same var originally
-    bool isVar() const
-    {
-        return regNr_ < 0;
-    }
-    bool isTemp() const
-    {
-        return regNr_ > 0;
+        return varNr_ >= 0;
     }
     size_t var2Index() const
     {
-        swiftAssert(regNr_ < 0, "this is not a var");
+        swiftAssert(varNr_ < 0, "this is not a var");
 
-        return size_t(-regNr_);
+        return size_t(-varNr_);
     }
-    std::string toString() const;
+
+    bool isColored() const
+    {
+        return color_ == NOT_COLORED_YET;
+    }
+    bool isMem() const
+    {
+        return color_ == MEMORY_LOCATION;
+    }
+
+    virtual std::string toString() const;
 };
+
+//------------------------------------------------------------------------------
+
+/*
+    typedefs and defines for easy usage
+*/
 
 typedef std::map<int, Reg*> RegMap;
 typedef std::set<Reg*> RegSet;

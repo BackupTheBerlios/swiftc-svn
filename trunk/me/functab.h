@@ -11,7 +11,7 @@
 
 #include "me/basicblock.h"
 #include "me/cfg.h" // TODO move to .cpp
-#include "me/pseudoreg.h"
+#include "me/var.h"
 #include "me/ssa.h"
 
 namespace me {
@@ -52,34 +52,34 @@ struct Function
 
     /**
      * This method creates a new temp Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
     */
-    Reg* newTemp(Reg::RegType regType);
+    Reg* newSSA(Op::Type type);
 
 #ifdef SWIFT_DEBUG
 
     /**
      * This method creates a new temp Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
     */
-    Reg* newTemp(Reg::RegType regType, std::string* id);
+    Reg* newSSA(Op::Type type, std::string* id);
 
     /**
      * This method creates a new var Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
      * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
     */
-    Reg* newVar(Reg::RegType regType, int varNr, std::string* id);
+    Reg* newVar(Op::Type type, int varNr, std::string* id);
 
 #else // SWIFT_DEBUG
 
     /**
      * This method creates a new var Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
      * @param varNr the varNr of the var; must be positive.
     */
-    Reg* newVar(Reg::RegType regType, int varNr);
+    Reg* newVar(Op::Type type, int varNr);
 
 #endif // SWIFT_DEBUG
 
@@ -104,38 +104,38 @@ struct FunctionTable
 
     /**
      * This method creates a new temp Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
     */
-    Reg* newTemp(Reg::RegType regType);
+    Reg* newSSA(Op::Type type);
 
 #ifdef SWIFT_DEBUG
 
     /**
-     * This method creates a new temp Reg.
-     * @param regType the type of the Reg
+     * This method creates a new Reg which is only defined once.
+     * @param type the type of the Reg
     */
-    Reg* newTemp(Reg::RegType regType, std::string* id);
+    Reg* newSSA(Op::Type type, std::string* id);
 
     /**
      * This method creates a new var Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
      * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
     */
-    Reg* newVar(Reg::RegType regType, int varNr, std::string* id);
+    Reg* newVar(Op::Type type, int varNr, std::string* id);
 
 #else // SWIFT_DEBUG
 
     /**
      * This method creates a new var Reg.
-     * @param regType the type of the Reg
+     * @param type the type of the Reg
      * @param varNr the varNr of the var; must be positive.
     */
-    Reg* newVar(Reg::RegType regType, int varNr);
+    Reg* newVar(Op::Type type, int varNr);
 
 #endif // SWIFT_DEBUG
 
-    Reg* lookupReg(int regNr);
+    Reg* lookupReg(int varNr);
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode node);

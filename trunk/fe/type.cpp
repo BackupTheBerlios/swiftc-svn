@@ -50,7 +50,7 @@ BaseType* BaseType::clone() const
     return new BaseType( new std::string(*id_), builtin_ );
 }
 
-me::Reg::RegType BaseType::toRegType() const
+me::Op::Type BaseType::toType() const
 {
     const std::string& id = *id_;
 
