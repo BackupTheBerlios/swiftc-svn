@@ -318,4 +318,90 @@ std::string BranchInstr::toString() const
 }
 */
 
+//------------------------------------------------------------------------------
+
+/*
+    constructor
+*/
+
+SpillInstr::SpillInstr()
+    : AssignmentBase(1, 1) // SpillInstr always have exactly one result and one arg
+{}
+
+/*
+    getters
+*/
+
+Reg* SpillInstr::arg()
+{
+    swiftAssert( typeid(*lhs_[0]) == typeid(Reg), "lhs_[0] must be a Reg*" );
+    return (Reg*) lhs_[0];
+}
+
+const Reg* SpillInstr::arg() const
+{
+    swiftAssert( typeid(*lhs_[0]) == typeid(Reg), "lhs_[0] must be a Reg*" );
+    return (Reg*) lhs_[0];
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor
+*/
+
+Spill::Spill(Reg* result, Reg* arg)
+    : SpillInstr()
+{
+    swiftAssert( result->isMem(),  "result must be a memory var" );
+    swiftAssert( !arg->isMem(), "arg must not be a memory var" );
+
+    lhs_[0] = result;
+    rhs_[0] = arg;
+}
+
+/*
+    further methods
+*/
+
+void Spill::genCode(std::ofstream& /*ofs*/)
+{
+    // TODO
+}
+
+std::string Spill::toString() const
+{
+    return "TODO";
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor
+*/
+
+Reload::Reload(Reg* result, Reg* arg)
+    : SpillInstr()
+{
+    swiftAssert( !result->isMem(), "result must not be a memory var");
+    swiftAssert( arg->isMem(), "arg must be a memory var");
+
+    lhs_[0] = result;
+    rhs_[0] = arg;
+}
+
+/*
+    further methods
+*/
+
+void Reload::genCode(std::ofstream& /*ofs*/)
+{
+    // TODO
+}
+
+std::string Reload::toString() const
+{
+    return "TODO";
+}
+
 } // namespace me

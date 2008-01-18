@@ -29,7 +29,7 @@ SymTab* symtab = 0;
 */
 
 SymbolTable::SymbolTable()
-    : varCounter_(-1) // 0 is reserved for literals
+    : varCounter_(-1) // >= 0 is reserved for vars already in SSA form
 {
     reset();
 }

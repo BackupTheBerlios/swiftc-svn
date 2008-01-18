@@ -62,8 +62,8 @@ ADD_EXECUTABLE (swift
     me/basicblock.cpp
     me/cfg.cpp
     me/functab.cpp
+    me/op.cpp
     me/optimizer.cpp
-    me/var.cpp
     me/ssa.cpp
 
     be/codegenerator.cpp

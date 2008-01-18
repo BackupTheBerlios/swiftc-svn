@@ -41,9 +41,9 @@ struct Function
 
     Function(std::string* id)
         : id_(id)
-        , regCounter_(1)    // 0 is reserved for literals
+        , regCounter_(0)
         , indexCounter_(0)
-        , numBBs_(2)        // every function does at least have an entry and an exit node
+        , numBBs_(2) // every function does at least have an entry and an exit node
         , cfg_(this)
     {}
     ~Function();

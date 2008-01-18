@@ -3,7 +3,7 @@
 
 #include "fe/syntaxtree.h"
 
-#include "me/var.h"
+#include "me/op.h"
 
 namespace swift {
 

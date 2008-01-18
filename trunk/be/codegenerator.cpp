@@ -97,6 +97,10 @@ CodeGenerator::~CodeGenerator()
 
 void CodeGenerator::genCode()
 {
+    // init spiller
+    spiller_->setFunction(function_);
+
+    // traverse the code generation pipe
     std::cout << std::endl << *function_->id_ << std::endl;
     spill();
     livenessAnalysis();

@@ -14,7 +14,7 @@
 #include "fe/var.h"
 
 #include "me/functab.h"
-#include "me/var.h"
+#include "me/op.h"
 #include "me/ssa.h"
 
 /*

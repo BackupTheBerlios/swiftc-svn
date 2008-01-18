@@ -165,22 +165,17 @@ struct Reg : public Op
 #endif // SWIFT_DEBUG
 
 /*
-    constructor and destructor
+    constructor
 */
 
 #ifdef SWIFT_DEBUG
-    Reg(Type type, int varNr, std::string* id = 0)
-        : Op(type)
-        , varNr_(varNr)
-        , color_(-1)
-        , id_( id ? *id : "")
-    {}
+    Reg(Type type, int varNr, std::string* id = 0);
+
+    static Reg* createMem(Type type, int varNr, std::string* id = 0);
 #else // SWIFT_DEBUG
-    Reg(Type type, int varNr)
-        : Op(type)
-        , varNr_(varNr)
-        , color_(-1)
-    {}
+    Reg(Type type, int varNr);
+
+    static Reg* createMem(Type type, int varNr);
 #endif // SWIFT_DEBUG
 
 /*
@@ -188,26 +183,19 @@ struct Reg : public Op
 */
 
     /// Returns whether this Var is only defined once
-    bool isSSA() const
-    {
-        return varNr_ >= 0;
-    }
-    size_t var2Index() const
-    {
-        swiftAssert(varNr_ < 0, "this is not a var");
-
-        return size_t(-varNr_);
-    }
-
-    bool isColored() const
-    {
-        return color_ == NOT_COLORED_YET;
-    }
-    bool isMem() const
-    {
-        return color_ == MEMORY_LOCATION;
-    }
-
+    bool isSSA() const;
+    /**
+     * Checks via an swiftAssert whether this is not SSA and returns the var
+     * number negated and casted to size_t in order to use this for array
+     * accesses or so.
+     */
+    size_t var2Index() const;
+    /**
+     * Checks whether this Reg has already been colored. If this is actually a
+     * MEMORY_LOCATION an assertion is thrown.
+     */
+    bool isColored() const;
+    bool isMem() const;
     virtual std::string toString() const;
 };
 

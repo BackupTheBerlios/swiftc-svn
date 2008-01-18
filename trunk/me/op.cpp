@@ -69,6 +69,72 @@ std::string Literal::toString() const
 
 //------------------------------------------------------------------------------
 
+/*
+    constructor
+*/
+
+#ifdef SWIFT_DEBUG
+
+Reg::Reg(Type type, int varNr, std::string* id /*= 0*/)
+    : Op(type)
+    , varNr_(varNr)
+    , color_(NOT_COLORED_YET)
+    , id_( id ? *id : "")
+{}
+
+Reg* Reg::createMem(Type type, int varNr, std::string* id /*= 0*/)
+{
+    Reg* reg = new Reg(type, varNr, id);
+    reg->color_ = MEMORY_LOCATION;
+
+    return reg;
+}
+
+#else // SWIFT_DEBUG
+
+Reg(Type type, int varNr)
+    : Op(type)
+    , varNr_(varNr)
+    , color_(NOT_COLORED_YET)
+{}
+
+Reg* Reg::createMem(Type type, int varNr)
+{
+    Reg* reg = new Reg(type, varNr);
+    reg->color_ = MEMORY_LOCATION;
+
+    return reg;
+}
+
+#endif // SWIFT_DEBUG
+
+/*
+    further methods
+*/
+
+bool Reg::isSSA() const
+{
+    return varNr_ >= 0;
+}
+
+size_t Reg::var2Index() const
+{
+    swiftAssert(varNr_ < 0, "this is not a var");
+
+    return size_t(-varNr_);
+}
+
+bool Reg::isColored() const
+{
+    swiftAssert(color_ != MEMORY_LOCATION, "this Reg is a mem");
+    return color_ == NOT_COLORED_YET;
+}
+
+bool Reg::isMem() const
+{
+    return color_ == MEMORY_LOCATION;
+}
+
 std::string Reg::toString() const
 {
     std::ostringstream oss;
@@ -78,20 +144,21 @@ std::string Reg::toString() const
 #ifdef SWIFT_DEBUG
         oss << id_;
 #else
-        oss << "var";
+        oss << "tmp";
 #endif // SWIFT_DEBUG
-        oss << number2String(-varNr_);
+        // _!_ indicates that this varNr_ is negative -> not SSA
+        oss << "_!_" << number2String(-varNr_);
     }
     else
     {
         // -> it is SSA
 #ifdef SWIFT_DEBUG
         if ( id_ == std::string("") )
-            oss << "ssa";
+            oss << "tmp";
         else
             oss << id_;
 #else
-        oss << "ssa";
+        oss << "tmp";
 #endif // SWIFT_DEBUG
         oss << number2String( varNr_);
     }

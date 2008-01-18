@@ -281,6 +281,54 @@ struct BranchInstr : public AssignmentBase
 
 //------------------------------------------------------------------------------
 
+struct SpillInstr : public AssignmentBase
+{
+/*
+    constructor
+*/
+    SpillInstr();
+
+/*
+    getters
+*/
+    Reg* arg();
+    const Reg* arg() const;
+};
+
+struct Spill : public SpillInstr
+{
+/*
+    constructor
+*/
+
+    Spill(Reg* result, Reg* arg);
+
+/*
+    further methods
+*/
+
+    void genCode(std::ofstream& ofs);
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct Reload : public SpillInstr
+{
+/*
+    constructor
+*/
+
+    Reload(Reg* result, Reg* arg);
+
+/*
+    further methods
+*/
+
+    void genCode(std::ofstream& ofs);
+    std::string toString() const;
+};
+
 /**
  * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
  * around other Instr won't invalidate pointers in basic blocks.
