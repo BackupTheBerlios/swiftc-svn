@@ -67,6 +67,7 @@ ADD_EXECUTABLE (swift
     me/ssa.cpp
 
     be/codegenerator.cpp
+    be/spiller.cpp
     be/x86_64/spiller.cpp
 )
 

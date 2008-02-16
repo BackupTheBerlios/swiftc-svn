@@ -1,8 +1,13 @@
 #include "be/spiller.h"
 
+#include "me/functab.h"
+
+namespace be {
+
 /*
     constructor and destructor
 */
+
 Spiller::Spiller()
     : function_(0)
     , cfg_(0)
@@ -12,8 +17,10 @@ Spiller::Spiller()
     further methods
 */
 
-void setFunction(me::Function* function)
+void Spiller::setFunction(me::Function* function)
 {
     function_ = function;
-    cfg_ = function_->cfg_;
+    cfg_ = &function_->cfg_;
 }
+
+} // namespace be
