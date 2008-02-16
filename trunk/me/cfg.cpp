@@ -34,6 +34,9 @@ void CFG::calcCFG()
     InstrNode begin = 0;
     BBNode prevBB = 0;
 
+    // knows the basic blocks in order of the instruction list
+    BBList bbList;
+
     // iterate over the instruction list and find basic blocks
     INSTRLIST_EACH(iter, instrList_)
     {
@@ -47,6 +50,7 @@ void CFG::calcCFG()
             if (begin) // we have found the next basic block
             {
                 BBNode bb = insert( new BasicBlock(begin, end) );
+                bbList.append(bb);
 
                 // keep acount of the label node and the basic block in the map
                 labelNode2BBNode_[begin] = bb;
@@ -54,7 +58,26 @@ void CFG::calcCFG()
                 prevBB = bb; // now this is the previous basic block
             }
         }
+        else if ( typeid(*instr) == typeid(AssignmentBase) )
+        {
+            AssignmentBase* ab = (AssignmentBase*) instr;
+            // if we have an assignment to a var update this in the map
 
+            // for each var on the left hand side
+            for (size_t i = 0; i < ab->numRhs_; ++i)
+            {
+                me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
+
+                if (reg && !reg->isSSA() )
+                {
+                    int resultNr = reg->varNr_;
+                    prevBB->value_->vars_[resultNr] = reg;
+
+                    if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
+                        firstOccurance_[resultNr] = prevBB;
+                }
+            }
+        }
 #ifdef SWIFT_DEBUG
         // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
         if ( typeid(*instr) == typeid(BranchInstr) || typeid(*instr) == typeid(GotoInstr) )
@@ -63,7 +86,7 @@ void CFG::calcCFG()
                 "BranchInstr or GotoInstr is not followed by a LabelInstr");
         }
 #endif // SWIFT_DEBUG
-    }
+    } // INSTRLIST_EACH
     // prevBB now holds the last basic block
 
     /*
@@ -71,33 +94,15 @@ void CFG::calcCFG()
         so let us calculate the CFG
     */
 
-    BBNode currentBB = 0;
-
-    // iterate once again over the instruction list in order to connect the blocks properly
-    INSTRLIST_EACH(iter, instrList_)
+    // iterate over all basic blocks in order of the instrList_
+    BBLIST_EACH(iter, bbList)
     {
-        InstrBase* instr = iter->value_;
+        BBNode currentBB = iter->value_;
 
-        if ( typeid(*instr) == typeid(LabelInstr) )
-        {
-            BBNode prevBB = currentBB;
-            // we have found a new basic block
-            currentBB = labelNode2BBNode_[iter];
+        // get last instruction of the current bb
+        InstrBase* instr = currentBB->value_->end_->prev()->value_;
 
-            if (currentBB == 0)
-                break; // -> this is the last label
-
-            // check whether there is already a connection between currentBB and prevBB
-            if ( prevBB && currentBB->pred_.find(prevBB) == currentBB->pred_.sentinel() )
-            {
-                // no -> test whether a connection is needed
-                InstrBase* lastInstrOfPrevBB = prevBB->value_->end_->prev()->value_;
-
-                if ( typeid(*lastInstrOfPrevBB) == typeid(AssignInstr) )
-                    prevBB->link(currentBB);
-            }
-        }
-        else if ( typeid(*instr) == typeid(GotoInstr) )
+        if ( typeid(*instr) == typeid(GotoInstr) )
         {
             GotoInstr* gi = (GotoInstr*) instr;
 
@@ -114,32 +119,19 @@ void CFG::calcCFG()
             bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
             currentBB->link(bi->trueBB_);
         }
+        else if (typeid(*instr) == typeid(LabelInstr) // this means that we have an empty basic block
+            || dynamic_cast<AssignmentBase*>(instr))
+        {
+            if ( iter->next() != bbList.sentinel() )
+            {
+                std::cout << instr->toString() << std::endl;
+                currentBB->link( iter->next()->value_ );
+            }
+        }
         else
         {
-            AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
-            if (ab)
-            {
-                // if we have an assignment to a var update this in the map
-
-                // for each var on the left hand side
-                for (size_t i = 0; i < ab->numRhs_; ++i)
-                {
-                    me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
-
-                    if (reg && !reg->isSSA() )
-                    {
-                        int resultNr = reg->varNr_;
-                        currentBB->value_->vars_[resultNr] = reg;
-
-                        if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
-                            firstOccurance_[resultNr] = currentBB;
-                    }
-                }
-            }
-            else
-            {
-                swiftAssert(false, "unkown ssa instruction type here");
-            }
+            swiftAssert(false, "unkown ssa instruction type here");
+            std::cout << instr->toString() << std::endl;
         } // type checks
     } // INSTRLIST_EACH
 
