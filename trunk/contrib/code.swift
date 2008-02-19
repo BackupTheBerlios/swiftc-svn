@@ -22,14 +22,14 @@ class Test
 
     routine test(Foo foo) -> real re, int rs, inout int bs
         int e = 4
-        int b = 8
-        int a = 5 * 6 + 7
-        int c
-        c = -3
-        c = 5 + b
-        c = 5 * 7 + c * c + b
-        a = b*-c+b*-c
-        a = a +6
+
+        if e > 5
+            e = e +2
+        else
+            e = e - 3
+        end
+
+        e = e * 2
     end
 
     writer hallo()
@@ -39,43 +39,50 @@ class Test
 
         b = r * 5.0 > 7.0
 
-        if 6 == 8
-            if true
-                real r
-                r  = 6.0
+        while b
+            if 6 == 8
+                if true
+                    real r
+                    r  = 6.0
 
-                if r > 8.0
-                    r = 9.0
+                    if r > 8.0
+                        r = 9.0
+                    else
+                        bool z
+                        z = false
+                    end
                 else
-                    bool z
-                    z = false
+                    b = true
                 end
-            else
-                b = true
-            end
 
-         else
-            real t
-            t = 1.2
-
-            if b
-                bool b
-                b  = false
-                t = 7.0
             else
-                if b
-                    real u
-                    u = 5.0 * r
+                real t
+                t = 5.0
+
+                while t > 3.0
+                    if b
+                        bool b
+                        b  = false
+                        t = 7.0
+                    else
+                        if b
+                            real u
+                            u = 5.0 * r
+                        end
+                        t = 8.0
+                    end
+
+                    t = t * 0.3
                 end
-                t = 8.0
             end
-
-            t = t * 0.3
         end
 
-    real u
-    u = 5.0
+        real u
+        u = 5.0
 
+        while u < 8.0
+            u = u + 1.0
+        end
     end
 end
 

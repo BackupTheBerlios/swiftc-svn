@@ -355,8 +355,11 @@ statement
     | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
     | type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }
 
+    | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine); }
+
     | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement($2, $4,  0, currentLine); }
     | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine); }
+
     ;
 
 /*

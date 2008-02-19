@@ -101,7 +101,7 @@ void CodeGenerator::genCode()
     spiller_->setFunction(function_);
 
     // traverse the code generation pipe
-    std::cout << std::endl << *function_->id_ << std::endl;
+//     std::cout << std::endl << *function_->id_ << std::endl;
     spill();
     livenessAnalysis();
     color();
@@ -256,8 +256,8 @@ int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
     }
 
     // either allocate the found color in the set or insert a new slot in the set
-    std::cout << "\tinsert: " << firstFreeColor << std::endl;
     colors.insert(firstFreeColor);
+
     return firstFreeColor;
 }
 
@@ -277,20 +277,17 @@ void CodeGenerator::color()
 
 void CodeGenerator::colorRecursive(me::BBNode bb)
 {
-    std::cout << "LIVE-IN at " << bb->value_->name() << std::endl;
     Colors colors;
     REGSET_EACH(iter, bb->value_->liveIn_)
     {
         int color = (*iter)->color_;
         swiftAssert(color != -1, "color must be assigned here");
         colors.insert(color);
-        std::cout << "\t" << (*iter)->toString() << ": " << color << std::endl;
     }
 
     // for each instruction -> start with the first instruction which is followed by the leading me::LabelInstr
     for (me::InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
-        std::cout << iter->value_->toString() << std::endl;
         me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(iter->value_);
 
         if (ab)
@@ -355,12 +352,11 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
                         assigned and immediately released afterwards.
                         A pointless definition is for example
                         a = b + c
-                        an never use 'a' again. The register allocator would assign a color for 'a'
+                        and never use 'a' again. The register allocator would assign a color for 'a'
                         and will never release it since there will be no known last use of 'a'.
                     */
                     Colors::iterator colorIter = colors.find(reg->color_);
                     swiftAssert( colorIter != colors.end(), "color must be found here");
-                    std::cout << "\terase: " << *colorIter << std::endl;
                     colors.erase(colorIter); // last use of op2 so remove
                 }
             }

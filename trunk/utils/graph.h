@@ -33,11 +33,16 @@ public:
         Relatives pred_;
         Relatives succ_;
 
+        mutable bool visted_; // Since this is an implementation detail it is declared mutable.
+
+    public:
+
         Node(T* t)
             : value_(t)
             , preOrderIndex_( std::numeric_limits<size_t>::max() )
             , inOrderIndex_( std::numeric_limits<size_t>::max() )
             , postOrderIndex_( std::numeric_limits<size_t>::max() )
+            , visted_(false)
         {}
 
         ~Node()
@@ -308,16 +313,19 @@ void Graph<T>::calcPostOrder(Graph<T>::Node* root)
 template<class T>
 void Graph<T>::postOrderWalk(Node* n)
 {
+    // mark node as visted
+    n->visted_ = true;
+
     for (Relative* iter = n->succ_.first(); iter != n->succ_.sentinel(); iter = iter->next())
     {
         // is this node already reached?
-        if ( iter->value_->isPostOrderIndexValid() )
+        if ( iter->value_->visted_ == true )
             continue;
 
         postOrderWalk(iter->value_);
     }
 
-    // process this node
+    // vist node
     postOrder_[indexCounter_] = n;
     n->postOrderIndex_ = indexCounter_;
     ++indexCounter_;

@@ -128,6 +128,32 @@ struct AssignStatement : public Statement
 /**
  * Holds either an if, an if-else or an if-elif statement.
  */
+struct WhileStatement : public Statement
+{
+    Expr* expr_;
+
+    Statement* statements_; ///< Linked List of statements of the while-loop.
+
+/*
+    constructor and destructor
+*/
+
+    WhileStatement(Expr* expr, Statement* statements, int line = NO_LINE);
+    virtual ~WhileStatement();
+
+/*
+    further methods
+*/
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Holds either an if, an if-else or an if-elif statement.
+ */
 struct IfElStatement : public Statement
 {
     Expr* expr_;
@@ -139,12 +165,7 @@ struct IfElStatement : public Statement
     constructor and destructor
 */
 
-    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE)
-        : Statement(line)
-        , expr_(expr)
-        , ifBranch_(ifBranch)
-        , elBranch_(elBranch)
-    {}
+    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE);
     virtual ~IfElStatement();
 
 /*

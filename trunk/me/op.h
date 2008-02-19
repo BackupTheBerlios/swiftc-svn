@@ -1,5 +1,5 @@
-#ifndef ME_PSEUDOREG_H
-#define ME_PSEUDOREG_H
+#ifndef ME_OP_H
+#define ME_OP_H
 
 #include <map>
 #include <string>
@@ -184,12 +184,14 @@ struct Reg : public Op
 
     /// Returns whether this Var is only defined once
     bool isSSA() const;
+
     /**
      * Checks via an swiftAssert whether this is not SSA and returns the var
      * number negated and casted to size_t in order to use this for array
      * accesses or so.
      */
     size_t var2Index() const;
+
     /**
      * Checks whether this Reg has already been colored. If this is actually a
      * MEMORY_LOCATION an assertion is thrown.
@@ -219,4 +221,4 @@ typedef List<Reg*> RegList;
 
 } // namespace me
 
-#endif // ME_PSEUDOREG_H
+#endif // ME_OP_H

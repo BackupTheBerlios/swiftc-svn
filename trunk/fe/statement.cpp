@@ -239,6 +239,97 @@ void AssignStatement::genSSA()
 
 //------------------------------------------------------------------------------
 
+/*
+    constructor and destructor
+*/
+
+WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line /*= NO_LINE*/)
+        : Statement(line)
+        , expr_(expr)
+        , statements_(statements)
+{}
+
+WhileStatement::~WhileStatement()
+{
+    delete expr_;
+    delete statements_;
+}
+
+/*
+    further methods
+*/
+
+bool WhileStatement::analyze()
+{
+    bool result = expr_->analyze();
+
+    // check whether expr_ is a boolean expr only if analyze resulted true
+    if (result)
+    {
+        if ( !expr_->type_->isBool() )
+        {
+            errorf(line_, "the prefacing expression of an if statement must be a boolean expression");
+            result = false;
+        }
+    }
+
+    // create labels
+    me::InstrNode whileLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+
+    /*
+        generate this SSA code:
+
+        whileLabelNode:
+            IF expr THEN trueLabelNode ELSE nextLabelNode
+        trueLabelNode:
+            //...
+            GOTO whileLabelNode
+        nextLabelNode:
+            //...
+    */
+    if (result)
+    {
+        // generate instructions as you can see above if types are correct
+        me::functab->appendInstrNode(whileLabelNode);
+        me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
+        me::functab->appendInstrNode(trueLabelNode);
+    }
+
+    // update scoping
+    symtab->createAndEnterNewScope();
+
+    // analyze each statement in the loop and keep acount of the result
+    for (Statement* iter = statements_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    // return to parent scope
+    symtab->leaveScope();
+
+    // generate instructions as you can see above
+    if (result)
+    {
+        me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
+        me::functab->appendInstrNode(nextLabelNode);
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+    constructor and destructor
+*/
+
+IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line /*= NO_LINE*/)
+    : Statement(line)
+    , expr_(expr)
+    , ifBranch_(ifBranch)
+    , elBranch_(elBranch)
+{}
+
 IfElStatement::~IfElStatement()
 {
     delete expr_;
@@ -246,6 +337,10 @@ IfElStatement::~IfElStatement()
     if (elBranch_)
         delete elBranch_;
 }
+
+/*
+    further methods
+*/
 
 bool IfElStatement::analyze()
 {
@@ -268,10 +363,10 @@ bool IfElStatement::analyze()
     if (!elBranch_)
     {
         /*
-            so here is only a plain if statement
+            so here is only a plain if statement;
             generate this SSA code:
 
-                IF expr THEN trueLabelNode
+                IF expr THEN trueLabelNode ELSE nextLabelNode
             trueLabelNode:
                 //...
             nextLabelNode:

@@ -58,7 +58,69 @@ void CFG::calcCFG()
                 prevBB = bb; // now this is the previous basic block
             }
         }
-        else if ( typeid(*instr) == typeid(AssignmentBase) )
+#ifdef SWIFT_DEBUG
+        // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
+        if ( typeid(*instr) == typeid(BranchInstr) || typeid(*instr) == typeid(GotoInstr) )
+            swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
+                "BranchInstr or GotoInstr is not followed by a LabelInstr");
+#endif // SWIFT_DEBUG
+    } // INSTRLIST_EACH
+    // prevBB now holds the last basic block
+
+    /*
+        now we know of all starting labels and their associated basic block
+        so let us calculate the CFG
+    */
+
+    /*
+        iterate once again over the instrList_ in order to connect all basic blocks
+        and find all assignments of a var in a basic block and its first occurance
+    */
+    BBNode currentBB = 0;
+    bool linkWithPredBB = true;
+
+    INSTRLIST_EACH(iter, instrList_)
+    {
+        InstrBase* instr = iter->value_;
+
+        if ( typeid(*instr) == typeid(LabelInstr) )
+        {
+            BBNode next = labelNode2BBNode_[iter];
+
+            /*
+                link if the last instruction was an ordinary assignment
+                and we have a currentBB which is not the last basic block
+            */
+            if (linkWithPredBB && currentBB && next)
+                currentBB->link(next);
+
+            currentBB = next;
+            linkWithPredBB = true;
+        }
+        else if ( typeid(*instr) == typeid(GotoInstr) )
+        {
+            GotoInstr* gi = (GotoInstr*) instr;
+
+            gi->succBB_ = labelNode2BBNode_[ gi->labelNode_ ];
+            currentBB->link(gi->succBB_);
+
+            // do not link this one with the predecessor basic block, too
+            linkWithPredBB = false;
+        }
+        else if ( typeid(*instr) == typeid(BranchInstr) )
+        {
+            BranchInstr* bi = (BranchInstr*) instr;
+
+            bi->falseBB_ = labelNode2BBNode_[bi->falseLabelNode_];
+            currentBB->link(bi->falseBB_);
+
+            bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
+            currentBB->link(bi->trueBB_);
+
+            // do not link this one with the predecessor basic block, too
+            linkWithPredBB = false;
+        }
+        else if ( dynamic_cast<AssignmentBase*>(instr) )
         {
             AssignmentBase* ab = (AssignmentBase*) instr;
             // if we have an assignment to a var update this in the map
@@ -70,73 +132,25 @@ void CFG::calcCFG()
 
                 if (reg && !reg->isSSA() )
                 {
+                    swiftAssert(currentBB, "currentBB must have been found here");
+
                     int resultNr = reg->varNr_;
-                    prevBB->value_->vars_[resultNr] = reg;
+                    currentBB->value_->vars_[resultNr] = reg;
 
                     if ( firstOccurance_.find(resultNr) == firstOccurance_.end() )
-                        firstOccurance_[resultNr] = prevBB;
+                        firstOccurance_[resultNr] = currentBB;
                 }
-            }
-        }
-#ifdef SWIFT_DEBUG
-        // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
-        if ( typeid(*instr) == typeid(BranchInstr) || typeid(*instr) == typeid(GotoInstr) )
-        {
-            swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
-                "BranchInstr or GotoInstr is not followed by a LabelInstr");
-        }
-#endif // SWIFT_DEBUG
-    } // INSTRLIST_EACH
-    // prevBB now holds the last basic block
-
-    /*
-        now we know of all starting labels and their associated basic block
-        so let us calculate the CFG
-    */
-
-    // iterate over all basic blocks in order of the instrList_
-    BBLIST_EACH(iter, bbList)
-    {
-        BBNode currentBB = iter->value_;
-
-        // get last instruction of the current bb
-        InstrBase* instr = currentBB->value_->end_->prev()->value_;
-
-        if ( typeid(*instr) == typeid(GotoInstr) )
-        {
-            GotoInstr* gi = (GotoInstr*) instr;
-
-            gi->succBB_ = labelNode2BBNode_[ gi->labelNode_ ];
-            currentBB->link(gi->succBB_);
-        }
-        else if ( typeid(*instr) == typeid(BranchInstr) )
-        {
-            BranchInstr* bi = (BranchInstr*) instr;
-
-            bi->falseBB_ = labelNode2BBNode_[bi->falseLabelNode_];
-            currentBB->link(bi->falseBB_);
-
-            bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
-            currentBB->link(bi->trueBB_);
-        }
-        else if (typeid(*instr) == typeid(LabelInstr) // this means that we have an empty basic block
-            || dynamic_cast<AssignmentBase*>(instr))
-        {
-            if ( iter->next() != bbList.sentinel() )
-            {
-                std::cout << instr->toString() << std::endl;
-                currentBB->link( iter->next()->value_ );
             }
         }
         else
         {
             swiftAssert(false, "unkown ssa instruction type here");
-            std::cout << instr->toString() << std::endl;
         } // type checks
     } // INSTRLIST_EACH
 
     /*
         Create the two additional blocks ENTRY and EXIT.
+        TODO really needed?
     */
     entry_ = insert( new BasicBlock(0, instrList_.first()) );
     exit_  = insert( new BasicBlock(instrList_.last(), 0) );
@@ -301,18 +315,14 @@ void CFG::placePhiFunctions()
 
     int iterCount = 0;
 
-    // for each var not in SSA form TODO
-    REGMAP_EACH(iter, function_->vars_)
+    // for each var not in SSA form, i.e. varNr_ > 0
+    RegMap::iterator bound = function_->vars_.lower_bound(0); // 0 itself is not in the map
+    for (RegMap::iterator iter = function_->vars_.begin(); iter != bound; ++iter)
     {
         ++iterCount;
 
         Reg* var = iter->second;
-
-        // if it is already in SSA temp continue
-        if ( var->isSSA() )
-            continue;
-
-        swiftAssert(var->varNr_, "this is not a var");
+        swiftAssert( !var->isSSA(), "var is already in SSA form" );
 
         BBList work;
 
@@ -345,7 +355,6 @@ void CFG::placePhiFunctions()
             // take a basic block from the list
             BBNode bb = work.first()->value_;
             work.removeFirst();
-
 
             // for each basic block from DF(bb)
             BBLIST_EACH(iter, bb->value_->domFrontier_)
