@@ -119,7 +119,7 @@ class Test
 
         return
     end
-    
+
     operator + (Complex c1, Complex c2) -> Complex result
         result.r_ = c1.r_@ c2.r_
         result.i_ = c1.i_ @ c2.i_
@@ -138,18 +138,6 @@ routine test()
     Test test = 5, 6.0
 
     {}
-
-    Set m = "Bier", "Penis", "Fotze"
-
-    Map m = pair(5, "Peter"), pair(4, "fjdkdjfk")
-
-    Map^ m = new Map("Bier", "Penis", "Fotze")
-
-    Map m("Bier", "Penis", "Fotze");
-
-    string str("fjdkjdfk");
-
-    str = "fjkfdjk";
 
     int i   = 4
     int8 i  = 4b
@@ -256,3 +244,18 @@ a2 = foo(a1)
 
 mov 5, a1
 call foo
+
+# loops and goto elimination
+
+routine test()
+    while someCond1 : outerLoop
+        for int i in range(1, 4)
+            if someCond2
+                break
+            if (someCond3)
+                break outerLoop
+        end
+    else
+        # This loop was breaked do some things
+    end
+end

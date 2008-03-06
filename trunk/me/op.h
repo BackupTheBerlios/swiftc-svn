@@ -27,6 +27,9 @@ struct InstrBase;
 
 //------------------------------------------------------------------------------
 
+/**
+ * Base for an Operant which is used by SSA instrucions
+ */
 struct Op
 {
     /// Types of pseudo registers / constants
@@ -79,6 +82,17 @@ struct Op
 */
 
     virtual std::string toString() const = 0;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Represents the special value 'undef' (undefined). Since SSA programs must be
+ * strict assigning this value is one way to make an SSA program strict:
+ */
+struct Undef : public Op
+{
+    virtual std::string toString();
 };
 
 //------------------------------------------------------------------------------
@@ -198,6 +212,14 @@ struct Reg : public Op
      */
     bool isColored() const;
     bool isMem() const;
+
+    /**
+     * Invoke this method if you have done something with this var such that
+     * the SSA property is violated. This method will create a new negative
+     * \a varNr_.
+     */
+    void removeSSAProperty()
+
     virtual std::string toString() const;
 };
 

@@ -59,6 +59,8 @@ private:
     register allocation
 */
     void spill();
+    int distance(me::Reg* reg, me::InstrNode instrNode);
+    int distanceRec(me::Reg* reg, me::InstrNode instrNode);
 
     typedef std::set<int> Colors;
     static int findFirstFreeColorAndAllocate(Colors& colors);

@@ -212,7 +212,7 @@ struct AssignInstr : public AssignmentBase
 {
     enum
     {
-        // be sure not to collide with ascii codes
+        // be sure not to collide with ASCII codes
         EQ = 256, NE,
         LE, GE,
         AND, OR, XOR,

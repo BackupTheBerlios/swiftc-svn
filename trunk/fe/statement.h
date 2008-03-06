@@ -15,7 +15,7 @@ struct Local;
 
 /**
  * This class represents a Statement. It is either a Declaration, an
- * ExprStatement, an IfElStatement or an AssignStatement.d
+ * ExprStatement, an IfElStatement or an AssignStatement.
  */
 struct Statement : public Node
 {

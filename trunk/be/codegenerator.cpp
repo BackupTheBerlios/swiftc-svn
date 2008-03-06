@@ -1,11 +1,16 @@
-#include "codegenerator.h"
+#include "be/codegenerator.h"
 
+#include <limits>
 #include <typeinfo>
 
 #include "me/cfg.h"
 #include "me/functab.h"
 
 namespace be {
+
+enum {
+    MAX = std::numerical_limits<int>::max()
+}
 
 //------------------------------------------------------------------------------
 
@@ -102,8 +107,8 @@ void CodeGenerator::genCode()
 
     // traverse the code generation pipe
 //     std::cout << std::endl << *function_->id_ << std::endl;
-    spill();
     livenessAnalysis();
+    spill();
     color();
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
@@ -242,6 +247,50 @@ void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::Reg* var)
 }
 
 /*
+    spilling
+*/
+
+void CodeGenerator::spill()
+{
+    // TODO
+//     spiller_->spill();
+
+
+}
+
+int distance(me::Reg* reg, me::InstrNode instrNode) {
+    InstrNode instr = instrNode->value_;
+
+    // is reg not live in instr?
+    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
+        return 0;
+    // else
+
+
+}
+
+int distanceRec(me::Reg* reg, me::InstrNode instrNode) {
+    InstrNode instr = instrNode->value_;
+
+    // is reg not live in instr?
+    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
+        return MAX;
+    // else
+
+    // do we have an ordinary predecessor instruction?
+    if (instrNode->pred() != cfg_->instrList_.sentinel()
+        && typeid(*instr) != typeid(PhiInstr)
+    {
+        int result = distanceRec(reg, instrNode->pred());
+        // add up the distance and do not calculate around
+        return result == MAX ? MAX : result + 1;
+    }
+    // else
+
+    swiftAssert( typeid(*instr) == typeid(LabelInstr) );
+}
+
+/*
     coloring
 */
 
@@ -259,11 +308,6 @@ int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
     colors.insert(firstFreeColor);
 
     return firstFreeColor;
-}
-
-void CodeGenerator::spill()
-{
-    spiller_->spill();
 }
 
 void CodeGenerator::color()
