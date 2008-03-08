@@ -50,7 +50,12 @@ struct CFG : public Graph<BasicBlock>
     InstrList& instrList_;
 
     typedef std::map<InstrNode, BBNode> LabelNode2BBNodeMap;
-    /// with this data structure we can quickly find a BB with a given starting label
+
+    /**
+     * With this data structure we can quickly find a BB with a given starting label.
+     * The last LabelInstr found in InstrList_ marks the end of the last BasicBlock
+     * with the second but last LabelInstr as beginning of that BasicBlock.
+     */
     LabelNode2BBNodeMap labelNode2BBNode_;
 
     typedef std::map<int, BBNode> FirstOccurance;

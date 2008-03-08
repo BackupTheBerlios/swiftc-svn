@@ -8,9 +8,6 @@
 
 namespace be {
 
-enum {
-    MAX = std::numerical_limits<int>::max()
-}
 
 //------------------------------------------------------------------------------
 
@@ -258,8 +255,8 @@ void CodeGenerator::spill()
 
 }
 
-int distance(me::Reg* reg, me::InstrNode instrNode) {
-    InstrNode instr = instrNode->value_;
+int CodeGenerator::distance(me::Reg* reg, me::InstrNode instrNode) {
+    me::InstrBase* instr = instrNode->value_;
 
     // is reg not live in instr?
     if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
@@ -269,25 +266,27 @@ int distance(me::Reg* reg, me::InstrNode instrNode) {
 
 }
 
-int distanceRec(me::Reg* reg, me::InstrNode instrNode) {
-    InstrNode instr = instrNode->value_;
+int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode instrNode) {
+    me::InstrBase* instr = instrNode->value_;
 
     // is reg not live in instr?
     if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
-        return MAX;
+        return std::numeric_limits<int>::max();
     // else
 
     // do we have an ordinary predecessor instruction?
-    if (instrNode->pred() != cfg_->instrList_.sentinel()
-        && typeid(*instr) != typeid(PhiInstr)
+    if (instrNode->prev() != cfg_->instrList_.sentinel()
+        && typeid(*instr) != typeid(me::PhiInstr))
     {
-        int result = distanceRec(reg, instrNode->pred());
+        int result = distanceRec( reg, instrNode->prev() );
         // add up the distance and do not calculate around
-        return result == MAX ? MAX : result + 1;
+        return result == std::numeric_limits<int>::max()
+            ? std::numeric_limits<int>::max()
+            : result + 1;
     }
     // else
 
-    swiftAssert( typeid(*instr) == typeid(LabelInstr) );
+    swiftAssert( typeid(*instr) == typeid(me::LabelInstr), "must be a LabelInstr here" );
 }
 
 /*

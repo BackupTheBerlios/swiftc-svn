@@ -17,16 +17,17 @@ namespace me {
 
 struct BasicBlock
 {
-    InstrNode begin_;
-    InstrNode end_;
+    InstrNode begin_; ///< Points the leading LabelInstr of this BasicBlock.
+    InstrNode end_;   ///< Points to the leading LabelInstr of the next BasicBlock.
 
     size_t index_;
 
     BBList domFrontier_;
     BBList domChildren_;
 
-    /// keeps acount of the vars which are assigned to in this basic block last
+    /// Keeps acount of the vars which are assigned to in this BasicBlock last.
     RegMap vars_;
+    /// Regs that live while
     RegSet liveIn_;
     RegSet liveOut_;
 
@@ -49,10 +50,10 @@ struct BasicBlock
         return !end_;
     }
 
-    /// returns the title string of this BasicBlock
+    /// Returns the title string of this BasicBlock.
     std::string name() const;
 
-    /// returns a string holding the instructions of the BasicBlock for dot-files
+    /// Returns a string holding the instructions of the BasicBlock for dot-files.
     std::string toString() const;
 };
 

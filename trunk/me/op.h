@@ -92,7 +92,7 @@ struct Op
  */
 struct Undef : public Op
 {
-    virtual std::string toString();
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -218,7 +218,7 @@ struct Reg : public Op
      * the SSA property is violated. This method will create a new negative
      * \a varNr_.
      */
-    void removeSSAProperty()
+    void removeSSAProperty();
 
     virtual std::string toString() const;
 };
