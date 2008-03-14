@@ -126,9 +126,9 @@ void CFG::calcCFG()
             // if we have an assignment to a var update this in the map
 
             // for each var on the left hand side
-            for (size_t i = 0; i < ab->numRhs_; ++i)
+            for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
+                me::Reg* reg = dynamic_cast<me::Reg*>(ab->lhs_[i]);
 
                 if (reg && !reg->isSSA() )
                 {
@@ -299,7 +299,7 @@ void CFG::placePhiFunctions()
 {
     /*
         hasAlready[bb->postOrderIndex_] knows
-        whether an phi-function in bb has already been put
+        whether a phi-function in bb has already been put
     */
     int hasAlready[size()];
 
@@ -644,6 +644,19 @@ std::string CFG::dumpDomFrontier() const
     }
 
     return oss.str();
+}
+
+/*
+    further methods
+*/
+
+BBNode CFG::findBBNode(InstrNode instrNode)
+{
+    // find first preceding LabelInstr
+    while ( typeid(*instrNode->value_) != typeid(LabelInstr) )
+        instrNode = instrNode->prev();
+
+    return labelNode2BBNode_[instrNode];
 }
 
 } // namespace me

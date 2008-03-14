@@ -256,37 +256,66 @@ void CodeGenerator::spill()
 }
 
 int CodeGenerator::distance(me::Reg* reg, me::InstrNode instrNode) {
-    me::InstrBase* instr = instrNode->value_;
+    me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instrNode->value_);
 
-    // is reg not live in instr?
-    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
-        return 0;
+    // is reg used at instr
+    if (ab)
+    {
+        for (size_t i = 0; i < ab->numRhs_; ++i)
+        {
+            if (ab->rhs_[i] == reg)
+                return 0; // found
+        }
+    }
+
     // else
-
-
+    return distanceRec(reg, instrNode);
 }
 
-int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode instrNode) {
+int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode instrNode)
+{
     me::InstrBase* instr = instrNode->value_;
 
-    // is reg not live in instr?
-    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() )
-        return std::numeric_limits<int>::max();
+    // is reg not live at instr?
+    if ( instr->liveIn_.find(reg) == instr->liveIn_.end() ) // FIXME is liveIn correct here or is it liveOut?
+        return std::numeric_limits<int>::max(); // return "infinity"
     // else
 
-    // do we have an ordinary predecessor instruction?
-    if (instrNode->prev() != cfg_->instrList_.sentinel()
-        && typeid(*instr) != typeid(me::PhiInstr))
+    me::BBNode bbNode = cfg_->findBBNode(instrNode);
+
+    // do we have an ordinary successor instruction?
+    if (instrNode->next() != cfg_->instrList_.sentinel()
+        && instrNode != bbNode->value_->end_)
     {
-        int result = distanceRec( reg, instrNode->prev() );
+        int result = distanceRec( reg, instrNode->next() );
+
         // add up the distance and do not calculate around
         return result == std::numeric_limits<int>::max()
             ? std::numeric_limits<int>::max()
             : result + 1;
     }
     // else
-
     swiftAssert( typeid(*instr) == typeid(me::LabelInstr), "must be a LabelInstr here" );
+
+    // for all succossor basic blocks
+    BBLIST_EACH(iter, bbNode->succ_)
+    {
+        instrNode = iter->value_->value_->begin_;
+
+        // omit leading label instr
+        swiftAssert( typeid(*instrNode->value_) == typeid(me::LabelInstr),
+            "first instruction in a basic block must be a LabelInstr" );
+        instrNode = instrNode->next();
+
+        int result = distanceRec( reg, instrNode->next() );
+
+        // add up the distance and do not calculate around
+        return result == std::numeric_limits<int>::max()
+            ? std::numeric_limits<int>::max()
+            : result + 1;
+    }
+
+    // TODO return
 }
 
 /*

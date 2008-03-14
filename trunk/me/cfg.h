@@ -112,6 +112,12 @@ struct CFG : public Graph<BasicBlock>
     std::string dumpIdoms() const;
     std::string dumpDomChildren() const;
     std::string dumpDomFrontier() const;
+
+/*
+    further methods
+*/
+
+    BBNode findBBNode(InstrNode instrNode);
 };
 
 #define CFG_RELATIVES_EACH(iter, relatives) \
