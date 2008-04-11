@@ -79,6 +79,33 @@ AssignmentBase::~AssignmentBase()
 /*
     further methods
 */
+
+bool AssignmentBase::isRegUsed(Reg* reg) 
+{
+    // for each var on the rhs
+    for (size_t i = 0; i < numRhs_; ++i) 
+    {
+        if (rhs_[i] == reg)
+            return true;
+    }
+
+    // -> not found
+    return false;
+}
+
+bool AssignmentBase::isRegDefined(Reg* reg) 
+{
+    // for each var on the lhs
+    for (size_t i = 0; i < numLhs_; ++i) 
+    {
+        if (lhs_[i] == reg)
+            return true;
+    }
+
+    // -> not found
+    return false;
+}
+
 void AssignmentBase::destroyLhsOldVarNrs()
 {
     delete[] lhsOldVarNr_;

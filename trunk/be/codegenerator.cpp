@@ -285,17 +285,23 @@ void CodeGenerator::spill()
     }
 }
 
-int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode) {
+int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode) 
+{
+    /*
+        PhiInstr and LabelInstr are nore allowd here
+    */
+    swiftAssert( typeid(*instrNode->value_) != typeid(me::PhiInstr), 
+        "this mustn't be a PhiInstr here" );
+    swiftAssert( typeid(*instrNode->value_) != typeid(me::LabelInstr), 
+        "this mustn't be a LabelInstr here" );
+
     me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instrNode->value_);
 
     // is reg used at instr
     if (ab)
     {
-        for (size_t i = 0; i < ab->numRhs_; ++i)
-        {
-            if (ab->rhs_[i] == reg)
-                return 0; // found
-        }
+        if (ab->isRegUsed(reg))
+            return 0;
     }
 
     // else
@@ -311,11 +317,18 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
         return std::numeric_limits<int>::max(); // return "infinity"
     // else
 
-    me::BBNode* bbNode = cfg_->findBBNode(instrNode);
+    // the next instruction can't be the sentinel, reg can't be live then.
+    swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
+        "this mustn't be the instrList_'s sentinel" );
+    
+    /*
+     * check what kind of instruction whe have
+     */
+    //if ( typeid(*instr) == typeid(me::LabelInstr) )
+        //return;
 
     // do we have an ordinary successor instruction?
-    if (instrNode->next() != cfg_->instrList_.sentinel()
-        && instrNode != bbNode->value_->end_)
+    if ( typeid(*instr) != typeid(me::LabelInstr) )
     {
         int result = distanceRec( reg, instrNode->next() );
 
@@ -325,25 +338,29 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
             : result + 1;
     }
     // else
+
     swiftAssert( typeid(*instr) == typeid(me::LabelInstr), "must be a LabelInstr here" );
 
-    // for all succossor basic blocks
-    BBLIST_EACH(iter, bbNode->succ_)
-    {
-        instrNode = iter->value_->value_->begin_;
+    // move to the LabelInstr
+    instrNode = instrNode->next();
+    instr = instrNode->value_;
+    // for each succossor basic blocks
+    //BBLIST_EACH(iter, bbNode->succ_)
+    //{
+        //instrNode = iter->value_->value_->begin_;
 
-        // omit leading label instr
-        swiftAssert( typeid(*instrNode->value_) == typeid(me::LabelInstr),
-            "first instruction in a basic block must be a LabelInstr" );
-        instrNode = instrNode->next();
+        //// omit leading label instr
+        //swiftAssert( typeid(*instrNode->value_) == typeid(me::LabelInstr),
+            //"first instruction in a basic block must be a LabelInstr" );
+        //instrNode = instrNode->next();
 
-        int result = distanceRec( reg, instrNode->next() );
+        //int result = distanceRec( reg, instrNode->next() );
 
-        // add up the distance and do not calculate around
-        return result == std::numeric_limits<int>::max()
-            ? std::numeric_limits<int>::max()
-            : result + 1;
-    }
+        //// add up the distance and do not calculate around
+        //return result == std::numeric_limits<int>::max()
+            //? std::numeric_limits<int>::max()
+            //: result + 1;
+    //}
 
     swiftAssert(false, "this code should not be reached");
 

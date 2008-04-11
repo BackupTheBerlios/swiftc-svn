@@ -50,6 +50,11 @@ private:
     typedef std::set<me::BasicBlock*> BBSet;
     BBSet walked_;
 
+    /** 
+     * @brief Performs the liveness analysis.
+     *
+     * Invokes \a liveOutAtBlock, \a liveInAtInstr and \a liveOutAtInstr.
+     */
     void livenessAnalysis();
     void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var);
     void liveInAtInstr (me::InstrNode* instr, me::Reg* var);

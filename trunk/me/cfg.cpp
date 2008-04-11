@@ -490,14 +490,6 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
     BBLIST_EACH(iter, bb->value_->domChildren_)
     {
         BBNode* domChild = iter->value_;
-
-        // TODO
-        // omit special exit node
-        //if ( domChild->value_->isExit() )
-            //continue;
-        //if ( domChild->value_->end_ == instrList_.sentinel() )
-            //continue;
-
         rename(domChild, names);
     }
 
@@ -574,16 +566,8 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
         // TODO are phi functions considered correctly here?
         if (ab)
         {
-            // for each var on the rhs
-            for (size_t i = 0; i < ab->numRhs_; ++i)
-            {
-                if (ab->rhs_[i] == var)
-                {
-                    var->uses_.append( DefUse(iter, bbNode) );
-                    // use "break" here in order to prevent double entries with instructions like a = b + b
-                    break;
-                }
-            }
+            if ( ab->isRegUsed(var) )
+                var->uses_.append( DefUse(iter, bbNode) );
         }
     } // for each instruction
 

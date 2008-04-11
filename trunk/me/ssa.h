@@ -51,8 +51,9 @@ struct InstrBase
 //------------------------------------------------------------------------------
 
 /**
- * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
- * around other Instr won't invalidate pointers in basic blocks.
+ * @brief Instructions of type LabelInstr mark the bounds of a basic block. 
+ *
+ * So swizzling around other Instr won't invalidate pointers in basic blocks.
  */
 struct LabelInstr : public InstrBase
 {
@@ -130,6 +131,28 @@ struct AssignmentBase : public InstrBase
      * can be destroyed.
      */
     void destroyLhsOldVarNrs();
+
+    /** 
+     * @brief Finds out whether \p reg is used in this instruction. 
+     *
+     * I.e. this reg occurs on the right hand side.
+     * 
+     * @param reg The Reg which is looked for.
+     * 
+     * @return True - if this is used here, false otherwise. 
+     */
+    bool isRegUsed(Reg* reg);
+
+    /** 
+     * @brief Finds out whether \p reg is defined in this instruction. 
+     *
+     * I.e. this reg occurs on the left hand side.
+     * 
+     * @param reg The Reg which is looked for.
+     * 
+     * @return True - if this is defined here, false otherwise. 
+     */
+    bool isRegDefined(Reg* reg);
 };
 
 //------------------------------------------------------------------------------
