@@ -138,7 +138,7 @@ struct FunctionTable
     Reg* lookupReg(int varNr);
 
     void appendInstr(InstrBase* instr);
-    void appendInstrNode(InstrNode node);
+    void appendInstrNode(InstrNode* node);
     void buildUpME();
 
     void dumpSSA();

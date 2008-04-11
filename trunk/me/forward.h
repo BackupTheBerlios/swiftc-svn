@@ -12,14 +12,14 @@
 namespace me {
 
 struct BasicBlock;
-typedef Graph<BasicBlock>::Node* BBNode;
-typedef List<BBNode> BBList;
+typedef Graph<BasicBlock>::Node BBNode;
+typedef List<BBNode*> BBList;
 
 struct Function;
 
 struct InstrBase;
 typedef List<InstrBase*> InstrList;
-typedef InstrList::Node* InstrNode;
+typedef InstrList::Node InstrNode;
 
 struct Op;
 struct Literal;

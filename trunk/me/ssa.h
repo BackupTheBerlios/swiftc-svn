@@ -13,7 +13,7 @@ namespace me {
 //------------------------------------------------------------------------------
 
 #define INSTRLIST_EACH(iter, instrList) \
-    for (me::InstrNode (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
+    for (me::InstrNode* (iter) = (instrList).first(); (iter) != (instrList).sentinel(); (iter) = (iter)->next())
 
 //------------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ struct InstrBase
      *      a predecessor and must contain a BaseAssignInstr.
      * @param var The Reg which should be tested.
      */
-    static bool isLastUse(InstrNode instrNode, Reg* var);
+    static bool isLastUse(InstrNode* instrNode, Reg* var);
 
     virtual std::string toString() const = 0;
 };
@@ -77,10 +77,10 @@ struct LabelInstr : public InstrBase
  */
 struct GotoInstr : public InstrBase
 {
-    InstrNode labelNode_;
-    BBNode succBB_;
+    InstrNode* labelNode_;
+    BBNode* succBB_;
 
-    GotoInstr(InstrNode labelNode)
+    GotoInstr(InstrNode* labelNode)
         : labelNode_(labelNode)
     {
         swiftAssert( typeid(*labelNode->value_) == typeid(LabelInstr),
@@ -128,18 +128,18 @@ struct AssignmentBase : public InstrBase
     /**
      * When fully in SSA form the old var numbers are not needed anymore and
      * can be destroyed.
-    */
+     */
     void destroyLhsOldVarNrs();
 };
 
 //------------------------------------------------------------------------------
 
-/**
- * Implements phi functions.
+/** 
+ * @brief Implements phi functions.
  */
 struct PhiInstr : public AssignmentBase
 {
-    BBNode* sourceBBs_; ///< predecessor basic block of each rhs-arg
+    BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
 
 /*
     constructor and destructor
@@ -151,10 +151,6 @@ struct PhiInstr : public AssignmentBase
 /*
     getters and setters
 */
-
-//     Reg* result();
-//     const Reg* result() const;
-//     int resultOldVarNr() const;
 
 /*
     further methods
@@ -245,16 +241,16 @@ struct AssignInstr : public AssignmentBase
 
 struct BranchInstr : public AssignmentBase
 {
-    InstrNode trueLabelNode_;
-    InstrNode falseLabelNode_;
+    InstrNode* trueLabelNode_;
+    InstrNode* falseLabelNode_;
 
-    BBNode trueBB_;
-    BBNode falseBB_;
+    BBNode* trueBB_;
+    BBNode* falseBB_;
 
 /*
     constructor
 */
-    BranchInstr(Op* boolOp, InstrNode trueLabelNode, InstrNode falseLabelNode);
+    BranchInstr(Op* boolOp, InstrNode* trueLabelNode, InstrNode* falseLabelNode);
 
 /*
     further methods

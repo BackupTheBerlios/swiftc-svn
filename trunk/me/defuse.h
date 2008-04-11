@@ -13,19 +13,19 @@ namespace me {
 struct DefUse
 {
     DefUse() {}
-    DefUse(InstrNode instr, BBNode bbNode)
+    DefUse(InstrNode* instr, BBNode* bbNode)
         : instr_(instr)
         , bbNode_(bbNode)
     {}
 
-    void set(InstrNode instr, BBNode bbNode)
+    void set(InstrNode* instr, BBNode* bbNode)
     {
         instr_ = instr;
         bbNode_ = bbNode;
     }
 
-    InstrNode instr_;  ///< The instruction which is referenced here
-    BBNode bbNode_; ///< The basic block where \a instr_ can be found
+    InstrNode* instr_;  ///< The instruction which is referenced here
+    BBNode* bbNode_; ///< The basic block where \a instr_ can be found
 };
 
 typedef List<DefUse> UseList;

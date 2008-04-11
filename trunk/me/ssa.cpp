@@ -12,7 +12,7 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
-bool InstrBase::isLastUse(InstrNode instrNode, Reg* var)
+bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
     InstrBase* prev  = instrNode->prev()->value_;
@@ -92,11 +92,14 @@ void AssignmentBase::destroyLhsOldVarNrs()
 
 PhiInstr::PhiInstr(Reg* result, size_t numRhs)
     : AssignmentBase(1, numRhs) // phi functions always have one result
-    , sourceBBs_( new BBNode[numRhs] )
+    , sourceBBs_( new BBNode*[numRhs] )
 {
     // init result
     lhs_[0] = result;
     lhsOldVarNr_[0] = result->varNr_;
+
+    // fill everthing with zero -- needed for some debugging
+    memset(sourceBBs_, 0, sizeof(BBNode*) * numRhs);
 }
 
 PhiInstr::~PhiInstr()
@@ -134,13 +137,16 @@ std::string PhiInstr::toString() const
 
     for (size_t i = 0; i < numRhs_ - 1; ++i)
     {
-        if (rhs_[i])
+        if (!sourceBBs_[i])
+            continue;
+
+        if (rhs_[i] && sourceBBs_[i])
             oss << rhs_[i]->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
         else
             oss << "-, ";
     }
 
-    if (rhs_[numRhs_ - 1])
+    if (rhs_[numRhs_ - 1] && sourceBBs_[numRhs_ - 1])
         oss << rhs_[numRhs_-1]->toString() << '(' << sourceBBs_[numRhs_-1]->value_->name()  << ')';
     else
         oss << '-';
@@ -258,7 +264,7 @@ void AssignInstr::genCode(std::ofstream& ofs)
     constructor
 */
 
-BranchInstr::BranchInstr(Op* boolOp, InstrNode trueLabelNode, InstrNode falseLabelNode)
+BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabelNode, InstrNode* falseLabelNode)
     : AssignmentBase(0, 1) // BranchInstr always have exactly one rhs var and no results
     , trueLabelNode_(trueLabelNode)
     , falseLabelNode_(falseLabelNode)

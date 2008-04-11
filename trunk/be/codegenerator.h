@@ -51,22 +51,22 @@ private:
     BBSet walked_;
 
     void livenessAnalysis();
-    void liveOutAtBlock(me::BBNode bbNode,   me::Reg* var);
-    void liveInAtInstr (me::InstrNode instr, me::Reg* var);
-    void liveOutAtInstr(me::InstrNode instr, me::Reg* var);
+    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var);
+    void liveInAtInstr (me::InstrNode* instr, me::Reg* var);
+    void liveOutAtInstr(me::InstrNode* instr, me::Reg* var);
 
 /*
     register allocation
 */
     void spill();
-    int distance(me::Reg* reg, me::InstrNode instrNode);
-    int distanceRec(me::Reg* reg, me::InstrNode instrNode);
+    int distance(me::Reg* reg, me::InstrNode* instrNode);
+    int distanceRec(me::Reg* reg, me::InstrNode* instrNode);
 
     typedef std::set<int> Colors;
     static int findFirstFreeColorAndAllocate(Colors& colors);
 
     void color();
-    void colorRecursive(me::BBNode bb);
+    void colorRecursive(me::BBNode* bb);
 
     void coalesce();
 };

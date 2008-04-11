@@ -274,9 +274,9 @@ bool WhileStatement::analyze()
     }
 
     // create labels
-    me::InstrNode whileLabelNode = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* whileLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
 
     /*
         generate this SSA code:
@@ -357,8 +357,8 @@ bool IfElStatement::analyze()
     }
 
     // create labels
-    me::InstrNode trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
 
     if (!elBranch_)
     {
@@ -408,7 +408,7 @@ bool IfElStatement::analyze()
             nextLabelNode:
                 //...
         */
-        me::InstrNode falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+        me::InstrNode* falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
 
         if (result)
         {

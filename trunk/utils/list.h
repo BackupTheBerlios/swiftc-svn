@@ -154,8 +154,8 @@ public:
 
     /**
      * Inserts a Node n behind node prev.
-     * @param prev the predecessor of n
-     * @param n the node to be inserted
+     * @param prev The predecessor of n.
+     * @param n The node to be inserted.
      */
     void insert(Node* prev, Node* n)
     {
@@ -173,11 +173,14 @@ public:
     }
 
     /**
-     * inserts a node n behind node prev
-     * @param prev the predecessor of n
-     * @param t the value to be inserted
+     * Inserts a node n behind node prev.
+     *
+     * @param prev The predecessor of n.
+     * @param t The value to be inserted.
+     *
+     * @return The newly created Node.
      */
-    void insert(Node* prev, const T& t)
+    Node* insert(Node* prev, const T& t)
     {
         Node* n = new Node(t);
         Node* next = prev->next_;
@@ -189,9 +192,11 @@ public:
         next->prev_ = n;
 
         ++size_;
+
+        return n;
     }
 
-    /// removes the first item of the list
+    /// Removes the first item of the list.
     void removeFirst()
     {
         Node* newFirst = sentinel_->next_->next_;

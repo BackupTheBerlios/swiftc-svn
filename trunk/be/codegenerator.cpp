@@ -151,7 +151,7 @@ void CodeGenerator::livenessAnalysis()
                     ++i;
 
                 swiftAssert(i < phi->numRhs_, "i too large here");
-                me::BBNode pred = phi->sourceBBs_[i];
+                me::BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
                 liveOutAtBlock(pred, var);
@@ -165,7 +165,7 @@ void CodeGenerator::livenessAnalysis()
     }
 }
 
-void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::Reg* var)
+void CodeGenerator::liveOutAtBlock(me::BBNode* bbNode, me::Reg* var)
 {
     me::BasicBlock* bb = bbNode->value_;
 
@@ -180,11 +180,11 @@ void CodeGenerator::liveOutAtBlock(me::BBNode bbNode, me::Reg* var)
     }
 }
 
-void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::Reg* var)
+void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
 {
     // var ist live-in at instr
     instr->value_->liveIn_.insert(var);
-    me::InstrNode prevInstr = instr->prev();
+    me::InstrNode* prevInstr = instr->prev();
 
     // is instr the first statement of basic block?
     if ( typeid(*prevInstr->value_) == typeid(me::LabelInstr) )
@@ -192,7 +192,7 @@ void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::Reg* var)
         // var is live-out at the leading labelInstr
         prevInstr->value_->liveOut_.insert(var);
 
-        me::BBNode bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        me::BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
         bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
@@ -202,12 +202,12 @@ void CodeGenerator::liveInAtInstr(me::InstrNode instr, me::Reg* var)
     else
     {
         // get preceding statement to instr
-        me::InstrNode preInstr = instr->prev();
+        me::InstrNode* preInstr = instr->prev();
         liveOutAtInstr(preInstr, var);
     }
 }
 
-void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::Reg* var)
+void CodeGenerator::liveOutAtInstr(me::InstrNode* instr, me::Reg* var)
 {
     // var is live-out at instr
     instr->value_->liveOut_.insert(var);
@@ -249,13 +249,43 @@ void CodeGenerator::liveOutAtInstr(me::InstrNode instr, me::Reg* var)
 
 void CodeGenerator::spill()
 {
-    // TODO
-//     spiller_->spill();
+    static const int numAvailableRegs = 16; // TODO
 
+    std::set<me::Reg*> varsCurrentlyInRegs;
 
+    // for each basic block
+    for (size_t i = 0; i < cfg_->postOrder_.size(); ++i)
+    {
+        me::BBNode* bb = cfg_->postOrder_[i]; // get current basic block
+
+        // passed contains all regs live in at bb and the results of phi operations in bb
+        std::set<me::Reg*> passed = bb->value_->begin_->value_->liveIn_;
+
+        // add results of phi functions to passed 
+        me::InstrNode* instr = bb->value_->begin_;
+
+        while ( typeid(*instr->value_) == typeid(me::PhiInstr) )
+        {
+            me::PhiInstr* phi = static_cast<me::PhiInstr*>(instr->value_);
+            
+            for (size_t i = 0; i < phi->numLhs_; ++i)
+                passed.insert( phi->lhs_[i] );
+        }
+        
+        // for each instruction in this basic block
+        for (me::InstrNode* instrNode = bb->value_->begin_; instrNode != bb->value_->end_; instrNode = instrNode->next())
+        {
+            me::InstrBase* instr = instrNode->value_;
+
+            if ( typeid(*instr) == typeid(me::LabelInstr) )
+            {
+                // TODO
+            }
+        }
+    }
 }
 
-int CodeGenerator::distance(me::Reg* reg, me::InstrNode instrNode) {
+int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode) {
     me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instrNode->value_);
 
     // is reg used at instr
@@ -272,16 +302,16 @@ int CodeGenerator::distance(me::Reg* reg, me::InstrNode instrNode) {
     return distanceRec(reg, instrNode);
 }
 
-int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode instrNode)
+int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
 {
     me::InstrBase* instr = instrNode->value_;
 
     // is reg not live at instr?
-    if ( instr->liveIn_.find(reg) == instr->liveIn_.end() ) // FIXME is liveIn correct here or is it liveOut?
+    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() ) 
         return std::numeric_limits<int>::max(); // return "infinity"
     // else
 
-    me::BBNode bbNode = cfg_->findBBNode(instrNode);
+    me::BBNode* bbNode = cfg_->findBBNode(instrNode);
 
     // do we have an ordinary successor instruction?
     if (instrNode->next() != cfg_->instrList_.sentinel()
@@ -315,7 +345,9 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode instrNode)
             : result + 1;
     }
 
-    // TODO return
+    swiftAssert(false, "this code should not be reached");
+
+    return 0;
 }
 
 /*
@@ -347,7 +379,7 @@ void CodeGenerator::color()
     colorRecursive( cfg_->entry_->succ_.first()->value_ );
 }
 
-void CodeGenerator::colorRecursive(me::BBNode bb)
+void CodeGenerator::colorRecursive(me::BBNode* bb)
 {
     Colors colors;
     REGSET_EACH(iter, bb->value_->liveIn_)
@@ -358,16 +390,16 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
     }
 
     // for each instruction -> start with the first instruction which is followed by the leading me::LabelInstr
-    for (me::InstrNode iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    for (me::InstrNode* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
     {
         me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(iter->value_);
 
         if (ab)
         {
             /*
-                NOTE for the me::InstrBase::isLastUse(me::InstrNode instrNode, Reg* var) used below:
+                NOTE for the me::InstrBase::isLastUse(me::InstrNode* instrNode, Reg* var) used below:
                     instrNode has an predecessor in all cases because iter is initialized with the
-                    first instructin which is followed by the leading me::LabelInstr of this basic
+                    first instruction which is followed by the leading me::LabelInstr of this basic
                     block. Thus the first instruction which is considered here will always be
                     preceded by a me::LabelInstr.
 
@@ -438,11 +470,7 @@ void CodeGenerator::colorRecursive(me::BBNode bb)
     // for each child of bb in the dominator tree
     for (me::BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
     {
-        me::BBNode domChild = iter->value_;
-
-        // omit special exit node
-        if ( domChild->value_->isExit() )
-            continue;
+        me::BBNode* domChild = iter->value_;
 
         colorRecursive(domChild);
     }
