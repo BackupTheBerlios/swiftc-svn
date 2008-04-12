@@ -14,23 +14,25 @@ struct Local;
 //------------------------------------------------------------------------------
 
 /**
- * This class represents a Statement. It is either a Declaration, an
- * ExprStatement, an IfElStatement or an AssignStatement.
+ * @brief This class represents a Statement. 
+ *
+ * It is either a Declaration, an ExprStatement, an IfElStatement 
+ * or an AssignStatement.
  */
 struct Statement : public Node
 {
     Statement* next_; ///< Linked List of statements.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Statement(int line);
     virtual ~Statement();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze() = 0;
 };
@@ -44,9 +46,9 @@ struct ExprStatement : public Statement
 {
     Expr* expr_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     ExprStatement(Expr* expr, int line = NO_LINE)
         : Statement(line)
@@ -54,9 +56,9 @@ struct ExprStatement : public Statement
     {}
     virtual ~ExprStatement();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
     virtual std::string toString() const { return std::string(""); }
@@ -65,7 +67,8 @@ struct ExprStatement : public Statement
 //------------------------------------------------------------------------------
 
 /**
- * This is Declaration, consisting of a Type, an Identifier and an ExprList.
+ * @brief This is Declaration, consisting of a Type, an Identifier and an ExprList.
+ *
  * Furthermore it will create a Local which will be inserted in the SymbolTable.
  */
 struct Declaration : public Statement
@@ -77,16 +80,16 @@ struct Declaration : public Statement
     /// Since this class created the Local it is responsible to delete it again.
     Local*          local_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE);
     virtual ~Declaration();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
 };
@@ -94,8 +97,10 @@ struct Declaration : public Statement
 //------------------------------------------------------------------------------
 
 /**
- * This is an ordinary assignment. In contrast to other languages assignments in
- * Swift are no expresions but statements.
+ * @brief This is an ordinary assignment. 
+ *
+ * In contrast to other languages assignments in Swift are no expresions 
+ * but statements.
  */
 struct AssignStatement : public Statement
 {
@@ -108,16 +113,16 @@ struct AssignStatement : public Statement
     Expr*       expr_;      ///< The lvalue.
     ExprList*   exprList_;  ///< The rvalue.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE);
     virtual ~AssignStatement();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
     void genSSA();
@@ -126,7 +131,7 @@ struct AssignStatement : public Statement
 //------------------------------------------------------------------------------
 
 /**
- * Holds either an if, an if-else or an if-elif statement.
+ * Represents a while statement.
  */
 struct WhileStatement : public Statement
 {
@@ -134,16 +139,16 @@ struct WhileStatement : public Statement
 
     Statement* statements_; ///< Linked List of statements of the while-loop.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     WhileStatement(Expr* expr, Statement* statements, int line = NO_LINE);
     virtual ~WhileStatement();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
     virtual std::string toString() const { return std::string(""); }
@@ -161,16 +166,16 @@ struct IfElStatement : public Statement
     Statement* ifBranch_; ///< Linked List of statements of the if-branch.
     Statement* elBranch_; ///< Linked List of statements of the else-branch, 0 if there is no else-branch.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE);
     virtual ~IfElStatement();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
     virtual std::string toString() const { return std::string(""); }

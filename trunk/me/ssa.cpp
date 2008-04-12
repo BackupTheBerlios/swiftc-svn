@@ -37,26 +37,16 @@ LabelInstr::LabelInstr()
 
 //------------------------------------------------------------------------------
 
-std::string GotoInstr::toString() const
-{
-    std::ostringstream oss;
-    oss << "GOTO " << label()->toString();
-
-    return oss.str();
-}
-
-//------------------------------------------------------------------------------
-
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
-    : lhs_( new Reg*[numLhs] )
+    : numLhs_(numLhs)
+    , lhs_( numLhs ? new Reg*[numLhs] : 0 )
     , lhsOldVarNr_( new int[numLhs] )
-    , numLhs_(numLhs)
-    , rhs_( new Op*[numRhs] )
     , numRhs_(numRhs)
+    , rhs_( numRhs ? new  Op*[numRhs] : 0 )
 {}
 
 AssignmentBase::~AssignmentBase()
@@ -70,15 +60,17 @@ AssignmentBase::~AssignmentBase()
             delete literal;
     }
 
-    delete[] lhs_;
-    delete[] rhs_;
+    if (lhs_)
+        delete[] lhs_;
+    if (rhs_)
+        delete[] rhs_;
 
     destroyLhsOldVarNrs(); // TODO this should be done earlier
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool AssignmentBase::isRegUsed(Reg* reg) 
 {
@@ -114,8 +106,8 @@ void AssignmentBase::destroyLhsOldVarNrs()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 PhiInstr::PhiInstr(Reg* result, size_t numRhs)
     : AssignmentBase(1, numRhs) // phi functions always have one result
@@ -133,25 +125,6 @@ PhiInstr::~PhiInstr()
 {
     delete[] sourceBBs_;
 }
-
-/*
-    getters and setters
-*/
-
-// Reg* PhiInstr::result()
-// {
-//     return lhs_[0];
-// }
-//
-// const Reg* PhiInstr::result() const
-// {
-//     return lhs_[0];
-// }
-//
-// int PhiInstr::resultOldVarNr() const
-// {
-//     return lhsOldVarNr_[0];
-// }
 
 /*
     further methods
@@ -186,24 +159,26 @@ std::string PhiInstr::toString() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 AssignInstr::AssignInstr(int kind, Reg* result, Op* op1, Op* op2 /*= 0*/)
-    : AssignmentBase(1, op2 ? 2 : 1) // An AssignInstr always have exactly one result and one or two args
+    // an AssignInstr always have exactly one result and one or two args
+    : AssignmentBase(1, op2 ? 2 : 1) 
     , kind_(kind)
 {
     lhs_[0] = result;
     lhsOldVarNr_[0] = result->varNr_;
 
     rhs_[0] = op1;
+
     if (op2)
         rhs_[1] = op2;
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 std::string AssignInstr::getOpString() const
 {
@@ -288,26 +263,112 @@ void AssignInstr::genCode(std::ofstream& ofs)
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor and destructor
+ */
 
-BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabelNode, InstrNode* falseLabelNode)
-    : AssignmentBase(0, 1) // BranchInstr always have exactly one rhs var and no results
-    , trueLabelNode_(trueLabelNode)
-    , falseLabelNode_(falseLabelNode)
+JumpInstr::JumpInstr(size_t numLhs, size_t numRhs, size_t numTargets)
+    : AssignmentBase(numLhs, numRhs)
+    , numTargets_(numTargets)
+    , instrTargets_( new InstrNode*[numTargets] )
+    , bbTargets_( new BBNode*[numTargets] )
+{
+}
+
+JumpInstr::~JumpInstr() 
+{
+    delete[] instrTargets_;
+    delete[] bbTargets_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+GotoInstr::GotoInstr(InstrNode* instrTarget)
+    : JumpInstr(0, 0, 1) // always no lhs, no rhs, one target
+{
+    instrTargets_[0] = instrTarget;
+
+    swiftAssert( typeid(*instrTargets_[0]->value_) == typeid(LabelInstr),
+        "must be a node to a LabelInstr here");
+}
+
+/*
+ * getters
+ */
+
+LabelInstr* GotoInstr::label()
+{
+    return (LabelInstr*) instrTargets_[0]->value_;
+}
+
+const LabelInstr* GotoInstr::label() const
+{
+    return (LabelInstr*) instrTargets_[0]->value_;
+}
+
+/*
+ * further methods
+ */
+
+std::string GotoInstr::toString() const
+{
+    std::ostringstream oss;
+    oss << "GOTO " << label()->toString();
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel)
+    : JumpInstr(0, 1, 2) // always no results, one rhs, two targets
 {
     swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
     rhs_[0] = boolOp;
 
-    swiftAssert( typeid(*trueLabelNode->value_) == typeid(LabelInstr),
-        "trueLabelNode must be a node to a LabelInstr");
-    swiftAssert( typeid(*falseLabelNode->value_) == typeid(LabelInstr),
-        "falseLabelNode must be a node to a LabelInstr");
+    instrTargets_[0] = trueLabel;
+    instrTargets_[1] = falseLabel;
+
+    swiftAssert( typeid(*instrTargets_[0]->value_) == typeid(LabelInstr),
+        "must be a node to a LabelInstr here");
+    swiftAssert( typeid(*instrTargets_[1]->value_) == typeid(LabelInstr),
+        "must be a node to a LabelInstr here");
 }
 
 /*
-    further methods
-*/
+ * getters
+ */
+
+LabelInstr* BranchInstr::trueLabel() 
+{
+    return (LabelInstr*) instrTargets_[0]->value_;
+}
+
+const LabelInstr* BranchInstr::trueLabel() const
+{
+    return (LabelInstr*) instrTargets_[0]->value_;
+}
+
+LabelInstr* BranchInstr::falseLabel() 
+{
+    return (LabelInstr*) instrTargets_[1]->value_;
+}
+
+const LabelInstr* BranchInstr::falseLabel() const
+{
+    return (LabelInstr*) instrTargets_[1]->value_;
+}
+
+/*
+ * further methods
+ */
 
 std::string BranchInstr::toString() const
 {
@@ -321,49 +382,17 @@ std::string BranchInstr::toString() const
 
 //------------------------------------------------------------------------------
 
-/*std::string InvokeInstr::toString() const
-{
-    std::string result = "INVOKE ";
-    result += *function_->id_;
-
-    result += "IN: ";
-    for (const RegList::Node* iter = in_.first(); iter != in_.sentinel(); iter = iter->next())
-    {
-        result += iter->value_->toString();
-        result += ' ';
-    }
-
-    result += "INOUT: ";
-    for (const RegList::Node* iter = inout_.first(); iter != inout_.sentinel(); iter = iter->next())
-    {
-        result += iter->value_->toString();
-        result += ' ';
-    }
-
-    result += "OUT: ";
-    for (const RegList::Node* iter = out_.first(); iter != out_.sentinel(); iter = iter->next())
-    {
-        result += iter->value_->toString();
-        result += ' ';
-    }
-
-    return result;
-}
-*/
-
-//------------------------------------------------------------------------------
-
 /*
-    constructor
-*/
+ * constructor
+ */
 
 SpillInstr::SpillInstr()
     : AssignmentBase(1, 1) // SpillInstr always have exactly one result and one arg
 {}
 
 /*
-    getters
-*/
+ * getters
+ */
 
 Reg* SpillInstr::arg()
 {
@@ -380,8 +409,8 @@ const Reg* SpillInstr::arg() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Spill::Spill(Reg* result, Reg* arg)
     : SpillInstr()
@@ -394,8 +423,8 @@ Spill::Spill(Reg* result, Reg* arg)
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 void Spill::genCode(std::ofstream& /*ofs*/)
 {
@@ -410,8 +439,8 @@ std::string Spill::toString() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Reload::Reload(Reg* result, Reg* arg)
     : SpillInstr()
@@ -424,8 +453,8 @@ Reload::Reload(Reg* result, Reg* arg)
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 void Reload::genCode(std::ofstream& /*ofs*/)
 {

@@ -25,15 +25,15 @@ struct InstrBase
     RegSet liveIn_; /// regs that are live-in  at this instruction.
     RegSet liveOut_;/// regs that are live-out at this instruction.
 
-/*
-    destructor
-*/
+    /*
+     * destructor
+     */
 
     virtual ~InstrBase() {}
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /**
      * Computes whether this \p instr ist the first instruction which does not
@@ -74,57 +74,28 @@ struct LabelInstr : public InstrBase
 //------------------------------------------------------------------------------
 
 /**
- * GotoInstr does not calculate something. It influences the control flow.
- */
-struct GotoInstr : public InstrBase
-{
-    InstrNode* labelNode_;
-    BBNode* succBB_;
-
-    GotoInstr(InstrNode* labelNode)
-        : labelNode_(labelNode)
-    {
-        swiftAssert( typeid(*labelNode->value_) == typeid(LabelInstr),
-            "labelNode must be a node to a LabelInstr");
-    }
-
-    LabelInstr* label()
-    {
-        return (LabelInstr*) labelNode_->value_;
-    }
-    const LabelInstr* label() const
-    {
-        return (LabelInstr*) labelNode_->value_;
-    }
-
-    virtual std::string toString() const;
-};
-
-//------------------------------------------------------------------------------
-
-/**
  * This is the base class for all instructions with in and out-going arguments.
  * TODO documentation for inout args.
  */
 struct AssignmentBase : public InstrBase
 {
+    size_t  numLhs_;        ///< Number of left hand side args.
     Reg**   lhs_;           ///< Left hand side Regs.
     int*    lhsOldVarNr_;   ///< Left hand side old varNrs.
-    size_t  numLhs_;        ///< Number of left hand side args.
 
-    Op**    rhs_;           ///< Right hand side Ops.
     size_t  numRhs_;        ///< Number of righthand side args.
+    Op**    rhs_;           ///< Right hand side Ops.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     AssignmentBase(size_t numLhs, size_t numRhs);
     ~AssignmentBase();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /**
      * When fully in SSA form the old var numbers are not needed anymore and
@@ -164,20 +135,16 @@ struct PhiInstr : public AssignmentBase
 {
     BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     PhiInstr(Reg* result, size_t numRhs);
     ~PhiInstr();
 
-/*
-    getters and setters
-*/
-
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     std::string toString() const;
     void genCode(std::ofstream& /*ofs*/) {}
@@ -244,15 +211,15 @@ struct AssignInstr : public AssignmentBase
         char c_;
     };
 
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     AssignInstr(int kind, Reg* result, Op* op1, Op* op2 = 0);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     std::string toString() const;
     void genCode(std::ofstream& ofs);
@@ -262,7 +229,53 @@ struct AssignInstr : public AssignmentBase
 
 //------------------------------------------------------------------------------
 
-struct BranchInstr : public AssignmentBase
+struct JumpInstr : public AssignmentBase
+{
+    size_t numTargets_;
+    InstrNode** instrTargets_;
+    BBNode** bbTargets_;
+
+    /*
+     * constructor and destructor
+     */
+
+    JumpInstr(size_t numLhs, size_t numRhs_, size_t numTargets);
+    ~JumpInstr();
+};
+
+//-------------------------------------------------------------------------------
+
+
+/** 
+ * @brief Performs a jump to a given Target.
+ *
+ * The target must be an InstrNode* to a LabelInstr.
+ */
+struct GotoInstr : public JumpInstr
+{
+    /*
+     * constructor
+     */
+
+    GotoInstr(InstrNode* instrTarget);
+
+    /*
+     * getters
+     */
+
+    LabelInstr* label();
+    const LabelInstr* label() const;
+
+    /*
+     * further methods
+     */
+
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct BranchInstr : public JumpInstr
 {
     InstrNode* trueLabelNode_;
     InstrNode* falseLabelNode_;
@@ -270,30 +283,25 @@ struct BranchInstr : public AssignmentBase
     BBNode* trueBB_;
     BBNode* falseBB_;
 
-/*
-    constructor
-*/
-    BranchInstr(Op* boolOp, InstrNode* trueLabelNode, InstrNode* falseLabelNode);
+    /*
+     * constructor
+     */
 
-/*
-    further methods
-*/
-    LabelInstr* trueLabel()
-    {
-        return (LabelInstr*) trueLabelNode_->value_;
-    }
-    LabelInstr* falseLabel()
-    {
-        return (LabelInstr*) falseLabelNode_->value_;
-    }
-    const LabelInstr* trueLabel() const
-    {
-        return (LabelInstr*) trueLabelNode_->value_;
-    }
-    const LabelInstr* falseLabel() const
-    {
-        return (LabelInstr*) falseLabelNode_->value_;
-    }
+    BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel);
+
+    /*
+     * getters
+     */
+
+    LabelInstr* trueLabel();
+    const LabelInstr* trueLabel() const;
+
+    LabelInstr* falseLabel();
+    const LabelInstr* falseLabel() const;
+
+    /*
+     * further methods
+     */
 
     virtual std::string toString() const;
 };
@@ -302,29 +310,31 @@ struct BranchInstr : public AssignmentBase
 
 struct SpillInstr : public AssignmentBase
 {
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
+
     SpillInstr();
 
-/*
-    getters
-*/
+    /*
+     * getters
+     */
+
     Reg* arg();
     const Reg* arg() const;
 };
 
 struct Spill : public SpillInstr
 {
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     Spill(Reg* result, Reg* arg);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     void genCode(std::ofstream& ofs);
     std::string toString() const;
@@ -334,53 +344,19 @@ struct Spill : public SpillInstr
 
 struct Reload : public SpillInstr
 {
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     Reload(Reg* result, Reg* arg);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     void genCode(std::ofstream& ofs);
     std::string toString() const;
 };
-
-/**
- * Instructions of type LabelInstr mark the bounds of a basic block. So swizzling
- * around other Instr won't invalidate pointers in basic blocks.
- */
-// struct InvokeInstr : public InstrBase
-// {
-//     /// This type is used to specify calling conventions
-//     enum Conventions
-//     {
-//         C_CALL,
-//         PASCAL_CALL,
-//         STD_CALL,
-//         SWIFT_CALL
-//     };
-//
-//     Function* function_;
-//     Conventions conventions_;
-//
-//     RegList args_;  ///< all arguments
-//     RegList in_;    ///< incoming arguments
-//     RegList out_;   ///< outgoing arguments
-//     RegList inout_; ///< in and outgoing arguments
-//
-//     InvokeInstr(Function* function, Conventions conventions)
-//         : function_(function)
-//         , conventions_(conventions)
-//     {}
-//
-//     virtual std::string toString() const;
-// };
-//
-
-//------------------------------------------------------------------------------
 
 } // namespace me
 

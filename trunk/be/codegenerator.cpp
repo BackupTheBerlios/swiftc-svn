@@ -66,14 +66,14 @@ typedef Graph<IVar>::Node* VarNode;
 //------------------------------------------------------------------------------
 
 /*
-    init statics
-*/
+ * init statics
+ */
 
 Spiller* CodeGenerator::spiller_ = 0;
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 CodeGenerator::CodeGenerator(std::ofstream& ofs, me::Function* function)
     : function_(function)
@@ -94,8 +94,8 @@ CodeGenerator::~CodeGenerator()
 #endif // SWIFT_DEBUG
 
 /*
-    methods
-*/
+ * methods
+ */
 
 void CodeGenerator::genCode()
 {
@@ -114,8 +114,8 @@ void CodeGenerator::genCode()
 }
 
 /*
-    liveness stuff
-*/
+ * liveness stuff
+ */
 
 void CodeGenerator::livenessAnalysis()
 {
@@ -288,8 +288,8 @@ void CodeGenerator::spill()
 int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode) 
 {
     /*
-        PhiInstr and LabelInstr are nore allowd here
-    */
+     * PhiInstr and LabelInstr are nore allowd here
+     */
     swiftAssert( typeid(*instrNode->value_) != typeid(me::PhiInstr), 
         "this mustn't be a PhiInstr here" );
     swiftAssert( typeid(*instrNode->value_) != typeid(me::LabelInstr), 
@@ -368,8 +368,8 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
 }
 
 /*
-    coloring
-*/
+ * coloring
+ */
 
 int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
 {
@@ -390,9 +390,9 @@ int CodeGenerator::findFirstFreeColorAndAllocate(Colors& colors)
 void CodeGenerator::color()
 {
     /*
-        start with the first true basic block
-        and perform a pre-order walk of the dominator tree
-    */
+     * start with the first true basic block
+     * and perform a pre-order walk of the dominator tree
+     */
     colorRecursive( cfg_->entry_->succ_.first()->value_ );
 }
 
@@ -414,21 +414,20 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
         if (ab)
         {
             /*
-                NOTE for the me::InstrBase::isLastUse(me::InstrNode* instrNode, Reg* var) used below:
-                    instrNode has an predecessor in all cases because iter is initialized with the
-                    first instruction which is followed by the leading me::LabelInstr of this basic
-                    block. Thus the first instruction which is considered here will always be
-                    preceded by a me::LabelInstr.
-
-                    Furthermore Literals are no problems here since they are not found via
-                    isLastUse.
-            */
+             * NOTE for the me::InstrBase::isLastUse(me::InstrNode* instrNode, Reg* var) used below:
+             *     instrNode has an predecessor in all cases because iter is initialized with the
+             *     first instruction which is followed by the leading me::LabelInstr of this basic
+             *     block. Thus the first instruction which is considered here will always be
+             *     preceded by a me::LabelInstr.
+             *     Furthermore Literals are no problems here since they are not found via
+             *     isLastUse.
+             */
 
 #ifdef SWIFT_DEBUG
             /*
-                In the debug version this set knows vars which were already
-                removed. This allows more precise assertions (see below).
-            */
+             * In the debug version this set knows vars which were already
+             * removed. This allows more precise assertions (see below).
+             */
             me::RegSet erased;
 #endif // SWIFT_DEBUG
 
@@ -453,9 +452,9 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
                     if ( colorIter == colors.end() )
                         colors.erase(colorIter); // last use of reg
                     /*
-                        else -> the reg must already been removed which must
-                            be caused by a double entry like a = b + b
-                    */
+                     * else -> the reg must already been removed which must
+                     *     be caused by a double entry like a = b + b
+                     */
 #endif // SWIFT_DEBUG
                 }
             }
@@ -469,13 +468,13 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
                 if ( reg->uses_.empty() )
                 {
                     /*
-                        In the case of a pointless definition a color should be
-                        assigned and immediately released afterwards.
-                        A pointless definition is for example
-                        a = b + c
-                        and never use 'a' again. The register allocator would assign a color for 'a'
-                        and will never release it since there will be no known last use of 'a'.
-                    */
+                     * In the case of a pointless definition a color should be
+                     * assigned and immediately released afterwards.
+                     * A pointless definition is for example
+                     * a = b + c
+                     * and never use 'a' again. The register allocator would assign a color for 'a'
+                     * and will never release it since there will be no known last use of 'a'.
+                     */
                     Colors::iterator colorIter = colors.find(reg->color_);
                     swiftAssert( colorIter != colors.end(), "color must be found here");
                     colors.erase(colorIter); // last use of op2 so remove

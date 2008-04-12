@@ -27,15 +27,15 @@ struct CFErrorHandler
         TODO
     };
 
-/*
-    destructor
-*/
+    /*
+     * destructor
+     */
 
     virtual ~CFErrorHandler();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual void error(CFError cfError, int varNr) = 0;
 };
@@ -78,56 +78,56 @@ struct CFG : public Graph<BasicBlock>
 
     CFErrorHandler* cfErrorHandler_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     CFG(Function* function);
     ~CFG();
 
-/*
-    graph creation
-*/
+    /*
+     * graph creation
+     */
 
     void calcCFG();
     void calcDomTree();
     BBNode* intersect(BBNode* b1, BBNode* b2);
     void calcDomFrontier();
 
-/*
-    error handling related to control flow
-*/
+    /*
+     * error handling related to control flow
+     */
 
     void installCFErrorHandler(CFErrorHandler* cfErrorHandler);
 
-/*
-    phi functions
-*/
+    /*
+     * phi functions
+     */
 
     void placePhiFunctions();
     void renameVars();
     void rename(BBNode* bb, std::vector< std::stack<Reg*> >& names);
 
-/*
-    def-use-chains
-*/
+    /*
+     * def-use-chains
+     */
 
     void calcDef();
     void calcUse();
     void calcUse(Reg* var, BBNode* bb);
 
-/*
-    dump methods
-*/
+    /*
+     * dump methods
+     */
 
     virtual std::string name() const;
     std::string dumpIdoms() const;
     std::string dumpDomChildren() const;
     std::string dumpDomFrontier() const;
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     BBNode* findBBNode(InstrNode* instrNode);
 };

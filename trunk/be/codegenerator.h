@@ -27,25 +27,24 @@ struct CodeGenerator
     IGraph*         ig_;
 #endif // SWIFT_DEBUG
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
     CodeGenerator(std::ofstream& ofs, me::Function* function);
 #ifdef SWIFT_DEBUG
     ~CodeGenerator();
 #endif // SWIFT_DEBUG
 
-/*
-    methods
-*/
-
+    /*
+     * methods
+     */
     void genCode();
 
 private:
 
-/*
-    liveness analysis
-*/
+    /*
+     * liveness analysis
+     */
     /// Knows during the liveness analysis which basic blocks have already been visted
     typedef std::set<me::BasicBlock*> BBSet;
     BBSet walked_;
@@ -60,9 +59,9 @@ private:
     void liveInAtInstr (me::InstrNode* instr, me::Reg* var);
     void liveOutAtInstr(me::InstrNode* instr, me::Reg* var);
 
-/*
-    register allocation
-*/
+    /*
+     * register allocation
+     */
     void spill();
     int distance(me::Reg* reg, me::InstrNode* instrNode);
     int distanceRec(me::Reg* reg, me::InstrNode* instrNode);

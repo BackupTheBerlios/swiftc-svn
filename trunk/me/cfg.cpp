@@ -5,8 +5,8 @@
 namespace me {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 CFG::CFG(Function* function)
     : function_(function)
@@ -22,8 +22,8 @@ CFG::~CFG()
 }
 
 /*
-    graph creation
-*/
+ * graph creation
+ */
 
 void CFG::calcCFG()
 {
@@ -76,32 +76,34 @@ void CFG::calcCFG()
         }
 
 #ifdef SWIFT_DEBUG
-        // check in the debug version whether a GotoInstr or a BranchInstr is followed by a LabelInstr
-        if ( typeid(*instr) == typeid(BranchInstr) || typeid(*instr) == typeid(GotoInstr) )
+        // check in the debug version whether a JumpInstr is followed by a LabelInstr
+        if ( dynamic_cast<JumpInstr*>(instr) ) 
+        {
             swiftAssert( typeid( *iter->next()->value_ ) == typeid(LabelInstr),
-                "BranchInstr or GotoInstr is not followed by a LabelInstr");
+                "JumpInstr is not followed by a LabelInstr");
+        }
 #endif // SWIFT_DEBUG
 
     } // INSTRLIST_EACH
     // prevBB now holds the last basic block
 
     /*
-        now build the exit basic block, which consits of the end_ instruction of
-        the last basic block and the sentinel of the instrList_ as end instruction
-        and no ordinary instructions
-    */
+     * now build the exit basic block, which consits of the end_ instruction of
+     * the last basic block and the sentinel of the instrList_ as end instruction
+     * and no ordinary instructions
+     */
     exit_ = insert( new BasicBlock(prevBB->value_->end_, instrList_.sentinel(), 0) );
     labelNode2BBNode_[prevBB->value_->end_] = exit_;
 
     /*
-        now we know of all starting labels and their associated basic block
-        so let us calculate the CFG
-    */
+     * now we know of all starting labels and their associated basic block
+     * so let us calculate the CFG
+     */
 
     /*
-        iterate once again over the instrList_ in order to connect all basic blocks
-        and find all assignments of a var in a basic block and its first occurance
-    */
+     * iterate once again over the instrList_ in order to connect all basic blocks
+     * and find all assignments of a var in a basic block and its first occurance
+     */
     BBNode* currentBB = 0;
     bool linkWithPredBB = true;
 
@@ -114,39 +116,33 @@ void CFG::calcCFG()
             BBNode* next = labelNode2BBNode_[iter];
 
             /*
-                link if the last instruction was an ordinary assignment
-                and we have a currentBB
-            */
+             * link if the last instruction was an ordinary assignment
+             * and we have a currentBB
+             */
             if (linkWithPredBB && currentBB)
                 currentBB->link(next);
 
             currentBB = next;
             linkWithPredBB = true;
-        }
-        else if ( typeid(*instr) == typeid(GotoInstr) )
-        {
-            GotoInstr* gi = (GotoInstr*) instr;
 
-            gi->succBB_ = labelNode2BBNode_[ gi->labelNode_ ];
-            currentBB->link(gi->succBB_);
+            continue;
+        }
+
+        if ( dynamic_cast<JumpInstr*>(instr) )
+        {
+            JumpInstr* ji = (JumpInstr*) instr;
+
+            for (size_t i = 0; i < ji->numTargets_; ++i)
+            {
+                ji->bbTargets_[i] = labelNode2BBNode_[ ji->instrTargets_[i] ];
+                currentBB->link( ji->bbTargets_[i] );
+            }
 
             // do not link this one with the predecessor basic block
             linkWithPredBB = false;
         }
-        else if ( typeid(*instr) == typeid(BranchInstr) )
-        {
-            BranchInstr* bi = (BranchInstr*) instr;
 
-            bi->falseBB_ = labelNode2BBNode_[bi->falseLabelNode_];
-            currentBB->link(bi->falseBB_);
-
-            bi->trueBB_ = labelNode2BBNode_[bi->trueLabelNode_];
-            currentBB->link(bi->trueBB_);
-
-            // do not link this one with the predecessor basic block
-            linkWithPredBB = false;
-        }
-        else if ( dynamic_cast<AssignmentBase*>(instr) )
+        if ( dynamic_cast<AssignmentBase*>(instr) )
         {
             AssignmentBase* ab = (AssignmentBase*) instr;
             // if we have an assignment to a var update this in the map
@@ -154,9 +150,9 @@ void CFG::calcCFG()
             // for each var on the left hand side
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
-                me::Reg* reg = dynamic_cast<me::Reg*>(ab->lhs_[i]);
+                me::Reg* reg = ab->lhs_[i];
 
-                if (reg && !reg->isSSA() )
+                if ( !reg->isSSA() )
                 {
                     swiftAssert(currentBB, "currentBB must have been found here");
 
@@ -168,10 +164,6 @@ void CFG::calcCFG()
                 }
             }
         }
-        else
-        {
-            swiftAssert(false, "unkown ssa instruction type here");
-        } // type checks
     } // INSTRLIST_EACH
 
     calcPostOrder(entry_);
@@ -235,10 +227,10 @@ void CFG::calcDomTree()
     } // while
 
     /*
-        Now we can walk the idom array to get each dominator.
-        Let's compute the reserve set, too, so we can easily access
-        children of basic blocks and not only their parents.
-    */
+     * Now we can walk the idom array to get each dominator.
+     * Let's compute the reserve set, too, so we can easily access
+     * children of basic blocks and not only their parents.
+     */
 
     for (size_t i = 0; i < size(); ++i)
     {
@@ -293,8 +285,8 @@ void CFG::calcDomFrontier()
 }
 
 /*
-    error handling related to control flow
-*/
+ * error handling related to control flow
+ */
 
 void CFG::installCFErrorHandler(CFErrorHandler* cfErrorHandler)
 {
@@ -302,21 +294,21 @@ void CFG::installCFErrorHandler(CFErrorHandler* cfErrorHandler)
 }
 
 /*
-    phi functions
-*/
+ * phi functions
+ */
 
 void CFG::placePhiFunctions()
 {
     /*
-        hasAlready[bb->postOrderIndex_] knows
-        whether a phi-function in bb has already been put
-    */
+     * hasAlready[bb->postOrderIndex_] knows
+     * whether a phi-function in bb has already been put
+     */
     int hasAlready[size()];
 
     /*
-        hasBeenAdded[bb->postOrderIndex_] knows
-        whether bb has already been added to the work list
-    */
+     * hasBeenAdded[bb->postOrderIndex_] knows
+     * whether bb has already been added to the work list
+     */
     int hasBeenAdded[size()];
 
     // set all blocks to "not added" and "not already"
@@ -350,9 +342,9 @@ void CFG::placePhiFunctions()
         }
 
         /*
-            mark dominance frontier of the basic block with the first occurance
-            of var as hasAlready
-        */
+         * mark dominance frontier of the basic block with the first occurance
+         * of var as hasAlready
+         */
         BBNode* firstBB = firstOccurance_.find(var->varNr_)->second;
 
         // for each basic block from DF(fristBB)
@@ -406,8 +398,8 @@ void CFG::renameVars()
     rename(entry_, names);
 
     /*
-        all vars i.e. varNr < 0 are not needed anymore from this point
-    */
+     * all vars i.e. varNr < 0 are not needed anymore from this point
+     */
 
     // for each basic block
     for (size_t i = 0; i < size(); ++i)
@@ -514,8 +506,8 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
 }
 
 /*
-    def-use-chains
-*/
+ * def-use-chains
+ */
 
 void CFG::calcDef()
 {
@@ -577,8 +569,8 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
 }
 
 /*
-    dump methods
-*/
+ * dump methods
+ */
 
 std::string CFG::name() const
 {
@@ -643,8 +635,8 @@ std::string CFG::dumpDomFrontier() const
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 BBNode* CFG::findBBNode(InstrNode* instrNode)
 {

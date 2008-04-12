@@ -17,8 +17,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Statement::Statement(int line)
     : Node(line)
@@ -54,9 +54,9 @@ struct Assignment
     ExprList*   exprList_;  ///< The rvalue.
     int line_;
 
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     Assignment(Type* type, ExprList* exprList, int line)
         : type_(type)
@@ -64,9 +64,10 @@ struct Assignment
         , line_(line)
     {}
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
+
     bool analyze();
 };
 
@@ -125,8 +126,8 @@ bool Assignment::analyze()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Declaration::Declaration(Type* type, std::string* id, ExprList* exprList, int line /*= NO_LINE*/)
     : Statement(line)
@@ -145,8 +146,8 @@ Declaration::~Declaration()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Declaration::analyze()
 {
@@ -188,8 +189,8 @@ bool Declaration::analyze()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 AssignStatement::AssignStatement(int kind, Expr* expr, ExprList* exprList, int line /*= NO_LINE*/)
     : Statement(line)
@@ -205,8 +206,8 @@ AssignStatement::~AssignStatement()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool AssignStatement::analyze()
 {
@@ -256,8 +257,8 @@ WhileStatement::~WhileStatement()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool WhileStatement::analyze()
 {
@@ -279,16 +280,17 @@ bool WhileStatement::analyze()
     me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
 
     /*
-        generate this SSA code:
+     * generate this SSA code:
+     *
+     * whileLabelNode:
+     *     IF expr THEN trueLabelNode ELSE nextLabelNode
+     * trueLabelNode:
+     *     //...
+     *     GOTO whileLabelNode
+     * nextLabelNode:
+     *     //...
+     */
 
-        whileLabelNode:
-            IF expr THEN trueLabelNode ELSE nextLabelNode
-        trueLabelNode:
-            //...
-            GOTO whileLabelNode
-        nextLabelNode:
-            //...
-    */
     if (result)
     {
         // generate instructions as you can see above if types are correct
@@ -320,8 +322,8 @@ bool WhileStatement::analyze()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line /*= NO_LINE*/)
     : Statement(line)
@@ -339,8 +341,8 @@ IfElStatement::~IfElStatement()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool IfElStatement::analyze()
 {
@@ -363,15 +365,16 @@ bool IfElStatement::analyze()
     if (!elBranch_)
     {
         /*
-            so here is only a plain if statement;
-            generate this SSA code:
+         * so here is only a plain if statement;
+         * generate this SSA code:
+         *
+         *     IF expr THEN trueLabelNode ELSE nextLabelNode
+         * trueLabelNode:
+         *     //...
+         * nextLabelNode:
+         *     //...
+         */
 
-                IF expr THEN trueLabelNode ELSE nextLabelNode
-            trueLabelNode:
-                //...
-            nextLabelNode:
-                //...
-        */
         if (result)
         {
             // generate me::BranchInstr if types are correct
@@ -396,18 +399,19 @@ bool IfElStatement::analyze()
     else
     {
         /*
-            so we have an if-else-construct
-            generate this SSA code:
+         * so we have an if-else-construct
+         * generate this SSA code:
+         *
+         * IF expr THEN trueLabelNode ELSE falseLabelNode
+         * trueLabelNode:
+         *     //...
+         *     GOTO nextLabelNode
+         * falseLabelNode:
+         *     //...
+         * nextLabelNode:
+         *     //...
+         */
 
-            IF expr THEN trueLabelNode ELSE falseLabelNode
-            trueLabelNode:
-                //...
-                GOTO nextLabelNode
-            falseLabelNode:
-                //...
-            nextLabelNode:
-                //...
-        */
         me::InstrNode* falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
 
         if (result)
@@ -435,8 +439,8 @@ bool IfElStatement::analyze()
         }
 
         /*
-            now the else branch
-        */
+         * now the else branch
+         */
 
         // update scoping
         symtab->createAndEnterNewScope();
