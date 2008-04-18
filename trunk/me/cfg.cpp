@@ -467,13 +467,15 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
         for (InstrNode* iter = succ->value_->firstPhi_; iter != succ->value_->firstOrdinary_; iter = iter->next())
         {
             // we must always find a PhiInstr here
-            swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), "must be a PhiInstr here" );
+            swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
+                "must be a PhiInstr here" );
+
             PhiInstr* phi = static_cast<PhiInstr*>(iter->value_);
 
             if ( names[ -phi->lhsOldVarNr_[0] ].empty() )
                 continue; // var not found
 
-            phi->rhs_[j] = names[ -phi->lhsOldVarNr_[0] ].top();
+            phi->rhs_[j] = names[ -phi->oldResultNr() ].top();
             phi->sourceBBs_[j] = bb;
         }
     }

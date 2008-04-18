@@ -76,8 +76,8 @@ std::string Undef::toString() const {
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 #ifdef SWIFT_DEBUG
 
@@ -115,8 +115,8 @@ Reg* Reg::createMem(Type type, int varNr)
 #endif // SWIFT_DEBUG
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Reg::isSSA() const
 {

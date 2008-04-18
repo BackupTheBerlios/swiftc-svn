@@ -20,16 +20,16 @@ struct Expr : public Node
     /// this me::Op knows where the result is stored
     me::Op* place_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Expr(int line);
     virtual ~Expr();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze() = 0;
 };
@@ -68,15 +68,15 @@ struct Literal : public Expr
         void*       ptr_;
     };
 
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     Literal(int kind, int line = NO_LINE);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     me::Op::Type toType() const;
     virtual bool analyze();
@@ -88,21 +88,21 @@ struct Literal : public Expr
 
 /**
  * This class represents an identifier.
-*/
+ */
 struct Id : public Expr
 {
     std::string* id_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Id(std::string* id, int line = NO_LINE);
     virtual ~Id();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
 };
@@ -112,7 +112,7 @@ struct Id : public Expr
 /**
  * This class represents an unary Expression. This is either
  * unary minus or NOT.
-*/
+ */
 struct UnExpr : public Expr
 {
     enum
@@ -128,16 +128,16 @@ struct UnExpr : public Expr
 
     Expr* op_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     UnExpr(int kind, Expr* op, int line = NO_LINE);
     virtual ~UnExpr();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
     void genSSA();
@@ -146,8 +146,10 @@ struct UnExpr : public Expr
 //------------------------------------------------------------------------------
 
 /**
- * This class represents a binary expression. This is either
- * +, -, *, /, MOD, DIV, AND, OR, XOR, <, >, <=, >=, ==, or <>. TODO
+ * @brief This class represents a binary expression. 
+ *
+ * This is either 
+ * * +, -, *, /, MOD, DIV, AND, OR, XOR, <, >, <=, >=, ==, or <>. TODO
  */
 struct BinExpr : public Expr
 {
@@ -160,16 +162,16 @@ struct BinExpr : public Expr
     Expr* op1_;
     Expr* op2_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE);
     virtual ~BinExpr();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     std::string getExprName() const;
     std::string getOpString() const;
@@ -180,8 +182,9 @@ struct BinExpr : public Expr
 //------------------------------------------------------------------------------
 
 /**
- * This class represents a comma sperated list of Expr instances used in
+ * @brief This class represents a comma sperated list of Expr instances used in
  * function/method/contructor calls.
+ *
  * This is actually not a Expr, but belongs to expressions
  * so it is in this file.
  */
@@ -190,16 +193,16 @@ struct ExprList : public Node
     Expr*       expr_;  ///< the Expr owned by this instance
     ExprList*   next_;  ///< next element in the list
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     ExprList(Expr* expr, ExprList* next = 0, int line = NO_LINE);
     virtual ~ExprList();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
 };

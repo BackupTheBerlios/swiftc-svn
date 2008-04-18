@@ -54,16 +54,16 @@ struct SymbolTable
         CHECK_ALL
     };
 
-/*
-    constructor and init stuff
-*/
+    /*
+     * constructor and init stuff
+     */
 
     SymbolTable();
     void reset();
 
-/*
-    insert methods
-*/
+    /*
+     * insert methods
+     */
 
     bool insert(Module* module);
     bool insert(Class* _class);
@@ -74,9 +74,9 @@ struct SymbolTable
 
     void insertLocalByVarNr(Local* local);
 
-/*
-    enter and leave methods
-*/
+    /*
+     * enter and leave methods
+     */
 
     void enterModule();
     void leaveModule();
@@ -93,9 +93,9 @@ struct SymbolTable
     */
     Scope* createAndEnterNewScope();
 
-/*
-    lookup methods
-*/
+    /*
+     * lookup methods
+     */
 
     /**
      * Lookups a Var -- either a Local or a Param -- by name.
@@ -136,9 +136,9 @@ struct SymbolTable
                          int line,
                          SigCheckingStyle sigCheckingStyle);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /// Returns the current Scope.
     Scope* currentScope();

@@ -16,8 +16,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Definition(id, parent, line)
@@ -30,8 +30,8 @@ Class::~Class()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 void Class::createDefaultConstructor()
 {
@@ -74,17 +74,17 @@ bool Class::analyze()
     for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
     {
         /*
-            TODO since this is an O(n^2) algorithm it should be checked
-            whether in real-world-programms an O(n log n) algorithm with sorting
-            is faster
-        */
+         * TODO since this is an O(n^2) algorithm it should be checked
+         * whether in real-world-programms an O(n log n) algorithm with sorting
+         * is faster
+         */
         if ( typeid(*iter) == typeid(Method) )
         {
             Method* method = (Method*) iter;
 
             /*
-                check whether there is method with the same name and the same signature
-            */
+             * check whether there is method with the same name and the same signature
+             */
             typedef Class::MethodMap::iterator Iter;
             Iter methodIter = methods_.find(method->id_);
 
@@ -128,8 +128,8 @@ bool Class::analyze()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 ClassMember::ClassMember(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Symbol(id, parent, line)
@@ -144,8 +144,8 @@ ClassMember::~ClassMember()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : ClassMember(id, parent, line)
@@ -158,8 +158,8 @@ MemberVar::~MemberVar()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool MemberVar::analyze()
 {

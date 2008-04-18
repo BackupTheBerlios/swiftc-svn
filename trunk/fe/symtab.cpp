@@ -18,15 +18,15 @@ using namespace std;
 namespace swift {
 
 /*
-    TODO remove all error handling here
-*/
+ * TODO remove all error handling here
+ */
 
 // init global
 SymTab* symtab = 0;
 
 /*
-    constructor and init stuff
-*/
+ * constructor and init stuff
+ */
 
 SymbolTable::SymbolTable()
     : varCounter_(-1) // >= 0 is reserved for vars already in SSA form
@@ -43,8 +43,8 @@ void SymbolTable::reset()
 }
 
 /*
-    insert methods
-*/
+ * insert methods
+ */
 
 bool SymbolTable::insert(Module* module)
 {
@@ -159,8 +159,8 @@ void SymbolTable::insertLocalByVarNr(Local* local)
 }
 
 /*
-    enter and leave methods
-*/
+ * enter and leave methods
+ */
 
 void SymbolTable::enterModule()
 {
@@ -219,8 +219,8 @@ Scope* SymbolTable::createAndEnterNewScope()
 }
 
 /*
-    lookup methods
-*/
+ * lookup methods
+ */
 
 Var* SymbolTable::lookupVar(string* id)
 {

@@ -30,6 +30,7 @@ struct CodeGenerator
     /*
      * constructor and destructor
      */
+
     CodeGenerator(std::ofstream& ofs, me::Function* function);
 #ifdef SWIFT_DEBUG
     ~CodeGenerator();
@@ -38,6 +39,7 @@ struct CodeGenerator
     /*
      * methods
      */
+
     void genCode();
 
 private:
@@ -45,6 +47,7 @@ private:
     /*
      * liveness analysis
      */
+    
     /// Knows during the liveness analysis which basic blocks have already been visted
     typedef std::set<me::BasicBlock*> BBSet;
     BBSet walked_;
@@ -62,15 +65,25 @@ private:
     /*
      * register allocation
      */
+
     void spill();
-    int distance(me::Reg* reg, me::InstrNode* instrNode);
-    int distanceRec(me::Reg* reg, me::InstrNode* instrNode);
+    void spill(me::BBNode* bbNode);
+    int distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
+    int distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
+
+    /*
+     * coloring
+     */
 
     typedef std::set<int> Colors;
     static int findFirstFreeColorAndAllocate(Colors& colors);
 
     void color();
     void colorRecursive(me::BBNode* bb);
+
+    /*
+     * coalesing
+     */
 
     void coalesce();
 };

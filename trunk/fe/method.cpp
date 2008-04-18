@@ -14,8 +14,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Method::Method(int methodQualifier, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : ClassMember(id, parent, line)
@@ -30,8 +30,8 @@ Method::~Method()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Method::analyze()
 {
@@ -40,10 +40,10 @@ bool Method::analyze()
     symtab->enterMethod(this);
 
     /*
-        build a function name for the me::functab consisting of the class name,
-        the method name and a counted number to prevent name clashes
-        due to overloading
-    */
+     * build a function name for the me::functab consisting of the class name,
+     * the method name and a counted number to prevent name clashes
+     * due to overloading
+     */
     std::ostringstream oss;
 
     oss << *symtab->class_->id_ << '#';
@@ -66,8 +66,8 @@ bool Method::analyze()
     if (methodQualifier_ == OPERATOR)
     {
         /*
-            check signature
-        */
+         * check signature
+         */
         if (sig_.params_.size() >= 1)
         {
             // check whether the first type matches the type of the current class

@@ -130,17 +130,17 @@ struct Literal : public Op
 
     Value value_;
 
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
     Literal(Type type)
         : Op(type)
     {}
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual std::string toString() const;
 };
@@ -178,9 +178,9 @@ struct Reg : public Op
     be::VarNode varNode_; ///< This stores the graph node of the IG in the debug version.
 #endif // SWIFT_DEBUG
 
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
 
 #ifdef SWIFT_DEBUG
     Reg(Type type, int varNr, std::string* id = 0);
@@ -192,9 +192,9 @@ struct Reg : public Op
     static Reg* createMem(Type type, int varNr);
 #endif // SWIFT_DEBUG
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /// Returns whether this Var is only defined once
     bool isSSA() const;
@@ -225,9 +225,9 @@ struct Reg : public Op
 
 //------------------------------------------------------------------------------
 
-/*
-    typedefs and defines for easy usage
-*/
+    /*
+     * typedefs and defines for easy usage
+     */
 
 typedef std::map<int, Reg*> RegMap;
 typedef std::set<Reg*> RegSet;

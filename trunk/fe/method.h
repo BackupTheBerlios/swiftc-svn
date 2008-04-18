@@ -25,16 +25,16 @@ struct Method : public ClassMember
     Scope* rootScope_;      ///< The root Scope where vars of this Proc are stored.
     Sig sig_;               ///< The signature of this Method.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Method(int methodQualifier, std::string* id, Symbol* parent, int line = NO_LINE);
     ~Method();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
 };

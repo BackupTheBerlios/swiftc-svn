@@ -127,6 +127,25 @@ PhiInstr::~PhiInstr()
 }
 
 /*
+ * getters
+ */
+
+Reg* PhiInstr::result()
+{
+    return lhs_[0];
+}
+
+const Reg* PhiInstr::result() const
+{
+    return lhs_[0];
+}
+
+int PhiInstr::oldResultNr() const
+{
+    return lhsOldVarNr_[0];
+}
+
+/*
     further methods
 */
 
@@ -263,21 +282,15 @@ void AssignInstr::genCode(std::ofstream& ofs)
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
+ * constructor
  */
 
 JumpInstr::JumpInstr(size_t numLhs, size_t numRhs, size_t numTargets)
     : AssignmentBase(numLhs, numRhs)
     , numTargets_(numTargets)
-    , instrTargets_( new InstrNode*[numTargets] )
-    , bbTargets_( new BBNode*[numTargets] )
 {
-}
-
-JumpInstr::~JumpInstr() 
-{
-    delete[] instrTargets_;
-    delete[] bbTargets_;
+    swiftAssert(numTargets <= 2, 
+        "currently only a maximum of 2 targets are supported");
 }
 
 //------------------------------------------------------------------------------
@@ -387,7 +400,8 @@ std::string BranchInstr::toString() const
  */
 
 SpillInstr::SpillInstr()
-    : AssignmentBase(1, 1) // SpillInstr always have exactly one result and one arg
+    // SpillInstrs always have exactly one result and one arg
+    : AssignmentBase(1, 1) 
 {}
 
 /*

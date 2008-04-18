@@ -244,12 +244,14 @@ void CodeGenerator::liveOutAtInstr(me::InstrNode* instr, me::Reg* var)
 }
 
 /*
-    spilling
-*/
+ * spilling
+ */
+
+// TODO
+#define NUM_REGS 16
 
 void CodeGenerator::spill()
 {
-    static const int numAvailableRegs = 16; // TODO
 
     std::set<me::Reg*> varsCurrentlyInRegs;
 
@@ -258,44 +260,105 @@ void CodeGenerator::spill()
     {
         me::BBNode* bb = cfg_->postOrder_[i]; // get current basic block
 
-        // passed contains all regs live in at bb and the results of phi operations in bb
-        std::set<me::Reg*> passed = bb->value_->begin_->value_->liveIn_;
-
-        // add results of phi functions to passed 
-        me::InstrNode* instr = bb->value_->begin_;
-
-        while ( typeid(*instr->value_) == typeid(me::PhiInstr) )
-        {
-            me::PhiInstr* phi = static_cast<me::PhiInstr*>(instr->value_);
-            
-            for (size_t i = 0; i < phi->numLhs_; ++i)
-                passed.insert( phi->lhs_[i] );
-        }
-        
-        // for each instruction in this basic block
-        for (me::InstrNode* instrNode = bb->value_->begin_; instrNode != bb->value_->end_; instrNode = instrNode->next())
-        {
-            me::InstrBase* instr = instrNode->value_;
-
-            if ( typeid(*instr) == typeid(me::LabelInstr) )
-            {
-                // TODO
-            }
-        }
+        spill(bb);
     }
 }
 
-int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode) 
+/*
+ * needed for sorting via the distance method
+ */
+struct RegAndDistance 
 {
+    me::Reg* reg_;
+    int distance_;
+
+    RegAndDistance() {}
+    RegAndDistance(me::Reg* reg, int distance)
+        : reg_(reg)
+        , distance_(distance)
+    {}
+
+    // needed by std::sort
+    bool operator < (const RegAndDistance& r) const
+    {
+        return distance_ < r.distance_;
+    }
+};
+
+void CodeGenerator::spill(me::BBNode* bbNode)
+{
+    me::BasicBlock* bb = bbNode->value_;
+
+    /*
+     * passed contains all regs live in at bb 
+     * and the results of phi operations in bb
+     */
+    std::set<me::Reg*> passed = bb->liveIn_;
+
+    // for each PhiInstr in bb
+    for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; ++iter)
+    {
+        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr*), 
+            "must be a PhiInstr here" );
+
+        me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
+        
+        // add result to the passed set
+        passed.insert( phi->result() );
+    }
+    // passed now holds all proposed values
+
+    /*
+     * now we need the set which is allowed to be in real registers
+     */
+    std::vector<RegAndDistance> inRegs( passed.size() );
+
+    // put in all regs from passed 
+    size_t counter = 0;
+    REGSET_EACH(iter, passed)
+    {
+        inRegs[counter] = RegAndDistance( *iter, distance(bbNode, *iter, bb->firstOrdinary_) );
+        ++counter;
+    }
+
+    /*
+     * sort and use the first NUM_REGS registers
+     * if the inRegs set is too large
+     */
+    std::sort( inRegs.begin(), inRegs.end() );
+
+    if (inRegs.size() > NUM_REGS)
+        inRegs.erase( inRegs.begin() + NUM_REGS, inRegs.end() );
+}
+
+int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
+{
+    // do we have a LabelInstr here?
+    while ( typeid(*instr) == typeid(me::LabelInstr) )
+    {
+        bbNode = cfg_->labelNode2BBNode_[instr];
+        me::BasicBlock* bb = bbNode->value_;
+        swiftAssert( bb->begin_ == instrNode, 
+            "bb's begin must point to this LabelInstr");
+        
+        // do not count this and move one further
+        instrNode = instrNode->next();
+
+        swiftAssert( cfg_->instrList_.sentinel() != instrNode, 
+            "this must not be the sentinel" );
+    }
+
+    me::InstrNode* instr = intrNode->value_;
+
     /*
      * PhiInstr and LabelInstr are nore allowd here
      */
-    swiftAssert( typeid(*instrNode->value_) != typeid(me::PhiInstr), 
+    swiftAssert( typeid(*instr) != typeid(me::PhiInstr), 
         "this mustn't be a PhiInstr here" );
-    swiftAssert( typeid(*instrNode->value_) != typeid(me::LabelInstr), 
+    swiftAssert( typeid(*instr) != typeid(me::LabelInstr), 
         "this mustn't be a LabelInstr here" );
 
-    me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instrNode->value_);
+    me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instr);
 
     // is reg used at instr
     if (ab)
@@ -303,13 +366,18 @@ int CodeGenerator::distance(me::Reg* reg, me::InstrNode* instrNode)
         if (ab->isRegUsed(reg))
             return 0;
     }
-
     // else
-    return distanceRec(reg, instrNode);
+
+    return distanceRec(bbNode, reg, instrNode);
 }
 
-int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
+int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode)
 {
+    /*
+     * TODO here is room for optimization, by elemianting the recursion and
+     *  using loops instead.
+     */
+
     me::InstrBase* instr = instrNode->value_;
 
     // is reg not live at instr?
@@ -317,6 +385,24 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
         return std::numeric_limits<int>::max(); // return "infinity"
     // else
 
+    // is the current instruction a JumpInstr?
+    if (dynamic_cast<me::JumpInstr*>(instr)) 
+    {
+        me::JumpInstr* ji = (me::JumpInstr*) instr;
+
+        int results[ji->numTargets_];
+
+        for (size_t i = 0; i < ji->numTargets_; ++i)
+            results[i] = distance( bbNode, reg, ji->instrTargets_[i] );
+
+        int min =  *std::min_element(results, results + ji->numTargets_);
+
+        // add up the distance and do not calculate around
+        return min == std::numeric_limits<int>::max()
+            ? std::numeric_limits<int>::max()
+            : min + 1;
+    }
+    
     // the next instruction can't be the sentinel, reg can't be live then.
     swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
         "this mustn't be the instrList_'s sentinel" );
@@ -330,7 +416,7 @@ int CodeGenerator::distanceRec(me::Reg* reg, me::InstrNode* instrNode)
     // do we have an ordinary successor instruction?
     if ( typeid(*instr) != typeid(me::LabelInstr) )
     {
-        int result = distanceRec( reg, instrNode->next() );
+        int result = distanceRec( bbNode, reg, instrNode->next() );
 
         // add up the distance and do not calculate around
         return result == std::numeric_limits<int>::max()
@@ -415,12 +501,12 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
         {
             /*
              * NOTE for the me::InstrBase::isLastUse(me::InstrNode* instrNode, Reg* var) used below:
-             *     instrNode has an predecessor in all cases because iter is initialized with the
-             *     first instruction which is followed by the leading me::LabelInstr of this basic
-             *     block. Thus the first instruction which is considered here will always be
-             *     preceded by a me::LabelInstr.
-             *     Furthermore Literals are no problems here since they are not found via
-             *     isLastUse.
+             *      instrNode has an predecessor in all cases because iter is initialized with the
+             *      first instruction which is followed by the leading me::LabelInstr of this basic
+             *      block. Thus the first instruction which is considered here will always be
+             *      preceded by a me::LabelInstr.
+             *      Furthermore Literals are no problems here since they are not found via
+             *      isLastUse.
              */
 
 #ifdef SWIFT_DEBUG
@@ -453,7 +539,7 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
                         colors.erase(colorIter); // last use of reg
                     /*
                      * else -> the reg must already been removed which must
-                     *     be caused by a double entry like a = b + b
+                     *      be caused by a double entry like a = b + b
                      */
 #endif // SWIFT_DEBUG
                 }

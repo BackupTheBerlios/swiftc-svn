@@ -89,15 +89,17 @@ struct BasicBlock
     RegSet liveIn_;
     RegSet liveOut_;
 
-/*
-    constructors
-*/
+    /*
+     * constructors
+     */
+
     BasicBlock() {}
     BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
+
     /// Returns the title string of this BasicBlock.
     std::string name() const;
 

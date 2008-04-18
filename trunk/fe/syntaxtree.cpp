@@ -18,8 +18,8 @@ SyntaxTree* syntaxtree = 0;
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Node::Node(int line /*= NO_LINE*/)
     : line_(line)
@@ -28,8 +28,8 @@ Node::Node(int line /*= NO_LINE*/)
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Symbol::Symbol(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Node(line)
@@ -43,8 +43,8 @@ Symbol::~Symbol()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 std::string Symbol::toString() const
 {
@@ -78,8 +78,8 @@ std::string Symbol::getFullName() const
 //------------------------------------------------------------------------------
 
 /*
-    destructor
-*/
+ * destructor
+ */
 
 SyntaxTree::~SyntaxTree()
 {
@@ -87,8 +87,8 @@ SyntaxTree::~SyntaxTree()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool SyntaxTree::analyze()
 {

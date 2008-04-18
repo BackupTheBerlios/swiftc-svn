@@ -18,23 +18,23 @@
 #include "me/ssa.h"
 
 /*
-    - every expr has to set its type, containing of
-        - typeQualifier_
-        - baseType_
-        - pointerCount_
-    - every expr must decide whether it can be considered as an lvalue_
-
-    - return true if everything is ok
-    - return false otherwise
-*/
+ * - every expr has to set its type, containing of
+ *     - typeQualifier_
+ *     - baseType_
+ *     - pointerCount_
+ * - every expr must decide whether it can be considered as an lvalue_
+ * 
+ * - return true if everything is ok
+ * - return false otherwise
+ */
 
 namespace swift {
 
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Expr::Expr(int line)
     : Node(line)
@@ -50,8 +50,8 @@ Expr::~Expr()
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Literal::Literal(int kind, int line /*= NO_LINE*/)
     : Expr(line)
@@ -59,8 +59,8 @@ Literal::Literal(int kind, int line /*= NO_LINE*/)
 {}
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 me::Op::Type Literal::toType() const
 {
@@ -261,8 +261,8 @@ std::string Literal::toString() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Id::Id(std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
@@ -275,8 +275,8 @@ Id::~Id()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Id::analyze()
 {
@@ -316,8 +316,8 @@ bool Id::analyze()
 
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 UnExpr::UnExpr(int kind, Expr* op, int line /*= NO_LINE*/)
     : Expr(line)
@@ -331,8 +331,8 @@ UnExpr::~UnExpr()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool UnExpr::analyze()
 {
@@ -396,8 +396,8 @@ void UnExpr::genSSA()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, int line /*= NO_LINE*/)
     : Expr(line)
@@ -413,8 +413,8 @@ BinExpr::~BinExpr()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 std::string BinExpr::getExprName() const
 {
@@ -510,8 +510,8 @@ void BinExpr::genSSA()
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 ExprList::ExprList(Expr* expr, ExprList* next /*= 0*/, int line /*= NO_LINE*/)
     : Node(line)
@@ -527,8 +527,8 @@ ExprList::~ExprList()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool ExprList::analyze()
 {

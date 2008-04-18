@@ -19,15 +19,16 @@ struct Spiller
     me::Function* function_;
     me::CFG*      cfg_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
+
     Spiller();
     virtual ~Spiller() {}
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     void setFunction(me::Function* function);
     virtual void spill() = 0;

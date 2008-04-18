@@ -7,8 +7,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Module::Module(std::string* id, int line /*= NO_LINE*/)
     : Symbol(id, 0, line) // modules don't have parents
@@ -22,8 +22,8 @@ Module::~Module()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Module::analyze()
 {
@@ -44,8 +44,8 @@ std::string Module::toString() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Definition::Definition(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Symbol(id, parent, line)

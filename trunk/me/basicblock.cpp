@@ -8,8 +8,8 @@
 namespace me {
 
 /*
-    constructors
-*/
+ * constructors
+ */
 
 BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary)
     : begin_(begin)
@@ -20,8 +20,8 @@ BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinar
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 std::string BasicBlock::name() const
 {

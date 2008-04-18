@@ -38,16 +38,16 @@ struct Class : public Definition
      */
     bool hasCreate_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Class(std::string* id, Symbol* parent, int line = NO_LINE);
     virtual ~Class();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /// Is called when a defaul constructor must be created artifically i.e. hasCreate_ == false
     void createDefaultConstructor();
@@ -58,20 +58,21 @@ struct Class : public Definition
 
 /**
  * This class represents either a MemberVar or a Method.
-*/
+ */
 struct ClassMember : public Symbol
 {
     ClassMember* next_; ///< Linked List of class members.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
+
     ClassMember(std::string* id, Symbol* parent, int line = NO_LINE);
     virtual ~ClassMember();
 
-/*
-    further Methods
-*/
+    /*
+     * further Methods
+     */
 
     virtual bool analyze() = 0;
 };
@@ -85,16 +86,16 @@ struct MemberVar : public ClassMember
 {
     Type* type_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     MemberVar(Type* type, std::string* id, Symbol* parent = 0, int line = NO_LINE);
     virtual ~MemberVar();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze();
 };

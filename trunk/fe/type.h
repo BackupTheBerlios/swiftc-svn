@@ -14,17 +14,17 @@ struct BaseType : public Node
     std::string* id_;
     bool builtin_;
 
-/*
-    constructors and destructor
-*/
+    /*
+     * constructors and destructor
+     */
 
     BaseType(std::string* id, int line = NO_LINE);
     BaseType(std::string* id, bool builtin);
     ~BaseType();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
     BaseType* clone() const;
     me::Op::Type toType() const;
 
@@ -43,16 +43,16 @@ struct Type : public Node
     BaseType*   baseType_;
     int         pointerCount_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Type(BaseType* baseType, int pointerCount, int line = NO_LINE);
     virtual ~Type();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     /// Creates a copy of this Type
     Type* clone() const;

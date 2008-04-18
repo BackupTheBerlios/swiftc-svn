@@ -143,6 +143,15 @@ struct PhiInstr : public AssignmentBase
     ~PhiInstr();
 
     /*
+     * getters
+     */
+
+    Reg* result();
+    const Reg* result() const;
+
+    int oldResultNr() const;
+
+    /*
      * further methods
      */
 
@@ -232,15 +241,14 @@ struct AssignInstr : public AssignmentBase
 struct JumpInstr : public AssignmentBase
 {
     size_t numTargets_;
-    InstrNode** instrTargets_;
-    BBNode** bbTargets_;
+    InstrNode* instrTargets_[2];
+    BBNode* bbTargets_[2];
 
     /*
-     * constructor and destructor
+     * constructor 
      */
 
     JumpInstr(size_t numLhs, size_t numRhs_, size_t numTargets);
-    ~JumpInstr();
 };
 
 //-------------------------------------------------------------------------------

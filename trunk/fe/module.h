@@ -28,16 +28,16 @@ struct Module : public Symbol
     DefinitionList definitions_; ///< Linked List of Definition objects.
     ClassMap classes_; ///< Each Module knows all its classes, sorted by the identifier.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Module(std::string* id, int line = NO_LINE);
     virtual ~Module();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     bool analyze();
     std::string toString() const;
@@ -50,14 +50,15 @@ struct Module : public Symbol
  */
 struct Definition : public Symbol
 {
-/*
-    constructor
-*/
+    /*
+     * constructor
+     */
+
     Definition(std::string* id, Symbol* parent, int line = NO_LINE);
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual bool analyze() = 0;
 };

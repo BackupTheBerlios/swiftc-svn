@@ -18,7 +18,7 @@ struct Function;
 /**
  * Inherit from this class if you want to get callbacks for errors which are
  * discoverd during control flow analysis.
-*/
+ */
 struct CFErrorHandler
 {
     enum CFError
@@ -67,9 +67,8 @@ struct CFG : public Graph<BasicBlock>
     typedef std::map<InstrNode*, BBNode*> LabelNode2BBNodeMap;
 
     /**
-     * With this data structure we can quickly find a BB with a given starting label.
-     * The last LabelInstr found in InstrList_ marks the end of the last BasicBlock
-     * with the second but last LabelInstr as beginning of that BasicBlock.
+     * brief With this data structure we can quickly find a BB with 
+     * a given starting label.
      */
     LabelNode2BBNodeMap labelNode2BBNode_;
 

@@ -27,9 +27,9 @@ struct Node
 
     int line_;///< the line number which this node is mapped to
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Node(int line = NO_LINE);
     virtual ~Node() {}
@@ -45,16 +45,16 @@ struct Symbol : public Node
     std::string* id_;
     Symbol* parent_; ///< 0 if root.
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
 
     Symbol(std::string* id, Symbol* parent, int line = NO_LINE);
     ~Symbol();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
     /// Returns the \a id_ of this Symbol.
     std::string toString() const;
 
@@ -73,15 +73,15 @@ struct SyntaxTree
 {
     Module* rootModule_;
 
-/*
-    destructor
-*/
+    /*
+     * destructor
+     */
 
     ~SyntaxTree();
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     bool analyze();
 };

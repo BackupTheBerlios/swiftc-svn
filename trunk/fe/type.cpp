@@ -13,8 +13,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
     : Node(line)
@@ -42,8 +42,8 @@ BaseType::~BaseType()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 BaseType* BaseType::clone() const
 {
@@ -107,8 +107,8 @@ bool BaseType::isBuiltin() const
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Type::Type(BaseType* baseType, int pointerCount, int line /*= NO_LINE*/)
     : Node(line)
@@ -122,8 +122,8 @@ Type::~Type()
 }
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 Type* Type::clone() const
 {

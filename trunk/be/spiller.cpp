@@ -5,8 +5,8 @@
 namespace be {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Spiller::Spiller()
     : function_(0)
@@ -14,8 +14,8 @@ Spiller::Spiller()
 {}
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 void Spiller::setFunction(me::Function* function)
 {

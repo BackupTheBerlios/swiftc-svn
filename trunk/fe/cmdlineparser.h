@@ -5,7 +5,7 @@ namespace swift {
 
 /**
  * @brief This class parses the command line
-*/
+ */
 struct CmdLineParser
 {
     int argc_;
