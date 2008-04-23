@@ -105,7 +105,7 @@ void CodeGenerator::genCode()
     // traverse the code generation pipe
 //     std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
-    spill();
+    //spill();
     color();
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
@@ -333,10 +333,12 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
 int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
 {
+    me::InstrBase* instr = instrNode->value_;
+
     // do we have a LabelInstr here?
     while ( typeid(*instr) == typeid(me::LabelInstr) )
     {
-        bbNode = cfg_->labelNode2BBNode_[instr];
+        bbNode = cfg_->labelNode2BBNode_[instrNode];
         me::BasicBlock* bb = bbNode->value_;
         swiftAssert( bb->begin_ == instrNode, 
             "bb's begin must point to this LabelInstr");
@@ -347,8 +349,6 @@ int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* ins
         swiftAssert( cfg_->instrList_.sentinel() != instrNode, 
             "this must not be the sentinel" );
     }
-
-    me::InstrNode* instr = intrNode->value_;
 
     /*
      * PhiInstr and LabelInstr are nore allowd here
