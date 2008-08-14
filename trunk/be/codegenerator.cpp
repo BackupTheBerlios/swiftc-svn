@@ -1,5 +1,6 @@
 #include "be/codegenerator.h"
 
+#include <algorithm>
 #include <limits>
 #include <typeinfo>
 
@@ -103,7 +104,7 @@ void CodeGenerator::genCode()
     spiller_->setFunction(function_);
 
     // traverse the code generation pipe
-//     std::cout << std::endl << *function_->id_ << std::endl;
+    //std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
     //spill();
     color();
@@ -313,7 +314,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
      */
     std::vector<RegAndDistance> inRegs( passed.size() );
 
-    // put in all regs from passed 
+    // put in all regs from passed and calculate the distance to its next use
     size_t counter = 0;
     REGSET_EACH(iter, passed)
     {
@@ -329,6 +330,8 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
     if (inRegs.size() > NUM_REGS)
         inRegs.erase( inRegs.begin() + NUM_REGS, inRegs.end() );
+
+    // TODO
 }
 
 int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
@@ -338,6 +341,7 @@ int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* ins
     // do we have a LabelInstr here?
     while ( typeid(*instr) == typeid(me::LabelInstr) )
     {
+        // look up new basic block
         bbNode = cfg_->labelNode2BBNode_[instrNode];
         me::BasicBlock* bb = bbNode->value_;
         swiftAssert( bb->begin_ == instrNode, 
@@ -380,9 +384,10 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
 
     me::InstrBase* instr = instrNode->value_;
 
+    // reg is live at instr means: reg in liveIn of instr
     // is reg not live at instr?
     if ( instr->liveOut_.find(reg) == instr->liveOut_.end() ) 
-        return std::numeric_limits<int>::max(); // return "infinity"
+        return infinity(); // return "infinity"
     // else
 
     // is the current instruction a JumpInstr?
@@ -398,9 +403,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
         int min =  *std::min_element(results, results + ji->numTargets_);
 
         // add up the distance and do not calculate around
-        return min == std::numeric_limits<int>::max()
-            ? std::numeric_limits<int>::max()
-            : min + 1;
+        return min == infinity() ? infinity() : min + 1;
     }
     
     // the next instruction can't be the sentinel, reg can't be live then.
@@ -408,7 +411,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
         "this mustn't be the instrList_'s sentinel" );
     
     /*
-     * check what kind of instruction whe have
+     * check what kind of instruction we have
      */
     //if ( typeid(*instr) == typeid(me::LabelInstr) )
         //return;
@@ -419,9 +422,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
         int result = distanceRec( bbNode, reg, instrNode->next() );
 
         // add up the distance and do not calculate around
-        return result == std::numeric_limits<int>::max()
-            ? std::numeric_limits<int>::max()
-            : result + 1;
+        return result == infinity() ? infinity() : result + 1;
     }
     // else
 
@@ -443,7 +444,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
         //int result = distanceRec( reg, instrNode->next() );
 
         //// add up the distance and do not calculate around
-        //return result == std::numeric_limits<int>::max()
+        //return result == infinity()
             //? std::numeric_limits<int>::max()
             //: result + 1;
     //}

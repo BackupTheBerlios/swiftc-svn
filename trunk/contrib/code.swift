@@ -24,7 +24,7 @@ class Test
         int e = 4
 
         if e > 5
-            e = e +2
+            e = e + 2
         else
             e = e - 3
         end

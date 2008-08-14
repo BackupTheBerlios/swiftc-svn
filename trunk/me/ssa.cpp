@@ -1,7 +1,10 @@
 #include "ssa.h"
 
+#include <cstring>
+
 #include <iostream>
 #include <sstream>
+#include <typeinfo>
 
 #include "utils/stringhelper.h"
 

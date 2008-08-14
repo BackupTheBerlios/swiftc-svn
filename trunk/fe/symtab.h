@@ -23,9 +23,9 @@ struct Var;
 /**
  * This is the symbol table which is used in the front-end. It is a global
  * which can be accessed via
- * \verbatim
-    symtab->foo();
- * \endverbatim
+@verbatim
+symtab->foo();
+@endverbatim
  * A stack of scope manages scoping and thus the top of stack is the current
  * Scope. Other pointers point to current Module, Class, or Method.
  */
@@ -125,9 +125,8 @@ struct SymbolTable
      * @param methodId The identifier of the method to be lookuped.
      * @param methodQualifier Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
      * @param sig Signature the method should have.
-     * @param line the line number of the method call.
-     * @param justIngoingPart If this is set to true the SymbolTable tries to
-     *      find a unique method by just comparing the ingoing part.
+     * @param line The line number of the method call.
+     * @param sigCheckingStyle Which params exactly should be checked?
      */
     Method* lookupMethod(std::string* classId,
                          std::string* methodId,

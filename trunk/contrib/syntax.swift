@@ -158,14 +158,6 @@ routine test()
     real64 r = 3.0q
 
     int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
-    int i = 434324234
 
     cplx c = {4, 5}
     c += {3, 8}

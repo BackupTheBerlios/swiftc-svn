@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 
+#include "utils/types.h"
 /*
     Declaration of the dynamic memory operators to be overloaded
 */

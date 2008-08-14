@@ -1,9 +1,12 @@
 #include "assert.h"
 
+#ifdef SWIFT_DEBUG
+
+#include <cstdlib>
+
 #include <sstream>
 #include <iostream>
 
-#ifdef SWIFT_DEBUG
 
 bool customAssert(int line, const char* filename, const char* functionName, const char* description, bool& always)
 {

@@ -25,9 +25,11 @@ namespace me {
  * \em NOT a PhiInstr. If there are zero PhiInstr instances, \a firstPhi_ = 
  * \a firstOrdinary_. <br>
  *
- * Then there are zero or more regular Instructions. This means \em NO LabelInstr
- * instances and \em NO PhiInstr instances. Furthermore if there is a GotoInstr
- * or a BranchInstr this will be the last instruction in this BasicBlock. <br>
+ * Then there are zero or more regular instructions. This means \em NO
+ * LabelInstr instances and \em NO PhiInstr instances. Furthermore if there is a
+ * GotoInstr or a BranchInstr this will be the last instruction in this
+ * BasicBlock. Thus the last instruction in a basic block is either a regular
+ * Instruction or a JumpInstr<br>
  * 
  * \a end_ points to the LabelInstr of the next BasicBlock, which is the first
  * instruction which does not belong to this BasicBlock. If this LabelInstr
@@ -43,7 +45,8 @@ namespace me {
  * for (iter = bb->firstPhi_; iter != bb->end_; ++iter) <br><br>
  * or: 
  *
- * All PhiInstr instances, if any: <br>
+ * All PhiInstr instances if any. Note that the loop isn't executed at all when
+ * there is no PhiInstr at all: <br>
  * for (iter = bb->firstPhi_; iter != bb->firstOrdinary_; ++iter) <br><br>
  *
  * All ordinary instructions, if any: <br>
@@ -58,11 +61,7 @@ struct BasicBlock
      * Points to the first PhiInstr. 
      * If this does not exist it points to \a firstOrdinary_.
      */
-    union 
-    {
-        InstrNode* first_;
-        InstrNode* firstPhi_;
-    };
+    InstrNode* firstPhi_;
 
     /**
      * Points to the first ordinary instruction.
@@ -85,7 +84,7 @@ struct BasicBlock
 
     /// Keeps acount of the vars which are assigned to in this BasicBlock last.
     RegMap vars_;
-    /// Regs that live while
+    /// Regs that live 
     RegSet liveIn_;
     RegSet liveOut_;
 

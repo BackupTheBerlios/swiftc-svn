@@ -39,7 +39,7 @@ struct InstrBase
      * Computes whether this \p instr ist the first instruction which does not
      * have \p var in the \a liveOut_.
      *
-     * @param instr The instruction which should be tested. \p instr must have
+     * @param instrNode The instruction which should be tested. \p instr must have
      *      a predecessor and must contain a BaseAssignInstr.
      * @param var The Reg which should be tested.
      */

@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "utils/list.h"
+#include "utils/types.h"
 
 #include "me/defuse.h"
 
@@ -87,8 +88,10 @@ struct Op
 //------------------------------------------------------------------------------
 
 /**
- * Represents the special value 'undef' (undefined). Since SSA programs must be
- * strict assigning this value is one way to make an SSA program strict:
+ * Represents the special value 'undef' (undefined). 
+ *
+ * Since SSA programs must be strict, assigning this value is one way to make
+ * an SSA program strict.
  */
 struct Undef : public Op
 {
@@ -97,6 +100,11 @@ struct Undef : public Op
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Represents a Literal.
+ *
+ * That is a constant which can be of different builtin types.
+ */
 struct Literal : public Op
 {
     union Value
@@ -225,9 +233,9 @@ struct Reg : public Op
 
 //------------------------------------------------------------------------------
 
-    /*
-     * typedefs and defines for easy usage
-     */
+/*
+ * typedefs and defines for easy usage
+ */
 
 typedef std::map<int, Reg*> RegMap;
 typedef std::set<Reg*> RegSet;

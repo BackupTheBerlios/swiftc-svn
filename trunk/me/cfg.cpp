@@ -1,5 +1,9 @@
 #include "me/cfg.h"
 
+#include <cstring>
+
+#include <typeinfo>
+
 #include "me/functab.h"
 
 namespace me {
@@ -416,7 +420,7 @@ void CFG::renameVars()
 void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
 {
     // for each instruction in bb except the leading LabelInstr
-    for (InstrNode* iter = bb->value_->first_; iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode* iter = bb->value_->firstPhi_; iter != bb->value_->end_; iter = iter->next())
     {
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
@@ -488,7 +492,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
     }
 
     // for each AssignmentBase in bb
-    for (InstrNode* iter = bb->value_->first_; iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode* iter = bb->value_->firstPhi_; iter != bb->value_->end_; iter = iter->next())
     {
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
@@ -552,7 +556,7 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
     BasicBlock* bb = bbNode->value_;
 
     // iterate over the instruction list in this bb and find all uses
-    for (InstrNode* iter = bb->first_; iter != bb->end_; iter = iter->next())
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);

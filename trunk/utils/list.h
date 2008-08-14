@@ -199,6 +199,7 @@ public:
     /// Removes the first item of the list.
     void removeFirst()
     {
+        swiftAssert(size_ != 0, "cannot remove item from an empty list");
         Node* newFirst = sentinel_->next_->next_;
 
         // mark end of destruction
@@ -214,6 +215,7 @@ public:
     /// removes the first item of the list
     void removeLast()
     {
+        swiftAssert(size_ != 0, "cannot remove item from an empty list");
         Node* newLast = sentinel_->prev_->prev_;
 
         // mark end of destruction
@@ -228,6 +230,7 @@ public:
 
     void erase(Node* n)
     {
+        swiftAssert(size_ != 0, "cannot remove item from an empty list");
         swiftAssert(n != sentinel_, "tried to erase sentinel");
 
         Node* prev = n->prev_;

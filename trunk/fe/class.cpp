@@ -1,6 +1,7 @@
 #include "fe/class.h"
 
 #include <sstream>
+#include <typeinfo>
 
 #include "utils/assert.h"
 

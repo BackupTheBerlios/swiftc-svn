@@ -48,7 +48,7 @@ private:
      * liveness analysis
      */
     
-    /// Knows during the liveness analysis which basic blocks have already been visted
+    /// Knows during the liveness analysis which basic blocks have already been visted.
     typedef std::set<me::BasicBlock*> BBSet;
     BBSet walked_;
 
@@ -66,9 +66,68 @@ private:
      * register allocation
      */
 
+    /// Performs the spilling in all basic blocks.
     void spill();
+
+    /** 
+     * @brief Performs the spilling in one basic block.
+     * 
+     * @param bbNode The basic block which should be spilled.
+     */
     void spill(me::BBNode* bbNode);
+
+    
+    /** 
+     * @brief This is used to represent an infinity distance
+     * 
+     * @return "infinity"
+     */
+    static int infinity() 
+    {
+        return std::numeric_limits<int>::max();
+    }
+
+    /** 
+     * @brief Calculates the distance of \p reg from \p instrNode to its next use.
+     *
+     * \p bbNode is the basic block of \p instrNode.
+     *
+     * This formula ist used:
+@verbatim
+                                   / 0, if reg is used at instrNode
+distance(bbNode, reg, instrNode) = |
+                                   \ distanceRec(bbNode, reg, instrNode), otherwise
+@endverbatim
+     * 
+     * @param bbNode The \a BasicBlock which holds the \p instrNode.
+     * @param reg The register which distance to its next use should be found.
+     * @param instrNode The starting InstrNode of the search.
+     * 
+     * @return The distance.  is used as "infinity".
+     */
     int distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
+
+    
+    /** 
+     * @brief This is a helper for \a distance. 
+     *
+     * It calulates recursivly the distance.
+     * 
+     * This formula ist used:
+     * 
+@verbatim
+                                      / infinity, if reg is not live at instrNode
+distanceRec(bbNode, reg, instrNode) = |
+                                      | 1  +     min         distanceRec(bbNode, reg, instrNode'), otherwise 
+                                      \  instrNode' \in succ(instrNode)
+@endverbatim
+     *
+     * @param bbNode The \a BasicBlock which holds the \p instrNode.
+     * @param reg The register which distance to its next use should be found.
+     * @param instrNode The starting InstrNode of the search.
+     * 
+     * @return 
+     */
     int distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
 
     /*
