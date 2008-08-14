@@ -98,12 +98,13 @@ Reg* Reg::createMem(Type type, int varNr, std::string* id /*= 0*/)
 
 #else // SWIFT_DEBUG
 
-Reg(Type type, int varNr)
+Reg::Reg(Type type, int varNr)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
 {}
 
+// TODO is this used???
 Reg* Reg::createMem(Type type, int varNr)
 {
     Reg* reg = new Reg(type, varNr);
