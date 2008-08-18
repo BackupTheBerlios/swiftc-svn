@@ -18,7 +18,7 @@
 #include "me/optimizer.h"
 
 #include "be/codegenerator.h"
-#include "be/x86_64/spiller.h"
+#include "be/amd64/spiller.h"
 
 using namespace swift;
 
@@ -153,7 +153,7 @@ int start(int argc, char** argv)
     /*
         build up back-end and generate assembly code
     */
-    be::CodeGenerator::spiller_ = new be::X86_64Spiller();
+    be::CodeGenerator::spiller_ = new be::AMD64Spiller();
 
     std::ostringstream oss;
     oss << cmdLineParser.filename_ << ".asm";

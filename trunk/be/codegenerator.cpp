@@ -155,7 +155,7 @@ void CodeGenerator::livenessAnalysis()
                 me::BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
-                liveOutAtBlock(pred, var);
+                liveOutAtBlock(pred, var, true);
             }
             else
                 liveInAtInstr(use.instr_, var);
@@ -164,14 +164,27 @@ void CodeGenerator::livenessAnalysis()
         // clean up
         walked_.clear();
     }
+
+    /* 
+     * use this for debugging of liveness stuff
+     */
+    
+#if 1
+    INSTRLIST_EACH(iter, cfg_->instrList_)
+    {
+        std::cout << iter->value_->toString() << std::endl;
+        std::cout << iter->value_->livenessString() << std::endl;
+    }
+#endif
 }
 
-void CodeGenerator::liveOutAtBlock(me::BBNode* bbNode, me::Reg* var)
+void CodeGenerator::liveOutAtBlock(me::BBNode* bbNode, me::Reg* var, bool phi)
 {
     me::BasicBlock* bb = bbNode->value_;
 
-    // var is live-out at bb
-    bb->liveOut_.insert(var);
+    // var is live-out at bb but only if this is not invoked due to a phi function
+    if (!phi)
+        bb->liveOut_.insert(var);
 
     // if bb not in walked_
     if ( walked_.find(bb) == walked_.end() )
@@ -198,7 +211,7 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
 
         // for each predecessor of bb
         CFG_RELATIVES_EACH(iter, bb->pred_)
-            liveOutAtBlock(iter->value_, var);
+            liveOutAtBlock(iter->value_, var, false);
     }
     else
     {
@@ -211,6 +224,7 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
 void CodeGenerator::liveOutAtInstr(me::InstrNode* instr, me::Reg* var)
 {
     // var is live-out at instr
+    //if (!phi)
     instr->value_->liveOut_.insert(var);
 
     // knows whether var is defined in instr
@@ -480,36 +494,29 @@ void CodeGenerator::color()
      * start with the first true basic block
      * and perform a pre-order walk of the dominator tree
      */
-    colorRecursive( cfg_->entry_->succ_.first()->value_ );
+    colorRecursive(cfg_->entry_);
 }
 
 void CodeGenerator::colorRecursive(me::BBNode* bb)
 {
     Colors colors;
+
+    // all vars in liveIn_ have already been colored
     REGSET_EACH(iter, bb->value_->liveIn_)
     {
         int color = (*iter)->color_;
         swiftAssert(color != -1, "color must be assigned here");
+        // mark as occupied
         colors.insert(color);
     }
 
-    // for each instruction -> start with the first instruction which is followed by the leading me::LabelInstr
-    for (me::InstrNode* iter = bb->value_->begin_->next(); iter != bb->value_->end_; iter = iter->next())
+    // for each instruction 
+    for (me::InstrNode* iter = bb->value_->firstPhi_; iter != bb->value_->end_; iter = iter->next())
     {
         me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(iter->value_);
 
         if (ab)
         {
-            /*
-             * NOTE for the me::InstrBase::isLastUse(me::InstrNode* instrNode, Reg* var) used below:
-             *      instrNode has an predecessor in all cases because iter is initialized with the
-             *      first instruction which is followed by the leading me::LabelInstr of this basic
-             *      block. Thus the first instruction which is considered here will always be
-             *      preceded by a me::LabelInstr.
-             *      Furthermore Literals are no problems here since they are not found via
-             *      isLastUse.
-             */
-
 #ifdef SWIFT_DEBUG
             /*
              * In the debug version this set knows vars which were already
@@ -518,54 +525,42 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
             me::RegSet erased;
 #endif // SWIFT_DEBUG
 
-            // for each var on the right hand side
-            for (size_t i = 0; i < ab->numRhs_; ++i)
+            if ( typeid(*ab) != typeid(me::PhiInstr) )
             {
-                me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
-
-                if ( reg && me::InstrBase::isLastUse(iter, reg) )
+                // for each var on the right hand side
+                for (size_t i = 0; i < ab->numRhs_; ++i)
                 {
-                    // -> its the last use of reg
-                    Colors::iterator colorIter = colors.find(reg->color_);
-#ifdef SWIFT_DEBUG
-                    // has this reg already been erased due to a double entry like a = b + b?
-                    if ( erased.find(reg) != erased.end() )
-                        continue;
+                    me::Reg* reg = dynamic_cast<me::Reg*>(ab->rhs_[i]);
 
-                    swiftAssert( colorIter != colors.end(), "color must be found here" );
-                    colors.erase(colorIter); // last use of reg
-                    erased.insert(reg);
-#else // SWIFT_DEBUG
-                    if ( colorIter == colors.end() )
+                    if ( reg && me::InstrBase::isLastUse(iter, reg) )
+                    {
+                        // -> its the last use of reg
+                        Colors::iterator colorIter = colors.find(reg->color_);
+#ifdef SWIFT_DEBUG
+                        // has this reg already been erased due to a double entry like a = b + b?
+                        if ( erased.find(reg) != erased.end() )
+                            continue;
+
+                        swiftAssert( colorIter != colors.end(), "color must be found here" );
                         colors.erase(colorIter); // last use of reg
-                    /*
-                     * else -> the reg must already been removed which must
-                     *      be caused by a double entry like a = b + b
-                     */
+                        erased.insert(reg);
+#else // SWIFT_DEBUG
+                        if ( colorIter != colors.end() )
+                            colors.erase(colorIter); // last use of reg
+                        /*
+                        * else -> the reg must already been removed which must
+                        *      be caused by a double entry like a = b + b
+                        */
 #endif // SWIFT_DEBUG
-                }
-            }
+                    } // if last use
+                } // for each rhs var
+            } // if no phi instr
 
             // for each var on the left hand side -> assign a color for result
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
                 me::Reg* reg = ab->lhs_[i];
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
-
-                if ( reg->uses_.empty() )
-                {
-                    /*
-                     * In the case of a pointless definition a color should be
-                     * assigned and immediately released afterwards.
-                     * A pointless definition is for example
-                     * a = b + c
-                     * and never use 'a' again. The register allocator would assign a color for 'a'
-                     * and will never release it since there will be no known last use of 'a'.
-                     */
-                    Colors::iterator colorIter = colors.find(reg->color_);
-                    swiftAssert( colorIter != colors.end(), "color must be found here");
-                    colors.erase(colorIter); // last use of op2 so remove
-                }
             }
         }
     } // for each instruction

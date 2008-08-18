@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include <map>
 #include <typeinfo>
 
 #include "me/functab.h"
@@ -543,12 +544,31 @@ void CFG::calcDef()
 
 void CFG::calcUse()
 {
+    // for each var
     REGMAP_EACH(iter, function_->vars_)
     {
         Reg* var = iter->second;
 
+        /* 
+         * start with the definition of the var and walk the dominator tree
+         * to find all uses since every use of a var in an SSA form program is
+         * dominated by its definition except for phi-instructions.
+         */
         calcUse(var, var->def_.bbNode_);
     }
+
+    /* 
+     * use this for debugging of the def-use calculation
+     */
+#if 0
+    REGMAP_EACH(iter, function_->vars_)
+    {
+        Reg* var = iter->second;
+        std::cout << var->toString() << std::endl;
+        USELIST_EACH(iter, var->uses_)
+            std::cout << "\t" << iter->value_.instr_->value_->toString() << std::endl;
+    }
+#endif
 }
 
 void CFG::calcUse(Reg* var, BBNode* bbNode)
@@ -561,7 +581,6 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
         InstrBase* instr = iter->value_;
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
 
-        // TODO are phi functions considered correctly here?
         if (ab)
         {
             if ( ab->isRegUsed(var) )
@@ -638,19 +657,6 @@ std::string CFG::dumpDomFrontier() const
     }
 
     return oss.str();
-}
-
-/*
- * further methods
- */
-
-BBNode* CFG::findBBNode(InstrNode* instrNode)
-{
-    // find first preceding LabelInstr
-    while ( typeid(*instrNode->value_) != typeid(LabelInstr) )
-        instrNode = instrNode->prev();
-
-    return labelNode2BBNode_[instrNode];
 }
 
 } // namespace me

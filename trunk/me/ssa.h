@@ -46,6 +46,8 @@ struct InstrBase
     static bool isLastUse(InstrNode* instrNode, Reg* var);
 
     virtual std::string toString() const = 0;
+
+    std::string livenessString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -158,6 +160,33 @@ struct PhiInstr : public AssignmentBase
     std::string toString() const;
     void genCode(std::ofstream& /*ofs*/) {}
 };
+
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief This is a dummy Instruction which is used to increase the lifetime of
+ * vars.
+ *
+ * Phi functions increase the life time of an argument var to the end of the
+ * predecessor basic block. During liveness analysis this instruction is appended
+ * at the end of the predecessor basic block which makes use of all vars in 
+ * question. 
+ */
+//struct NOP : public AssignmentBase
+//{
+    /*
+     * constructor
+     */
+
+    //NOP(size_t numRhs);
+
+    /*
+     * further methods
+     */
+
+    //std::string toString() const;
+    //void genCode(std::ofstream& [>ofs<]) {}
+//};
 
 //------------------------------------------------------------------------------
 

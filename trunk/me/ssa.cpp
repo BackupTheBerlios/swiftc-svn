@@ -18,10 +18,32 @@ namespace me {
 bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
-    InstrBase* prev  = instrNode->prev()->value_;
 
-    return instr->liveOut_.find(var) == instr->liveOut_.end()  // mustn't be in the current instruction
-        &&  prev->liveOut_.find(var) !=  prev->liveOut_.end(); // must be in the previous one
+    return  instr->liveIn_ .find(var) != instr->liveOut_.end()  // must be in the live in
+        &&  instr->liveOut_.find(var) == instr->liveOut_.end(); // but not in the live out
+}
+
+std::string InstrBase::livenessString() const
+{
+    std::ostringstream oss;
+
+    // print live in infos
+    oss << "\tlive IN:" << std::endl;
+
+    REGSET_EACH(iter, liveIn_)
+    {
+        oss << "\t\t" << (*iter)->toString() << std::endl;
+    }
+
+    // print live out infos
+    oss << "\tlive OUT:" << std::endl;
+
+    REGSET_EACH(iter, liveOut_)
+    {
+        oss << "\t\t" << (*iter)->toString() << std::endl;
+    }
+
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------
@@ -177,6 +199,33 @@ std::string PhiInstr::toString() const
 
     return oss.str();
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+//NOP::NOP(size_t numRhs)
+    //: AssignmentBase(0, numRhs) // NOP always have no result
+//{}
+
+/*
+    further methods
+*/
+
+//std::string NOP::toString() const
+//{
+    //std::ostringstream oss;
+    //oss << "\tnop(";
+
+    //for (size_t i = 0; i < numRhs_ - 1; ++i)
+        //oss << rhs_[i]->toString() << ", ";
+
+    //oss << rhs_[numRhs_-1]->toString() <<  ')';
+
+    //return oss.str();
+//}
 
 //------------------------------------------------------------------------------
 

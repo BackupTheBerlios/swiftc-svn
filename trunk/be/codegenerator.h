@@ -58,7 +58,7 @@ private:
      * Invokes \a liveOutAtBlock, \a liveInAtInstr and \a liveOutAtInstr.
      */
     void livenessAnalysis();
-    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var);
+    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var, bool phi);
     void liveInAtInstr (me::InstrNode* instr, me::Reg* var);
     void liveOutAtInstr(me::InstrNode* instr, me::Reg* var);
 

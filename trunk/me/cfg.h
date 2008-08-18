@@ -67,7 +67,7 @@ struct CFG : public Graph<BasicBlock>
     typedef std::map<InstrNode*, BBNode*> LabelNode2BBNodeMap;
 
     /**
-     * brief With this data structure we can quickly find a BB with 
+     * @brief With this data structure we can quickly find a BB with 
      * a given starting label.
      */
     LabelNode2BBNodeMap labelNode2BBNode_;
@@ -111,8 +111,27 @@ struct CFG : public Graph<BasicBlock>
      * def-use-chains
      */
 
+    /**
+     * @brief Compiles for all vars their defining instruction. 
+     *
+     * The left hand side of \a PhiInstr instances counts as definition, too.
+     */
     void calcDef();
+
+    /** 
+     * @brief Compiles for all v in vars the instructinos which make use of v.
+     *
+     * The right hand side of \a PhiInstr instances do \em not count as a use.
+     * TODO doc update
+     */
     void calcUse();
+
+    /** 
+     * @brief Used internally by \a CalcUse.
+     * 
+     * @param var Current var. 
+     * @param bb Current basic block.
+     */
     void calcUse(Reg* var, BBNode* bb);
 
     /*
@@ -123,12 +142,6 @@ struct CFG : public Graph<BasicBlock>
     std::string dumpIdoms() const;
     std::string dumpDomChildren() const;
     std::string dumpDomFrontier() const;
-
-    /*
-     * further methods
-     */
-
-    BBNode* findBBNode(InstrNode* instrNode);
 };
 
 #define CFG_RELATIVES_EACH(iter, relatives) \
