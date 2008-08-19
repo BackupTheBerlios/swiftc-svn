@@ -106,7 +106,7 @@ void CodeGenerator::genCode()
     // traverse the code generation pipe
     //std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
-    //spill();
+    spill();
     color();
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
@@ -274,11 +274,10 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
  */
 
 // TODO
-#define NUM_REGS 16
+#define NUM_REGS 2
 
 void CodeGenerator::spill()
 {
-
     std::set<me::Reg*> varsCurrentlyInRegs;
 
     // for each basic block
@@ -322,9 +321,9 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     std::set<me::Reg*> passed = bb->liveIn_;
 
     // for each PhiInstr in bb
-    for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; ++iter)
+    for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
     {
-        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr*), 
+        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
             "must be a PhiInstr here" );
 
         me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
@@ -343,6 +342,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     size_t counter = 0;
     REGSET_EACH(iter, passed)
     {
+        // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
         inRegs[counter] = RegAndDistance( *iter, distance(bbNode, *iter, bb->firstOrdinary_) );
         ++counter;
     }
@@ -362,31 +362,6 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
 {
     me::InstrBase* instr = instrNode->value_;
-
-    // do we have a LabelInstr here?
-    while ( typeid(*instr) == typeid(me::LabelInstr) )
-    {
-        // look up new basic block
-        bbNode = cfg_->labelNode2BBNode_[instrNode];
-        me::BasicBlock* bb = bbNode->value_;
-        swiftAssert( bb->begin_ == instrNode, 
-            "bb's begin must point to this LabelInstr");
-        
-        // do not count this and move one further
-        instrNode = instrNode->next();
-
-        swiftAssert( cfg_->instrList_.sentinel() != instrNode, 
-            "this must not be the sentinel" );
-    }
-
-    /*
-     * PhiInstr and LabelInstr are nore allowd here
-     */
-    swiftAssert( typeid(*instr) != typeid(me::PhiInstr), 
-        "this mustn't be a PhiInstr here" );
-    swiftAssert( typeid(*instr) != typeid(me::LabelInstr), 
-        "this mustn't be a LabelInstr here" );
-
     me::AssignmentBase* ab = dynamic_cast<me::AssignmentBase*>(instr);
 
     // is reg used at instr
@@ -402,82 +377,51 @@ int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* ins
 
 int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode)
 {
-    /*
-     * TODO here is room for optimization, by elemianting the recursion and
-     *  using loops instead.
-     */
-
     me::InstrBase* instr = instrNode->value_;
+    me::BasicBlock* bb = bbNode->value_;
 
-    // reg is live at instr means: reg in liveIn of instr
-    // is reg not live at instr?
-    // ----> liveIn
-    if ( instr->liveOut_.find(reg) == instr->liveOut_.end() ) 
-        return infinity(); // return "infinity"
+    // is reg live at instr?
+    if ( instr->liveIn_.find(reg) == instr->liveIn_.end() ) 
+        return infinity(); // no -> return "infinity"
     // else
+
+    int result; // result goes here
 
     // is the current instruction a JumpInstr?
     if (dynamic_cast<me::JumpInstr*>(instr)) 
     {
         me::JumpInstr* ji = (me::JumpInstr*) instr;
 
+        // collect and compute results of targets
         int results[ji->numTargets_];
-
         for (size_t i = 0; i < ji->numTargets_; ++i)
-            results[i] = distance( bbNode, reg, ji->instrTargets_[i] );
+            results[i] = distance( ji->bbTargets_[i], reg, ji->instrTargets_[i] );
 
-        int min =  *std::min_element(results, results + ji->numTargets_);
-
-        // add up the distance and do not calculate around
-        return min == infinity() ? infinity() : min + 1;
+        result = *std::min_element(results, results + ji->numTargets_);
     }
-    
-    // the next instruction can't be the sentinel, reg can't be live then.
-    swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
-        "this mustn't be the instrList_'s sentinel" );
-    
-    /*
-     * check what kind of instruction we have
-     */
-    //if ( typeid(*instr) == typeid(me::LabelInstr) )
-        //return;
-
-    // do we have an ordinary successor instruction?
-    if ( typeid(*instr) != typeid(me::LabelInstr) )
+    // is the current instruction the last ordinary instruction in this bb?
+    else if (bb->end_->prev() == instrNode)
     {
-        int result = distanceRec( bbNode, reg, instrNode->next() );
+        // -> visit the next bb
+        swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
+            "this may not be the last instruction");
+        swiftAssert(bbNode->numSuccs() == 1, "should have exactly one succ");
 
-        // add up the distance and do not calculate around
-        return result == infinity() ? infinity() : result + 1;
+        result = distance( bbNode->succ_.first()->value_, reg, instrNode->next() );
     }
-    // else
+    else 
+    {
+        // -> so we must have a "normal" successor instruction
+        result = distance( bbNode, reg, instrNode->next() );
+    }
 
-    swiftAssert( typeid(*instr) == typeid(me::LabelInstr), "must be a LabelInstr here" );
+    // do not count a LabelInstr
+    int inc = (typeid(*instr) == typeid(me::LabelInstr)) ? 0 : 1;
 
-    // move to the LabelInstr
-    instrNode = instrNode->next();
-    instr = instrNode->value_;
-    // for each succossor basic blocks
-    //BBLIST_EACH(iter, bbNode->succ_)
-    //{
-        //instrNode = iter->value_->value_->begin_;
+    // add up the distance and do not calculate around
+    result = result == infinity() ? infinity() : result + inc;
 
-        //// omit leading label instr
-        //swiftAssert( typeid(*instrNode->value_) == typeid(me::LabelInstr),
-            //"first instruction in a basic block must be a LabelInstr" );
-        //instrNode = instrNode->next();
-
-        //int result = distanceRec( reg, instrNode->next() );
-
-        //// add up the distance and do not calculate around
-        //return result == infinity()
-            //? std::numeric_limits<int>::max()
-            //: result + 1;
-    //}
-
-    swiftAssert(false, "this code should not be reached");
-
-    return 0;
+    return result;
 }
 
 /*

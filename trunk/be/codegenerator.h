@@ -111,12 +111,12 @@ distance(bbNode, reg, instrNode) = |
      *
      * It calulates recursivly the distance.
      * 
-     * This formula ist used:
+     * This formula is used:
      * 
 @verbatim
                                       / infinity, if reg is not live at instrNode
 distanceRec(bbNode, reg, instrNode) = |
-                                      | 1  +     min         distanceRec(bbNode, reg, instrNode'), otherwise 
+                                      | 1  +     min         distance(bbNode, reg, instrNode'), otherwise 
                                       \  instrNode' \in succ(instrNode)
 @endverbatim
      *
