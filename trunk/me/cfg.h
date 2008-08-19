@@ -121,8 +121,7 @@ struct CFG : public Graph<BasicBlock>
     /** 
      * @brief Compiles for all v in vars the instructinos which make use of v.
      *
-     * The right hand side of \a PhiInstr instances do \em not count as a use.
-     * TODO doc update
+     * The right hand side of \a PhiInstr instances count as a use, too. 
      */
     void calcUse();
 

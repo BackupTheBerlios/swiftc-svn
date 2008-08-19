@@ -163,33 +163,6 @@ struct PhiInstr : public AssignmentBase
 
 //------------------------------------------------------------------------------
 
-/** 
- * @brief This is a dummy Instruction which is used to increase the lifetime of
- * vars.
- *
- * Phi functions increase the life time of an argument var to the end of the
- * predecessor basic block. During liveness analysis this instruction is appended
- * at the end of the predecessor basic block which makes use of all vars in 
- * question. 
- */
-//struct NOP : public AssignmentBase
-//{
-    /*
-     * constructor
-     */
-
-    //NOP(size_t numRhs);
-
-    /*
-     * further methods
-     */
-
-    //std::string toString() const;
-    //void genCode(std::ofstream& [>ofs<]) {}
-//};
-
-//------------------------------------------------------------------------------
-
 /**
  * This Instruction represents either an unary, a binary Instruction or
  * just an assignment.

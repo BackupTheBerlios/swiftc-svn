@@ -104,6 +104,9 @@ struct BasicBlock
 
     /// Returns a string holding the instructions of the BasicBlock for dot-files.
     std::string toString() const;
+
+    /// Returns a string holding the liveness infos for this BasicBlock.
+    std::string livenessString() const;
 };
 
 } // namespace me

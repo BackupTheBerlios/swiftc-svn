@@ -58,7 +58,7 @@ private:
      * Invokes \a liveOutAtBlock, \a liveInAtInstr and \a liveOutAtInstr.
      */
     void livenessAnalysis();
-    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var, bool phi);
+    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var);
     void liveInAtInstr (me::InstrNode* instr, me::Reg* var);
     void liveOutAtInstr(me::InstrNode* instr, me::Reg* var);
 
@@ -75,7 +75,6 @@ private:
      * @param bbNode The basic block which should be spilled.
      */
     void spill(me::BBNode* bbNode);
-
     
     /** 
      * @brief This is used to represent an infinity distance
@@ -106,7 +105,6 @@ distance(bbNode, reg, instrNode) = |
      * @return The distance.  is used as "infinity".
      */
     int distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
-
     
     /** 
      * @brief This is a helper for \a distance. 

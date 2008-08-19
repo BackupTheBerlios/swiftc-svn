@@ -557,6 +557,30 @@ void CFG::calcUse()
         calcUse(var, var->def_.bbNode_);
     }
 
+    // now find all phi functions
+    CFG_RELATIVES_EACH(bbIter, nodes_)
+    {
+        BBNode* bbNode = bbIter->value_;
+        BasicBlock* bb = bbNode->value_;
+
+        for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
+        {
+            swiftAssert(typeid(*iter->value_) == typeid(PhiInstr),
+                "must be a PhiInstr here");
+            PhiInstr* phi = (PhiInstr*) iter->value_;
+
+            for (size_t i = 0; i < phi->numRhs_; ++i)
+            {
+                swiftAssert(typeid(*phi->rhs_[i]) == typeid(Reg),
+                    "must be a Reg here");
+                Reg* var = (Reg*) phi->rhs_[i];
+
+                // put this as first use so liveness analysis will be a bit faster
+                var->uses_.prepend( DefUse(iter, bbNode) );
+            }
+        }
+    }
+
     /* 
      * use this for debugging of the def-use calculation
      */
@@ -575,8 +599,11 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
 
-    // iterate over the instruction list in this bb and find all uses
-    for (InstrNode* iter = bb->firstPhi_; iter != bb->end_; iter = iter->next())
+    /* 
+     * iterate over the instruction list in this bb and find all uses 
+     * while ignoring phi functions
+     */
+    for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);

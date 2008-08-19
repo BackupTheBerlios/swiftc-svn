@@ -5,23 +5,25 @@
 
 #include "utils/assert.h"
 
+#include "me/op.h"
+
 namespace me {
 
 /*
- * constructors
- */
+* constructors
+*/
 
 BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary)
-    : begin_(begin)
-    , firstOrdinary_( firstOrdinary ? firstOrdinary : end) // select end if firstOrdinary == 0
-    , end_(end)
+: begin_(begin)
+, firstOrdinary_( firstOrdinary ? firstOrdinary : end) // select end if firstOrdinary == 0
+, end_(end)
 {
-    firstPhi_ = firstOrdinary_;// assume that there are no phis at the beginning
+firstPhi_ = firstOrdinary_;// assume that there are no phis at the beginning
 }
 
 /*
- * further methods
- */
+* further methods
+*/
 
 std::string BasicBlock::name() const
 {
@@ -41,6 +43,25 @@ std::string BasicBlock::toString() const
     // for all instructions in this basic block except the first and the last LabelInstr
     for (InstrNode* instrIter = begin_->next(); instrIter != end_; instrIter = instrIter->next())
         oss << '\t' << instrIter->value_->toString() << "\\l\\" << std::endl; // print instruction
+
+    return oss.str();
+}
+
+std::string BasicBlock::livenessString() const
+{
+    std::ostringstream oss;
+
+    // print live in infos
+    oss << "\tlive IN:" << std::endl;
+
+    REGSET_EACH(iter, liveIn_)
+        oss << "\t\t" << (*iter)->toString() << std::endl;
+
+    // print live out infos
+    oss << "\tlive OUT:" << std::endl;
+
+    REGSET_EACH(iter, liveOut_)
+        oss << "\t\t" << (*iter)->toString() << std::endl;
 
     return oss.str();
 }

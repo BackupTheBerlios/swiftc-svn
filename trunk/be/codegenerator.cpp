@@ -155,7 +155,7 @@ void CodeGenerator::livenessAnalysis()
                 me::BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
-                liveOutAtBlock(pred, var, true);
+                liveOutAtBlock(pred, var);
             }
             else
                 liveInAtInstr(use.instr_, var);
@@ -169,55 +169,38 @@ void CodeGenerator::livenessAnalysis()
      * use this for debugging of liveness stuff
      */
     
-#if 1
+#if 0
+    std::cout << "INSTRUCTIONS:" << std::endl;
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
-        std::cout << iter->value_->toString() << std::endl;
-        std::cout << iter->value_->livenessString() << std::endl;
+        me::InstrBase* instr = iter->value_;
+        std::cout << instr->toString() << std::endl;
+        std::cout << instr->livenessString() << std::endl;
+    }
+
+    std::cout << std::endl << "BASIC BLOCKS:" << std::endl;
+
+    CFG_RELATIVES_EACH(iter, cfg_->nodes_)
+    {
+        me::BasicBlock* bb = iter->value_->value_;
+        std::cout << bb->name() << std::endl;
+        std::cout << bb->livenessString() << std::endl;
     }
 #endif
 }
 
-void CodeGenerator::liveOutAtBlock(me::BBNode* bbNode, me::Reg* var, bool phi)
+void CodeGenerator::liveOutAtBlock(me::BBNode* bbNode, me::Reg* var)
 {
     me::BasicBlock* bb = bbNode->value_;
 
-    // var is live-out at bb but only if this is not invoked due to a phi function
-    if (!phi)
-        bb->liveOut_.insert(var);
+    // var is live-out at bb 
+    bb->liveOut_.insert(var);
 
     // if bb not in walked_
     if ( walked_.find(bb) == walked_.end() )
     {
         walked_.insert(bb);
         liveOutAtInstr(bb->end_->prev(), var);
-    }
-}
-
-void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
-{
-    // var ist live-in at instr
-    instr->value_->liveIn_.insert(var);
-    me::InstrNode* prevInstr = instr->prev();
-
-    // is instr the first statement of basic block?
-    if ( typeid(*prevInstr->value_) == typeid(me::LabelInstr) )
-    {
-        // var is live-out at the leading labelInstr
-        prevInstr->value_->liveOut_.insert(var);
-
-        me::BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
-        bb->value_->liveIn_.insert(var);
-
-        // for each predecessor of bb
-        CFG_RELATIVES_EACH(iter, bb->pred_)
-            liveOutAtBlock(iter->value_, var, false);
-    }
-    else
-    {
-        // get preceding statement to instr
-        me::InstrNode* preInstr = instr->prev();
-        liveOutAtInstr(preInstr, var);
     }
 }
 
@@ -256,6 +239,34 @@ void CodeGenerator::liveOutAtInstr(me::InstrNode* instr, me::Reg* var)
 
     if (!varInLhs)
         liveInAtInstr(instr, var);
+}
+
+void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
+{
+    // var is live-in at instr
+    instr->value_->liveIn_.insert(var);
+    me::InstrNode* prevInstr = instr->prev();
+
+    // is instr the first statement of basic block?
+    if ( typeid(*prevInstr->value_) == typeid(me::LabelInstr) )
+    {
+        // var is live-out at the leading labelInstr
+        prevInstr->value_->liveOut_.insert(var);
+
+        // insert var to this basic block's liveIn
+        me::BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        bb->value_->liveIn_.insert(var);
+
+        // for each predecessor of bb
+        CFG_RELATIVES_EACH(iter, bb->pred_)
+            liveOutAtBlock(iter->value_, var);
+    }
+    else
+    {
+        // get preceding statement to instr
+        me::InstrNode* preInstr = instr->prev();
+        liveOutAtInstr(preInstr, var);
+    }
 }
 
 /*
@@ -400,6 +411,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
 
     // reg is live at instr means: reg in liveIn of instr
     // is reg not live at instr?
+    // ----> liveIn
     if ( instr->liveOut_.find(reg) == instr->liveOut_.end() ) 
         return infinity(); // return "infinity"
     // else
@@ -561,6 +573,10 @@ void CodeGenerator::colorRecursive(me::BBNode* bb)
             {
                 me::Reg* reg = ab->lhs_[i];
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
+
+                // pointless definitions should be optimized away
+                if (ab->liveOut_.find(reg) == ab->liveOut_.end())
+                    colors.erase( colors.find(reg->color_) );
             }
         }
     } // for each instruction
