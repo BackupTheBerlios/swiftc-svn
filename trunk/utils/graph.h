@@ -73,7 +73,7 @@ public:
 
         size_t numSuccs() const
         {
-            return pred_.size();
+            return succ_.size();
         }
 
         const Relatives& getPred()

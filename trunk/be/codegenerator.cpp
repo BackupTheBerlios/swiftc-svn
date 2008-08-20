@@ -318,7 +318,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
      * passed contains all regs live in at bb 
      * and the results of phi operations in bb
      */
-    std::set<me::Reg*> passed = bb->liveIn_;
+    me::RegSet passed = bb->liveIn_;
 
     // for each PhiInstr in bb
     for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
@@ -356,7 +356,46 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     if (inRegs.size() > NUM_REGS)
         inRegs.erase( inRegs.begin() + NUM_REGS, inRegs.end() );
 
-    // TODO
+    /*
+     * This set holds all vars which are at the current point in Regs. Initially
+     * it is assumed that all inRegs can be kept in Regs
+     */
+    me::RegSet currentlyInRegs; 
+    for (size_t i = 0; i < inRegs.size(); ++i)
+        currentlyInRegs.insert( inRegs[0].reg_ );
+
+    for (me::InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
+    {
+        // continue if we do not have an AssignmentBase here
+        if (typeid(*iter->value_) != typeid(me::AssignmentBase))
+            continue;
+
+        me::AssignmentBase* ab = (me::AssignmentBase*) iter->value_;
+
+        int numVarsToBeSpilled = 0;
+        // for each var on the rhs
+        for (size_t i = 0; i < ab->numRhs_; ++i)
+        {
+            // continue if this is not a Reg
+            if (typeid(*ab->rhs_[i]) != typeid(me::Reg))
+                continue;
+
+            // is this var currently not in a real register?
+            me::Reg* var = (me::Reg*) ab->rhs_[i];
+
+            if (currentlyInRegs.find(var) == currentlyInRegs.end())
+            {
+                // insert reload instruction
+                
+                //cfg_->instrList_->insert(
+                
+                ++numVarsToBeSpilled;
+            }
+        }
+
+        // remove numVarsToBeSpilled from the set
+
+    }
 }
 
 int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
@@ -402,6 +441,9 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
     // is the current instruction the last ordinary instruction in this bb?
     else if (bb->end_->prev() == instrNode)
     {
+        std::cout << bb->name() << std::endl;
+        BBLIST_EACH(iter, bbNode->succ_)
+            std::cout << "\t" << iter->value_->value_->name() << std::endl;
         // -> visit the next bb
         swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
             "this may not be the last instruction");
