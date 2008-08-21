@@ -441,9 +441,6 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
     // is the current instruction the last ordinary instruction in this bb?
     else if (bb->end_->prev() == instrNode)
     {
-        std::cout << bb->name() << std::endl;
-        BBLIST_EACH(iter, bbNode->succ_)
-            std::cout << "\t" << iter->value_->value_->name() << std::endl;
         // -> visit the next bb
         swiftAssert(instrNode->next() != cfg_->instrList_.sentinel(), 
             "this may not be the last instruction");
