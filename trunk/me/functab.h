@@ -39,6 +39,10 @@ struct Function
     size_t  numBBs_;
     CFG     cfg_;
 
+    /*
+     * constructors and destructor
+     */
+
     Function(std::string* id)
         : id_(id)
         , regCounter_(0)
@@ -46,42 +50,73 @@ struct Function
         , numBBs_(2) // every function does at least have an entry and an exit node
         , cfg_(this)
     {}
+
     ~Function();
 
-    inline void insert(Reg* reg);
+    /**
+     * @brief This method creates a new temp Reg.
+     * This is a var which is guaranteed to be defined only once.
+     *
+     * @param type The type of the Reg.
+     */
+    Reg* newSSA(Op::Type type);
 
     /**
-     * This method creates a new temp Reg.
-     * @param type the type of the Reg
-    */
-    Reg* newSSA(Op::Type type);
+     * @brief This method creates a new var in a memory location.
+     *
+     * @param type The type of the Reg.
+     * @param varNr The varNr of the var; must be positive.
+     */
+    Reg* newMem(Op::Type type, int varNr);
 
 #ifdef SWIFT_DEBUG
 
     /**
-     * This method creates a new temp Reg.
-     * @param type the type of the Reg
-    */
+     * @brief This method creates a new temp Reg.
+     * This is a var which is guaranteed to be defined only once.
+     *
+     * @param type The type of the Reg.
+     * @param id The name of the original var.
+     */
     Reg* newSSA(Op::Type type, std::string* id);
 
     /**
-     * This method creates a new var Reg.
-     * @param type the type of the Reg
-     * @param varNr the varNr of the var; must be positive.
-     * @param id the name of the original var
-    */
+     * @brief This method creates a new var Reg.
+     * This will be transforemd to SSA form later on.
+     *
+     * @param type The type of the Reg.
+     * @param varNr The varNr of the var; must be positive.
+     * @param id The name of the original var.
+     */
     Reg* newVar(Op::Type type, int varNr, std::string* id);
+
+    /**
+     * @brief This method creates a new var in a memory location.
+     *
+     * @param type The type of the Reg.
+     * @param varNr The varNr of the var; must be positive.
+     * @param id The name of the original var.
+     */
+    Reg* newMem(Op::Type type, int varNr, std::string* id);
 
 #else // SWIFT_DEBUG
 
     /**
-     * This method creates a new var Reg.
-     * @param type the type of the Reg
+     * @brief This method creates a new var Reg.
+     * This will be transforemd to SSA form later on.
+     *
+     * @param type the type of the Reg.
      * @param varNr the varNr of the var; must be positive.
-    */
+     */
     Reg* newVar(Op::Type type, int varNr);
 
 #endif // SWIFT_DEBUG
+
+    /*
+     * further methods
+     */
+
+    inline void insert(Reg* reg);
 
     void dumpSSA(std::ofstream& ofs);
     void dumpDot(const std::string& baseFilename);

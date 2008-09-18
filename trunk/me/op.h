@@ -214,19 +214,21 @@ struct Reg : public Op
      */
     size_t var2Index() const;
 
-    /**
-     * Checks whether this Reg has already been colored. If this is actually a
-     * MEMORY_LOCATION an assertion is thrown.
+    /** 
+     * @brief Checks whether this Reg has already been colored. 
+     *
+     * If this is actually a MEMORY_LOCATION an assertion is thrown.
+     * 
+     * @return Has this reg already a color?
      */
     bool isColored() const;
-    bool isMem() const;
 
-    /**
-     * Invoke this method if you have done something with this var such that
-     * the SSA property is violated. This method will create a new negative
-     * \a varNr_.
+    /** 
+     * @brief Checks whether this Reg is actually a memory location.
+     *
+     * @return Is this Reg a memory location?
      */
-    void removeSSAProperty();
+    bool isMem() const;
 
     virtual std::string toString() const;
 };

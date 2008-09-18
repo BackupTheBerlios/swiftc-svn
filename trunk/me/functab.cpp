@@ -21,13 +21,13 @@ Function::~Function()
         delete iter->value_;
 
     // delete all pseudo regs
-    for (RegMap::iterator iter = in_    .begin(); iter != in_   .end(); ++iter)
+    for (RegMap::iterator iter = in_   .begin(); iter != in_   .end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = inout_ .begin(); iter != inout_.end(); ++iter)
+    for (RegMap::iterator iter = inout_.begin(); iter != inout_.end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = out_   .begin(); iter != out_  .end(); ++iter)
+    for (RegMap::iterator iter = out_  .begin(); iter != out_  .end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = vars_  .begin(); iter != vars_ .end(); ++iter)
+    for (RegMap::iterator iter = vars_ .begin(); iter != vars_ .end(); ++iter)
         delete iter->second;
 
     delete id_;
@@ -47,6 +47,15 @@ Reg* Function::newSSA(Op::Type type)
     insert(reg);
 
     ++regCounter_;
+
+    return reg;
+}
+
+Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
+{
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    Reg* reg = new Reg(type, varNr, id);
+    insert(reg);
 
     return reg;
 }

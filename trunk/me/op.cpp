@@ -104,7 +104,6 @@ Reg::Reg(Type type, int varNr)
     , color_(NOT_COLORED_YET)
 {}
 
-// TODO is this used???
 Reg* Reg::createMem(Type type, int varNr)
 {
     Reg* reg = new Reg(type, varNr);

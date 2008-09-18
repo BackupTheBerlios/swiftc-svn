@@ -420,41 +420,13 @@ std::string BranchInstr::toString() const
  * constructor
  */
 
-SpillInstr::SpillInstr()
-    // SpillInstrs always have exactly one result and one arg
-    : AssignmentBase(1, 1) 
-{}
-
-/*
- * getters
- */
-
-Reg* SpillInstr::arg()
-{
-    swiftAssert( typeid(*lhs_[0]) == typeid(Reg), "lhs_[0] must be a Reg*" );
-    return (Reg*) lhs_[0];
-}
-
-const Reg* SpillInstr::arg() const
-{
-    swiftAssert( typeid(*lhs_[0]) == typeid(Reg), "lhs_[0] must be a Reg*" );
-    return (Reg*) lhs_[0];
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor
- */
-
 Spill::Spill(Reg* result, Reg* arg)
-    : SpillInstr()
+    : AssignmentBase(1, 1)
 {
-    swiftAssert( result->isMem(),  "result must be a memory var" );
     swiftAssert( !arg->isMem(), "arg must not be a memory var" );
-
-    lhs_[0] = result;
     rhs_[0] = arg;
+
+    //lhs_[0] = Reg::createMem(
 }
 
 /*
@@ -478,7 +450,7 @@ std::string Spill::toString() const
  */
 
 Reload::Reload(Reg* result, Reg* arg)
-    : SpillInstr()
+    : AssignmentBase(1, 1)
 {
     swiftAssert( !result->isMem(), "result must not be a memory var");
     swiftAssert( arg->isMem(), "arg must be a memory var");

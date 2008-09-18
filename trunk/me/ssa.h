@@ -318,23 +318,7 @@ struct BranchInstr : public JumpInstr
 
 //------------------------------------------------------------------------------
 
-struct SpillInstr : public AssignmentBase
-{
-    /*
-     * constructor
-     */
-
-    SpillInstr();
-
-    /*
-     * getters
-     */
-
-    Reg* arg();
-    const Reg* arg() const;
-};
-
-struct Spill : public SpillInstr
+struct Spill : public AssignmentBase
 {
     /*
      * constructor
@@ -352,7 +336,7 @@ struct Spill : public SpillInstr
 
 //------------------------------------------------------------------------------
 
-struct Reload : public SpillInstr
+struct Reload : public AssignmentBase
 {
     /*
      * constructor
