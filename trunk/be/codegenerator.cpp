@@ -394,6 +394,9 @@ void CodeGenerator::spill(me::BBNode* bbNode)
         }
 
         // remove numVarsToBeSpilled from the set
+        for (size_t i = 0; i < numVarsToBeSpilled; ++i)
+        {
+        }
     }
 }
 

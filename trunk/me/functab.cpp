@@ -51,15 +51,6 @@ Reg* Function::newSSA(Op::Type type)
     return reg;
 }
 
-Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
-{
-    swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = new Reg(type, varNr, id);
-    insert(reg);
-
-    return reg;
-}
-
 #ifdef SWIFT_DEBUG
 
 Reg* Function::newSSA(Op::Type type, std::string* id)
