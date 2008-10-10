@@ -372,7 +372,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
         me::AssignmentBase* ab = (me::AssignmentBase*) iter->value_;
 
-        int numVarsToBeSpilled = 0;
+        size_t numVarsToBeSpilled = 0;
         // for each var on the rhs
         for (size_t i = 0; i < ab->numRhs_; ++i)
         {
