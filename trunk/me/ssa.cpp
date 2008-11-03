@@ -424,9 +424,9 @@ Spill::Spill(Reg* result, Reg* arg)
     : AssignmentBase(1, 1)
 {
     swiftAssert( !arg->isMem(), "arg must not be a memory var" );
+    swiftAssert( result->isMem(), "result must be a memory var" );
+    lhs_[0] = result;
     rhs_[0] = arg;
-
-    //lhs_[0] = Reg::createMem(
 }
 
 /*
@@ -452,9 +452,8 @@ std::string Spill::toString() const
 Reload::Reload(Reg* result, Reg* arg)
     : AssignmentBase(1, 1)
 {
-    swiftAssert( !result->isMem(), "result must not be a memory var");
-    swiftAssert( arg->isMem(), "arg must be a memory var");
-
+    swiftAssert( arg->isMem(), "arg must be a memory var" );
+    swiftAssert( !result->isMem(), "result must not be a memory var" );
     lhs_[0] = result;
     rhs_[0] = arg;
 }

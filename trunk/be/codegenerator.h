@@ -27,6 +27,16 @@ struct CodeGenerator
     IGraph*         ig_;
 #endif // SWIFT_DEBUG
 
+    /**
+     * If vars have to be spilled this counter is used to create new numbers in order to identify
+     * same vars.
+     */
+    int spillCounter_;
+
+    typedef std::map<me::Reg*, me::Reg*> SpillMap;
+    /// This set knows for each spilled var the corresponding memory var. 
+    SpillMap spillMap_;
+
     /*
      * constructor and destructor
      */
@@ -75,6 +85,10 @@ private:
      * @param bbNode The basic block which should be spilled.
      */
     void spill(me::BBNode* bbNode);
+
+    void reconstructSSAForm(me::RegSet* defs);
+
+    void findDef(me::InstrNode* instrNode, size_t p, me::RegSet* defs);
     
     /** 
      * @brief This is used to represent an infinity distance
@@ -127,6 +141,10 @@ distanceRec(bbNode, reg, instrNode) = |
      * @return 
      */
     int distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
+
+    void insertReload();
+
+    void insertSpill();
 
     /*
      * coloring

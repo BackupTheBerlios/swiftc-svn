@@ -29,7 +29,7 @@ struct InstrBase;
 //------------------------------------------------------------------------------
 
 /**
- * Base for an Operant which is used by SSA instrucions
+ * Base for an Operant which is used by SSA instructions
  */
 struct Op
 {
@@ -70,17 +70,18 @@ struct Op
 
     Type type_;
 
-/*
-    constructor and destructor
-*/
+    /*
+     * constructor and destructor
+     */
+
     Op(Type type)
         : type_(type)
     {}
     virtual ~Op() {}
 
-/*
-    further methods
-*/
+    /*
+     * further methods
+     */
 
     virtual std::string toString() const = 0;
 };
@@ -155,26 +156,31 @@ struct Literal : public Op
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief This is a pseudo register.
+ *
+ * Pseudo registers will be mapped to real registers during code generation.
+ */
 struct Reg : public Op
 {
     enum
     {
-        NOT_COLORED_YET,
-        MEMORY_LOCATION
+        NOT_COLORED_YET = -1,
+        MEMORY_LOCATION = -2
     };
 
     /**
      * varNr_ >= 0 a variable which is already defined only once <br>
-     * varNr_ < 0  a variable which must be converted to SSA form <br>
+     * varNr_  < 0 a variable which must be converted to SSA form <br>
      *
      * When in SSA-Form all varNr_ < 0 will be replaced by names > 0
      */
     int varNr_;
 
     /**
-     * The color after coloring; <br>
-     * -1 if it was not assigned already.
-     * -2 if it is a memory location and thus needn't be colored
+     * The color after coloring: <br>
+     * \a NOT_COLORED_YET if it was not assigned already. <br>
+     * \a MEMORY_LOCATION if it is a memory location and thus needn't be colored
      */
     int color_;
 

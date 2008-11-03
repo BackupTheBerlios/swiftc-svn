@@ -12,12 +12,18 @@ struct Expr;
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Base class for all expressions.
+ *
+ * All expressions inherit from this class. Implement \a analyze in order to
+ * implement the syntax checking.
+ */
 struct Expr : public Node
 {
     bool    lvalue_;
     Type*   type_;
 
-    /// this me::Op knows where the result is stored
+    /// This me::Op knows where the result is stored.
     me::Op* place_;
 
     /*
@@ -31,6 +37,11 @@ struct Expr : public Node
      * further methods
      */
 
+    /** 
+     * @brief Implement this in order to implenent syntax checking.
+     * 
+     * @return true -> syntax corrent, false oterwise
+     */
     virtual bool analyze() = 0;
 };
 

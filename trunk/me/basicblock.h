@@ -59,12 +59,14 @@ struct BasicBlock
 
     /** 
      * Points to the first PhiInstr. 
+     *
      * If this does not exist it points to \a firstOrdinary_.
      */
     InstrNode* firstPhi_;
 
     /**
      * Points to the first ordinary instruction.
+     *
      * If this does not exist it points to \a end_.
      */
     InstrNode* firstOrdinary_;
@@ -72,6 +74,7 @@ struct BasicBlock
     /**
      * Points to the leading LabelInstr of the next BasicBlock or
      * the ending LabelInstr respectively.
+     *
      * If this does not exist it points to the sentinel of this functions
      * instrList_.
      */
@@ -82,9 +85,9 @@ struct BasicBlock
     BBList domFrontier_;
     BBList domChildren_;
 
-    /// Keeps acount of the vars which are assigned to in this BasicBlock last.
+    /// Keep account of all vars which are not in SSA form and defined in this Basic block.
     RegMap vars_;
-    /// Regs that live 
+    /// Regs that live.
     RegSet liveIn_;
     RegSet liveOut_;
 

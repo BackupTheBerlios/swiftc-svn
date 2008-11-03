@@ -134,6 +134,27 @@ struct CFG : public Graph<BasicBlock>
     void calcUse(Reg* var, BBNode* bb);
 
     /*
+     * SSA form construction
+     */
+
+    /** 
+     * @brief Invode this method in order to construct SSA Form.
+     *
+     * Furthermore the dominator tree, the dominance frontier and the placement of phi functions
+     * will be calculated. Vars will be properly renamed and the def and use information is
+     * calculated at last.
+     */
+    void constructSSAForm();
+
+    /** 
+     * @brief Invoke This method if you have done something to the code that could have thrown the
+     * code out of SSA form.
+     *
+     * Remember to add each var in question to the BasicBlock's vars_ RegMap.
+     */
+    void reconstructSSAForm();
+
+    /*
      * dump methods
      */
 

@@ -12,7 +12,19 @@ namespace me {
 
 FuncTab* functab = 0;
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+Function::Function(std::string* id)
+    : id_(id)
+    , regCounter_(0)
+    , indexCounter_(0)
+    , numBBs_(2) // every function does at least have an entry and an exit node
+    , cfg_(this)
+{}
 
 Function::~Function()
 {
@@ -33,6 +45,10 @@ Function::~Function()
     delete id_;
 }
 
+/*
+ * further methods
+ */
+
 inline void Function::insert(Reg* reg)
 {
     pair<RegMap::iterator, bool> p
@@ -41,24 +57,12 @@ inline void Function::insert(Reg* reg)
     swiftAssert(p.second, "there is already a reg with this varNr in the map");
 }
 
-Reg* Function::newSSA(Op::Type type)
-{
-    Reg* reg = new Reg(type, regCounter_);
-    insert(reg);
-
-    ++regCounter_;
-
-    return reg;
-}
-
 #ifdef SWIFT_DEBUG
 
-Reg* Function::newSSA(Op::Type type, std::string* id)
+Reg* Function::newSSA(Op::Type type, std::string* id /*= 0*/)
 {
-    Reg* reg = new Reg(type, regCounter_, id);
+    Reg* reg = new Reg(type, regCounter_++, id);
     insert(reg);
-
-    ++regCounter_;
 
     return reg;
 }
@@ -72,7 +76,24 @@ Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
     return reg;
 }
 
+Reg* Function::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
+{
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    Reg* reg = Reg::createMem(type, varNr, id);
+    insert(reg);
+
+    return reg;
+}
+
 #else // SWIFT_DEBUG
+
+Reg* Function::newSSA(Op::Type type)
+{
+    Reg* reg = new Reg(type, regCounter_++);
+    insert(reg);
+
+    return reg;
+}
 
 Reg* Function::newVar(Op::Type type, int varNr)
 {
@@ -83,11 +104,20 @@ Reg* Function::newVar(Op::Type type, int varNr)
     return reg;
 }
 
+Reg* Function::newMem(Op::Type type, int varNr)
+{
+    swiftAssert(varNr < 0, "varNr must be less than zero");
+    Reg* reg = Reg::createMem(type, varNr);
+    insert(reg);
+
+    return reg;
+}
+
 #endif // SWIFT_DEBUG
 
 /*
-    dump functions
-*/
+ * dump methods
+ */
 
 void Function::dumpSSA(ofstream& ofs)
 {
@@ -123,7 +153,7 @@ void Function::dumpDot(const string& baseFilename)
     cfg_.dumpDot(baseFilename);
 }
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 FunctionTable::~FunctionTable()
 {
@@ -139,14 +169,9 @@ Function* FunctionTable::insertFunction(string* id)
     return current_;
 }
 
-Reg* FunctionTable::newSSA(Op::Type type)
-{
-    return current_->newSSA(type);
-}
-
 #ifdef SWIFT_DEBUG
 
-Reg* FunctionTable::newSSA(Op::Type type, std::string* id)
+Reg* FunctionTable::newSSA(Op::Type type, std::string* id /*= 0*/)
 {
     return current_->newSSA(type, id);
 }
@@ -156,11 +181,26 @@ Reg* FunctionTable::newVar(Op::Type type, int varNr, std::string* id)
     return current_->newVar(type, varNr, id);
 }
 
+Reg* FunctionTable::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
+{
+    return current_->newMem(type, varNr, id);
+}
+
 #else // SWIFT_DEBUG
+
+Reg* FunctionTable::newSSA(Op::Type type)
+{
+    return current_->newSSA(type);
+}
 
 Reg* FunctionTable::newVar(Op::Type type, int varNr)
 {
     return current_->newVar(type, varNr);
+}
+
+Reg* FunctionTable::newMem(Op::Type type, int varNr)
+{
+    return current_->newMem(type, varNr);
 }
 
 #endif // SWIFT_DEBUG
@@ -190,14 +230,7 @@ void FunctionTable::buildUpME()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         CFG& cfg = iter->second->cfg_;
-
-        cfg.calcCFG();
-        cfg.calcDomTree();
-        cfg.calcDomFrontier();
-        cfg.placePhiFunctions();
-        cfg.renameVars();
-        cfg.calcDef();
-        cfg.calcUse();
+        cfg.constructSSAForm();
     }
 }
 

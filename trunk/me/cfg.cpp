@@ -387,8 +387,6 @@ void CFG::placePhiFunctions()
             }
         } // while
     } // for each var
-
-    // now place the phi functions
 }
 
 void CFG::renameVars()
@@ -618,6 +616,29 @@ void CFG::calcUse(Reg* var, BBNode* bbNode)
     // for each child of bb in the dominator tree
     BBLIST_EACH(iter, bb->domChildren_)
         calcUse(var, iter->value_);
+}
+
+/*
+ * SSA form construction
+ */
+
+void CFG::constructSSAForm() 
+{
+    calcCFG();
+    calcDomTree();
+    calcDomFrontier();
+    placePhiFunctions();
+    renameVars();
+    calcDef();
+    calcUse();
+}
+
+void CFG::reconstructSSAForm() 
+{
+    placePhiFunctions();
+    renameVars();
+    calcDef();
+    calcUse();
 }
 
 /*

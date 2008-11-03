@@ -251,3 +251,19 @@ routine test()
         # This loop was breaked do some things
     end
 end
+
+---------------------------------------------------------------------------------------------------
+
+for vec v in vecs.each()
+    v + 3.f
+end
+
+@simd: v + 3.f
+
+for index i in vecs1.each()
+    vecs1[i] += vecs2[i]
+end
+
+vecs1[@] += vecs2[@]
+
+vecs[3, 21] += vecs[8, 26]

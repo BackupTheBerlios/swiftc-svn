@@ -21,8 +21,9 @@ struct Type;
 struct Var;
 
 /**
- * This is the symbol table which is used in the front-end. It is a global
- * which can be accessed via
+ * @brief This is the symbol table which is used in the front-end. 
+ *
+ * It is a global which can be accessed via
 @verbatim
 symtab->foo();
 @endverbatim

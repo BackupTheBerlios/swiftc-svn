@@ -83,6 +83,7 @@ CodeGenerator::CodeGenerator(std::ofstream& ofs, me::Function* function)
 #ifdef SWIFT_DEBUG
     , ig_( new IGraph(*function->id_) )
 #endif // SWIFT_DEBUG
+    , spillCounter_(-1) // first allowed name
 {}
 
 #ifdef SWIFT_DEBUG
@@ -315,7 +316,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     me::BasicBlock* bb = bbNode->value_;
 
     /*
-     * passed contains all regs live in at bb 
+     * passed should contain all regs live in at bb 
      * and the results of phi operations in bb
      */
     me::RegSet passed = bb->liveIn_;
@@ -357,45 +358,80 @@ void CodeGenerator::spill(me::BBNode* bbNode)
         inRegs.erase( inRegs.begin() + NUM_REGS, inRegs.end() );
 
     /*
-     * This set holds all vars which are at the current point in Regs. Initially
-     * it is assumed that all inRegs can be kept in Regs
+     * This set holds all vars which are at the current point in Regs. 
+     * Initially it is assumed that all inRegs can be kept in Regs.
      */
     me::RegSet currentlyInRegs; 
     for (size_t i = 0; i < inRegs.size(); ++i)
-        currentlyInRegs.insert( inRegs[0].reg_ );
+        currentlyInRegs.insert( inRegs[i].reg_ );
 
+    // traverse all ordinary instructions in bb
     for (me::InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
         // continue if we do not have an AssignmentBase here
         if (typeid(*iter->value_) != typeid(me::AssignmentBase))
             continue;
 
-        me::AssignmentBase* ab = (me::AssignmentBase*) iter->value_;
+        // points to the current instruction
+        me::InstrBase* instr = iter->value_;
+        me::AssignmentBase* ab = (me::AssignmentBase*) instr;
+        
+        // points to the last instruction -> first reloads then spills are appeneded
+        me::InstrNode* lastInstrNode = iter->prev_;
 
-        size_t numVarsToBeSpilled = 0;
-        // for each var on the rhs
+        /*
+         * check whether all vars on the rhs are in regs 
+         * and count necessary reloads
+         */
+        size_t numReloads = 0;
         for (size_t i = 0; i < ab->numRhs_; ++i)
         {
+            std::cout << "hey" << std::endl;
             // continue if this is not a Reg
             if (typeid(*ab->rhs_[i]) != typeid(me::Reg))
                 continue;
 
-            // is this var currently not in a real register?
+            /*
+             * is this var currently not in a real register?
+             */
             me::Reg* var = (me::Reg*) ab->rhs_[i];
 
             if (currentlyInRegs.find(var) == currentlyInRegs.end())
             {
-                // insert reload instruction
+                /*
+                 * insert reload instruction
+                 */
+                swiftAssert(spillMap_.find(var) != spillMap_.end(),
+                    "var must be found here");
+                me::Reg* mem = spillMap_[var];
+                swiftAssert(mem->isMem(), "must be a memory var");
+
+                me::Reload* reload = new me::Reload(var, mem);
+                cfg_->instrList_.insert(lastInstrNode, reload);
                 
-                //cfg_->instrList_->insert(
-                
-                ++numVarsToBeSpilled;
+                // keep account of the number of needed reloads here
+                ++numReloads;
             }
         }
 
-        // remove numVarsToBeSpilled from the set
-        for (size_t i = 0; i < numVarsToBeSpilled; ++i)
+        // numRemove -> number of regs which must be removed from currentlyInRegs
+        size_t numRemove = std::max( numReloads - currentlyInRegs.size(), 0ul );
+
+        /*
+         * insert spills
+         */
+        for (size_t i = 0; i < numRemove; ++i)
         {
+            // insert spill instruction
+            me::Reg* toBeSpilled = *currentlyInRegs.rend();
+            me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
+
+            // insert into spill map if toBeSpilled is the first spill
+            if ( spillMap_.find(toBeSpilled) == spillMap_.end() )
+                spillMap_[toBeSpilled] = mem;
+
+            me::Spill* spill = new me::Spill(mem, toBeSpilled);
+            cfg_->instrList_.insert(lastInstrNode, spill);
         }
     }
 }
@@ -460,7 +496,7 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
     int inc = (typeid(*instr) == typeid(me::LabelInstr)) ? 0 : 1;
 
     // add up the distance and do not calculate around
-    result = result == infinity() ? infinity() : result + inc;
+    result = (result == infinity()) ? infinity() : result + inc;
 
     return result;
 }

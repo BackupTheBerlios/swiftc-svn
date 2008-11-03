@@ -449,7 +449,7 @@ bool BinExpr::analyze()
         return false;
     }
 
-    // checker whether there is an operator which fits
+    // checke whether there is an operator which fits
     Sig sig;
     sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
     sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
