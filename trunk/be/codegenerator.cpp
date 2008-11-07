@@ -275,7 +275,7 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
  */
 
 // TODO
-#define NUM_REGS 2
+#define NUM_REGS 4
 
 void CodeGenerator::spill()
 {
@@ -368,15 +368,23 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     // traverse all ordinary instructions in bb
     for (me::InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
-        // continue if we do not have an AssignmentBase here
-        if (typeid(*iter->value_) != typeid(me::AssignmentBase))
-            continue;
+        std::cout << iter->value_->toString() << std::endl;
+        swiftAssert(dynamic_cast<me::AssignmentBase*>(iter->value_),
+                "must be an AssignmentBase here");
 
         // points to the current instruction
         me::InstrBase* instr = iter->value_;
         me::AssignmentBase* ab = (me::AssignmentBase*) instr;
         
-        // points to the last instruction -> first reloads then spills are appeneded
+        /*
+         * points to the last instruction 
+         * -> first reloads then spills are appeneded
+         * -> so we have:
+         *  lastInstrNode
+         *  spills
+         *  reloads
+         *  iter
+         */
         me::InstrNode* lastInstrNode = iter->prev_;
 
         /*
@@ -386,8 +394,6 @@ void CodeGenerator::spill(me::BBNode* bbNode)
         size_t numReloads = 0;
         for (size_t i = 0; i < ab->numRhs_; ++i)
         {
-            std::cout << "hey" << std::endl;
-            // continue if this is not a Reg
             if (typeid(*ab->rhs_[i]) != typeid(me::Reg))
                 continue;
 
@@ -398,13 +404,15 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
             if (currentlyInRegs.find(var) == currentlyInRegs.end())
             {
+                std::cout << "reload" << std::endl;
+
                 /*
                  * insert reload instruction
                  */
                 swiftAssert(spillMap_.find(var) != spillMap_.end(),
                     "var must be found here");
                 me::Reg* mem = spillMap_[var];
-                swiftAssert(mem->isMem(), "must be a memory var");
+                swiftAssert( mem->isMem(), "must be a memory var" );
 
                 me::Reload* reload = new me::Reload(var, mem);
                 cfg_->instrList_.insert(lastInstrNode, reload);
@@ -422,6 +430,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
          */
         for (size_t i = 0; i < numRemove; ++i)
         {
+            std::cout << "spill" << std::endl;
             // insert spill instruction
             me::Reg* toBeSpilled = *currentlyInRegs.rend();
             me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
@@ -433,6 +442,8 @@ void CodeGenerator::spill(me::BBNode* bbNode)
             me::Spill* spill = new me::Spill(mem, toBeSpilled);
             cfg_->instrList_.insert(lastInstrNode, spill);
         }
+
+        // TODO update distances of currentlyInRegs
     }
 }
 
