@@ -311,6 +311,40 @@ struct RegAndDistance
     }
 };
 
+// TODO perhaps use two synced sets for better performance:
+// - one sorted by distance
+// - one sorted by reg
+
+typedef std::set<RegAndDistance> DistanceSet;
+me::Reg* regFind(DistanceSet& ds, me::Reg* reg)
+{
+    me::Reg* result = 0;
+    for (DistanceSet::iterator iter = ds.begin(); iter != ds.end(); ++iter)
+    {
+        if ( (*iter).reg_ == reg)
+            return reg;
+    }
+
+    return result;
+}
+
+void discardFarest(DistanceSet& ds)
+{
+    if (ds.size() > NUM_REGS)
+    {
+        size_t remove = ds.size() - NUM_REGS;
+        size_t count = 0;
+        DistanceSet::iterator iter = ds.end();
+
+        while (count != remove)
+        {
+            ++count;
+            --iter;
+            ds.erase(iter);
+        }
+    }
+}
+
 void CodeGenerator::spill(me::BBNode* bbNode)
 {
     me::BasicBlock* bb = bbNode->value_;
@@ -337,33 +371,25 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     /*
      * now we need the set which is allowed to be in real registers
      */
-    std::vector<RegAndDistance> inRegs( passed.size() );
+    DistanceSet inRegs;
 
     // put in all regs from passed and calculate the distance to its next use
-    size_t counter = 0;
     REGSET_EACH(iter, passed)
     {
         // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
-        inRegs[counter] = RegAndDistance( *iter, distance(bbNode, *iter, bb->firstOrdinary_) );
-        ++counter;
+        inRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
     }
 
     /*
-     * sort and use the first NUM_REGS registers
-     * if the inRegs set is too large
+     * use the first NUM_REGS registers if the inRegs set is too large
      */
-    std::sort( inRegs.begin(), inRegs.end() );
-
-    if (inRegs.size() > NUM_REGS)
-        inRegs.erase( inRegs.begin() + NUM_REGS, inRegs.end() );
+    discardFarest(inRegs);
 
     /*
      * This set holds all vars which are at the current point in Regs. 
      * Initially it is assumed that all inRegs can be kept in Regs.
      */
-    me::RegSet currentlyInRegs; 
-    for (size_t i = 0; i < inRegs.size(); ++i)
-        currentlyInRegs.insert( inRegs[i].reg_ );
+    DistanceSet currentlyInRegs(inRegs);
 
     // traverse all ordinary instructions in bb
     for (me::InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
@@ -402,7 +428,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
              */
             me::Reg* var = (me::Reg*) ab->rhs_[i];
 
-            if (currentlyInRegs.find(var) == currentlyInRegs.end())
+            if (regFind(currentlyInRegs, var) == 0)
             {
                 std::cout << "reload" << std::endl;
 
@@ -432,7 +458,7 @@ void CodeGenerator::spill(me::BBNode* bbNode)
         {
             std::cout << "spill" << std::endl;
             // insert spill instruction
-            me::Reg* toBeSpilled = *currentlyInRegs.rend();
+            me::Reg* toBeSpilled = currentlyInRegs.rend()->reg_;
             me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
 
             // insert into spill map if toBeSpilled is the first spill
