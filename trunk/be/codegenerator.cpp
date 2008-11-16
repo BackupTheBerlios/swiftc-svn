@@ -458,7 +458,8 @@ void CodeGenerator::spill(me::BBNode* bbNode)
         {
             std::cout << "spill" << std::endl;
             // insert spill instruction
-            me::Reg* toBeSpilled = currentlyInRegs.rend()->reg_;
+            // TODO
+            me::Reg* toBeSpilled = currentlyInRegs.rbegin()->reg_;
             me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
 
             // insert into spill map if toBeSpilled is the first spill
@@ -469,7 +470,19 @@ void CodeGenerator::spill(me::BBNode* bbNode)
             cfg_->instrList_.insert(lastInstrNode, spill);
         }
 
-        // TODO update distances of currentlyInRegs
+        /*
+         * update distances
+         */
+
+        DistanceSet newSet;
+        for (DistanceSet::iterator iter = currentlyInRegs.begin(); iter != currentlyInRegs.end(); ++iter)
+        {
+            int distance = ( iter->distance_ == infinity() ) 
+                ? iter->distance_ 
+                : iter->distance_ - 1;
+            newSet.insert( RegAndDistance(iter->reg_, distance) );
+        }
+        currentlyInRegs = newSet;
     }
 }
 
