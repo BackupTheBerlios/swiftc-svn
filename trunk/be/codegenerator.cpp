@@ -105,10 +105,15 @@ void CodeGenerator::genCode()
     spiller_->setFunction(function_);
 
     // traverse the code generation pipe
-    //std::cout << std::endl << *function_->id_ << std::endl;
+    std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
     spill();
-    color();
+
+    INSTRLIST_EACH(iter, cfg_->instrList_)
+    {
+        std::cout << iter->value_->toString() << std::endl;
+    }
+    //color();
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
 #endif // SWIFT_DEBUG
@@ -275,19 +280,11 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
  */
 
 // TODO
-#define NUM_REGS 4
+#define NUM_REGS 2
 
 void CodeGenerator::spill()
 {
-    std::set<me::Reg*> varsCurrentlyInRegs;
-
-    // for each basic block
-    for (size_t i = 0; i < cfg_->postOrder_.size(); ++i)
-    {
-        me::BBNode* bb = cfg_->postOrder_[i]; // get current basic block
-
-        spill(bb);
-    }
+    spill(cfg_->entry_);
 }
 
 /*
@@ -303,11 +300,16 @@ struct RegAndDistance
         : reg_(reg)
         , distance_(distance)
     {}
+    // copy constructor
+    RegAndDistance(const RegAndDistance& rd)
+        : reg_(rd.reg_)
+        , distance_(rd.distance_)
+    {}
 
     // needed by std::sort
     bool operator < (const RegAndDistance& r) const
     {
-        return distance_ < r.distance_;
+        return distance_ > r.distance_; // sort farest first
     }
 };
 
@@ -318,172 +320,25 @@ struct RegAndDistance
 typedef std::set<RegAndDistance> DistanceSet;
 me::Reg* regFind(DistanceSet& ds, me::Reg* reg)
 {
-    me::Reg* result = 0;
     for (DistanceSet::iterator iter = ds.begin(); iter != ds.end(); ++iter)
     {
-        if ( (*iter).reg_ == reg)
+        if ( iter->reg_ == reg)
             return reg;
     }
 
-    return result;
+    return 0;
 }
 
 void discardFarest(DistanceSet& ds)
 {
-    if (ds.size() > NUM_REGS)
-    {
-        size_t remove = ds.size() - NUM_REGS;
-        size_t count = 0;
-        DistanceSet::iterator iter = ds.end();
-
-        while (count != remove)
-        {
-            ++count;
-            --iter;
-            ds.erase(iter);
-        }
-    }
+    while (ds.size() > NUM_REGS)
+        ds.erase( ds.begin() );
 }
 
-void CodeGenerator::spill(me::BBNode* bbNode)
+void subOne(int& i)
 {
-    me::BasicBlock* bb = bbNode->value_;
-
-    /*
-     * passed should contain all regs live in at bb 
-     * and the results of phi operations in bb
-     */
-    me::RegSet passed = bb->liveIn_;
-
-    // for each PhiInstr in bb
-    for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
-    {
-        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
-            "must be a PhiInstr here" );
-
-        me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
-        
-        // add result to the passed set
-        passed.insert( phi->result() );
-    }
-    // passed now holds all proposed values
-
-    /*
-     * now we need the set which is allowed to be in real registers
-     */
-    DistanceSet inRegs;
-
-    // put in all regs from passed and calculate the distance to its next use
-    REGSET_EACH(iter, passed)
-    {
-        // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
-        inRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
-    }
-
-    /*
-     * use the first NUM_REGS registers if the inRegs set is too large
-     */
-    discardFarest(inRegs);
-
-    /*
-     * This set holds all vars which are at the current point in Regs. 
-     * Initially it is assumed that all inRegs can be kept in Regs.
-     */
-    DistanceSet currentlyInRegs(inRegs);
-
-    // traverse all ordinary instructions in bb
-    for (me::InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
-    {
-        std::cout << iter->value_->toString() << std::endl;
-        swiftAssert(dynamic_cast<me::AssignmentBase*>(iter->value_),
-                "must be an AssignmentBase here");
-
-        // points to the current instruction
-        me::InstrBase* instr = iter->value_;
-        me::AssignmentBase* ab = (me::AssignmentBase*) instr;
-        
-        /*
-         * points to the last instruction 
-         * -> first reloads then spills are appeneded
-         * -> so we have:
-         *  lastInstrNode
-         *  spills
-         *  reloads
-         *  iter
-         */
-        me::InstrNode* lastInstrNode = iter->prev_;
-
-        /*
-         * check whether all vars on the rhs are in regs 
-         * and count necessary reloads
-         */
-        size_t numReloads = 0;
-        for (size_t i = 0; i < ab->numRhs_; ++i)
-        {
-            if (typeid(*ab->rhs_[i]) != typeid(me::Reg))
-                continue;
-
-            /*
-             * is this var currently not in a real register?
-             */
-            me::Reg* var = (me::Reg*) ab->rhs_[i];
-
-            if (regFind(currentlyInRegs, var) == 0)
-            {
-                std::cout << "reload" << std::endl;
-
-                /*
-                 * insert reload instruction
-                 */
-                swiftAssert(spillMap_.find(var) != spillMap_.end(),
-                    "var must be found here");
-                me::Reg* mem = spillMap_[var];
-                swiftAssert( mem->isMem(), "must be a memory var" );
-
-                me::Reload* reload = new me::Reload(var, mem);
-                cfg_->instrList_.insert(lastInstrNode, reload);
-                
-                // keep account of the number of needed reloads here
-                ++numReloads;
-            }
-        }
-
-        // numRemove -> number of regs which must be removed from currentlyInRegs
-        size_t numRemove = std::max( numReloads - currentlyInRegs.size(), 0ul );
-
-        /*
-         * insert spills
-         */
-        for (size_t i = 0; i < numRemove; ++i)
-        {
-            std::cout << "spill" << std::endl;
-            // insert spill instruction
-            // TODO
-            me::Reg* toBeSpilled = currentlyInRegs.rbegin()->reg_;
-            me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
-
-            // insert into spill map if toBeSpilled is the first spill
-            if ( spillMap_.find(toBeSpilled) == spillMap_.end() )
-                spillMap_[toBeSpilled] = mem;
-
-            me::Spill* spill = new me::Spill(mem, toBeSpilled);
-            cfg_->instrList_.insert(lastInstrNode, spill);
-        }
-
-        /*
-         * update distances
-         */
-
-        DistanceSet newSet;
-        for (DistanceSet::iterator iter = currentlyInRegs.begin(); iter != currentlyInRegs.end(); ++iter)
-        {
-            int distance = ( iter->distance_ == infinity() ) 
-                ? iter->distance_ 
-                : iter->distance_ - 1;
-            newSet.insert( RegAndDistance(iter->reg_, distance) );
-        }
-        currentlyInRegs = newSet;
-    }
+    if (i != CodeGenerator::infinity())
+        --i;
 }
 
 int CodeGenerator::distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode) 
@@ -549,6 +404,188 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
     result = (result == infinity()) ? infinity() : result + inc;
 
     return result;
+}
+
+void CodeGenerator::spill(me::BBNode* bbNode)
+{
+    me::BasicBlock* bb = bbNode->value_;
+
+    /*
+     * passed should contain all regs live in at bb 
+     * and the results of phi operations in bb
+     */
+    me::RegSet passed = bb->liveIn_;
+
+    // for each PhiInstr in bb
+    for (me::InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
+    {
+        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
+            "must be a PhiInstr here" );
+
+        me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
+        
+        // add result to the passed set
+        passed.insert( phi->result() );
+    }
+    // passed now holds all proposed values
+
+    /*
+     * now we need the set which is allowed to be in real registers
+     */
+    DistanceSet inRegs;
+
+    // put in all regs from passed and calculate the distance to its next use
+    REGSET_EACH(iter, passed)
+    {
+        // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
+        inRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
+    }
+
+    /*
+     * use the first NUM_REGS registers if the inRegs set is too large
+     */
+    discardFarest(inRegs);
+
+    /*
+     * This set holds all vars which are at the current point in Regs. 
+     * Initially it is assumed that all inRegs can be kept in Regs.
+     */
+    DistanceSet currentlyInRegs(inRegs);
+
+    // traverse all ordinary instructions in bb
+    me::InstrNode* iter = bb->firstOrdinary_;
+    while (iter != bb->end_)
+    {
+        swiftAssert(dynamic_cast<me::AssignmentBase*>(iter->value_),
+                "must be an AssignmentBase here");
+
+        // points to the current instruction
+        me::InstrBase* instr = iter->value_;
+        me::AssignmentBase* ab = (me::AssignmentBase*) instr;
+
+        /*
+         * points to the last instruction 
+         * -> first reloads then spills are appeneded
+         * -> so we have:
+         *  lastInstrNode
+         *  spills
+         *  reloads
+         *  instr
+         */
+        me::InstrNode* lastInstrNode = iter->prev_;
+
+        /*
+         * check whether all vars on the rhs are in regs 
+         * and count necessary reloads
+         */
+        int numReloads = 0;
+        for (size_t i = 0; i < ab->numRhs_; ++i)
+        {
+            if (typeid(*ab->rhs_[i]) != typeid(me::Reg))
+                continue;
+
+            /*
+             * is this var currently not in a real register?
+             */
+            me::Reg* var = (me::Reg*) ab->rhs_[i];
+
+            if (regFind(currentlyInRegs, var) == 0)
+            {
+                /*
+                 * insert reload instruction
+                 */
+                swiftAssert(spillMap_.find(var) != spillMap_.end(),
+                    "var must be found here");
+                me::Reg* mem = spillMap_[var];
+                swiftAssert( mem->isMem(), "must be a memory var" );
+
+                me::Reload* reload = new me::Reload(var, mem);
+                cfg_->instrList_.insert(lastInstrNode, reload);
+                // TODO
+                currentlyInRegs.insert( RegAndDistance(var, 0) );
+                
+                // keep account of the number of needed reloads here
+                ++numReloads;
+            }
+        }
+
+        // numRemove -> number of regs which must be removed from currentlyInRegs
+        int numRemove = std::max( int(ab->numLhs_) + numReloads + int(currentlyInRegs.size()) - NUM_REGS, 0 );
+
+        /*
+         * insert spills
+         */
+        for (int i = 0; i < numRemove; ++i)
+        {
+            // insert spill instruction
+            me::Reg* toBeSpilled = currentlyInRegs.begin()->reg_;
+            me::Reg* mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
+
+            // insert into spill map if toBeSpilled is the first spill
+            if ( spillMap_.find(toBeSpilled) == spillMap_.end() )
+                spillMap_[toBeSpilled] = mem;
+
+            me::Spill* spill = new me::Spill(mem, toBeSpilled);
+            cfg_->instrList_.insert(lastInstrNode, spill);
+
+            // remove first reg
+            currentlyInRegs.erase( currentlyInRegs.begin() );
+
+            // TODO calc In_B
+        }
+
+        // make room for the results
+        //numRemove = std::max( int(ab->numLhs_) + int(currentlyInRegs.size()) - NUM_REGS, 0);
+        //swiftAssert(numRemove <= int(currentlyInRegs.size()), 
+                    //"trying to remove more than possible");
+        //for (int i = 0; i < numRemove; ++i)
+            //currentlyInRegs.erase( currentlyInRegs.begin() );
+
+        // go to next instruction
+        iter = iter->next();
+        if (iter == bb->end_)
+            break; // exit loop here
+        
+        /*
+         * update distances
+         */
+
+        DistanceSet newSet;
+        for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+        {
+            int dist = regIter->distance_;
+            subOne(dist);
+
+            // recalculate distance if we have reached the next use
+            if (dist < 0)
+                dist = distance(bbNode, regIter->reg_, iter);
+
+            newSet.insert( RegAndDistance(regIter->reg_, dist) );
+        }
+
+        currentlyInRegs = newSet;
+
+        // add results to currentlyInRegs
+        for (size_t i = 0; i < ab->numLhs_; ++i)
+        {
+            me::Reg* reg = ab->lhs_[i];
+            currentlyInRegs.insert( RegAndDistance(reg, distance(bbNode, reg, iter)) );
+        }
+
+    } // for each instr
+    
+    // for each child of bb in the dominator tree
+    BBLIST_EACH(bbIter, bb->domChildren_)
+    {
+        me::BBNode* domChild = bbIter->value_;
+        spill(domChild);
+    }
+}
+
+void CodeGenerator::reconstructSSAForm(me::RegSet* regs)
+{
+    // for each reg in the dominance frontier of
+    
 }
 
 /*

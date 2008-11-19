@@ -38,6 +38,8 @@ class Test
         bool b
 
         b = r * 5.0 > 7.0
+        real foo
+        foo = r + 2.0
 
         while b
             if 6 == 8
@@ -63,7 +65,9 @@ class Test
                     if b
                         bool b
                         b  = false
-                        t = 7.0
+                        int bar
+                        bar = 5 + 8
+                        t = 7.0 + r
                     else
                         if b
                             real u

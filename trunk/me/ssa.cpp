@@ -440,7 +440,10 @@ void Spill::genCode(std::ofstream& /*ofs*/)
 
 std::string Spill::toString() const
 {
-    return "TODO";
+    std::ostringstream oss;
+    oss << lhs_[0]->toString() << " = spill(" << rhs_[0]->toString() << ")";
+
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------
@@ -469,7 +472,10 @@ void Reload::genCode(std::ofstream& /*ofs*/)
 
 std::string Reload::toString() const
 {
-    return "TODO";
+    std::ostringstream oss;
+    oss << lhs_[0]->toString() << " = reload(" << rhs_[0]->toString() << ")";
+
+    return oss.str();
 }
 
 } // namespace me

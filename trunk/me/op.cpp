@@ -145,6 +145,9 @@ std::string Reg::toString() const
 {
     std::ostringstream oss;
 
+    if ( isMem() )
+        oss << "@";
+
     if ( !isSSA() )
     {
 #ifdef SWIFT_DEBUG

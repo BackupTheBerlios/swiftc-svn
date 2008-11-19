@@ -90,6 +90,7 @@ private:
 
     void findDef(me::InstrNode* instrNode, size_t p, me::RegSet* defs);
     
+public:
     /** 
      * @brief This is used to represent an infinity distance
      * 
@@ -99,6 +100,7 @@ private:
     {
         return std::numeric_limits<int>::max();
     }
+private:
 
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
