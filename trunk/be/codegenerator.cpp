@@ -432,25 +432,30 @@ void CodeGenerator::spill(me::BBNode* bbNode)
     /*
      * now we need the set which is allowed to be in real registers
      */
-    DistanceSet inRegs;
+    me::RegSet inRegs;
+    me::RegSet inB;
+    DistanceSet currentlyInRegs;
 
     // put in all regs from passed and calculate the distance to its next use
     REGSET_EACH(iter, passed)
     {
         // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
-        inRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
+        currentlyInRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
     }
 
     /*
-     * use the first NUM_REGS registers if the inRegs set is too large
+     * use the first NUM_REGS registers if the set is too large
      */
-    discardFarest(inRegs);
+    discardFarest(currentlyInRegs);
+
+    // copy over to inRegs
+    for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+        inRegs.insert(regIter->reg_);
 
     /*
-     * This set holds all vars which are at the current point in Regs. 
-     * Initially it is assumed that all inRegs can be kept in Regs.
+     * currentlyInRegs holds all vars which are at the current point in regs. 
+     * Initially it is assumed that all vars in currentlyInRegs can be kept in regs.
      */
-    DistanceSet currentlyInRegs(inRegs);
 
     // traverse all ordinary instructions in bb
     me::InstrNode* iter = bb->firstOrdinary_;
@@ -500,12 +505,25 @@ void CodeGenerator::spill(me::BBNode* bbNode)
                 swiftAssert( mem->isMem(), "must be a memory var" );
 
                 me::Reload* reload = new me::Reload(var, mem);
-                cfg_->instrList_.insert(lastInstrNode, reload);
-                // TODO
+                reloads_.insert( cfg_->instrList_.insert(lastInstrNode, reload) );
+
                 currentlyInRegs.insert( RegAndDistance(var, 0) );
-                
+
                 // keep account of the number of needed reloads here
                 ++numReloads;
+            }
+            else
+            {
+                /*
+                 * manage inB and inRegs
+                 */
+                me::RegSet::iterator regIter = inRegs.find(var);
+                if ( regIter != inRegs.end() )
+                {
+                    // reg is used befor discarded
+                    inB.insert(*regIter);
+                    inRegs.erase(regIter);
+                }
             }
         }
 
@@ -526,20 +544,18 @@ void CodeGenerator::spill(me::BBNode* bbNode)
                 spillMap_[toBeSpilled] = mem;
 
             me::Spill* spill = new me::Spill(mem, toBeSpilled);
-            cfg_->instrList_.insert(lastInstrNode, spill);
+            spills_.insert( cfg_->instrList_.insert(lastInstrNode, spill) );
 
             // remove first reg
             currentlyInRegs.erase( currentlyInRegs.begin() );
 
-            // TODO calc In_B
+            /*
+             * manage inB and inRegs
+             */
+            me::RegSet::iterator regIter = inRegs.find(toBeSpilled);
+            if ( regIter != inRegs.end() )
+                inRegs.erase(regIter); // reg is not used befor 
         }
-
-        // make room for the results
-        //numRemove = std::max( int(ab->numLhs_) + int(currentlyInRegs.size()) - NUM_REGS, 0);
-        //swiftAssert(numRemove <= int(currentlyInRegs.size()), 
-                    //"trying to remove more than possible");
-        //for (int i = 0; i < numRemove; ++i)
-            //currentlyInRegs.erase( currentlyInRegs.begin() );
 
         // go to next instruction
         iter = iter->next();
@@ -574,6 +590,8 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
     } // for each instr
     
+    DistanceSet& outB = currentlyInRegs;
+
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
@@ -585,7 +603,8 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 void CodeGenerator::reconstructSSAForm(me::RegSet* regs)
 {
     // for each reg in the dominance frontier of
-    
+    //BBList work;
+    //BBLIST_EACH(iter, firstBB->value_->domFrontier_)
 }
 
 /*

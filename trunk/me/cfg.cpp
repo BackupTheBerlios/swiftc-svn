@@ -171,7 +171,55 @@ void CFG::calcCFG()
         }
     } // INSTRLIST_EACH
 
+    // find all critical edges and insert empty basic blocks in order to eliminate them
+    eliminateCriticalEdges();
+
     calcPostOrder(entry_);
+}
+
+void CFG::eliminateCriticalEdges()
+{
+    // for each CFG node
+    RELATIVES_EACH(iter, nodes_)
+    {
+        BasicBlock* bb = iter->value_->value_;
+        
+        if (iter->value_->pred_.size() <= 1)
+            continue;
+        
+        RELATIVES_EACH(predIter, iter->value_->pred_)
+        {
+            BasicBlock* pred = predIter->value_->value_;
+            InstrNode* predLastInstr = pred->end_->prev();
+
+            JumpInstr* ji = dynamic_cast<JumpInstr*>(predLastInstr->value_);
+            if (ji == 0 || ji->numTargets_ <= 1)
+                continue;
+
+            // for each jump target other than bb
+            for (size_t i = 0; i < ji->numTargets_; ++i)
+            {
+                if (ji->bbTargets_[i]->value_ == bb)
+                    continue; // omit bb (orign basic block)
+
+                // -> edge between pred and iter is critical
+                std::cout << "critical" << std::endl;
+                InstrNode* bbFirstInstr = bb->begin_;
+                swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
+                        "must be a LabelInstr here");
+                InstrNode* labelNode = bb->begin_;
+
+                /*
+                 * insert new BasicBlock
+                 */
+
+                // create new beginning Label
+                // insert it in the instruction list
+                //InstrNode* newLabelNode = instrList_->insert( labelNode->prev()->value_, new LabelInstr() );
+                //BasicBlock* newBB = new BasicBlock(newLabelNode, newLabelNode,  0);
+            }
+        }
+    }
 }
 
 void CFG::calcDomTree()

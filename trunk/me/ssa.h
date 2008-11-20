@@ -63,9 +63,9 @@ struct LabelInstr : public InstrBase
     std::string label_;
 
     LabelInstr();
-    LabelInstr(const std::string& label)
-        : label_(label)
-    {}
+    //LabelInstr(const std::string& label)
+        //: label_(label)
+    //{}
 
     virtual std::string toString() const
     {

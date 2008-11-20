@@ -14,11 +14,11 @@ namespace me {
 */
 
 BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary)
-: begin_(begin)
-, firstOrdinary_( firstOrdinary ? firstOrdinary : end) // select end if firstOrdinary == 0
-, end_(end)
+    : begin_(begin)
+    , firstOrdinary_( firstOrdinary ? firstOrdinary : end) // select end if firstOrdinary == 0
+    , end_(end)
 {
-firstPhi_ = firstOrdinary_;// assume that there are no phis at the beginning
+    firstPhi_ = firstOrdinary_;// assume that there are no phis at the beginning
 }
 
 /*

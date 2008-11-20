@@ -37,6 +37,10 @@ struct CodeGenerator
     /// This set knows for each spilled var the corresponding memory var. 
     SpillMap spillMap_;
 
+    typedef std::set<me::InstrNode*> InstrSet;
+    InstrSet spills_;
+    InstrSet reloads_;
+    
     /*
      * constructor and destructor
      */

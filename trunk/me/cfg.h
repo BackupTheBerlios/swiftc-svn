@@ -89,6 +89,7 @@ struct CFG : public Graph<BasicBlock>
      */
 
     void calcCFG();
+    void eliminateCriticalEdges();
     void calcDomTree();
     BBNode* intersect(BBNode* b1, BBNode* b2);
     void calcDomFrontier();
