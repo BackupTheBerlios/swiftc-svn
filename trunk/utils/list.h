@@ -65,12 +65,27 @@ private:
 public:
 
     List()
+        : size_(0)
+        , sentinel_( new Node() )
     {
-        sentinel_ = new Node();
+        sentinel_->prev_ = sentinel_;
+        sentinel_->next_ = sentinel_;
+    }
+
+    List(const List<T>& l)
+        : size_(0)
+        , sentinel_( new Node() )
+    {
         sentinel_->prev_ = sentinel_;
         sentinel_->next_ = sentinel_;
 
-        size_ = 0;
+        Node* n = l.sentinel_->next_;
+
+        while (n != l.sentinel_)
+        {
+            append(n->value_);
+            n = n->next_;
+        }
     }
 
     ~List()

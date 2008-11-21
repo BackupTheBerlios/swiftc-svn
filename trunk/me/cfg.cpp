@@ -179,18 +179,23 @@ void CFG::calcCFG()
 
 void CFG::eliminateCriticalEdges()
 {
+    Relatives nodes(nodes_);
+    
     // for each CFG node
-    RELATIVES_EACH(iter, nodes_)
+    RELATIVES_EACH(iter, nodes)
     {
+        std::cout << "iter: " << iter->value_->value_->name() << std::endl;
         BasicBlock* bb = iter->value_->value_;
         
         if (iter->value_->pred_.size() <= 1)
             continue;
-        
-        RELATIVES_EACH(predIter, iter->value_->pred_)
+
+        Relatives pred(iter->value_->pred_);
+        RELATIVES_EACH(predIter, pred)
         {
-            BasicBlock* pred = predIter->value_->value_;
-            InstrNode* predLastInstr = pred->end_->prev();
+            std::cout << predIter->value_->value_->name() << std::endl;
+            BBNode* predNode = predIter->value_;
+            InstrNode* predLastInstr = predNode->value_->end_->prev();
 
             JumpInstr* ji = dynamic_cast<JumpInstr*>(predLastInstr->value_);
             if (ji == 0 || ji->numTargets_ <= 1)
@@ -213,13 +218,24 @@ void CFG::eliminateCriticalEdges()
                  * insert new BasicBlock
                  */
 
-                // create new beginning Label
-                // insert it in the instruction list
-                //InstrNode* newLabelNode = instrList_->insert( labelNode->prev()->value_, new LabelInstr() );
-                //BasicBlock* newBB = new BasicBlock(newLabelNode, newLabelNode,  0);
+                // create new beginning Label and insert it in the instruction list
+                InstrNode* newLabelNode = instrList_.insert( labelNode->prev(), new LabelInstr() );
+                BBNode* newBB = insert( new BasicBlock(newLabelNode, bb->begin_, 0) );
+
+                // rewire basic blocks
+                Relative* it = predNode->succ_.find(iter->value_);
+                swiftAssert( it != predNode->succ_.sentinel(), "node must be found here" );
+                predNode->succ_.erase(it);
+
+                it = iter->value_->pred_.find(predNode);
+                swiftAssert( it != iter->value_->pred_.sentinel(), "node must be found here" );
+                iter->value_->pred_.erase(it);
+                
+                predIter->value_->link(newBB);
+                newBB->link(iter->value_);
             }
-        }
-    }
+        } // for each jump target
+    } // for each CFG node
 }
 
 void CFG::calcDomTree()
