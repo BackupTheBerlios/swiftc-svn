@@ -96,7 +96,7 @@ struct BasicBlock
      */
 
     BasicBlock() {}
-    BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary);
+    BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary = 0);
 
     /*
      * further methods

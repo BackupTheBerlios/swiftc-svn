@@ -105,14 +105,14 @@ void CodeGenerator::genCode()
     spiller_->setFunction(function_);
 
     // traverse the code generation pipe
-    std::cout << std::endl << *function_->id_ << std::endl;
+    //std::cout << std::endl << *function_->id_ << std::endl;
     livenessAnalysis();
     spill();
 
-    INSTRLIST_EACH(iter, cfg_->instrList_)
-    {
-        std::cout << iter->value_->toString() << std::endl;
-    }
+    //INSTRLIST_EACH(iter, cfg_->instrList_)
+    //{
+        //std::cout << iter->value_->toString() << std::endl;
+    //}
     //color();
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
@@ -282,11 +282,6 @@ void CodeGenerator::liveInAtInstr(me::InstrNode* instr, me::Reg* var)
 // TODO
 #define NUM_REGS 2
 
-void CodeGenerator::spill()
-{
-    spill(cfg_->entry_);
-}
-
 /*
  * needed for sorting via the distance method
  */
@@ -406,7 +401,76 @@ int CodeGenerator::distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* 
     return result;
 }
 
-void CodeGenerator::spill(me::BBNode* bbNode)
+void CodeGenerator::spill()
+{
+    BB2RegSet in;
+    BB2RegSet out;
+    spill(cfg_->entry_, in, out);
+
+    /*
+     * combine results
+     */
+
+    // for each basic block
+    CFG_RELATIVES_EACH(iter, cfg_->nodes_)
+    {
+        me::BBNode* bbNode = iter->value_;
+        me::BasicBlock* bb = bbNode->value_;
+        me::RegSet& inB = in[bbNode];
+
+        // for each predecessor of the current node
+        CFG_RELATIVES_EACH(predIter, bbNode->pred_)
+        {
+            me::BBNode* predNode = predIter->value_;
+            me::BasicBlock* pred = predNode->value_;
+            me::RegSet& outP = in[predNode];
+
+            // build vector which holds all necessary reloads
+            std::vector<me::Reg*> reloads( std::max(inB.size(), outP.size()) );
+            std::vector<me::Reg*>::iterator end = std::set_intersection( 
+                    inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
+            reloads.erase( end, reloads.end() );// truncate properly
+
+            if (reloads.size() == 0)
+                continue; // nothing to do in this case
+
+            /*
+             * case 1: no phi functions -> place reloads in this block on the top
+             *
+             * case 2: There is a phi function so place the reload in the appropriate
+             * predecessor block. Note that this predecessor can only have one successor:
+             * This block. The dead edge elimination pass guarantees this.
+             */
+            me::InstrNode* appendTo;
+
+            if (bb->firstPhi_ == bb->firstOrdinary_)
+            {
+                appendTo = bb->begin_;
+            }
+            else
+            {
+                swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
+                appendTo = pred->end_->prev();
+            }
+
+            // for each reload
+            for (size_t i = 0;  i < reloads.size(); ++i)
+            {
+                // create and insert reload
+                me::Reg* reg = reloads[i];
+                swiftAssert(spillMap_.find(reg) != spillMap_.end(),
+                    "var must be found here");
+                me::Reg* mem = spillMap_[reg];
+                swiftAssert( mem->isMem(), "must be a memory var" );
+
+                me::Reload* reload = new me::Reload(reg, mem);
+                cfg_->instrList_.insert(appendTo, reload);
+            }
+        } // for each predecessor
+    } // for each basic block
+}
+
+void CodeGenerator::spill(me::BBNode* bbNode, BB2RegSet& in, BB2RegSet& out)
 {
     me::BasicBlock* bb = bbNode->value_;
 
@@ -433,7 +497,9 @@ void CodeGenerator::spill(me::BBNode* bbNode)
      * now we need the set which is allowed to be in real registers
      */
     me::RegSet inRegs;
-    me::RegSet inB;
+
+    swiftAssert( in.find(bbNode) == in.end(), "already inserted" );
+    me::RegSet& inB = in.insert( std::make_pair(bbNode, me::RegSet()) ).first->second;
     DistanceSet currentlyInRegs;
 
     // put in all regs from passed and calculate the distance to its next use
@@ -590,13 +656,17 @@ void CodeGenerator::spill(me::BBNode* bbNode)
 
     } // for each instr
     
-    DistanceSet& outB = currentlyInRegs;
+    swiftAssert( out.find(bbNode) == out.end(), "already inserted" );
+    me::RegSet& outB = out.insert( std::make_pair(bbNode, me::RegSet()) ).first->second;
 
+    for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+        outB.insert(regIter->reg_);
+    
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
         me::BBNode* domChild = bbIter->value_;
-        spill(domChild);
+        spill(domChild, in, out);
     }
 }
 

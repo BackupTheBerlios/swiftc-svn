@@ -13,7 +13,7 @@ namespace me {
 * constructors
 */
 
-BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary)
+BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary /*= 0*/)
     : begin_(begin)
     , firstOrdinary_( firstOrdinary ? firstOrdinary : end) // select end if firstOrdinary == 0
     , end_(end)

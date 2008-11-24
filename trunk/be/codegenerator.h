@@ -83,12 +83,14 @@ private:
     /// Performs the spilling in all basic blocks.
     void spill();
 
+    typedef std::map<me::BBNode*, me::RegSet> BB2RegSet;
+
     /** 
      * @brief Performs the spilling in one basic block.
      * 
      * @param bbNode The basic block which should be spilled.
      */
-    void spill(me::BBNode* bbNode);
+    void spill(me::BBNode* bbNode, BB2RegSet& in, BB2RegSet& out);
 
     void reconstructSSAForm(me::RegSet* defs);
 

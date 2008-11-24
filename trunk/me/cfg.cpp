@@ -184,57 +184,70 @@ void CFG::eliminateCriticalEdges()
     // for each CFG node
     RELATIVES_EACH(iter, nodes)
     {
-        std::cout << "iter: " << iter->value_->value_->name() << std::endl;
-        BasicBlock* bb = iter->value_->value_;
+        BBNode* bbNode = iter->value_;
+        BasicBlock* bb = bbNode->value_;
         
-        if (iter->value_->pred_.size() <= 1)
+        if (bbNode->pred_.size() <= 1)
             continue;
 
-        Relatives pred(iter->value_->pred_);
+        Relatives pred(bbNode->pred_);
         RELATIVES_EACH(predIter, pred)
         {
-            std::cout << predIter->value_->value_->name() << std::endl;
             BBNode* predNode = predIter->value_;
-            InstrNode* predLastInstr = predNode->value_->end_->prev();
+            BasicBlock* pred = predNode->value_;
+            InstrNode* predLastInstr = pred->end_->prev();
 
             JumpInstr* ji = dynamic_cast<JumpInstr*>(predLastInstr->value_);
             if (ji == 0 || ji->numTargets_ <= 1)
                 continue;
 
-            // for each jump target other than bb
-            for (size_t i = 0; i < ji->numTargets_; ++i)
+            size_t jumpIndex = 0;
+            // find index of the jump target in question
+            for (size_t jumpIndex = 0; jumpIndex < ji->numTargets_; ++jumpIndex)
             {
-                if (ji->bbTargets_[i]->value_ == bb)
-                    continue; // omit bb (orign basic block)
-
-                // -> edge between pred and iter is critical
-                std::cout << "critical" << std::endl;
-                InstrNode* bbFirstInstr = bb->begin_;
-                swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
-                        "must be a LabelInstr here");
-                InstrNode* labelNode = bb->begin_;
-
-                /*
-                 * insert new BasicBlock
-                 */
-
-                // create new beginning Label and insert it in the instruction list
-                InstrNode* newLabelNode = instrList_.insert( labelNode->prev(), new LabelInstr() );
-                BBNode* newBB = insert( new BasicBlock(newLabelNode, bb->begin_, 0) );
-
-                // rewire basic blocks
-                Relative* it = predNode->succ_.find(iter->value_);
-                swiftAssert( it != predNode->succ_.sentinel(), "node must be found here" );
-                predNode->succ_.erase(it);
-
-                it = iter->value_->pred_.find(predNode);
-                swiftAssert( it != iter->value_->pred_.sentinel(), "node must be found here" );
-                iter->value_->pred_.erase(it);
-                
-                predIter->value_->link(newBB);
-                newBB->link(iter->value_);
+                if (ji->bbTargets_[jumpIndex]->value_ == bb)
+                    break; // found
             }
-        } // for each jump target
+            swiftAssert(jumpIndex < ji->numTargets_, "jump target not found");
+
+            // -> edge between pred and iter is critical
+            InstrNode* bbFirstInstr = bb->begin_;
+            swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
+                    "must be a LabelInstr here");
+            InstrNode* labelNode = bb->begin_;
+
+            /*
+             * insert new BasicBlock
+             */
+
+            InstrNode* newLabelNode = instrList_.insert( labelNode, new LabelInstr() );
+
+            /* 
+             * create new beginning Label and insert it in the instruction list
+             * -> append to current bb's leading LabelInstr
+             */
+            BBNode* newBB = insert( new BasicBlock(labelNode, newLabelNode) );
+            bb->begin_ = newLabelNode;// this is current bb's new leading label
+
+            // rewire basic blocks
+            Relative* it = predNode->succ_.find(bbNode);
+            swiftAssert( it != predNode->succ_.sentinel(), "node must be found here" );
+            predNode->succ_.erase(it);
+
+            it = bbNode->pred_.find(predNode);
+            swiftAssert( it != bbNode->pred_.sentinel(), "node must be found here" );
+            bbNode->pred_.erase(it);
+            
+            predIter->value_->link(newBB);
+            newBB->link(bbNode);
+
+            // fix JumpInstr
+            ji->bbTargets_[jumpIndex] = newBB;
+
+            // fix labelNode2BBNode_
+            labelNode2BBNode_[labelNode] = newBB;
+            labelNode2BBNode_[newLabelNode] = bbNode;
+        } // for each predecessor
     } // for each CFG node
 }
 
