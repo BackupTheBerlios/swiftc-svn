@@ -8,10 +8,9 @@
 
 #include "be/spiller.h"
 
-// forward declarations
-
 namespace me {
 
+// forward declaration
 class IGraph;
 
 class LivenessAnalysis : public CodePass

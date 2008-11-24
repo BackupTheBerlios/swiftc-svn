@@ -1,5 +1,5 @@
-#ifndef ME_REG_ALLOCATOR_H
-#define ME_REG_ALLOCATOR_H
+#ifndef ME_SPILLER_H
+#define ME_SPILLER_H
 
 #include <fstream>
 
@@ -11,7 +11,7 @@
 // forward declarations
 namespace me {
 
-class RegAllocator : public CodePass
+class Spiller : public CodePass
 {
     /**
      * If vars have to be spilled this counter is used to create new numbers in order to identify
@@ -33,7 +33,7 @@ class RegAllocator : public CodePass
 
 public:
 
-    RegAllocator(Function* function);
+    Spiller(Function* function);
 
     /*
      * methods
@@ -117,4 +117,4 @@ distanceRec(bbNode, reg, instrNode) = |
 
 } // namespace me
 
-#endif // ME_REG_ALLOCATOR_H
+#endif // ME_SPILLER_H

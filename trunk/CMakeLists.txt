@@ -63,10 +63,11 @@ ADD_EXECUTABLE (swift
     me/codepass.cpp
     me/cfg.cpp
     me/coloring.cpp
+    me/defusecalc.cpp
     me/functab.cpp
     me/livenessanalysis.cpp
     me/op.cpp
-    me/regallocator.cpp
+    me/spiller.cpp
     me/ssa.cpp
 
     be/spiller.cpp

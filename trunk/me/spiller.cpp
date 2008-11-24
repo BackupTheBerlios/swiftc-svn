@@ -1,4 +1,4 @@
-#include "me/regallocator.h"
+#include "me/spiller.h"
 
 #include <algorithm>
 #include <limits>
@@ -13,7 +13,7 @@ namespace me {
  * constructor 
  */
 
-RegAllocator::RegAllocator(Function* function)
+Spiller::Spiller(Function* function)
     : CodePass(function)
     , spillCounter_(-1) // first allowed name
 {}
@@ -79,11 +79,11 @@ void discardFarest(DistanceSet& ds)
 
 void subOne(int& i)
 {
-    if (i != RegAllocator::infinity())
+    if (i != Spiller::infinity())
         --i;
 }
 
-int RegAllocator::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode) 
+int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode) 
 {
     InstrBase* instr = instrNode->value_;
     AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
@@ -99,7 +99,7 @@ int RegAllocator::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
     return distanceRec(bbNode, reg, instrNode);
 }
 
-int RegAllocator::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
+int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
 {
     InstrBase* instr = instrNode->value_;
     BasicBlock* bb = bbNode->value_;
@@ -148,7 +148,7 @@ int RegAllocator::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
     return result;
 }
 
-void RegAllocator::process()
+void Spiller::process()
 {
     BB2RegSet in;
     BB2RegSet out;
@@ -217,7 +217,7 @@ void RegAllocator::process()
     } // for each basic block
 }
 
-void RegAllocator::spill(BBNode* bbNode, BB2RegSet& in, BB2RegSet& out)
+void Spiller::spill(BBNode* bbNode, BB2RegSet& in, BB2RegSet& out)
 {
     BasicBlock* bb = bbNode->value_;
 

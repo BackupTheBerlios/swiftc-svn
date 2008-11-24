@@ -74,32 +74,6 @@ struct CFG : public Graph<BasicBlock>
     void rename(BBNode* bb, std::vector< std::stack<Reg*> >& names);
 
     /*
-     * def-use-chains
-     */
-
-    /**
-     * @brief Compiles for all vars their defining instruction. 
-     *
-     * The left hand side of \a PhiInstr instances counts as definition, too.
-     */
-    void calcDef();
-
-    /** 
-     * @brief Compiles for all v in vars the instructinos which make use of v.
-     *
-     * The right hand side of \a PhiInstr instances count as a use, too. 
-     */
-    void calcUse();
-
-    /** 
-     * @brief Used internally by \a CalcUse.
-     * 
-     * @param var Current var. 
-     * @param bb Current basic block.
-     */
-    void calcUse(Reg* var, BBNode* bb);
-
-    /*
      * SSA form construction
      */
 
@@ -111,14 +85,6 @@ struct CFG : public Graph<BasicBlock>
      * calculated at last.
      */
     void constructSSAForm();
-
-    /** 
-     * @brief Invoke This method if you have done something to the code that could have thrown the
-     * code out of SSA form.
-     *
-     * Remember to add each var in question to the BasicBlock's vars_ RegMap.
-     */
-    void reconstructSSAForm();
 
     /*
      * dump methods

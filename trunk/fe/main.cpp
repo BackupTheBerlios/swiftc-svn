@@ -16,8 +16,9 @@
 
 #include "me/coloring.h"
 #include "me/functab.h"
+#include "me/defusecalc.h"
 #include "me/livenessanalysis.h"
-#include "me/regallocator.h"
+#include "me/spiller.h"
 
 #include "be/amd64/spiller.h"
 
@@ -127,7 +128,7 @@ int start(int argc, char** argv)
         place phi-functions in SSA form and update vars
     */
     me::functab->buildUpME();
-
+    
     /*
         build up back-end and generate assembly code
     */
@@ -141,8 +142,8 @@ int start(int argc, char** argv)
     /*
      * debug output
      */
-    me::functab->dumpSSA();
-    me::functab->dumpDot();
+    //me::functab->dumpSSA();
+    //me::functab->dumpDot();
 
     /*
      * build up pipeline
@@ -152,9 +153,10 @@ int start(int argc, char** argv)
     {
         me::Function* function = iter->second;
 
+        //me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         //me::Coloring(function).process();
-        me::RegAllocator(function).process();
+        me::Spiller(function).process();
     }
 
     // finish
