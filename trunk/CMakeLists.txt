@@ -60,13 +60,15 @@ ADD_EXECUTABLE (swift
     fe/main.cpp
 
     me/basicblock.cpp
+    me/codepass.cpp
     me/cfg.cpp
+    me/coloring.cpp
     me/functab.cpp
+    me/livenessanalysis.cpp
     me/op.cpp
-    me/optimizer.cpp
+    me/regallocator.cpp
     me/ssa.cpp
 
-    be/codegenerator.cpp
     be/spiller.cpp
     be/amd64/spiller.cpp
 )

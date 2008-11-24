@@ -14,10 +14,11 @@
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
 
+#include "me/coloring.h"
 #include "me/functab.h"
-#include "me/optimizer.h"
+#include "me/livenessanalysis.h"
+#include "me/regallocator.h"
 
-#include "be/codegenerator.h"
 #include "be/amd64/spiller.h"
 
 using namespace swift;
@@ -128,56 +129,41 @@ int start(int argc, char** argv)
     me::functab->buildUpME();
 
     /*
-        optimize if applicable
+        build up back-end and generate assembly code
     */
-    if (cmdLineParser.optimize_)
-    {
-        me::Optimizer::commonSubexprElimination_    = true;
-        me::Optimizer::deadCodeElimination_         = true;
-        me::Optimizer::constantPropagation_         = true;
+    // TODO
 
-        for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
-        {
-            me::Optimizer optimizer(iter->second);
-            optimizer.optimize();
-        }
-    }
+    //std::ostringstream oss;
+    //oss << cmdLineParser.filename_ << ".asm";
 
+    //std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
     /*
-        debug output
-    */
+     * debug output
+     */
     me::functab->dumpSSA();
     me::functab->dumpDot();
 
     /*
-        build up back-end and generate assembly code
-    */
-    be::CodeGenerator::spiller_ = new be::AMD64Spiller();
-
-    std::ostringstream oss;
-    oss << cmdLineParser.filename_ << ".asm";
-
-    std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+     * build up pipeline
+     */
 
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
     {
-        be::CodeGenerator cg(ofs, iter->second);
-        cg.genCode();
+        me::Function* function = iter->second;
+
+        me::LivenessAnalysis(function).process();
+        //me::Coloring(function).process();
+        me::RegAllocator(function).process();
     }
 
     // finish
-    ofs.close();
+    //ofs.close();
 
     /*
         clean up middle-end
     */
     delete me::functab;
-
-    /*
-        clean up back-end
-    */
-    delete be::CodeGenerator::spiller_;
 
     return 0;
 }

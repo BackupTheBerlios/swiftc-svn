@@ -1,80 +1,47 @@
-#ifndef BE_CODEGENERATOR_H
-#define BE_CODEGENERATOR_H
+#ifndef ME_REG_ALLOCATOR_H
+#define ME_REG_ALLOCATOR_H
 
 #include <fstream>
 
+#include "me/codepass.h"
 #include "me/functab.h"
 
 #include "be/spiller.h"
 
 // forward declarations
 namespace me {
-    struct CFG;
-}
 
-namespace be {
-
-struct IGraph;
-
-struct CodeGenerator
+class RegAllocator : public CodePass
 {
-    static Spiller* spiller_;
-
-    me::Function*   function_;
-    me::CFG*        cfg_;
-    std::ofstream&  ofs_;
-#ifdef SWIFT_DEBUG
-    IGraph*         ig_;
-#endif // SWIFT_DEBUG
-
     /**
      * If vars have to be spilled this counter is used to create new numbers in order to identify
      * same vars.
      */
     int spillCounter_;
 
-    typedef std::map<me::Reg*, me::Reg*> SpillMap;
+    typedef std::map<Reg*, Reg*> SpillMap;
     /// This set knows for each spilled var the corresponding memory var. 
     SpillMap spillMap_;
 
-    typedef std::set<me::InstrNode*> InstrSet;
+    typedef std::set<InstrNode*> InstrSet;
     InstrSet spills_;
     InstrSet reloads_;
     
     /*
-     * constructor and destructor
+     * constructor 
      */
 
-    CodeGenerator(std::ofstream& ofs, me::Function* function);
-#ifdef SWIFT_DEBUG
-    ~CodeGenerator();
-#endif // SWIFT_DEBUG
+public:
+
+    RegAllocator(Function* function);
 
     /*
      * methods
      */
 
-    void genCode();
+    virtual void process();
 
 private:
-
-    /*
-     * liveness analysis
-     */
-    
-    /// Knows during the liveness analysis which basic blocks have already been visted.
-    typedef std::set<me::BasicBlock*> BBSet;
-    BBSet walked_;
-
-    /** 
-     * @brief Performs the liveness analysis.
-     *
-     * Invokes \a liveOutAtBlock, \a liveInAtInstr and \a liveOutAtInstr.
-     */
-    void livenessAnalysis();
-    void liveOutAtBlock(me::BBNode* bbNode,   me::Reg* var);
-    void liveInAtInstr (me::InstrNode* instr, me::Reg* var);
-    void liveOutAtInstr(me::InstrNode* instr, me::Reg* var);
 
     /*
      * register allocation
@@ -83,18 +50,14 @@ private:
     /// Performs the spilling in all basic blocks.
     void spill();
 
-    typedef std::map<me::BBNode*, me::RegSet> BB2RegSet;
+    typedef std::map<BBNode*, RegSet> BB2RegSet;
 
     /** 
      * @brief Performs the spilling in one basic block.
      * 
      * @param bbNode The basic block which should be spilled.
      */
-    void spill(me::BBNode* bbNode, BB2RegSet& in, BB2RegSet& out);
-
-    void reconstructSSAForm(me::RegSet* defs);
-
-    void findDef(me::InstrNode* instrNode, size_t p, me::RegSet* defs);
+    void spill(BBNode* bbNode, BB2RegSet& in, BB2RegSet& out);
     
 public:
     /** 
@@ -106,6 +69,7 @@ public:
     {
         return std::numeric_limits<int>::max();
     }
+
 private:
 
     /** 
@@ -126,7 +90,7 @@ distance(bbNode, reg, instrNode) = |
      * 
      * @return The distance.  is used as "infinity".
      */
-    int distance(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
+    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
     
     /** 
      * @brief This is a helper for \a distance. 
@@ -148,29 +112,9 @@ distanceRec(bbNode, reg, instrNode) = |
      * 
      * @return 
      */
-    int distanceRec(me::BBNode* bbNode, me::Reg* reg, me::InstrNode* instrNode);
-
-    void insertReload();
-
-    void insertSpill();
-
-    /*
-     * coloring
-     */
-
-    typedef std::set<int> Colors;
-    static int findFirstFreeColorAndAllocate(Colors& colors);
-
-    void color();
-    void colorRecursive(me::BBNode* bb);
-
-    /*
-     * coalesing
-     */
-
-    void coalesce();
+    int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
 };
 
-} // namespace be
+} // namespace me
 
-#endif // BE_CODEGENERATOR_H
+#endif // ME_REG_ALLOCATOR_H

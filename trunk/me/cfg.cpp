@@ -18,7 +18,6 @@ CFG::CFG(Function* function)
     , instrList_(function->instrList_)
     , entry_(0)
     , exit_(0)
-    , cfErrorHandler_(0)
 {}
 
 CFG::~CFG()
@@ -211,7 +210,6 @@ void CFG::eliminateCriticalEdges()
             swiftAssert(jumpIndex < ji->numTargets_, "jump target not found");
 
             // -> edge between pred and iter is critical
-            InstrNode* bbFirstInstr = bb->begin_;
             swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
                     "must be a LabelInstr here");
             InstrNode* labelNode = bb->begin_;
@@ -364,15 +362,6 @@ void CFG::calcDomFrontier()
             }
         }
     }
-}
-
-/*
- * error handling related to control flow
- */
-
-void CFG::installCFErrorHandler(CFErrorHandler* cfErrorHandler)
-{
-    cfErrorHandler_ = cfErrorHandler;
 }
 
 /*

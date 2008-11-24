@@ -12,19 +12,18 @@
 
 // forward declarations
 
-#ifdef SWIFT_DEBUG
-
-namespace be {
-    struct IVar;
-    typedef Graph<IVar>::Node* VarNode;
-}
-
-#endif // SWIFT_DEBUG
 
 namespace me {
 
 struct Struct;
 struct InstrBase;
+
+#ifdef SWIFT_DEBUG
+
+struct IVar;
+typedef Graph<IVar>::Node* VarNode;
+
+#endif // SWIFT_DEBUG
 
 //------------------------------------------------------------------------------
 
@@ -189,7 +188,7 @@ struct Reg : public Op
 
 #ifdef SWIFT_DEBUG
     std::string id_; ///< This stores the name of the orignal var in the debug version.
-    be::VarNode varNode_; ///< This stores the graph node of the IG in the debug version.
+    VarNode varNode_; ///< This stores the graph node of the IG in the debug version.
 #endif // SWIFT_DEBUG
 
     /*
