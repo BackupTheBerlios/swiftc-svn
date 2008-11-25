@@ -140,24 +140,23 @@ int start(int argc, char** argv)
     //std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
     /*
-     * debug output
-     */
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-
-    /*
      * build up pipeline
      */
-
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
     {
         me::Function* function = iter->second;
 
-        //me::DefUseCalc(function).process();
+        me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         //me::Coloring(function).process();
         me::Spiller(function).process();
     }
+
+    /*
+     * debug output
+     */
+    me::functab->dumpSSA();
+    me::functab->dumpDot();
 
     // finish
     //ofs.close();

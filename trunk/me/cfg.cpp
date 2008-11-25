@@ -588,9 +588,6 @@ void CFG::constructSSAForm()
     calcDomFrontier();
     placePhiFunctions();
     renameVars();
-
-    // TODO why must this be here?
-    DefUseCalc(function_).process();
 }
 
 /*

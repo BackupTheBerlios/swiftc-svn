@@ -80,8 +80,6 @@ struct BasicBlock
      */
     InstrNode* end_;
 
-    size_t index_;
-
     BBList domFrontier_;
     BBList domChildren_;
 

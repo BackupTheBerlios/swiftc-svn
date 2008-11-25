@@ -36,7 +36,6 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    size_t  numBBs_;
     CFG     cfg_;
 
     /*

@@ -2,6 +2,7 @@
 #define ME_SPILLER_H
 
 #include <fstream>
+#include <map>
 
 #include "me/codepass.h"
 #include "me/functab.h"
@@ -19,9 +20,14 @@ class Spiller : public CodePass
      */
     int spillCounter_;
 
+    /// Reg -> Mem
     typedef std::map<Reg*, Reg*> SpillMap;
     /// This set knows for each spilled var the corresponding memory var. 
     SpillMap spillMap_;
+
+    typedef std::map<BBNode*, RegSet> BB2RegSet;
+    BB2RegSet in_;
+    BB2RegSet out_;
 
     typedef std::set<InstrNode*> InstrSet;
     InstrSet spills_;
@@ -39,39 +45,20 @@ public:
      * methods
      */
 
+    /// Performs the spilling in all basic blocks.
     virtual void process();
 
 private:
 
-    /*
-     * register allocation
-     */
-
-    /// Performs the spilling in all basic blocks.
-    void spill();
-
-    typedef std::map<BBNode*, RegSet> BB2RegSet;
+    void spill(Reg* toBeSpilled, InstrNode* appendTo);
 
     /** 
      * @brief Performs the spilling in one basic block.
      * 
      * @param bbNode The basic block which should be spilled.
      */
-    void spill(BBNode* bbNode, BB2RegSet& in, BB2RegSet& out);
+    void spill(BBNode* bbNode);
     
-public:
-    /** 
-     * @brief This is used to represent an infinity distance
-     * 
-     * @return "infinity"
-     */
-    static int infinity() 
-    {
-        return std::numeric_limits<int>::max();
-    }
-
-private:
-
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
      *
