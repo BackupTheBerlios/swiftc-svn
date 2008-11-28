@@ -126,6 +126,9 @@ struct AssignmentBase : public InstrBase
      * @return True - if this is defined here, false otherwise. 
      */
     bool isRegDefined(Reg* reg);
+
+    Reg* findResult(Reg* reg);
+    Op* findArg(Op* op);
 };
 
 //------------------------------------------------------------------------------

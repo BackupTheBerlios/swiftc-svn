@@ -148,8 +148,8 @@ int start(int argc, char** argv)
 
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
-        //me::Coloring(function).process();
         me::Spiller(function).process();
+        //me::Coloring(function).process();
     }
 
     /*

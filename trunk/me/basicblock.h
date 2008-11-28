@@ -100,6 +100,11 @@ struct BasicBlock
      * further methods
      */
 
+    InstrNode* getLastNonJump();
+    void fixPointers();
+
+    bool hasPhiInstr() const;
+
     /// Returns the title string of this BasicBlock.
     std::string name() const;
 

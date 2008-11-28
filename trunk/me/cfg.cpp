@@ -179,9 +179,8 @@ void CFG::calcCFG()
 
 void CFG::eliminateCriticalEdges()
 {
-    Relatives nodes(nodes_);
-    
     // for each CFG node
+    Relatives nodes(nodes_);
     RELATIVES_EACH(iter, nodes)
     {
         BBNode* bbNode = iter->value_;

@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <map>
+#include <vector>
 
 #include "me/codepass.h"
 #include "me/functab.h"
@@ -32,6 +33,21 @@ class Spiller : public CodePass
     typedef std::set<InstrNode*> InstrSet;
     InstrSet spills_;
     InstrSet reloads_;
+
+    struct PhiSpilledReload
+    {
+        BasicBlock* bb_;
+        Reg* reg_;
+        InstrNode* appendTo_;
+
+        PhiSpilledReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo)
+            : bb_(bb)
+            , reg_(reg)
+            , appendTo_(appendTo)
+        {}
+    };
+    typedef std::vector<PhiSpilledReload> PhiSpilledReloads;
+    PhiSpilledReloads phiSpilledReloads_;
     
     /*
      * constructor 
@@ -50,15 +66,9 @@ public:
 
 private:
 
-    void spill(Reg* toBeSpilled, InstrNode* appendTo);
+    Reg* insertSpill(BasicBlock* bb, Reg* reg, InstrNode* appendTo);
+    void insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool first);
 
-    /** 
-     * @brief Performs the spilling in one basic block.
-     * 
-     * @param bbNode The basic block which should be spilled.
-     */
-    void spill(BBNode* bbNode);
-    
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
      *
@@ -100,6 +110,20 @@ distanceRec(bbNode, reg, instrNode) = |
      * @return 
      */
     int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
+
+    /** 
+     * @brief Performs the spilling in one basic block.
+     * 
+     * @param bbNode The basic block which should be spilled.
+     */
+    void spill(BBNode* bbNode);
+
+    /** 
+     * @brief Combines the spilling results globally.
+     * 
+     * @param bbNode Currntly visited basic block.
+     */
+    void combine(BBNode* bbNode);
 };
 
 } // namespace me

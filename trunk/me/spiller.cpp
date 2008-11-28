@@ -11,46 +11,43 @@ namespace me {
 
 typedef std::vector<Reg*> RegVec;
 
-/*
- * constructor 
- */
-
-Spiller::Spiller(Function* function)
-    : CodePass(function)
-    , spillCounter_(-1) // first allowed name
-{}
+//------------------------------------------------------------------------------
 
 /*
- * methods
- */
-
-/*
- * spilling
+ * distance stuff
  */
 
 // TODO
 #define NUM_REGS 2
 
-/*
- * needed for sorting via the distance method
- */
+/// Needed for sorting via the distance method.
 struct RegAndDistance 
 {
     Reg* reg_;
     int distance_;
 
+    /*
+     * constructors
+     */
+
     RegAndDistance() {}
+
     RegAndDistance(Reg* reg, int distance)
         : reg_(reg)
         , distance_(distance)
     {}
-    // copy constructor
+
+    /// copy constructor
     RegAndDistance(const RegAndDistance& rd)
         : reg_(rd.reg_)
         , distance_(rd.distance_)
     {}
 
-    // needed by std::sort
+    /*
+     * operator
+     */
+
+    /// needed by std::sort
     bool operator < (const RegAndDistance& r) const
     {
         return distance_ > r.distance_; // sort farest first
@@ -61,10 +58,14 @@ struct RegAndDistance
 // - one sorted by distance
 // - one sorted by reg
 
-typedef std::set<RegAndDistance> DistanceSet;
-Reg* regFind(DistanceSet& ds, Reg* reg)
+typedef std::multiset<RegAndDistance> DistanceBag;
+/// Use this macro in order to easily visit all elements of a RegSet
+#define DISTANCEBAG_EACH(iter, db) \
+    for (DistanceBag::iterator (iter) = (db).begin(); (iter) != (db).end(); ++(iter))
+
+Reg* regFind(DistanceBag& ds, Reg* reg)
 {
-    for (DistanceSet::iterator iter = ds.begin(); iter != ds.end(); ++iter)
+    DISTANCEBAG_EACH(iter, ds)
     {
         if ( iter->reg_ == reg)
             return reg;
@@ -73,7 +74,7 @@ Reg* regFind(DistanceSet& ds, Reg* reg)
     return 0;
 }
 
-void discardFarest(DistanceSet& ds)
+void discardFarest(DistanceBag& ds)
 {
     while (ds.size() > NUM_REGS)
         ds.erase( ds.begin() );
@@ -88,6 +89,30 @@ void subOne(int& i)
 {
     if (i != infinity())
         --i;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
+Spiller::Spiller(Function* function)
+    : CodePass(function)
+    , spillCounter_(-1) // first allowed name
+{}
+
+void Spiller::process()
+{
+    spill(cfg_->entry_);
+    combine(cfg_->entry_);
+
+    // now the remaining phi spilled relaods can be inserted;
+    for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
+    {
+        //std::cout << "fdkjfdk" << std::endl;
+        insertReload(phiSpilledReloads_[i].bb_, phiSpilledReloads_[i].reg_, phiSpilledReloads_[i].appendTo_, false);
+    }
 }
 
 int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode) 
@@ -155,99 +180,55 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
     return result;
 }
 
-void Spiller::spill(Reg* toBeSpilled, InstrNode* appendTo)
+Reg* Spiller::insertSpill(BasicBlock* bb, Reg* reg, InstrNode* appendTo)
 {
-    Reg* mem;
-    SpillMap::iterator iter = spillMap_.find(toBeSpilled);
+    // create a new memory location
+    Reg* mem = function_->newMem(reg->type_, spillCounter_--);
+    SpillMap::iterator iter = spillMap_.find(reg);
 
-    // insert into spill map if toBeSpilled is the first spill
-    if ( iter == spillMap_.end() )
+    // insert into spill map if reg is the first spill
+    if (iter == spillMap_.end())
     {
-        // create a new memory location
-        mem = function_->newMem(toBeSpilled->type_, spillCounter_--);
-        spillMap_[toBeSpilled] = mem;
+        //std::cout << "insert: " << reg->toString() << " -> " << mem->toString() << std::endl;
+        spillMap_.insert( std::make_pair(reg, mem) );
     }
-    else
-        mem = iter->second; // use prior location
 
-    Spill* spill = new Spill(mem, toBeSpilled);
+    Spill* spill = new Spill(mem, reg);
+    // insert phi spilled here to? TODO
     spills_.insert( cfg_->instrList_.insert(appendTo, spill) );
+    bb->fixPointers();
+
+    return mem;
 }
 
-void Spiller::process()
+void Spiller::insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool first)
 {
-    spill(cfg_->entry_);
-
-    /*
-     * combine results
-     */
-
-    // for each basic block
-    CFG_RELATIVES_EACH(iter, cfg_->nodes_)
+    if ( spillMap_.find(reg) == spillMap_.end() )
     {
-        BBNode* bbNode = iter->value_;
-        BasicBlock* bb = bbNode->value_;
-        RegSet& inB = in_[bbNode];
-
-        // for each predecessor of the current node
-        CFG_RELATIVES_EACH(predIter, bbNode->pred_)
+        if (first) 
         {
-            BBNode* predNode = predIter->value_;
-            BasicBlock* pred = predNode->value_;
-            RegSet& outP = out_[predNode];
+            phiSpilledReloads_.push_back( 
+                    PhiSpilledReload( bb, reg, appendTo ));
+        }
+        else
+        {
+            //std::cout << "todo: " << reg->toString() << std::endl;
+        }
+        return;
+    }
 
-            // build vector which holds all necessary reloads
-            RegVec reloads( std::max(inB.size(), outP.size()) );
-            RegVec::iterator end = std::set_intersection( 
-                    inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
-            reloads.erase( end, reloads.end() );// truncate properly
+    Reg* mem = spillMap_[reg];
+    swiftAssert( mem->isMem(), "must be a memory reg" );
 
-            if (reloads.size() == 0)
-                continue; // nothing to do in this case
-
-            /*
-             * case 1: no phi functions -> place reloads in this block on the top
-             *
-             * case 2: There is a phi function so place the reload in the appropriate
-             * predecessor block. Note that this predecessor can only have one successor:
-             * This block. The dead edge elimination pass guarantees this.
-             */
-            InstrNode* appendTo;
-
-            if (bb->firstPhi_ == bb->firstOrdinary_)
-            {
-                appendTo = bb->begin_;
-            }
-            else
-            {
-                swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
-                // append to last instruction belonging to pred ...
-                appendTo = pred->end_->prev();
-                // ... if last instruction is a JumpInstr ...
-                if ( dynamic_cast<JumpInstr*>(appendTo->value_) )
-                    appendTo = appendTo->prev(); // ... use last instruction before the JumpInstr
-            }
-
-            // for each reload
-            for (size_t i = 0;  i < reloads.size(); ++i)
-            {
-                // create and insert reload
-                Reg* reg = reloads[i];
-                swiftAssert(spillMap_.find(reg) != spillMap_.end(),
-                    "var must be found here");
-                Reg* mem = spillMap_[reg];
-                swiftAssert( mem->isMem(), "must be a memory var" );
-
-                Reload* reload = new Reload(reg, mem);
-                cfg_->instrList_.insert(appendTo, reload);
-            }
-        } // for each predecessor
-    } // for each basic block
+    Reload* reload = new Reload(reg, mem);
+    reloads_.insert( cfg_->instrList_.insert(appendTo, reload) );
+    bb->fixPointers();
 }
 
 void Spiller::spill(BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
+    //std::cout << bb->name() << std::endl;
 
     /*
      * passed should contain all regs live in at bb 
@@ -275,7 +256,7 @@ void Spiller::spill(BBNode* bbNode)
 
     swiftAssert( in_.find(bbNode) == in_.end(), "already inserted" );
     RegSet& inB = in_.insert( std::make_pair(bbNode, RegSet()) ).first->second;
-    DistanceSet currentlyInRegs;
+    DistanceBag currentlyInRegs;
 
     // put in all regs from passed and calculate the distance to its next use
     REGSET_EACH(iter, passed)
@@ -290,18 +271,24 @@ void Spiller::spill(BBNode* bbNode)
     discardFarest(currentlyInRegs);
 
     // copy over to inRegs
-    for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+    DISTANCEBAG_EACH(regIter, currentlyInRegs)
         inRegs.insert(regIter->reg_);
 
     /*
-     * currentlyInRegs holds all vars which are at the current point in regs. 
-     * Initially it is assumed that all vars in currentlyInRegs can be kept in regs.
+     * currentlyInRegs holds all regs which are at the current point in regs. 
+     * Initially it is assumed that all regs in currentlyInRegs can be kept in regs.
      */
 
     // traverse all ordinary instructions in bb
-    InstrNode* iter = bb->firstOrdinary_;
-    while (iter != bb->end_)
+    for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
+        //std::cout << "cIR: " << std::endl;
+        //DISTANCEBAG_EACH(regIter, currentlyInRegs)
+            //std::cout << "\t" << regIter->reg_->toString() << std::endl;
+
+        //std::cout << iter->value_->toString() << std::endl;
+
+
         swiftAssert(dynamic_cast<AssignmentBase*>(iter->value_),
                 "must be an AssignmentBase here");
 
@@ -321,7 +308,7 @@ void Spiller::spill(BBNode* bbNode)
         InstrNode* lastInstrNode = iter->prev_;
 
         /*
-         * check whether all vars on the rhs are in regs 
+         * check whether all regs on the rhs are in regs 
          * and count necessary reloads
          */
         int numReloads = 0;
@@ -331,24 +318,17 @@ void Spiller::spill(BBNode* bbNode)
                 continue;
 
             /*
-             * is this var currently not in a real register?
+             * is this reg currently not in a real register?
              */
-            Reg* var = (Reg*) ab->rhs_[i];
+            Reg* reg = (Reg*) ab->rhs_[i];
 
-            if (regFind(currentlyInRegs, var) == 0)
+            if ( regFind(currentlyInRegs, reg) == 0 )
             {
                 /*
                  * insert reload instruction
                  */
-                swiftAssert(spillMap_.find(var) != spillMap_.end(),
-                    "var must be found here");
-                Reg* mem = spillMap_[var];
-                swiftAssert( mem->isMem(), "must be a memory var" );
-
-                Reload* reload = new Reload(var, mem);
-                reloads_.insert( cfg_->instrList_.insert(lastInstrNode, reload) );
-
-                currentlyInRegs.insert( RegAndDistance(var, 0) );
+                insertReload(bb, reg, lastInstrNode, true);
+                currentlyInRegs.insert( RegAndDistance(reg, 0) );
 
                 // keep account of the number of needed reloads here
                 ++numReloads;
@@ -358,7 +338,7 @@ void Spiller::spill(BBNode* bbNode)
                 /*
                  * manage inB and inRegs
                  */
-                RegSet::iterator regIter = inRegs.find(var);
+                RegSet::iterator regIter = inRegs.find(reg);
                 if ( regIter != inRegs.end() )
                 {
                     // reg is used befor discarded
@@ -378,30 +358,23 @@ void Spiller::spill(BBNode* bbNode)
         {
             // insert spill instruction
             Reg* toBeSpilled = currentlyInRegs.begin()->reg_;
-            spill(toBeSpilled, lastInstrNode);
+            insertSpill(bb, toBeSpilled, lastInstrNode);
 
             // remove first reg
             currentlyInRegs.erase( currentlyInRegs.begin() );
 
-            /*
-             * manage inB and inRegs
-             */
+            // manage inB and inRegs
             RegSet::iterator regIter = inRegs.find(toBeSpilled);
             if ( regIter != inRegs.end() )
                 inRegs.erase(regIter); // reg is not used befor 
         }
 
-        // go to next instruction
-        iter = iter->next();
-        if (iter == bb->end_)
-            break; // exit loop here
-        
         /*
          * update distances
          */
 
-        DistanceSet newSet;
-        for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+        DistanceBag newBag;
+        DISTANCEBAG_EACH(regIter, currentlyInRegs)
         {
             int dist = regIter->distance_;
             subOne(dist);
@@ -410,10 +383,10 @@ void Spiller::spill(BBNode* bbNode)
             if (dist < 0)
                 dist = distance(bbNode, regIter->reg_, iter);
 
-            newSet.insert( RegAndDistance(regIter->reg_, dist) );
+            newBag.insert( RegAndDistance(regIter->reg_, dist) );
         }
 
-        currentlyInRegs = newSet;
+        currentlyInRegs = newBag;
 
         // add results to currentlyInRegs
         for (size_t i = 0; i < ab->numLhs_; ++i)
@@ -427,33 +400,168 @@ void Spiller::spill(BBNode* bbNode)
     swiftAssert( out_.find(bbNode) == out_.end(), "already inserted" );
     RegSet& outB = out_.insert( std::make_pair(bbNode, RegSet()) ).first->second;
 
-    for (DistanceSet::iterator regIter = currentlyInRegs.begin(); regIter != currentlyInRegs.end(); ++regIter)
+    //std::cout << "inB:" << std::endl;
+    //REGSET_EACH(regIter, inB)
+        //std::cout << "\t" << (*regIter)->toString() << std::endl;
+
+    DISTANCEBAG_EACH(regIter, currentlyInRegs)
         outB.insert(regIter->reg_);
     
+/*    std::cout << "outB:" << std::endl;*/
+    //REGSET_EACH(regIter, outB)
+        //std::cout << "\t" << (*regIter)->toString() << std::endl;
+
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
         BBNode* domChild = bbIter->value_;
         spill(domChild);
     }
+}
+
+void Spiller::combine(BBNode* bbNode)
+{
+    BasicBlock* bb = bbNode->value_;
+    RegSet& inB = in_[bbNode];
+
+    /*
+     * handle phi functions
+     */
+
+    RegSet phiArgs;
+    RegSet phiResults;
     
-    // spill all regs which are in bb->liveOut_ \ outB
-    RegVec spills( bb->liveOut_.size() );
-    RegVec::iterator end = std::set_difference(
-            bb->liveOut_.begin(), bb->liveOut_.end(), outB.begin(), outB.end(), spills.begin());
-    spills.erase( end, spills.end() );// truncate properly
-
-    for (size_t i = 0; i < spills.size(); ++i)
+    // for each phi function
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
     {
-        Reg* toBeSpilled = spills[i];
+        //std::cout << bb->name() << std::endl;
+        //std::cout << bb->toString() << std::endl;
+        //std::cout << "phi: " << bb->firstPhi_->value_->toString() << std::endl;
+        //std::cout << "ord: " << bb->firstOrdinary_->value_->toString() << std::endl;
+        swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
+                "must be a phi instruction here");
+        PhiInstr* phi = (PhiInstr*) iter->value_;
+        phiResults.insert( phi->result() );
+        
+        bool phiSpill;
+        RegSet::iterator inBIter = inB.find( phi->result() );
 
-        // append to last instruction belonging to bb ...
-        InstrNode* appendTo = bb->end_->prev(); 
-        // ... if last instruction is a JumpInstr ...
-        if ( dynamic_cast<JumpInstr*>(appendTo->value_) )
-            appendTo = appendTo->prev(); // ... use last instruction before the JumpInstr
+        if ( inBIter == inB.end() )
+            phiSpill = true;
+        else
+        {
+            phiSpill = false;
+            inB.erase(inBIter);
+        }
 
-        spill(toBeSpilled, appendTo);
+        // for each arg
+        CFG::Relative* prePhiRelative = bbNode->pred_.first();
+        for (size_t i = 0; i < phi->numRhs_; ++i)
+        {
+            BBNode* prePhiNode = prePhiRelative->value_;
+            BasicBlock* prePhi = prePhiNode->value_;
+            InstrNode* lastNonJump = prePhi->getLastNonJump();
+            RegSet& preOut = out_[prePhiNode];
+
+            // get phi argument
+            swiftAssert( typeid(*phi->rhs_[i]) == typeid(Reg),
+                    "must be a Reg here" );
+            Reg* phiArg = (Reg*) phi->rhs_[i];
+            swiftAssert( !phiArg->isMem(),  "must not be a memory location" );
+
+            if ( phiSpill && preOut.find(phiArg) != preOut.end() )
+            {
+                preOut.erase(phiArg);
+
+                // insert spill to predecessor basic block and replace phi arg
+                phi->rhs_[i] = insertSpill( prePhi, phiArg, lastNonJump );
+            }
+            else if( !phiSpill && preOut.find(phiArg) == preOut.end() )
+                insertReload( prePhi, phiArg, lastNonJump, true ); // insert reload
+
+            // traverse to next predecessor
+            prePhiRelative = prePhiRelative->next();
+        }
+        swiftAssert( prePhiRelative == bbNode->pred_.sentinel(),
+                "all nodes must be traversed")
+    }
+
+    // for each predecessor of the current node
+    CFG_RELATIVES_EACH(predIter, bbNode->pred_)
+    {
+        BBNode* predNode = predIter->value_;
+        BasicBlock* pred = predNode->value_;
+        RegSet& outP = out_[predNode];
+
+        /*
+         * handle reloads
+         */
+
+        // build vector which holds all necessary reloads
+        RegVec reloads( inB.size() );
+        RegVec::iterator end = std::set_difference( 
+                inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
+        reloads.erase( end, reloads.end() );// truncate properly
+
+        if (reloads.size() != 0)
+        {
+             // place reloads in this block on the top
+            InstrNode* appendTo;
+            BasicBlock* bbAppend;
+
+            if ( !bb->hasPhiInstr() )
+            {
+                bbAppend = bb;
+                appendTo = bb->begin_;
+            }
+            else
+            {
+                swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
+                // append to last non phi instruction belonging to pred
+                bbAppend = pred;
+                appendTo = pred->getLastNonJump();
+            }
+
+            // for each reload
+            for (size_t i = 0;  i < reloads.size(); ++i)
+            {
+                // create and insert reload
+                Reg* reg = reloads[i];
+                //std::cout << reg->toString() << std::endl;
+                insertReload(bbAppend, reg, appendTo, true);
+            }
+        }
+
+        /*
+         * handle spills
+         */
+
+        // build vector which holds all necessary spills
+        RegVec spills( outP.size() );
+        end = std::set_difference( 
+                outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
+        spills.erase( end, spills.end() ); // truncate properly
+
+        typedef std::set<InstrNode*> PhiSpills;
+        PhiSpills phiSpills;
+
+        if (spills.size() != 0)
+        {
+            //std::cout << "yeah! " << std::endl;
+            // for each spill
+            for (size_t i = 0;  i < spills.size(); ++i)
+            {
+                Reg* reg = spills[i];
+                insertSpill(pred, reg, pred->getLastNonJump() );
+            } // for each spill
+        }
+    } // for each predecessor
+
+    // for each child of bb in the dominator tree
+    BBLIST_EACH(bbIter, bb->domChildren_)
+    {
+        BBNode* domChild = bbIter->value_;
+        combine(domChild);
     }
 }
 

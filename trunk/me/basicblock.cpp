@@ -1,7 +1,8 @@
 #include "basicblock.h"
 
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <typeinfo>
 
 #include "utils/assert.h"
 
@@ -10,8 +11,8 @@
 namespace me {
 
 /*
-* constructors
-*/
+ * constructors
+ */
 
 BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinary /*= 0*/)
     : begin_(begin)
@@ -22,8 +23,47 @@ BasicBlock::BasicBlock(InstrNode* begin, InstrNode* end, InstrNode* firstOrdinar
 }
 
 /*
-* further methods
-*/
+ * further methods
+ */
+
+InstrNode* BasicBlock::getLastNonJump()
+{
+    InstrNode* result = end_->prev();
+
+    if ( dynamic_cast<JumpInstr*>(result->value_) )
+        result = result->prev(); // ... use last instruction before the JumpInstr
+
+    return result;
+}
+
+void BasicBlock::fixPointers()
+{
+    // TODO this can be done smarter
+    bool phi = false;
+    bool ordinary = false;
+    for (InstrNode* iter = begin_->next(); iter != end_; iter = iter->next())
+    {
+        if ( phi == false && typeid(*iter->value_) == typeid(PhiInstr) )
+        {
+            firstPhi_ = iter;
+            phi = true;
+        }
+        if (ordinary == false && typeid(*iter->value_) != typeid(PhiInstr) )
+        {
+            firstOrdinary_ = iter;
+            ordinary = true;
+        }
+    }
+    if (ordinary == false)
+        firstOrdinary_ = end_;
+    if (phi == false)
+        firstPhi_ = firstOrdinary_;
+}
+
+bool BasicBlock::hasPhiInstr() const
+{
+    return firstPhi_ != firstOrdinary_;
+}
 
 std::string BasicBlock::name() const
 {

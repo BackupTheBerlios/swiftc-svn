@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
@@ -122,6 +123,18 @@ bool AssignmentBase::isRegDefined(Reg* reg)
 void AssignmentBase::destroyLhsOldVarNrs()
 {
     delete[] lhsOldVarNr_;
+}
+
+Reg* AssignmentBase::findResult(Reg* reg)
+{
+    Reg** result = std::find(lhs_, lhs_ + numLhs_, reg);
+    return result == lhs_ + numLhs_ ? 0 : *result;
+}
+
+Op* AssignmentBase::findArg(Op* op)
+{
+    Op** result = std::find(rhs_, rhs_ + numRhs_, op);
+    return result == rhs_ + numRhs_ ? 0 : *result;
 }
 
 //------------------------------------------------------------------------------
