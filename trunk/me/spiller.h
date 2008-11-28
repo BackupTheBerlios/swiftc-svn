@@ -124,6 +124,8 @@ distanceRec(bbNode, reg, instrNode) = |
      * @param bbNode Currntly visited basic block.
      */
     void combine(BBNode* bbNode);
+
+    //void reconstructionSSA(RegSet reg);
 };
 
 } // namespace me

@@ -87,6 +87,13 @@ struct CFG : public Graph<BasicBlock>
     void constructSSAForm();
 
     /*
+     * further methods
+     */
+
+    BBSet calcIteratedDomFrontier(BBSet bbs);
+
+
+    /*
      * dump methods
      */
 

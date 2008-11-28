@@ -589,6 +589,38 @@ void CFG::constructSSAForm()
     renameVars();
 }
 
+BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
+{
+    BBList work;
+    BBSet result(bbs);
+
+    BBSET_EACH(iter, bbs)
+        work.append(*iter);
+
+    // for each basic block in the work list
+    while ( !work.empty() )
+    {
+        // take a basic block from the list
+        BBNode* bb = work.first()->value_;
+        work.removeFirst();
+
+        // for each basic block from DF(bb)
+        BBLIST_EACH(iter, bb->value_->domFrontier_)
+        {
+            BBNode* df = iter->value_;
+
+            if ( result.find(df) == result.end() )
+            {
+                // df -> not in result so add to result and to work list
+                result.insert(df);
+                work.append(df);
+            }
+        }
+    }
+
+    return result;
+}
+
 /*
  * dump methods
  */

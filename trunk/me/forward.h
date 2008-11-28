@@ -14,6 +14,7 @@ namespace me {
 struct BasicBlock;
 typedef Graph<BasicBlock>::Node BBNode;
 typedef List<BBNode*> BBList;
+typedef std::set<BBNode*> BBSet;
 
 struct Function;
 
