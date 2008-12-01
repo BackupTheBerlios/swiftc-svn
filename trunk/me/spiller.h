@@ -30,18 +30,34 @@ class Spiller : public CodePass
     BB2RegSet in_;
     BB2RegSet out_;
 
-    typedef std::set<InstrNode*> InstrSet;
-    InstrSet spills_;
-    InstrSet reloads_;
+    struct RegDef
+    {
+        BBNode* bbNode_;
+        InstrNode* instrNode_;
+
+        RegDef(BBNode* bbNode, InstrNode* instrNode)
+            : bbNode_(bbNode)
+            , instrNode_(instrNode)
+        {}
+
+        bool operator < (const RegDef& rd) const
+        {
+            return instrNode_ < rd.instrNode_;
+        }
+    };
+    
+    typedef std::set<RegDef> RegDefSet;
+    RegDefSet spills_;
+    RegDefSet reloads_;
 
     struct PhiSpilledReload
     {
-        BasicBlock* bb_;
+        BBNode* bbNode_;
         Reg* reg_;
         InstrNode* appendTo_;
 
-        PhiSpilledReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo)
-            : bb_(bb)
+        PhiSpilledReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
+            : bbNode_(bbNode)
             , reg_(reg)
             , appendTo_(appendTo)
         {}
@@ -66,8 +82,8 @@ public:
 
 private:
 
-    Reg* insertSpill(BasicBlock* bb, Reg* reg, InstrNode* appendTo);
-    void insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool first);
+    Reg* insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
+    void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool first);
 
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
@@ -125,7 +141,7 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    //void reconstructionSSA(RegSet reg);
+    void reconstructSSAForm(const RegDefSet& defs);
 };
 
 } // namespace me

@@ -11,6 +11,9 @@ namespace me {
 
 typedef std::vector<Reg*> RegVec;
 
+#define REGDEFSET_EACH(iter, defs) \
+    for (RegDefSet::iterator (iter) = (defs).begin(); (iter) != (defs).end(); ++(iter))
+
 //------------------------------------------------------------------------------
 
 /*
@@ -18,7 +21,7 @@ typedef std::vector<Reg*> RegVec;
  */
 
 // TODO
-#define NUM_REGS 2
+#define NUM_REGS 8
 
 /// Needed for sorting via the distance method.
 struct RegAndDistance 
@@ -114,7 +117,7 @@ void Spiller::process()
     // now the remaining phi spilled relaods can be inserted;
     for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
     {
-        insertReload(phiSpilledReloads_[i].bb_, phiSpilledReloads_[i].reg_, phiSpilledReloads_[i].appendTo_, false);
+        insertReload(phiSpilledReloads_[i].bbNode_, phiSpilledReloads_[i].reg_, phiSpilledReloads_[i].appendTo_, false);
     }
 
     // rewire and reconstruct SSA form properly
@@ -191,7 +194,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
  * insertion of spills and reloads
  */
 
-Reg* Spiller::insertSpill(BasicBlock* bb, Reg* reg, InstrNode* appendTo)
+Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 {
     // create a new memory location
     Reg* mem = function_->newMem(reg->type_, spillCounter_--);
@@ -199,27 +202,22 @@ Reg* Spiller::insertSpill(BasicBlock* bb, Reg* reg, InstrNode* appendTo)
 
     // insert into spill map if reg is the first spill
     if (iter == spillMap_.end())
-    {
-        //std::cout << "insert: " << reg->toString() << " -> " << mem->toString() << std::endl;
         spillMap_.insert( std::make_pair(reg, mem) );
-    }
 
     Spill* spill = new Spill(mem, reg);
-    // insert phi spilles here to? TODO
-    spills_.insert( cfg_->instrList_.insert(appendTo, spill) );
-    bb->fixPointers();
+    spills_.insert( RegDef(bbNode, cfg_->instrList_.insert(appendTo, spill)) );
+    bbNode->value_->fixPointers();
 
     return mem;
 }
 
-void Spiller::insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool first)
+void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool first)
 {
+    // TODO perhaps sth other than this bool arg would be more elegant
     if ( spillMap_.find(reg) == spillMap_.end() )
     {
         if (first) 
-            phiSpilledReloads_.push_back( PhiSpilledReload( bb, reg, appendTo ));
-        else
-            //std::cout << "todo: " << reg->toString() << std::endl;
+            phiSpilledReloads_.push_back( PhiSpilledReload( bbNode, reg, appendTo ));
 
         return;
     }
@@ -228,8 +226,8 @@ void Spiller::insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool f
     swiftAssert( mem->isMem(), "must be a memory reg" );
 
     Reload* reload = new Reload(reg, mem);
-    reloads_.insert( cfg_->instrList_.insert(appendTo, reload) );
-    bb->fixPointers();
+    reloads_.insert( RegDef(bbNode, cfg_->instrList_.insert(appendTo, reload)) );
+    bbNode->value_->fixPointers();
 }
 
 /*
@@ -239,7 +237,6 @@ void Spiller::insertReload(BasicBlock* bb, Reg* reg, InstrNode* appendTo, bool f
 void Spiller::spill(BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
-    //std::cout << bb->name() << std::endl;
 
     /*
      * passed should contain all regs live in at bb 
@@ -293,13 +290,6 @@ void Spiller::spill(BBNode* bbNode)
     // traverse all ordinary instructions in bb
     for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
-        //std::cout << "cIR: " << std::endl;
-        //DISTANCEBAG_EACH(regIter, currentlyInRegs)
-            //std::cout << "\t" << regIter->reg_->toString() << std::endl;
-
-        //std::cout << iter->value_->toString() << std::endl;
-
-
         swiftAssert(dynamic_cast<AssignmentBase*>(iter->value_),
                 "must be an AssignmentBase here");
 
@@ -338,7 +328,7 @@ void Spiller::spill(BBNode* bbNode)
                 /*
                  * insert reload instruction
                  */
-                insertReload(bb, reg, lastInstrNode, true);
+                insertReload(bbNode, reg, lastInstrNode, true);
                 currentlyInRegs.insert( RegAndDistance(reg, 0) );
 
                 // keep account of the number of needed reloads here
@@ -369,7 +359,7 @@ void Spiller::spill(BBNode* bbNode)
         {
             // insert spill instruction
             Reg* toBeSpilled = currentlyInRegs.begin()->reg_;
-            insertSpill(bb, toBeSpilled, lastInstrNode);
+            insertSpill(bbNode, toBeSpilled, lastInstrNode);
 
             // remove first reg
             currentlyInRegs.erase( currentlyInRegs.begin() );
@@ -407,21 +397,16 @@ void Spiller::spill(BBNode* bbNode)
         }
 
     } // for each instr
+
+    // put in remaining regs from inRegs to inB
+    inB.insert( inRegs.begin(), inRegs.end() );
     
     swiftAssert( out_.find(bbNode) == out_.end(), "already inserted" );
     RegSet& outB = out_.insert( std::make_pair(bbNode, RegSet()) ).first->second;
 
-    //std::cout << "inB:" << std::endl;
-    //REGSET_EACH(regIter, inB)
-        //std::cout << "\t" << (*regIter)->toString() << std::endl;
-
     DISTANCEBAG_EACH(regIter, currentlyInRegs)
         outB.insert(regIter->reg_);
     
-/*    std::cout << "outB:" << std::endl;*/
-    //REGSET_EACH(regIter, outB)
-        //std::cout << "\t" << (*regIter)->toString() << std::endl;
-
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
@@ -480,27 +465,33 @@ void Spiller::combine(BBNode* bbNode)
             Reg* phiArg = (Reg*) phi->rhs_[i];
             swiftAssert( !phiArg->isMem(),  "must not be a memory location" );
 
-            // is current phi arg in preOut?
             if ( phiSpill && preOut.find(phiArg) != preOut.end() )
             {
+                // -> we have a phi spill and phiArg in preOut
                 preOut.erase(phiArg);
 
                 // insert spill to predecessor basic block and replace phi arg
-                phi->rhs_[i] = insertSpill( prePhi, phiArg, lastNonJump );
+                phi->rhs_[i] = insertSpill( prePhiNode, phiArg, lastNonJump );
             }
             else if( !phiSpill && preOut.find(phiArg) == preOut.end() )
-                insertReload( prePhi, phiArg, lastNonJump, true ); // insert reload
+            {   
+                // -> we have no phi spill and phiArg not in preOut
+                // insert reload to predecessor basic block
+                insertReload( prePhiNode, phiArg, lastNonJump, true ); // insert reload
+            }
 
             // traverse to next predecessor
             prePhiRelative = prePhiRelative->next();
         }
         swiftAssert( prePhiRelative == bbNode->pred_.sentinel(),
                 "all nodes must be traversed")
+
         if (phiSpill)
         {
             // convert phi result to a memory location
             phi->result()->color_ = Reg::MEMORY_LOCATION;
-            std::cout << "yeah" << std::endl;
+            // add to spills_
+            spills_.insert( RegDef(bbNode, iter) );
         }
     }
 
@@ -525,18 +516,18 @@ void Spiller::combine(BBNode* bbNode)
         {
              // place reloads in this block on the top
             InstrNode* appendTo;
-            BasicBlock* bbAppend;
+            BBNode* bbAppend;
 
             if ( !bb->hasPhiInstr() )
             {
-                bbAppend = bb;
+                bbAppend = bbNode;
                 appendTo = bb->begin_;
             }
             else
             {
                 swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
                 // append to last non phi instruction belonging to pred
-                bbAppend = pred;
+                bbAppend = predNode;
                 appendTo = pred->getLastNonJump();
             }
 
@@ -545,7 +536,6 @@ void Spiller::combine(BBNode* bbNode)
             {
                 // create and insert reload
                 Reg* reg = reloads[i];
-                //std::cout << reg->toString() << std::endl;
                 insertReload(bbAppend, reg, appendTo, true);
             }
         }
@@ -560,17 +550,13 @@ void Spiller::combine(BBNode* bbNode)
                 outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
         spills.erase( end, spills.end() ); // truncate properly
 
-        typedef std::set<InstrNode*> PhiSpills;
-        PhiSpills phiSpills;
-
         if (spills.size() != 0)
         {
-            //std::cout << "yeah! " << std::endl;
             // for each spill
             for (size_t i = 0;  i < spills.size(); ++i)
             {
                 Reg* reg = spills[i];
-                insertSpill(pred, reg, pred->getLastNonJump() );
+                insertSpill(predNode, reg, pred->getLastNonJump() );
             } // for each spill
         }
     } // for each predecessor
@@ -587,9 +573,16 @@ void Spiller::combine(BBNode* bbNode)
  * SSA reconstruction
  */
 
-//void Spiller::reconstructionSSA(RegSet regs)
-//{
-//}
+void Spiller::reconstructSSAForm(const RegDefSet& defs)
+{
+    BBSet f;
+
+    REGDEFSET_EACH(iter, defs)
+        f.insert(iter->bbNode_);
+    
+    BBSet i = cfg_->calcIteratedDomFrontier(f);
+
+}
 
 
 } // namespace me
