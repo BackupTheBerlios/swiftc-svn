@@ -127,7 +127,22 @@ struct AssignmentBase : public InstrBase
      */
     bool isRegDefined(Reg* reg);
 
+    /** 
+     * @brief Finds occurance of \p reg.
+     * 
+     * @param reg The definition to be searched.
+     * 
+     * @return If found \p reg is return, 0 otherwise.
+     */
     Reg* findResult(Reg* reg);
+
+    /** 
+     * @brief Finds \em first occurance of \p op.
+     * 
+     * @param op The operator to be searched.
+     * 
+     * @return If found \p op is return, 0 otherwise.
+     */
     Op* findArg(Op* op);
 };
 

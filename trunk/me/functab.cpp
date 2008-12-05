@@ -78,7 +78,8 @@ Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
 Reg* Function::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = Reg::createMem(type, varNr, id);
+    Reg* reg = new Reg(type, regCounter_++, id);
+    reg->color_ = Reg::MEMORY_LOCATION;
     insert(reg);
 
     return reg;
@@ -106,7 +107,8 @@ Reg* Function::newVar(Op::Type type, int varNr)
 Reg* Function::newMem(Op::Type type, int varNr)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = Reg::createMem(type, varNr);
+    Reg* reg = new Reg(type, regCounter_++);
+    reg->color_ = Reg::MEMORY_LOCATION;
     insert(reg);
 
     return reg;

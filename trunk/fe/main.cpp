@@ -20,8 +20,6 @@
 #include "me/livenessanalysis.h"
 #include "me/spiller.h"
 
-#include "be/amd64/spiller.h"
-
 using namespace swift;
 
 //------------------------------------------------------------------------------

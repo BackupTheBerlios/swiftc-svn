@@ -69,9 +69,6 @@ ADD_EXECUTABLE (swift
     me/op.cpp
     me/spiller.cpp
     me/ssa.cpp
-
-    be/spiller.cpp
-    be/amd64/spiller.cpp
 )
 
 # autogenerate builtin types

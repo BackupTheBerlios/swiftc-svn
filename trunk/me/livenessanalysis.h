@@ -6,8 +6,6 @@
 #include "me/codepass.h"
 #include "me/functab.h"
 
-#include "be/spiller.h"
-
 namespace me {
 
 // forward declaration

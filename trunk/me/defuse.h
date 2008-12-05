@@ -13,18 +13,18 @@ namespace me {
 struct DefUse
 {
     DefUse() {}
-    DefUse(InstrNode* instr, BBNode* bbNode)
-        : instr_(instr)
+    DefUse(InstrNode* instrNode, BBNode* bbNode)
+        : instrNode_(instrNode)
         , bbNode_(bbNode)
     {}
 
-    void set(InstrNode* instr, BBNode* bbNode)
+    void set(InstrNode* instrNode, BBNode* bbNode)
     {
-        instr_ = instr;
+        instrNode_ = instrNode;
         bbNode_ = bbNode;
     }
 
-    InstrNode* instr_;  ///< The instruction which is referenced here
+    InstrNode* instrNode_;  ///< The instruction which is referenced here
     BBNode* bbNode_; ///< The basic block where \a instr_ can be found
 };
 

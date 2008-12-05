@@ -197,12 +197,8 @@ struct Reg : public Op
 
 #ifdef SWIFT_DEBUG
     Reg(Type type, int varNr, std::string* id = 0);
-
-    static Reg* createMem(Type type, int varNr, std::string* id = 0);
 #else // SWIFT_DEBUG
     Reg(Type type, int varNr);
-
-    static Reg* createMem(Type type, int varNr);
 #endif // SWIFT_DEBUG
 
     /*

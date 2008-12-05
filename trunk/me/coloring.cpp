@@ -45,12 +45,13 @@ void Coloring::process()
     colorRecursive(cfg_->entry_);
 }
 
-void Coloring::colorRecursive(BBNode* bb)
+void Coloring::colorRecursive(BBNode* bbNode)
 {
+    BasicBlock* bb = bbNode->value_;
     Colors colors;
 
     // all vars in liveIn_ have already been colored
-    REGSET_EACH(iter, bb->value_->liveIn_)
+    REGSET_EACH(iter, bb->liveIn_)
     {
         int color = (*iter)->color_;
         swiftAssert(color != -1, "color must be assigned here");
@@ -59,7 +60,7 @@ void Coloring::colorRecursive(BBNode* bb)
     }
 
     // for each instruction 
-    for (InstrNode* iter = bb->value_->firstPhi_; iter != bb->value_->end_; iter = iter->next())
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->end_; iter = iter->next())
     {
         AssignmentBase* ab = dynamic_cast<AssignmentBase*>(iter->value_);
 
@@ -118,11 +119,49 @@ void Coloring::colorRecursive(BBNode* bb)
     } // for each instruction
 
     // for each child of bb in the dominator tree
-    for (BBList::Node* iter = bb->value_->domChildren_.first(); iter != bb->value_->domChildren_.sentinel(); iter = iter->next())
+    BBLIST_EACH(bbIter, bb->domChildren_)
     {
-        BBNode* domChild = iter->value_;
+        BBNode* domChild = bbIter->value_;
 
         colorRecursive(domChild);
+    }
+}
+
+void Coloring::colorConstraintedInstr(InstrNode* instrNode)
+{
+    swiftAssert( typeid(*instrNode->value_) == typeid(AssignmentBase),
+            "must be an AssignmentBase here");
+
+    AssignmentBase* ab = (AssignmentBase*) instrNode->value_;
+
+    // for each constrained arg
+    for (size_t i = 0; i < ab->numRhs_; ++i)
+    {
+        if ( typeid(*ab->rhs_[i]) != typeid(Reg) )
+            continue;
+
+        Reg* reg = (Reg*) ab->rhs_[i];
+    }
+
+    // for each constrained result
+    for (size_t i = 0; i < ab->numLhs_; ++i)
+    {
+        Reg* reg = (Reg*) ab->lhs_[i];
+    }
+
+    // for each unconstrained arg
+    for (size_t i = 0; i < ab->numRhs_; ++i)
+    {
+        if ( typeid(*ab->rhs_[i]) != typeid(Reg) )
+            continue;
+
+        Reg* reg = (Reg*) ab->rhs_[i];
+    }
+
+    // for each unconstrained result
+    for (size_t i = 0; i < ab->numLhs_; ++i)
+    {
+        Reg* reg = (Reg*) ab->lhs_[i];
     }
 }
 

@@ -30,7 +30,8 @@ private:
     typedef std::set<int> Colors;
     static int findFirstFreeColorAndAllocate(Colors& colors);
     void color();
-    void colorRecursive(BBNode* bb);
+    void colorRecursive(BBNode* bbNode);
+    void colorConstraintedInstr(InstrNode* instrNode);
 };
 
 } // namespace me

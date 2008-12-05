@@ -27,6 +27,9 @@ public:
 
         T value_;
 
+        /*
+         * constructor and destructor
+         */
         Node(const T& t = T())
             : value_(t)
         {}
@@ -35,6 +38,10 @@ public:
             if (next_)
                 delete next_;
         }
+
+        /*
+         * further methods
+         */
 
         Node* next()
         {
@@ -64,6 +71,15 @@ private:
 
 public:
 
+    /*
+     * constructors, assignment operator and destructor
+     */
+
+    /**
+     * @brief Standard constructor.
+     *
+     * Creates an empty list
+     */
     List()
         : size_(0)
         , sentinel_( new Node() )
@@ -72,6 +88,7 @@ public:
         sentinel_->next_ = sentinel_;
     }
 
+    /// copy constructor
     List(const List<T>& l)
         : size_(0)
         , sentinel_( new Node() )
@@ -93,6 +110,11 @@ public:
         // mark end of destruction
         sentinel_->prev_->next_ = 0;
         delete sentinel_;
+    }
+
+    List<T> operator = (const List<T>& l)
+    {
+        return List(l);
     }
 
     /**

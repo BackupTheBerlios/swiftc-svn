@@ -28,14 +28,14 @@ private:
 
     /**
      * so many Breakpoints can be used at most
-    */
+     */
     enum {
         MAX_BREAKPOINTS = 10
     };
 
     /**
      * Kind of allocation
-    */
+     */
     enum AllocInfo {
         NEW,
         ARRAY_NEW
@@ -70,9 +70,9 @@ private:
          * @param line Zeilennummer
         */
         MemMgrValue(AllocInfo info, void* caller, uint callNumber)
-         :  allocInfo_(info),
-            caller_(caller),
-            callNumber_(callNumber)
+            :  allocInfo_(info)
+            , caller_(caller)
+            , callNumber_(callNumber)
         {}
 
         /**

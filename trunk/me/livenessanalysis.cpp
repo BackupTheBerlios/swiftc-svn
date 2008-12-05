@@ -106,7 +106,7 @@ void LivenessAnalysis::process()
         USELIST_EACH(iter, var->uses_)
         {
             DefUse& use = iter->value_;
-            InstrBase* instr = use.instr_->value_;
+            InstrBase* instr = use.instrNode_->value_;
 
             if ( typeid(*instr) == typeid(PhiInstr) )
             {
@@ -124,7 +124,7 @@ void LivenessAnalysis::process()
                 liveOutAtBlock(pred, var);
             }
             else
-                liveInAtInstr(use.instr_, var);
+                liveInAtInstr(use.instrNode_, var);
         }
 
         // clean up

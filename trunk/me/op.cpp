@@ -88,14 +88,6 @@ Reg::Reg(Type type, int varNr, std::string* id /*= 0*/)
     , id_( id ? *id : "")
 {}
 
-Reg* Reg::createMem(Type type, int varNr, std::string* id /*= 0*/)
-{
-    Reg* reg = new Reg(type, varNr, id);
-    reg->color_ = MEMORY_LOCATION;
-
-    return reg;
-}
-
 #else // SWIFT_DEBUG
 
 Reg::Reg(Type type, int varNr)
@@ -103,14 +95,6 @@ Reg::Reg(Type type, int varNr)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
 {}
-
-Reg* Reg::createMem(Type type, int varNr)
-{
-    Reg* reg = new Reg(type, varNr);
-    reg->color_ = MEMORY_LOCATION;
-
-    return reg;
-}
 
 #endif // SWIFT_DEBUG
 

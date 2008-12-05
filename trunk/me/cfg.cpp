@@ -592,7 +592,8 @@ void CFG::constructSSAForm()
 BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
 {
     BBList work;
-    BBSet result(bbs);
+    // TODO not quite 100% sure whether this is right: BBSet result(bbs);
+    BBSet result;
 
     BBSET_EACH(iter, bbs)
         work.append(*iter);
@@ -612,6 +613,9 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
             if ( result.find(df) == result.end() )
             {
                 // df -> not in result so add to result and to work list
+                swiftAssert(df->pred_.size() > 1,
+                        "current basic block must have more than 1 predecessor");
+
                 result.insert(df);
                 work.append(df);
             }

@@ -8,13 +8,19 @@
 #include "me/codepass.h"
 #include "me/functab.h"
 
-#include "be/spiller.h"
-
 // forward declarations
 namespace me {
 
+/** 
+ * @brief This CodePass inserts necessary spills and reloads.
+ *
+ * This class in independet from any architecture and can be adopted by the
+ * back-end.
+ */
 class Spiller : public CodePass
 {
+private:
+
     /**
      * If vars have to be spilled this counter is used to create new numbers in order to identify
      * same vars.
@@ -23,33 +29,68 @@ class Spiller : public CodePass
 
     /// Reg -> Mem
     typedef std::map<Reg*, Reg*> SpillMap;
+
     /// This set knows for each spilled var the corresponding memory var. 
     SpillMap spillMap_;
 
+
+    /// BBNode -> RegSet
     typedef std::map<BBNode*, RegSet> BB2RegSet;
+
+    /** 
+     * Find the set of registers of a corresponding basic block which is going
+     * into that basic block in \em real registers.
+     */
     BB2RegSet in_;
+
+    /** 
+     * Find the set of registers of a corresponding basic block which is going
+     * out of that basic block in \em real registers.
+     */
     BB2RegSet out_;
 
-    struct RegDef
+    struct Def
     {
-        BBNode* bbNode_;
+        Reg* reg_;
         InstrNode* instrNode_;
+        BBNode* bbNode_;
 
-        RegDef(BBNode* bbNode, InstrNode* instrNode)
-            : bbNode_(bbNode)
+        Def() {}
+        Def(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
+            : reg_(reg)
             , instrNode_(instrNode)
+            , bbNode_(bbNode)
         {}
-
-        bool operator < (const RegDef& rd) const
-        {
-            return instrNode_ < rd.instrNode_;
-        }
+        Def(const Def& d)
+            : reg_(d.reg_)
+            , instrNode_(d.instrNode_)
+            , bbNode_(d.bbNode_)
+        {}
     };
     
-    typedef std::set<RegDef> RegDefSet;
-    RegDefSet spills_;
-    RegDefSet reloads_;
+    typedef List<Def> DefList;
 
+    struct RegDefUse
+    {
+        DefList defs_;
+        UseList uses_;
+    };
+    
+    /// Keeps registers with their definitions und uses.
+    typedef std::map<Reg*, RegDefUse*> RDUMap;
+
+    /**
+     * Contains each spill, i.e. each var defined by a spill 
+     * and its use during a reload if applicable.
+     */
+    RDUMap spills_;
+
+    /**
+     * Contains each reload, its orignal definition and their uses
+     */
+    RDUMap reloads_;
+
+    /// Remembers a Spill which remains to do during local spilling.
     struct PhiSpilledReload
     {
         BBNode* bbNode_;
@@ -62,27 +103,70 @@ class Spiller : public CodePass
             , appendTo_(appendTo)
         {}
     };
+
+    /// std::vector of PhiSpilledReload.
     typedef std::vector<PhiSpilledReload> PhiSpilledReloads;
+
+    /// Remembers spills which remain to do during local spilling.
     PhiSpilledReloads phiSpilledReloads_;
     
-    /*
-     * constructor 
-     */
+    struct Substitute
+    {
+        PhiInstr* phi_;
+        size_t arg_;
 
+        Substitute() {}
+        Substitute(PhiInstr* phi, size_t arg)
+            : phi_(phi)
+            , arg_(arg)
+        {}
+    };
+
+    typedef std::vector<Substitute> Substitutes;
+    Substitutes substitutes_;
+    
 public:
 
+    /*
+     * constructor and destructor
+     */
+
     Spiller(Function* function);
+    ~Spiller();
 
     /*
      * methods
      */
 
-    /// Performs the spilling in all basic blocks.
+    /**
+     * Performs the spilling in all basic blocks locally and gloablly 
+     * and repairs SSA form.
+     */
     virtual void process();
 
 private:
 
+    /** 
+     * @brief Inserts a newly created Spill instruction in \p bbNode of register
+     * \p reg after instruction \p appendto.
+     * 
+     * @param bbNode Basic block of the to be created spill.
+     * @param reg Register to be spilled.
+     * @param appendTo Append to which instruction?
+     * 
+     * @return The newly created memory pseudo register where \p reg is spilled
+     * to.
+     */
     Reg* insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
+
+    /** 
+     * @brief Inserts a newly created Reload instruction in \p bbNode 
+     * of register \p reg after instruction \p appendto.
+     * 
+     * @param bbNode Basic block of the to be created reload.
+     * @param reg Register to be reloaded.
+     * @param appendTo Append to which instruction?
+     */
     void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool first);
 
     /** 
@@ -128,7 +212,7 @@ distanceRec(bbNode, reg, instrNode) = |
     int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
 
     /** 
-     * @brief Performs the spilling in one basic block.
+     * @brief Performs the spilling locally in one basic block.
      * 
      * @param bbNode The basic block which should be spilled.
      */
@@ -141,7 +225,9 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    void reconstructSSAForm(const RegDefSet& defs);
+    void reconstructSSAForm(RegDefUse* rdu);
+
+    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
 };
 
 } // namespace me

@@ -7,12 +7,33 @@
 #include "me/cfg.h"
 #include "me/functab.h"
 
+/*
+ * TODO
+ *
+ * Here is room for optimization:
+ *
+ *           ----------------
+ *           |              |
+ *           ----------------
+ *                  /\
+ *                 /  \
+ *                /    \
+ *               /      \
+ *              /        \
+ *           spill a   spill a
+ *
+ * This can be pushed to the parent basic block.
+ */
+
 namespace me {
 
 typedef std::vector<Reg*> RegVec;
 
-#define REGDEFSET_EACH(iter, defs) \
-    for (RegDefSet::iterator (iter) = (defs).begin(); (iter) != (defs).end(); ++(iter))
+#define RDUMAP_EACH(iter, rdus) \
+    for (RDUMap::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
+
+#define DEFLIST_EACH(iter, defList) \
+    for (DefList::Node* (iter) = (defList).first(); (iter) != (defList).sentinel(); (iter) = (iter)->next())
 
 //------------------------------------------------------------------------------
 
@@ -21,7 +42,7 @@ typedef std::vector<Reg*> RegVec;
  */
 
 // TODO
-#define NUM_REGS 8
+#define NUM_REGS 4
 
 /// Needed for sorting via the distance method.
 struct RegAndDistance 
@@ -97,13 +118,22 @@ void subOne(int& i)
 //------------------------------------------------------------------------------
 
 /*
- * constructor 
+ * constructor and destructor
  */
 
 Spiller::Spiller(Function* function)
     : CodePass(function)
     , spillCounter_(-1) // first allowed name
 {}
+
+Spiller::~Spiller()
+{
+    RDUMAP_EACH(iter, spills_)
+        delete iter->second;
+
+    RDUMAP_EACH(iter, reloads_)
+        delete iter->second;
+}
 
 /*
  * methods
@@ -116,13 +146,47 @@ void Spiller::process()
 
     // now the remaining phi spilled relaods can be inserted;
     for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
-    {
         insertReload(phiSpilledReloads_[i].bbNode_, phiSpilledReloads_[i].reg_, phiSpilledReloads_[i].appendTo_, false);
+
+    // now substitute phi spills args
+    for (size_t i = 0; i < substitutes_.size(); ++i)
+    {
+        PhiInstr* phi = substitutes_[i].phi_;
+        size_t arg = substitutes_[i].arg_;
+        phi->rhs_[arg] = spillMap_[ (Reg*) phi->rhs_[arg] ];
     }
 
-    // rewire and reconstruct SSA form properly
-    //reconstructionSSA(spills_);
-    //reconstructionSSA(reloads_);
+    // register all spills as uses for the reloads_ set
+    RDUMAP_EACH(iter, spills_)
+    {
+        Reg* reg = iter->first;
+        RegDefUse* rdu = iter->second;
+
+        DEFLIST_EACH(defIter, rdu->defs_)
+        {
+            Def& def = defIter->value_;
+            RDUMap::iterator rduIter = reloads_.find(reg);
+
+            if ( rduIter != reloads_.end() )
+                rduIter->second->uses_.append( DefUse(def.instrNode_, def.bbNode_) );
+        }
+    }
+
+    /*
+     * rewire and reconstruct SSA form properly
+     */
+
+    RDUMAP_EACH(iter, spills_)
+    {
+        RegDefUse* rdu = iter->second;
+        reconstructSSAForm(rdu);
+    }
+
+    RDUMAP_EACH(iter, reloads_)
+    {
+        RegDefUse* rdu = iter->second;
+        reconstructSSAForm(rdu);
+    }
 }
 
 int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode) 
@@ -196,17 +260,35 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
 
 Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 {
+    BasicBlock* bb = bbNode->value_;
+
     // create a new memory location
     Reg* mem = function_->newMem(reg->type_, spillCounter_--);
     SpillMap::iterator iter = spillMap_.find(reg);
 
+    Spill* spill = new Spill(mem, reg);
+    InstrNode* spillNode = cfg_->instrList_.insert(appendTo, spill);
+    bb->fixPointers();
+
     // insert into spill map if reg is the first spill
     if (iter == spillMap_.end())
+    {
+        // yes -> so create new entry
         spillMap_.insert( std::make_pair(reg, mem) );
+        swiftAssert( spills_.find(reg) == spills_.end(), "must be found here" );
 
-    Spill* spill = new Spill(mem, reg);
-    spills_.insert( RegDef(bbNode, cfg_->instrList_.insert(appendTo, spill)) );
-    bbNode->value_->fixPointers();
+        RegDefUse* rdu = new RegDefUse();
+        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
+        rdu->uses_ = UseList(reg->uses_);
+        spills_[reg] = rdu;
+    }
+    else
+    {
+        // nope -> so use the one already there
+        swiftAssert( spills_.find(reg) != spills_.end(), "must be found here" );
+        RegDefUse* rdu = spills_.find(reg)->second;
+        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
+    }
 
     return mem;
 }
@@ -226,8 +308,33 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool f
     swiftAssert( mem->isMem(), "must be a memory reg" );
 
     Reload* reload = new Reload(reg, mem);
-    reloads_.insert( RegDef(bbNode, cfg_->instrList_.insert(appendTo, reload)) );
+    InstrNode* reloadNode = cfg_->instrList_.insert(appendTo, reload);
     bbNode->value_->fixPointers();
+
+    // keep account of new use
+    spills_.find(reg)->second->uses_.append( DefUse(reloadNode, bbNode) );
+
+    /*
+     * collect def-use infos
+     */
+    RDUMap::iterator iter = reloads_.find(reg);
+
+    // is this the first reload of reg?
+    if ( iter == reloads_.end() )
+    {
+        // yes -> so create new entry
+        RegDefUse* rdu = new RegDefUse();
+        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
+        rdu->defs_.append( Def(mem, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
+        rdu->uses_ = UseList(reg->uses_);
+        reloads_[reg] = rdu;
+    }
+    else
+    {
+        // nope -> so use the one already there
+        RegDefUse* rdu = iter->second;
+        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
+    }
 }
 
 /*
@@ -357,17 +464,20 @@ void Spiller::spill(BBNode* bbNode)
          */
         for (int i = 0; i < numRemove; ++i)
         {
-            // insert spill instruction
             Reg* toBeSpilled = currentlyInRegs.begin()->reg_;
-            insertSpill(bbNode, toBeSpilled, lastInstrNode);
-
-            // remove first reg
-            currentlyInRegs.erase( currentlyInRegs.begin() );
 
             // manage inB and inRegs
             RegSet::iterator regIter = inRegs.find(toBeSpilled);
             if ( regIter != inRegs.end() )
-                inRegs.erase(regIter); // reg is not used befor 
+                inRegs.erase(regIter); // reg is not used befor -> don't spill
+            else
+            {
+                // insert spill instruction
+                insertSpill(bbNode, toBeSpilled, lastInstrNode);
+            }
+
+            // remove first reg
+            currentlyInRegs.erase( currentlyInRegs.begin() );
         }
 
         /*
@@ -437,10 +547,11 @@ void Spiller::combine(BBNode* bbNode)
         swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
                 "must be a phi instruction here");
         PhiInstr* phi = (PhiInstr*) iter->value_;
-        phiResults.insert( phi->result() );
+        Reg* phiRes = phi->result();
+        phiResults.insert(phiRes);
         
         bool phiSpill;
-        RegSet::iterator inBIter = inB.find( phi->result() );
+        RegSet::iterator inBIter = inB.find(phiRes);
 
         if ( inBIter == inB.end() )
             phiSpill = true;
@@ -463,7 +574,7 @@ void Spiller::combine(BBNode* bbNode)
             swiftAssert( typeid(*phi->rhs_[i]) == typeid(Reg),
                     "must be a Reg here" );
             Reg* phiArg = (Reg*) phi->rhs_[i];
-            swiftAssert( !phiArg->isMem(),  "must not be a memory location" );
+            swiftAssert( !phiArg->isMem(), "must not be a memory location" );
 
             if ( phiSpill && preOut.find(phiArg) != preOut.end() )
             {
@@ -472,6 +583,15 @@ void Spiller::combine(BBNode* bbNode)
 
                 // insert spill to predecessor basic block and replace phi arg
                 phi->rhs_[i] = insertSpill( prePhiNode, phiArg, lastNonJump );
+                //insertSpill( prePhiNode, phiArg, lastNonJump );
+            }
+            else if ( phiSpill && preOut.find(phiArg) == preOut.end() )
+            {
+                /*
+                 * mark for substitution which must be done 
+                 * after global spill insertion
+                 */
+                substitutes_.push_back( Substitute(phi, i) );
             }
             else if( !phiSpill && preOut.find(phiArg) == preOut.end() )
             {   
@@ -483,15 +603,18 @@ void Spiller::combine(BBNode* bbNode)
             // traverse to next predecessor
             prePhiRelative = prePhiRelative->next();
         }
-        swiftAssert( prePhiRelative == bbNode->pred_.sentinel(),
+        swiftAssert(prePhiRelative == bbNode->pred_.sentinel(),
                 "all nodes must be traversed")
 
         if (phiSpill)
         {
             // convert phi result to a memory location
-            phi->result()->color_ = Reg::MEMORY_LOCATION;
+            phiRes->color_ = Reg::MEMORY_LOCATION;
+
             // add to spills_
-            spills_.insert( RegDef(bbNode, iter) );
+            RegDefUse* rdu = new RegDefUse();
+            rdu->defs_.append( Def(phiRes, iter, bbNode) );
+            spills_[phiRes] = rdu;
         }
     }
 
@@ -512,25 +635,26 @@ void Spiller::combine(BBNode* bbNode)
                 inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
         reloads.erase( end, reloads.end() );// truncate properly
 
+        InstrNode* appendTo;
+        BBNode* bbAppend;
+
+        // find out where to append spills/reloads
+        if ( bbNode->pred_.size() == 1 )
+        {
+            // place reloads in this block on the top
+            bbAppend = bbNode;
+            appendTo = bb->begin_;
+        }
+        else
+        {
+            swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
+            // append to last non phi instruction belonging to pred
+            bbAppend = predNode;
+            appendTo = pred->getLastNonJump();
+        }
+
         if (reloads.size() != 0)
         {
-             // place reloads in this block on the top
-            InstrNode* appendTo;
-            BBNode* bbAppend;
-
-            if ( !bb->hasPhiInstr() )
-            {
-                bbAppend = bbNode;
-                appendTo = bb->begin_;
-            }
-            else
-            {
-                swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
-                // append to last non phi instruction belonging to pred
-                bbAppend = predNode;
-                appendTo = pred->getLastNonJump();
-            }
-
             // for each reload
             for (size_t i = 0;  i < reloads.size(); ++i)
             {
@@ -556,7 +680,7 @@ void Spiller::combine(BBNode* bbNode)
             for (size_t i = 0;  i < spills.size(); ++i)
             {
                 Reg* reg = spills[i];
-                insertSpill(predNode, reg, pred->getLastNonJump() );
+                insertSpill(bbAppend, reg, appendTo);
             } // for each spill
         }
     } // for each predecessor
@@ -573,16 +697,138 @@ void Spiller::combine(BBNode* bbNode)
  * SSA reconstruction
  */
 
-void Spiller::reconstructSSAForm(const RegDefSet& defs)
+void Spiller::reconstructSSAForm(RegDefUse* rdu)
 {
-    BBSet f;
+    BBSet defBBs;
 
-    REGDEFSET_EACH(iter, defs)
-        f.insert(iter->bbNode_);
-    
-    BBSet i = cfg_->calcIteratedDomFrontier(f);
+    /*
+     * calculate iterated dominance frontier for all defining basic blocks
+     */
+    DEFLIST_EACH(iter, rdu->defs_)
+        defBBs.insert(iter->value_.bbNode_);
 
+    BBSet iDF = cfg_->calcIteratedDomFrontier(defBBs);
+
+    // for each use
+    USELIST_EACH(iter, rdu->uses_)
+    {
+        DefUse& du = iter->value_;
+        BBNode* bbNode = du.bbNode_;
+        InstrNode* instrNode = du.instrNode_;
+        swiftAssert( dynamic_cast<AssignmentBase*>(instrNode->value_),
+                "must be castable to AssignmentBase*");
+        AssignmentBase* ab = (AssignmentBase*) instrNode->value_;
+
+        // for each arg for which ab->rhs_[i] in defs
+        for (size_t i = 0; i < ab->numRhs_; ++i)
+        {
+            if ( typeid(*ab->rhs_[i]) != typeid(Reg) )
+                continue;
+
+            Reg* useReg = (Reg*) ab->rhs_[i];
+
+            DEFLIST_EACH(iter, rdu->defs_)
+            {
+                Reg* defReg = iter->value_.reg_;
+
+                // substitute arg with proper definition
+                if (useReg == defReg)
+                    ab->rhs_[i] = findDef(i, instrNode, bbNode, rdu, iDF);
+            }
+        }
+    }
 }
 
+Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF)
+{
+    if ( typeid(*instrNode->value_) == typeid(PhiInstr) )
+    {
+        PhiInstr* phi = (PhiInstr*) instrNode->value_;
+        bbNode = phi->sourceBBs_[p];
+        instrNode = bbNode->value_->end_->prev();
+    }
+
+    BasicBlock* bb = bbNode->value_;
+
+    while (true)
+    {
+        // iterate backwards over all instructions without phi instructions
+        while (instrNode != bb->begin_)
+        {
+            swiftAssert(dynamic_cast<AssignmentBase*>(instrNode->value_), 
+                    "must be castable to AssignmentBase here");
+            AssignmentBase* ab = (AssignmentBase*) instrNode->value_;
+
+            // defines ab one of rdu?
+            for (size_t i = 0; i < ab->numLhs_; ++i)
+            {
+                if ( typeid(*ab->lhs_[i]) != typeid(Reg) )
+                    continue;
+
+                Reg* abReg = (Reg*) ab->lhs_[i];
+
+                DEFLIST_EACH(iter, rdu->defs_)
+                {
+                    Reg* defReg = iter->value_.reg_;
+
+                    if (abReg == defReg)
+                        return abReg; // yes -> return the defined reg
+                }
+            }
+
+            // move backwards
+            instrNode = instrNode->prev();
+        }
+
+        // is this basic block in the iterated dominance frontier?
+        BBSet::iterator bbIter = iDF.find(bbNode);
+        if ( bbIter != iDF.end() )
+        {
+            // -> place phi function
+            swiftAssert(bbNode->pred_.size() > 1, 
+                    "current basic block must have more than 1 predecessors");
+            Reg* reg = rdu->defs_.first()->value_.reg_;
+
+            // create new result
+#ifdef SWIFT_DEBUG
+            Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+            Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+            newReg->color_ = Reg::MEMORY_LOCATION;
+
+            // create phi instruction
+            PhiInstr* phi = new PhiInstr( newReg, bbNode->pred_.size() );
+
+            // init sourceBBs
+            size_t counter = 0;
+            CFG_RELATIVES_EACH(predIter, bbNode->pred_)
+            {
+                phi->sourceBBs_[counter] = predIter->value_;
+                ++counter;
+            }
+
+            instrNode = cfg_->instrList_.insert(bb->begin_, phi); 
+            bb->firstPhi_ = instrNode;
+
+            // register new definition
+            rdu->defs_.append( Def(newReg, instrNode, bbNode) );
+
+            for (size_t i = 0; i < phi->numRhs_; ++i)
+                phi->rhs_[i] = findDef(i, instrNode, bbNode, rdu, iDF);
+
+            return phi->result();
+        }
+
+        swiftAssert( cfg_->entry_ != bbNode, "unreachable code");
+
+        // go up dominance tree -> update bbNode, bb and instrNode
+        bbNode = cfg_->idoms_[bbNode->postOrderIndex_];
+        bb = bbNode->value_;
+        instrNode = bb->end_->prev();
+    }
+
+    return 0;
+}
 
 } // namespace me
