@@ -36,6 +36,42 @@ InstrNode* BasicBlock::getLastNonJump()
     return result;
 }
 
+InstrNode* BasicBlock::getSpillLocation()
+{
+    swiftAssert( !hasPhiInstr(), "phi functions are here" );
+    return firstOrdinary_->prev();
+}
+
+InstrNode* BasicBlock::getReloadLocation()
+{
+    swiftAssert( !hasPhiInstr(), "phi functions are here" );
+
+    InstrNode* iter = firstOrdinary_; 
+
+    while ( iter != end_ && (typeid(*iter->value_) == typeid(Spill)) )
+        iter = iter->next();
+
+    iter = iter->prev();
+
+    return iter;
+}
+
+InstrNode* BasicBlock::getBackSpillLocation()
+{
+    InstrNode* iter = getLastNonJump();
+
+    while (    iter != begin_
+            && typeid(*iter->value_) == typeid(Reload) )
+        iter = iter->prev();
+
+    return iter;
+}
+
+InstrNode* BasicBlock::getBackReloadLocation()
+{
+    return getLastNonJump();
+}
+
 void BasicBlock::fixPointers()
 {
     // TODO this can be done smarter

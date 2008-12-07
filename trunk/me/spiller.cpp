@@ -42,7 +42,7 @@ typedef std::vector<Reg*> RegVec;
  */
 
 // TODO
-#define NUM_REGS 2
+#define NUM_REGS 4
 
 /// Needed for sorting via the distance method.
 struct RegAndDistance 
@@ -149,7 +149,7 @@ void Spiller::process()
     {
         BBNode* bbNode = phiSpilledReloads_[i].bbNode_;
         Reg* reg = phiSpilledReloads_[i].reg_;
-        insertReload( bbNode, reg, bbNode->value_->getLastNonJump() );
+        insertReload( bbNode, reg, bbNode->value_->getBackReloadLocation() );
     }
 
     // now substitute phi spills args
@@ -548,6 +548,21 @@ void Spiller::spill(BBNode* bbNode)
 
     DISTANCEBAG_EACH(regIter, currentlyInRegs)
         outB.insert(regIter->reg_);
+    /*
+     * use this for debugging for inB and outB
+     */
+
+#if 1
+    std::cout << bb->name() << std::endl;
+
+    std::cout << "\tinB:" << std::endl;
+    REGSET_EACH(iter, inB)
+        std::cout << "\t\t" << (*iter)->toString() << std::endl;
+
+    std::cout << "\toutB:" << std::endl;
+    REGSET_EACH(iter, outB)
+        std::cout << "\t\t" << (*iter)->toString() << std::endl;
+#endif
 
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
@@ -599,7 +614,6 @@ void Spiller::combine(BBNode* bbNode)
         {
             BBNode* prePhiNode = prePhiRelative->value_;
             BasicBlock* prePhi = prePhiNode->value_;
-            InstrNode* lastNonJump = prePhi->getLastNonJump();
             RegSet& preOut = out_[prePhiNode];
 
             // get phi argument
@@ -614,8 +628,7 @@ void Spiller::combine(BBNode* bbNode)
                 preOut.erase(phiArg);
 
                 // insert spill to predecessor basic block and replace phi arg
-                phi->rhs_[i] = insertSpill( prePhiNode, phiArg, lastNonJump );
-                //insertSpill( prePhiNode, phiArg, lastNonJump );
+                phi->rhs_[i] = insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
             }
             else if ( phiSpill && preOut.find(phiArg) == preOut.end() )
             {
@@ -629,7 +642,13 @@ void Spiller::combine(BBNode* bbNode)
             {   
                 // -> we have no phi spill and phiArg not in preOut
                 // insert reload to predecessor basic block
-                insertReload(prePhiNode, phiArg, lastNonJump); // insert reload
+                insertReload( prePhiNode, phiArg, prePhi->getBackReloadLocation() ); // insert reload
+            }
+            else
+            {
+                // -> we have no phi spill and phiArg is in preOut
+                // remove it from preOut since no spill is needed there
+                preOut.erase(phiArg);
             }
 
             // traverse to next predecessor
@@ -663,19 +682,22 @@ void Spiller::combine(BBNode* bbNode)
 
         InstrNode* appendTo;
         BBNode* bbAppend;
+        bool here;
 
         if ( bbNode->pred_.size() == 1 )
         {
             // place reloads in this block on the top
             bbAppend = bbNode;
-            appendTo = bb->begin_;
+            appendTo = bb->getSpillLocation();
+            here = true;
         }
         else
         {
             swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
             // append to last non phi instruction belonging to pred
             bbAppend = predNode;
-            appendTo = pred->getLastNonJump();
+            appendTo = pred->getBackSpillLocation();
+            here = false;
         }
 
 
@@ -698,6 +720,11 @@ void Spiller::combine(BBNode* bbNode)
                 insertSpill(bbAppend, reg, appendTo);
             } // for each spill
         }
+
+        if (here)
+            appendTo = bb->getReloadLocation();
+        else
+            appendTo = pred->getBackReloadLocation();
 
         /*
          * handle reloads

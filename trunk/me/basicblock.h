@@ -86,7 +86,7 @@ struct BasicBlock
     BBList domFrontier_;
     BBList domChildren_;
 
-    /// Keep account of all vars which are not in SSA form and defined in this Basic block.
+    /// Keep account of all vars which are not in SSA form and defined in this basic block.
     RegMap vars_;
     /// Regs that live.
     RegSet liveIn_;
@@ -104,7 +104,13 @@ struct BasicBlock
      */
 
     InstrNode* getLastNonJump();
+    InstrNode* getSpillLocation();
+    InstrNode* getReloadLocation();
+    InstrNode* getBackSpillLocation();
+    InstrNode* getBackReloadLocation();
+
     void fixPointers();
+
 
     bool hasPhiInstr() const;
 
