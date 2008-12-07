@@ -552,7 +552,7 @@ void Spiller::spill(BBNode* bbNode)
      * use this for debugging for inB and outB
      */
 
-#if 1
+#if 0
     std::cout << bb->name() << std::endl;
 
     std::cout << "\tinB:" << std::endl;
