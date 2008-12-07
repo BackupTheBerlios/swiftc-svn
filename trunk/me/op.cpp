@@ -136,7 +136,7 @@ std::string Reg::toString() const
     {
 #ifdef SWIFT_DEBUG
         oss << id_;
-#else
+#else // SWIFT_DEBUG
         oss << "tmp";
 #endif // SWIFT_DEBUG
         // _!_ indicates that this varNr_ is negative -> not SSA
@@ -150,7 +150,7 @@ std::string Reg::toString() const
             oss << "tmp";
         else
             oss << id_;
-#else
+#else // SWIFT_DEBUG
         oss << "tmp";
 #endif // SWIFT_DEBUG
         oss << number2String( varNr_);

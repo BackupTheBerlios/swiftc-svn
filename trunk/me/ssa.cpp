@@ -186,7 +186,7 @@ int PhiInstr::oldResultNr() const
 std::string PhiInstr::toString() const
 {
     std::ostringstream oss;
-    oss << lhs_[0]->toString() << "\t= phi(";
+    oss << result()->toString() << "\t= phi(";
 
     for (size_t i = 0; i < numRhs_ - 1; ++i)
     {

@@ -95,12 +95,10 @@ private:
     {
         BBNode* bbNode_;
         Reg* reg_;
-        InstrNode* appendTo_;
 
-        PhiSpilledReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
+        PhiSpilledReload(BBNode* bbNode, Reg* reg)
             : bbNode_(bbNode)
             , reg_(reg)
-            , appendTo_(appendTo)
         {}
     };
 
@@ -167,7 +165,7 @@ private:
      * @param reg Register to be reloaded.
      * @param appendTo Append to which instruction?
      */
-    void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool first);
+    void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
 
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
@@ -187,7 +185,7 @@ distance(bbNode, reg, instrNode) = |
      * 
      * @return The distance.  is used as "infinity".
      */
-    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
+    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
     
     /** 
      * @brief This is a helper for \a distance. 
@@ -209,7 +207,7 @@ distanceRec(bbNode, reg, instrNode) = |
      * 
      * @return 
      */
-    int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
+    int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
 
     /** 
      * @brief Performs the spilling locally in one basic block.

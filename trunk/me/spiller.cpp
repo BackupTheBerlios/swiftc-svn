@@ -42,7 +42,7 @@ typedef std::vector<Reg*> RegVec;
  */
 
 // TODO
-#define NUM_REGS 4
+#define NUM_REGS 2
 
 /// Needed for sorting via the distance method.
 struct RegAndDistance 
@@ -146,7 +146,11 @@ void Spiller::process()
 
     // now the remaining phi spilled relaods can be inserted;
     for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
-        insertReload(phiSpilledReloads_[i].bbNode_, phiSpilledReloads_[i].reg_, phiSpilledReloads_[i].appendTo_, false);
+    {
+        BBNode* bbNode = phiSpilledReloads_[i].bbNode_;
+        Reg* reg = phiSpilledReloads_[i].reg_;
+        insertReload( bbNode, reg, bbNode->value_->getLastNonJump() );
+    }
 
     // now substitute phi spills args
     for (size_t i = 0; i < substitutes_.size(); ++i)
@@ -189,7 +193,7 @@ void Spiller::process()
     }
 }
 
-int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode) 
+int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
     InstrBase* instr = instrNode->value_;
     AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
@@ -202,10 +206,10 @@ int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
     }
     // else
 
-    return distanceRec(bbNode, reg, instrNode);
+    return distanceRec(bbNode, reg, instrNode, walked);
 }
 
-int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
+int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
     InstrBase* instr = instrNode->value_;
     BasicBlock* bb = bbNode->value_;
@@ -218,14 +222,28 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
     int result; // result goes here
 
     // is the current instruction a JumpInstr?
-    if (dynamic_cast<JumpInstr*>(instr)) 
+    if ( dynamic_cast<JumpInstr*>(instr) ) 
     {
         JumpInstr* ji = (JumpInstr*) instr;
 
         // collect and compute results of targets
         int results[ji->numTargets_];
         for (size_t i = 0; i < ji->numTargets_; ++i)
-            results[i] = distance( ji->bbTargets_[i], reg, ji->instrTargets_[i] );
+        {
+            BBNode* target = ji->bbTargets_[i];
+
+            if ( walked.find(target) != walked.end() )
+            {
+                // already walked so put in infinity -> another target will yield a value < inf
+                results[i] = infinity();
+                continue;
+            }
+            else
+            {
+                walked.insert(target);
+                results[i] = distance( target, reg, ji->instrTargets_[i], walked );
+            }
+        }
 
         result = *std::min_element(results, results + ji->numTargets_);
     }
@@ -237,12 +255,24 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
             "this may not be the last instruction");
         swiftAssert(bbNode->numSuccs() == 1, "should have exactly one succ");
 
-        result = distance( bbNode->succ_.first()->value_, reg, instrNode->next() );
+        BBNode* succ = bbNode->succ_.first()->value_;
+
+        if ( walked.find(succ) != walked.end() )
+        {
+            // already walked so put in infinity -> another target will yield a value < inf
+            result = infinity();
+        }
+        else
+        {
+            walked.insert(succ);
+            result = distance( succ, reg, instrNode->next(), walked );
+        }
+
     }
     else 
     {
         // -> so we must have a "normal" successor instruction
-        result = distance( bbNode, reg, instrNode->next() );
+        result = distance( bbNode, reg, instrNode->next(), walked );
     }
 
     // do not count a LabelInstr
@@ -293,14 +323,12 @@ Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
     return mem;
 }
 
-void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo, bool first)
+void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 {
-    // TODO perhaps sth other than this bool arg would be more elegant
     if ( spillMap_.find(reg) == spillMap_.end() )
     {
-        if (first) 
-            phiSpilledReloads_.push_back( PhiSpilledReload( bbNode, reg, appendTo ));
-
+        // remember for later insertion
+        phiSpilledReloads_.push_back( PhiSpilledReload(bbNode, reg) );
         return;
     }
 
@@ -373,11 +401,15 @@ void Spiller::spill(BBNode* bbNode)
     RegSet& inB = in_.insert( std::make_pair(bbNode, RegSet()) ).first->second;
     DistanceBag currentlyInRegs;
 
+    BBSet walked;
+    walked.insert(bbNode);
+
     // put in all regs from passed and calculate the distance to its next use
     REGSET_EACH(iter, passed)
     {
         // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
-        currentlyInRegs.insert( RegAndDistance(*iter, distance(bbNode, *iter, bb->firstOrdinary_)) );
+        currentlyInRegs.insert( RegAndDistance(*iter, 
+                    distance(bbNode, *iter, bb->firstOrdinary_, walked)) );
     }
 
     /*
@@ -435,7 +467,7 @@ void Spiller::spill(BBNode* bbNode)
                 /*
                  * insert reload instruction
                  */
-                insertReload(bbNode, reg, lastInstrNode, true);
+                insertReload(bbNode, reg, lastInstrNode);
                 currentlyInRegs.insert( RegAndDistance(reg, 0) );
 
                 // keep account of the number of needed reloads here
@@ -492,7 +524,7 @@ void Spiller::spill(BBNode* bbNode)
 
             // recalculate distance if we have reached the next use
             if (dist < 0)
-                dist = distance(bbNode, regIter->reg_, iter);
+                dist = distance(bbNode, regIter->reg_, iter, walked);
 
             newBag.insert( RegAndDistance(regIter->reg_, dist) );
         }
@@ -503,7 +535,7 @@ void Spiller::spill(BBNode* bbNode)
         for (size_t i = 0; i < ab->numLhs_; ++i)
         {
             Reg* reg = ab->lhs_[i];
-            currentlyInRegs.insert( RegAndDistance(reg, distance(bbNode, reg, iter)) );
+            currentlyInRegs.insert( RegAndDistance(reg, distance(bbNode, reg, iter, walked)) );
         }
 
     } // for each instr
@@ -516,7 +548,7 @@ void Spiller::spill(BBNode* bbNode)
 
     DISTANCEBAG_EACH(regIter, currentlyInRegs)
         outB.insert(regIter->reg_);
-    
+
     // for each child of bb in the dominator tree
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
@@ -597,7 +629,7 @@ void Spiller::combine(BBNode* bbNode)
             {   
                 // -> we have no phi spill and phiArg not in preOut
                 // insert reload to predecessor basic block
-                insertReload( prePhiNode, phiArg, lastNonJump, true ); // insert reload
+                insertReload(prePhiNode, phiArg, lastNonJump); // insert reload
             }
 
             // traverse to next predecessor
@@ -626,19 +658,12 @@ void Spiller::combine(BBNode* bbNode)
         RegSet& outP = out_[predNode];
 
         /*
-         * handle reloads
+         * find out where to append spills/reloads
          */
-
-        // build vector which holds all necessary reloads
-        RegVec reloads( inB.size() );
-        RegVec::iterator end = std::set_difference( 
-                inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
-        reloads.erase( end, reloads.end() );// truncate properly
 
         InstrNode* appendTo;
         BBNode* bbAppend;
 
-        // find out where to append spills/reloads
         if ( bbNode->pred_.size() == 1 )
         {
             // place reloads in this block on the top
@@ -653,16 +678,6 @@ void Spiller::combine(BBNode* bbNode)
             appendTo = pred->getLastNonJump();
         }
 
-        if (reloads.size() != 0)
-        {
-            // for each reload
-            for (size_t i = 0;  i < reloads.size(); ++i)
-            {
-                // create and insert reload
-                Reg* reg = reloads[i];
-                insertReload(bbAppend, reg, appendTo, true);
-            }
-        }
 
         /*
          * handle spills
@@ -670,7 +685,7 @@ void Spiller::combine(BBNode* bbNode)
 
         // build vector which holds all necessary spills
         RegVec spills( outP.size() );
-        end = std::set_difference( 
+        RegVec::iterator end = std::set_difference( 
                 outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
         spills.erase( end, spills.end() ); // truncate properly
 
@@ -682,6 +697,27 @@ void Spiller::combine(BBNode* bbNode)
                 Reg* reg = spills[i];
                 insertSpill(bbAppend, reg, appendTo);
             } // for each spill
+        }
+
+        /*
+         * handle reloads
+         */
+
+        // build vector which holds all necessary reloads
+        RegVec reloads( inB.size() );
+        end = std::set_difference( 
+                inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
+        reloads.erase( end, reloads.end() );// truncate properly
+
+        if (reloads.size() != 0)
+        {
+            // for each reload
+            for (size_t i = 0;  i < reloads.size(); ++i)
+            {
+                // create and insert reload
+                Reg* reg = reloads[i];
+                insertReload(bbAppend, reg, appendTo);
+            }
         }
     } // for each predecessor
 

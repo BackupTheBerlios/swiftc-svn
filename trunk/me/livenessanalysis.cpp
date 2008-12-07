@@ -177,7 +177,6 @@ void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)
 void LivenessAnalysis::liveOutAtInstr(InstrNode* instr, Reg* var)
 {
     // var is live-out at instr
-    //if (!phi)
     instr->value_->liveOut_.insert(var);
 
     // knows whether var is defined in instr
@@ -215,16 +214,15 @@ void LivenessAnalysis::liveInAtInstr(InstrNode* instr, Reg* var)
 {
     // var is live-in at instr
     instr->value_->liveIn_.insert(var);
-    InstrNode* prevInstr = instr->prev();
 
     // is instr the first statement of basic block?
-    if ( typeid(*prevInstr->value_) == typeid(LabelInstr) )
+    if ( typeid(*instr->value_) == typeid(LabelInstr) )
     {
         // var is live-out at the leading labelInstr
-        prevInstr->value_->liveOut_.insert(var);
+        instr->value_->liveOut_.insert(var);
 
         // insert var to this basic block's liveIn
-        BBNode* bb = function_->cfg_.labelNode2BBNode_[prevInstr];
+        BBNode* bb = function_->cfg_.labelNode2BBNode_[instr];
         bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb
