@@ -1,19 +1,9 @@
 #include "be/x64.h"
 
+#include "be/x64codegen.h"
+#include "be/x64regalloc.h"
+
 namespace be {
-
-/*
- * constructor
- */
-
-X64::X64()
-{
-
-}
-
-/*
- * further methods
- */
 
 me::Op::Type X64::getPreferedInt() const 
 {
@@ -33,6 +23,14 @@ me::Op::Type X64::getPreferedReal() const
 me::Op::Type X64::getPreferedIndex() const
 {
     return me::Op::R_UINT64;
+}
+
+void X64::regAlloc(me::Function* function) 
+{
+}
+
+void X64::codeGen(me::Function* function) 
+{
 }
 
 } // namespace be

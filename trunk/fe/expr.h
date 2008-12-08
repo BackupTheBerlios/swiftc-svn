@@ -93,6 +93,9 @@ struct Literal : public Expr
     virtual bool analyze();
     void genSSA();
     std::string toString() const;
+
+    typedef std::map<int, me::Op::Type> TypeMap;
+    static TypeMap* typeMap_;
 };
 
 //------------------------------------------------------------------------------

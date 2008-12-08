@@ -1,8 +1,5 @@
 #include "be/arch.h"
 
-/*
- * statics
- */
+namespace be {
 
-Arch::RegAlloc* Arch::regAlloc_ = 0;
-Arch::CodeGen* Arch::codeGen_ = 0;
+} // namespace be

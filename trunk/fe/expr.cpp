@@ -50,6 +50,12 @@ Expr::~Expr()
 //------------------------------------------------------------------------------
 
 /*
+ * Init static
+ */
+
+Literal::TypeMap* Literal::typeMap_ = 0;
+
+/*
  * constructor
  */
 
@@ -64,57 +70,9 @@ Literal::Literal(int kind, int line /*= NO_LINE*/)
 
 me::Op::Type Literal::toType() const
 {
-    switch (kind_)
-    {
-        case L_INDEX:
-            return me::Reg::R_INDEX;
-
-        case L_INT:
-            return me::Reg::R_INT;
-        case L_INT8:
-            return me::Reg::R_INT8;
-        case L_INT16:
-            return me::Reg::R_INT16;
-        case L_INT32:
-            return me::Reg::R_INT32;
-        case L_INT64:
-            return me::Reg::R_INT64;
-        case L_SAT8:
-            return me::Reg::R_SAT8;
-        case L_SAT16:
-            return me::Reg::R_SAT16;
-
-        case L_UINT:
-            return me::Reg::R_UINT;
-        case L_UINT8:
-            return me::Reg::R_UINT8;
-        case L_UINT16:
-            return me::Reg::R_UINT16;
-        case L_UINT32:
-            return me::Reg::R_UINT32;
-        case L_UINT64:
-            return me::Reg::R_UINT64;
-        case L_USAT8:
-            return me::Reg::R_USAT8;
-        case L_USAT16:
-            return me::Reg::R_USAT16;
-
-        case L_REAL:
-            return me::Reg::R_REAL;
-        case L_REAL32:
-            return me::Reg::R_REAL32;
-        case L_REAL64:
-            return me::Reg::R_REAL64;
-
-        case L_TRUE:
-        case L_FALSE:
-            return me::Reg::R_BOOL;
-
-        default:
-            swiftAssert(false, "illegal switch-case-value");
-    }
-
-    return me::Reg::R_INDEX; // avoid warning here
+    swiftAssert(typeMap_->find(kind_) != typeMap_->end(), 
+            "must be found here");
+    return typeMap_->find(kind_)->second;
 }
 
 bool Literal::analyze()

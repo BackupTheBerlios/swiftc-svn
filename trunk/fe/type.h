@@ -31,9 +31,12 @@ struct BaseType : public Node
     /**
      * Checks whether this is a builtin type.
      *
-     * @return True if this is a built in type, false otherwise
+     * @return True if this is a builtin type, false otherwise
      */
     bool isBuiltin() const;
+
+    typedef std::map<std::string, me::Op::Type> TypeMap;
+    static TypeMap* typeMap_; 
 };
 
 //------------------------------------------------------------------------------

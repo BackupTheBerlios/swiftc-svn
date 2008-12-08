@@ -86,8 +86,31 @@ LivenessAnalysis::~LivenessAnalysis()
 
 void LivenessAnalysis::process()
 {
+    /*
+     * clean up if necessary
+     */
+    if (function_->firstLiveness_)
+    {
+        CFG_RELATIVES_EACH(iter, cfg_->nodes_)
+        {
+            BasicBlock* bb = iter->value_->value_;
+
+            bb->liveIn_.clear();
+            bb->liveOut_.clear();
+        }
+
+        INSTRLIST_EACH(iter, cfg_->instrList_)
+        {
+            InstrBase* instr = iter->value_;
+            instr->liveIn_.clear();
+            instr->liveOut_.clear();
+        }
+    }
+
 #ifdef SWIFT_DEBUG
-    // create var nodes
+    /*
+     * create nodes for the inteference graph
+     */
     REGMAP_EACH(iter, function_->vars_)
     {
         Reg* var = iter->second;
@@ -96,6 +119,10 @@ void LivenessAnalysis::process()
         var->varNode_ = varNode;
     }
 #endif // SWIFT_DEBUG
+
+    /*
+     * start here
+     */
 
     // for each var
     REGMAP_EACH(iter, function_->vars_)
@@ -136,6 +163,7 @@ void LivenessAnalysis::process()
      */
     
 #if 0
+    std::cout << "--- LIVENESS STUFF ---" << std::endl;
     std::cout << "INSTRUCTIONS:" << std::endl;
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
@@ -157,6 +185,8 @@ void LivenessAnalysis::process()
 #ifdef SWIFT_DEBUG
     ig_->dumpDot( ig_->name() );
 #endif // SWIFT_DEBUG
+
+    function_->firstLiveness_ = true;
 }
 
 void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)

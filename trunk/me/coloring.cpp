@@ -53,7 +53,14 @@ void Coloring::colorRecursive(BBNode* bbNode)
     // all vars in liveIn_ have already been colored
     REGSET_EACH(iter, bb->liveIn_)
     {
-        int color = (*iter)->color_;
+        Reg* reg = *iter;
+
+        // do not color memory locations
+        if ( reg->isMem() )
+            continue;
+
+        int color = reg->color_;
+
         swiftAssert(color != -1, "color must be assigned here");
         // mark as occupied
         colors.insert(color);
@@ -81,7 +88,11 @@ void Coloring::colorRecursive(BBNode* bbNode)
                 {
                     Reg* reg = dynamic_cast<Reg*>(ab->rhs_[i]);
 
-                    if ( reg && InstrBase::isLastUse(iter, reg) )
+                    // do not color memory locations
+                    if ( !reg || reg->isMem() )
+                        continue;
+
+                    if ( InstrBase::isLastUse(iter, reg) )
                     {
                         // -> its the last use of reg
                         Colors::iterator colorIter = colors.find(reg->color_);
@@ -97,9 +108,9 @@ void Coloring::colorRecursive(BBNode* bbNode)
                         if ( colorIter != colors.end() )
                             colors.erase(colorIter); // last use of reg
                         /*
-                        * else -> the reg must already been removed which must
-                        *      be caused by a double entry like a = b + b
-                        */
+                         * else -> the reg must already been removed which must
+                         *      be caused by a double entry like a = b + b
+                         */
 #endif // SWIFT_DEBUG
                     } // if last use
                 } // for each rhs var
@@ -109,6 +120,11 @@ void Coloring::colorRecursive(BBNode* bbNode)
             for (size_t i = 0; i < ab->numLhs_; ++i)
             {
                 Reg* reg = ab->lhs_[i];
+
+                // do not color memory locations
+                if ( reg->isMem() )
+                    continue;
+
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
 
                 // pointless definitions should be optimized away

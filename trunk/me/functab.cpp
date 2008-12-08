@@ -23,6 +23,8 @@ Function::Function(std::string* id)
     , regCounter_(0)
     , indexCounter_(0)
     , cfg_(this)
+    , firstLiveness_(false)
+    , firstDefUse_(false)
 {}
 
 Function::~Function()

@@ -36,7 +36,13 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    CFG     cfg_;
+    CFG  cfg_;
+
+    /// Indicates whether a LivenessAnalysis CodePass has already been performed.
+    bool firstLiveness_;
+
+    /// Indicates whether a DefUseCalc CodePass has already been performed.
+    bool firstDefUse_;
 
     /*
      * constructor and destructor

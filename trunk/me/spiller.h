@@ -80,17 +80,30 @@ private:
     typedef std::map<Reg*, RegDefUse*> RDUMap;
 
     /**
-     * Contains each spill, i.e. each var defined by a spill 
-     * and its use during a reload if applicable.
+     * Contains for each reg inside: <br>
+     * - defs: several x = spill(reg) <br>
+     *  or exactly one reg = phispill(___) <br>
+     * - uses: several y = reload(x) with x = spillMap_[reg] <br>
+     *   perhaps one   y = phispill(x, ___) with x in res(defs)
+     *
+     * reconstructSSAForm is first called with this Map so all args of the
+     * reloads are rewired correclty.
      */
     RDUMap spills_;
 
     /**
-     * Contains each reload, its orignal definition and their uses
+     * Contains for each reg inside: <br>
+     * - defs:  several   y = reload(x) with x = spillMap_[reg] <br>
+     *          one     reg = ___ <br>
+     * - uses:  several   y = spills(reg) <br>
+     *          several ___ = reg <br>
+     *
+     * reconstructSSAForm is called with this map second so all args of the
+     * spills are rewired correclty.
      */
     RDUMap reloads_;
 
-    /// Remembers a Spill which remains to do during local spilling.
+    /// Remembers a Spill which remains do during local spilling.
     struct PhiSpilledReload
     {
         BBNode* bbNode_;

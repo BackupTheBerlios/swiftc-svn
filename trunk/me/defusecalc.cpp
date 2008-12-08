@@ -18,6 +18,18 @@ DefUseCalc::DefUseCalc(Function* function)
 
 void DefUseCalc::process()
 {
+    /*
+     * clean up if necessary
+     */
+    if (function_->firstDefUse_)
+    {
+        REGMAP_EACH(iter, function_->vars_)
+        {
+            Reg* var = iter->second;
+            var->uses_.clear();
+        }
+    }
+
     calcDef();
     calcUse();
 
@@ -25,14 +37,17 @@ void DefUseCalc::process()
      * use this for debugging of the def-use calculation
      */
 #if 0
+    std::cout << "--- DEFUSE STUFF ---" << std::endl;
     REGMAP_EACH(iter, function_->vars_)
     {
         Reg* var = iter->second;
-        std::cout << var->toString() << std::endl;
+        std::cout << var->def_.instrNode_->value_->toString() << std::endl;
         USELIST_EACH(iter, var->uses_)
-            std::cout << "\t" << iter->value_.instr_->value_->toString() << std::endl;
+            std::cout << "\t" << iter->value_.instrNode_->value_->toString() << std::endl;
     }
 #endif
+
+    function_->firstDefUse_ = true;
 }
 
 void DefUseCalc::calcDef()

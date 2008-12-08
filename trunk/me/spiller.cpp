@@ -144,7 +144,7 @@ void Spiller::process()
     spill(cfg_->entry_);
     combine(cfg_->entry_);
 
-    // now the remaining phi spilled relaods can be inserted;
+    // now the remaining phi spilled reloads can be inserted;
     for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
     {
         BBNode* bbNode = phiSpilledReloads_[i].bbNode_;
@@ -309,7 +309,6 @@ Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 
         RegDefUse* rdu = new RegDefUse();
         rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
-        rdu->uses_ = UseList(reg->uses_);
         spills_[reg] = rdu;
     }
     else
@@ -335,7 +334,14 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
     Reg* mem = spillMap_[reg];
     swiftAssert( mem->isMem(), "must be a memory reg" );
 
-    Reload* reload = new Reload(reg, mem);
+    // create new result
+#ifdef SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+    Reload* reload = new Reload(newReg, mem);
     InstrNode* reloadNode = cfg_->instrList_.insert(appendTo, reload);
     bbNode->value_->fixPointers();
 
@@ -353,7 +359,7 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
         // yes -> so create new entry
         RegDefUse* rdu = new RegDefUse();
         rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
-        rdu->defs_.append( Def(mem, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
+        rdu->defs_.append( Def(reg, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
         rdu->uses_ = UseList(reg->uses_);
         reloads_[reg] = rdu;
     }
@@ -665,6 +671,7 @@ void Spiller::combine(BBNode* bbNode)
             // add to spills_
             RegDefUse* rdu = new RegDefUse();
             rdu->defs_.append( Def(phiRes, iter, bbNode) );
+            rdu->uses_.append( DefUse(iter, bbNode) );
             spills_[phiRes] = rdu;
         }
     }
@@ -790,14 +797,25 @@ void Spiller::reconstructSSAForm(RegDefUse* rdu)
 
             Reg* useReg = (Reg*) ab->rhs_[i];
 
+#ifdef SWIFT_DEBUG
+            bool found = false;
+#endif // SWIFT_DEBUG
+
             DEFLIST_EACH(iter, rdu->defs_)
             {
                 Reg* defReg = iter->value_.reg_;
 
                 // substitute arg with proper definition
                 if (useReg == defReg)
+                {
+#ifdef SWIFT_DEBUG
+                    found = true;
+#endif // SWIFT_DEBUG
                     ab->rhs_[i] = findDef(i, instrNode, bbNode, rdu, iDF);
+                }
             }
+
+            swiftAssert(found, "no arg found in defs");
         }
     }
 }

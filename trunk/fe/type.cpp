@@ -13,21 +13,20 @@
 namespace swift {
 
 /*
+ * init static
+ */
+
+BaseType::TypeMap* BaseType::typeMap_ = 0;
+
+/*
  * constructor and destructor
  */
 
 BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
     : Node(line)
     , id_(id)
-    , builtin_(false)
-{
-    builtin_ =
-           *id ==  "int" || *id ==  "int8" || *id ==  "int16" || *id ==  "int32" || *id ==  "int64"
-        || *id == "uint" || *id == "uint8" || *id == "uint16" || *id == "uint32" || *id == "uint64"
-        || *id == "sat8" || *id == "sat16" || *id ==  "usat8" || *id == "usat16"
-        || *id == "real" || *id == "real32"|| *id ==  "real64"
-        || *id == "bool";
-}
+    , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
+{}
 
 BaseType::BaseType(std::string* id, bool builtin)
     : Node(-1)
@@ -52,51 +51,9 @@ BaseType* BaseType::clone() const
 
 me::Op::Type BaseType::toType() const
 {
-    const std::string& id = *id_;
-
-    if (id == "index")
-        return me::Reg::R_INDEX;
-    else if (id == "int")
-        return me::Reg::R_INT;
-    else if (id == "int8")
-        return me::Reg::R_INT8;
-    else if (id == "int16")
-        return me::Reg::R_INT16;
-    else if (id == "int32")
-        return me::Reg::R_INT32;
-    else if (id == "int64")
-        return me::Reg::R_INT64;
-    else if (id == "sat8")
-        return me::Reg::R_SAT8;
-    else if (id == "sat16")
-        return me::Reg::R_SAT16;
-
-    else if (id == "uint")
-        return me::Reg::R_UINT;
-    else if (id == "uint8")
-        return me::Reg::R_UINT8;
-    else if (id == "uint16")
-        return me::Reg::R_UINT16;
-    else if (id == "uint32")
-        return me::Reg::R_UINT32;
-    else if (id == "uint64")
-        return me::Reg::R_UINT64;
-    else if (id == "usat8")
-        return me::Reg::R_USAT8;
-    else if (id == "usat16")
-        return me::Reg::R_USAT16;
-
-    else if (id == "real")
-        return me::Reg::R_REAL;
-    else if (id == "real32")
-        return me::Reg::R_REAL32;
-    else if (id == "real64")
-        return me::Reg::R_REAL64;
-
-    else if (id == "bool")
-        return me::Reg::R_BOOL;
-    else
-        return me::Reg::R_STRUCT;
+    swiftAssert(typeMap_->find(*id_) != typeMap_->end(), 
+            "must be found here");
+    return typeMap_->find(*id_)->second;
 }
 
 bool BaseType::isBuiltin() const

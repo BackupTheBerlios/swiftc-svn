@@ -8,11 +8,13 @@
 
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"
+#include "fe/expr.h"
 #include "fe/lexer.h"
 #include "fe/module.h"
 #include "fe/parser.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
+#include "fe/type.h"
 
 #include "me/coloring.h"
 #include "me/functab.h"
@@ -20,13 +22,22 @@
 #include "me/livenessanalysis.h"
 #include "me/spiller.h"
 
+#include "be/x64.h"
+
 using namespace swift;
+
+//------------------------------------------------------------------------------
+
+// global
+
+be::Arch* arch;
 
 //------------------------------------------------------------------------------
 
 // forward declarations
 
 void readBuiltinTypes();
+void initTypeMaps();
 int start(int argc, char** argv);
 
 //------------------------------------------------------------------------------
@@ -59,8 +70,11 @@ int start(int argc, char** argv)
         return EXIT_FAILURE;
 
     /*
-        init globals
-    */
+     * init globals
+     */
+    arch = new be::X64();
+    initTypeMaps();
+
     syntaxtree = new SyntaxTree();
     syntaxtree->rootModule_ = new Module(new std::string("default"), currentLine);
 
@@ -82,30 +96,32 @@ int start(int argc, char** argv)
     }
 
     /*
-        Parse the input file, build a syntax tree
-        and start filling the SymbolTable
-
-        Since not all symbols can be found in the first pass there will be gaps
-        in the SymbolTable.
-    */
+     * Parse the input file, build a syntax tree
+     * and start filling the SymbolTable
+     *
+     * Since not all symbols can be found in the first pass there will be gaps
+     * in the SymbolTable.
+     */
     swiftparse(); // call generated parser which on its part calls swiftlex
     if ( parseerror )
         return EXIT_FAILURE; // abort on a parse error
 
     /*
-        Check types of all expressions, fill all gaps in the symtab and
-        build single static assignment form if everything is ok
-
-        Thus a complete SymbolTable and type consistency is ensured after this pass.
-    */
+     * Check types of all expressions, fill all gaps in the symtab and
+     * build single static assignment form if everything is ok
+     * 
+     * Thus a complete SymbolTable and type consistency is ensured after this pass.
+     */
     bool analyzeResult = syntaxtree->analyze();
 
     /*
-        clean up front-end
-    */
+     * clean up front-end
+     */
     delete syntaxtree;
     delete symtab;
     delete error;
+    delete Literal::typeMap_;
+    delete BaseType::typeMap_;
 
     fclose(file);
 
@@ -116,20 +132,20 @@ int start(int argc, char** argv)
     }
 
     /*
-        build up middle-end:
-
-        find basic blocks,
-        caculate control flow graph,
-        find last assignment of vars in a basic block
-        calculate the dominator tree,
-        calculate the dominance frontier,
-        place phi-functions in SSA form and update vars
-    */
+     * build up middle-end:
+     *
+     * find basic blocks,
+     * caculate control flow graph,
+     * find last assignment of vars in a basic block
+     * calculate the dominator tree,
+     * calculate the dominance frontier,
+     * place phi-functions in SSA form and update vars
+     */
     me::functab->buildUpME();
     
     /*
-        build up back-end and generate assembly code
-    */
+     * build up back-end and generate assembly code
+     */
     // TODO
 
     //std::ostringstream oss;
@@ -147,7 +163,10 @@ int start(int argc, char** argv)
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         me::Spiller(function).process();
-        //me::Coloring(function).process();
+
+        me::DefUseCalc(function).process();
+        me::LivenessAnalysis(function).process();
+        me::Coloring(function).process();
     }
 
     /*
@@ -160,18 +179,20 @@ int start(int argc, char** argv)
     //ofs.close();
 
     /*
-        clean up middle-end
-    */
+     * clean up middle-end
+     */
     delete me::functab;
+
+    /*
+     * clean up back-end
+     */
+    delete arch;
 
     return 0;
 }
 
 void readBuiltinTypes()
 {
-    /*
-        read builtin types
-    */
     std::vector<const char*> builtin;
 
     builtin.push_back("fe/builtin/int.swift");
@@ -206,4 +227,65 @@ void readBuiltinTypes()
         swiftparse();
         fclose(file);
     }
+}
+
+void initTypeMaps()
+{
+    BaseType::typeMap_ = new BaseType::TypeMap();
+
+    (*BaseType::typeMap_)["bool"]   = me::Op::R_BOOL;
+
+    (*BaseType::typeMap_)["int8"]   = me::Op::R_INT8;
+    (*BaseType::typeMap_)["int16"]  = me::Op::R_INT16;
+    (*BaseType::typeMap_)["int32"]  = me::Op::R_INT32;
+    (*BaseType::typeMap_)["int64"]  = me::Op::R_INT64;
+
+    (*BaseType::typeMap_)["sat8"]   = me::Op::R_SAT8;
+    (*BaseType::typeMap_)["sat16"]  = me::Op::R_SAT16;
+
+    (*BaseType::typeMap_)["uint8"]  = me::Op::R_UINT8;
+    (*BaseType::typeMap_)["uint16"] = me::Op::R_UINT16;
+    (*BaseType::typeMap_)["uint32"] = me::Op::R_UINT32;
+    (*BaseType::typeMap_)["uint64"] = me::Op::R_UINT64;
+
+    (*BaseType::typeMap_)["usat8"]   = me::Op::R_USAT8;
+    (*BaseType::typeMap_)["usat16"]  = me::Op::R_USAT16;
+
+    (*BaseType::typeMap_)["real32"] = me::Op::R_REAL32;
+    (*BaseType::typeMap_)["real64"] = me::Op::R_REAL64;
+
+    (*BaseType::typeMap_)["int"]    = arch->getPreferedInt();
+    (*BaseType::typeMap_)["uint"]   = arch->getPreferedUInt();
+    (*BaseType::typeMap_)["index"]  = arch->getPreferedIndex();
+    (*BaseType::typeMap_)["real"]   = arch->getPreferedReal();
+
+
+    Literal::typeMap_ = new Literal::TypeMap();
+
+    (*Literal::typeMap_)[L_TRUE]   = me::Op::R_BOOL;
+    (*Literal::typeMap_)[L_FALSE]  = me::Op::R_BOOL;
+
+    (*Literal::typeMap_)[L_INT8]   = me::Op::R_INT8;
+    (*Literal::typeMap_)[L_INT16]  = me::Op::R_INT16;
+    (*Literal::typeMap_)[L_INT32]  = me::Op::R_INT32;
+    (*Literal::typeMap_)[L_INT64]  = me::Op::R_INT64;
+
+    (*Literal::typeMap_)[L_SAT8]   = me::Op::R_SAT8;
+    (*Literal::typeMap_)[L_SAT16]  = me::Op::R_SAT16;
+
+    (*Literal::typeMap_)[L_UINT8]  = me::Op::R_UINT8;
+    (*Literal::typeMap_)[L_UINT16] = me::Op::R_UINT16;
+    (*Literal::typeMap_)[L_UINT32] = me::Op::R_UINT32;
+    (*Literal::typeMap_)[L_UINT64] = me::Op::R_UINT64;
+
+    (*Literal::typeMap_)[L_USAT8]  = me::Op::R_USAT8;
+    (*Literal::typeMap_)[L_USAT16] = me::Op::R_USAT16;
+
+    (*Literal::typeMap_)[L_REAL32] = me::Op::R_REAL32;
+    (*Literal::typeMap_)[L_REAL64] = me::Op::R_REAL64;
+
+    (*Literal::typeMap_)[L_INT]    = arch->getPreferedInt();
+    (*Literal::typeMap_)[L_UINT]   = arch->getPreferedUInt();
+    (*Literal::typeMap_)[L_INDEX]  = arch->getPreferedIndex();
+    (*Literal::typeMap_)[L_REAL]   = arch->getPreferedReal();
 }

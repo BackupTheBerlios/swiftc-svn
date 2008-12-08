@@ -189,6 +189,25 @@ public:
         ++size_;
     }
 
+    void clear()
+    {
+        if ( empty() )
+            return;
+
+        Node* n = sentinel_->next_;
+
+        while (n != sentinel_)
+        {
+            Node* next = n->next_;
+            n->next_ = 0;
+            delete n;
+            n = next;
+        }
+
+        sentinel_->next_ = sentinel_;
+        sentinel_->prev_ = sentinel_;
+    }
+
     /**
      * Inserts a Node n behind node prev.
      * @param prev The predecessor of n.

@@ -35,36 +35,27 @@ struct Op
     /// Types of pseudo registers / constants
     enum Type
     {
-        R_INDEX,
-        R_INT,  R_INT8,  R_INT16,  R_INT32,  R_INT64,  R_SAT8,  R_SAT16,
-        R_UINT, R_UINT8, R_UINT16, R_UINT32, R_UINT64, R_USAT8, R_USAT16,
-        R_REAL, R_REAL32, R_REAL64,
-        R_BOOL,
-        R_STRUCT,
+        R_BOOL      = 1 <<  0,
 
-        // SIMD registers use the same value but negative
-        VR_INDEX = -R_INDEX,
-        VR_INT   = -R_INT,
-        VR_INT8  = -R_INT8,
-        VR_INT16 = -R_INT16,
-        VR_INT32 = -R_INT32,
-        VR_INT64 = -R_INT64,
+        // integers
+        R_INT8      = 1 <<  1,
+        R_INT16     = 1 <<  2,
+        R_INT32     = 1 <<  3,
+        R_INT64     = 1 <<  4,
+        R_SAT8      = 1 <<  5,
+        R_SAT16     = 1 <<  6,
 
-        VR_SAT8  = -R_SAT8,
-        VR_SAT16 = -R_SAT16,
+        // unsigned integers
+        R_UINT8     = 1 <<  7,
+        R_UINT16    = 1 <<  8,
+        R_UINT32    = 1 <<  9,
+        R_UINT64    = 1 << 10,
+        R_USAT8     = 1 << 11,
+        R_USAT16    = 1 << 12,
 
-        VR_UINT  = -R_UINT,
-        VR_UINT8 = -R_UINT8,
-        VR_UINT16= -R_UINT16,
-        VR_UINT32= -R_UINT32,
-        VR_UINT64= -R_UINT64,
-
-        VR_USAT8 = -R_USAT8,
-        VR_USAT16= -R_USAT16,
-
-        VR_REAL  = -R_REAL,
-        VR_REAL32= -R_REAL32,
-        VR_REAL64= -R_REAL64
+        // floating points
+        R_REAL32    = 1 << 13,
+        R_REAL64    = 1 << 14
     };
 
     Type type_;

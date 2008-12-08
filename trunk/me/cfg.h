@@ -78,7 +78,7 @@ struct CFG : public Graph<BasicBlock>
      */
 
     /** 
-     * @brief Invode this method in order to construct SSA Form.
+     * @brief Invoke this method in order to construct SSA Form.
      *
      * Furthermore the dominator tree, the dominance frontier and the placement of phi functions
      * will be calculated. Vars will be properly renamed and the def and use information is
@@ -91,7 +91,6 @@ struct CFG : public Graph<BasicBlock>
      */
 
     BBSet calcIteratedDomFrontier(BBSet bbs);
-
 
     /*
      * dump methods
