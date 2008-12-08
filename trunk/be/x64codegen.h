@@ -3,9 +3,11 @@
 
 #include "me/codepass.h"
 
+#include "be/arch.h"
+
 namespace be {
 
-class X64CodeGen : public me::CodePass
+class X64CodeGen : public CodeGen
 {
 public:
 

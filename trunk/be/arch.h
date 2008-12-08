@@ -12,10 +12,16 @@ namespace me {
 namespace be {
 
 class RegAlloc : public me::CodePass
-{};
+{
+public:
+    RegAlloc(me::Function* function);
+};
 
 class CodeGen : public me::CodePass
-{};
+{
+public:
+    CodeGen(me::Function* function);
+};
 
 class Arch
 {

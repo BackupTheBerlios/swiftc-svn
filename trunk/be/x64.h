@@ -14,7 +14,6 @@ public:
     virtual me::Op::Type getPreferedReal() const;
     virtual me::Op::Type getPreferedIndex() const;
 
-
     virtual void regAlloc(me::Function* function);
     virtual void codeGen(me::Function* function);
 };

@@ -222,6 +222,9 @@ struct Reg : public Op
      */
     bool isMem() const;
 
+    bool spillReg(int typeMask) const;
+    bool colorReg(int typeMask) const;
+
     virtual std::string toString() const;
 };
 

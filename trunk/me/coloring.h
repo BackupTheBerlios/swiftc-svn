@@ -1,13 +1,14 @@
 #ifndef ME_COLORING_H
 #define ME_COLORING_H
 
-#include <fstream>
 #include <set>
 
 #include "me/codepass.h"
 #include "me/forward.h"
 
 namespace me {
+
+typedef std::set<int> Colors;
 
 class Coloring : public CodePass
 {
@@ -17,7 +18,7 @@ public:
      * constructor
      */
 
-    Coloring(Function* function);
+    Coloring(Function* function, int typeMask, Colors reservoir);
 
     /*
      * methods
@@ -27,8 +28,10 @@ public:
 
 private:
 
-    typedef std::set<int> Colors;
-    static int findFirstFreeColorAndAllocate(Colors& colors);
+    int typeMask_;
+    const Colors reservoir_;
+
+    int findFirstFreeColorAndAllocate(Colors& colors);
     void color();
     void colorRecursive(BBNode* bbNode);
     void colorConstraintedInstr(InstrNode* instrNode);

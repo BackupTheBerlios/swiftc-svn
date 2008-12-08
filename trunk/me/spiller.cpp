@@ -27,6 +27,10 @@
 
 namespace me {
 
+//------------------------------------------------------------------------------
+//-helpers----------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
 typedef std::vector<Reg*> RegVec;
 
 #define RDUMAP_EACH(iter, rdus) \
@@ -35,74 +39,8 @@ typedef std::vector<Reg*> RegVec;
 #define DEFLIST_EACH(iter, defList) \
     for (DefList::Node* (iter) = (defList).first(); (iter) != (defList).sentinel(); (iter) = (iter)->next())
 
-//------------------------------------------------------------------------------
-
-/*
- * distance stuff
- */
-
-// TODO
-#define NUM_REGS 4
-
-/// Needed for sorting via the distance method.
-struct RegAndDistance 
-{
-    Reg* reg_;
-    int distance_;
-
-    /*
-     * constructors
-     */
-
-    RegAndDistance() {}
-
-    RegAndDistance(Reg* reg, int distance)
-        : reg_(reg)
-        , distance_(distance)
-    {}
-
-    /// copy constructor
-    RegAndDistance(const RegAndDistance& rd)
-        : reg_(rd.reg_)
-        , distance_(rd.distance_)
-    {}
-
-    /*
-     * operator
-     */
-
-    /// needed by std::sort
-    bool operator < (const RegAndDistance& r) const
-    {
-        return distance_ > r.distance_; // sort farest first
-    }
-};
-
-// TODO perhaps use two synced sets for better performance:
-// - one sorted by distance
-// - one sorted by reg
-
-typedef std::multiset<RegAndDistance> DistanceBag;
-/// Use this macro in order to easily visit all elements of a RegSet
 #define DISTANCEBAG_EACH(iter, db) \
     for (DistanceBag::iterator (iter) = (db).begin(); (iter) != (db).end(); ++(iter))
-
-Reg* regFind(DistanceBag& ds, Reg* reg)
-{
-    DISTANCEBAG_EACH(iter, ds)
-    {
-        if ( iter->reg_ == reg)
-            return reg;
-    }
-
-    return 0;
-}
-
-void discardFarest(DistanceBag& ds)
-{
-    while (ds.size() > NUM_REGS)
-        ds.erase( ds.begin() );
-}
 
 inline int infinity() 
 {
@@ -121,8 +59,10 @@ void subOne(int& i)
  * constructor and destructor
  */
 
-Spiller::Spiller(Function* function)
+Spiller::Spiller(Function* function, size_t numRegs, int typeMask)
     : CodePass(function)
+    , numRegs_(numRegs)
+    , typeMask_(typeMask)
     , spillCounter_(-1) // first allowed name
 {}
 
@@ -149,6 +89,7 @@ void Spiller::process()
     {
         BBNode* bbNode = phiSpilledReloads_[i].bbNode_;
         Reg* reg = phiSpilledReloads_[i].reg_;
+        swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
         insertReload( bbNode, reg, bbNode->value_->getBackReloadLocation() );
     }
 
@@ -164,6 +105,7 @@ void Spiller::process()
     RDUMAP_EACH(iter, spills_)
     {
         Reg* reg = iter->first;
+        swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
         RegDefUse* rdu = iter->second;
 
         DEFLIST_EACH(defIter, rdu->defs_)
@@ -193,8 +135,102 @@ void Spiller::process()
     }
 }
 
+/*
+ * insertion of spills and reloads
+ */
+
+Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
+{
+    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    BasicBlock* bb = bbNode->value_;
+
+    // create a new memory location
+    Reg* mem = function_->newMem(reg->type_, spillCounter_--);
+    SpillMap::iterator iter = spillMap_.find(reg);
+
+    Spill* spill = new Spill(mem, reg);
+    InstrNode* spillNode = cfg_->instrList_.insert(appendTo, spill);
+    bb->fixPointers();
+
+    // insert into spill map if reg is the first spill
+    if (iter == spillMap_.end())
+    {
+        // yes -> so create new entry
+        spillMap_.insert( std::make_pair(reg, mem) );
+        swiftAssert( spills_.find(reg) == spills_.end(), "must be found here" );
+
+        RegDefUse* rdu = new RegDefUse();
+        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
+        spills_[reg] = rdu;
+    }
+    else
+    {
+        // nope -> so use the one already there
+        swiftAssert( spills_.find(reg) != spills_.end(), "must be found here" );
+        RegDefUse* rdu = spills_.find(reg)->second;
+        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
+    }
+
+    return mem;
+}
+
+void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
+{
+    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    if ( spillMap_.find(reg) == spillMap_.end() )
+    {
+        // remember for later insertion
+        phiSpilledReloads_.push_back( PhiSpilledReload(bbNode, reg) );
+        return;
+    }
+
+    Reg* mem = spillMap_[reg];
+    swiftAssert( mem->isMem(), "must be a memory reg" );
+
+    // create new result
+#ifdef SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+    Reload* reload = new Reload(newReg, mem);
+    InstrNode* reloadNode = cfg_->instrList_.insert(appendTo, reload);
+    bbNode->value_->fixPointers();
+
+    // keep account of new use
+    spills_.find(reg)->second->uses_.append( DefUse(reloadNode, bbNode) );
+
+    /*
+     * collect def-use infos
+     */
+    RDUMap::iterator iter = reloads_.find(reg);
+
+    // is this the first reload of reg?
+    if ( iter == reloads_.end() )
+    {
+        // yes -> so create new entry
+        RegDefUse* rdu = new RegDefUse();
+        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
+        rdu->defs_.append( Def(reg, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
+        rdu->uses_ = UseList(reg->uses_);
+        reloads_[reg] = rdu;
+    }
+    else
+    {
+        // nope -> so use the one already there
+        RegDefUse* rdu = iter->second;
+        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
+    }
+}
+
+/*
+ * distance calculation via Belady
+ */
+
 int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
+    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
     AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
 
@@ -211,6 +247,7 @@ int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walk
 
 int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
+    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
     BasicBlock* bb = bbNode->value_;
 
@@ -285,95 +322,26 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
 }
 
 /*
- * insertion of spills and reloads
- */
-
-Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
-{
-    BasicBlock* bb = bbNode->value_;
-
-    // create a new memory location
-    Reg* mem = function_->newMem(reg->type_, spillCounter_--);
-    SpillMap::iterator iter = spillMap_.find(reg);
-
-    Spill* spill = new Spill(mem, reg);
-    InstrNode* spillNode = cfg_->instrList_.insert(appendTo, spill);
-    bb->fixPointers();
-
-    // insert into spill map if reg is the first spill
-    if (iter == spillMap_.end())
-    {
-        // yes -> so create new entry
-        spillMap_.insert( std::make_pair(reg, mem) );
-        swiftAssert( spills_.find(reg) == spills_.end(), "must be found here" );
-
-        RegDefUse* rdu = new RegDefUse();
-        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
-        spills_[reg] = rdu;
-    }
-    else
-    {
-        // nope -> so use the one already there
-        swiftAssert( spills_.find(reg) != spills_.end(), "must be found here" );
-        RegDefUse* rdu = spills_.find(reg)->second;
-        rdu->defs_.append( Def(mem, spillNode, bbNode) ); // newly created definition
-    }
-
-    return mem;
-}
-
-void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
-{
-    if ( spillMap_.find(reg) == spillMap_.end() )
-    {
-        // remember for later insertion
-        phiSpilledReloads_.push_back( PhiSpilledReload(bbNode, reg) );
-        return;
-    }
-
-    Reg* mem = spillMap_[reg];
-    swiftAssert( mem->isMem(), "must be a memory reg" );
-
-    // create new result
-#ifdef SWIFT_DEBUG
-    Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-    Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
-
-    Reload* reload = new Reload(newReg, mem);
-    InstrNode* reloadNode = cfg_->instrList_.insert(appendTo, reload);
-    bbNode->value_->fixPointers();
-
-    // keep account of new use
-    spills_.find(reg)->second->uses_.append( DefUse(reloadNode, bbNode) );
-
-    /*
-     * collect def-use infos
-     */
-    RDUMap::iterator iter = reloads_.find(reg);
-
-    // is this the first reload of reg?
-    if ( iter == reloads_.end() )
-    {
-        // yes -> so create new entry
-        RegDefUse* rdu = new RegDefUse();
-        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
-        rdu->defs_.append( Def(reg, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
-        rdu->uses_ = UseList(reg->uses_);
-        reloads_[reg] = rdu;
-    }
-    else
-    {
-        // nope -> so use the one already there
-        RegDefUse* rdu = iter->second;
-        rdu->defs_.append( Def(mem, reloadNode, bbNode) ); // newly created definition
-    }
-}
-
-/*
  * local spilling
  */
+
+Reg* Spiller::regFind(Spiller::DistanceBag& ds, Reg* reg)
+{
+    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    DISTANCEBAG_EACH(iter, ds)
+    {
+        if ( iter->reg_ == reg)
+            return reg;
+    }
+
+    return 0;
+}
+
+void Spiller::discardFarest(DistanceBag& ds)
+{
+    while (ds.size() > numRegs_)
+        ds.erase( ds.begin() );
+}
 
 void Spiller::spill(BBNode* bbNode)
 {
@@ -383,7 +351,17 @@ void Spiller::spill(BBNode* bbNode)
      * passed should contain all regs live in at bb 
      * and the results of phi operations in bb
      */
-    RegSet passed = bb->liveIn_;
+    RegSet passedAll = bb->liveIn_;
+
+    // erase those regs in passed which should not be considered during this pass
+    RegSet passed;
+    REGSET_EACH(iter, passedAll)
+    {
+        Reg* reg = *iter;
+
+        if ( reg->spillReg(typeMask_) )
+            passed.insert(reg);
+    }
 
     // for each PhiInstr in bb
     for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
@@ -392,6 +370,9 @@ void Spiller::spill(BBNode* bbNode)
             "must be a PhiInstr here" );
 
         PhiInstr* phi = (PhiInstr*) iter->value_;
+
+        if ( !phi->result()->spillReg(typeMask_) )
+            continue;
         
         // add result to the passed set
         passed.insert( phi->result() );
@@ -419,7 +400,7 @@ void Spiller::spill(BBNode* bbNode)
     }
 
     /*
-     * use the first NUM_REGS registers if the set is too large
+     * use the first numRegs_ registers if the set is too large
      */
     discardFarest(currentlyInRegs);
 
@@ -463,10 +444,14 @@ void Spiller::spill(BBNode* bbNode)
             if (typeid(*ab->rhs_[i]) != typeid(Reg))
                 continue;
 
+            Reg* reg = (Reg*) ab->rhs_[i];
+
+            if ( !reg->spillReg(typeMask_) )
+                continue;
+
             /*
              * is this reg currently not in a real register?
              */
-            Reg* reg = (Reg*) ab->rhs_[i];
 
             if ( regFind(currentlyInRegs, reg) == 0 )
             {
@@ -494,8 +479,18 @@ void Spiller::spill(BBNode* bbNode)
             }
         }
 
+        // count how many of ab->lhs_ have a proper type
+        int numLhs = 0;
+        for (size_t i = 0;  i < ab->numLhs_; ++i)
+        {
+            Reg* reg = ab->lhs_[i];
+
+            if ( reg->spillReg(typeMask_) )
+                ++numLhs;
+        }
+
         // numRemove -> number of regs which must be removed from currentlyInRegs
-        int numRemove = std::max( int(ab->numLhs_) + numReloads + int(currentlyInRegs.size()) - NUM_REGS, 0 );
+        int numRemove = std::max( numLhs + numReloads + int(currentlyInRegs.size()) - int(numRegs_), 0 );
 
         /*
          * insert spills
@@ -541,9 +536,13 @@ void Spiller::spill(BBNode* bbNode)
         for (size_t i = 0; i < ab->numLhs_; ++i)
         {
             Reg* reg = ab->lhs_[i];
-            currentlyInRegs.insert( RegAndDistance(reg, distance(bbNode, reg, iter, walked)) );
-        }
 
+            if ( reg->spillReg(typeMask_) )
+            {
+                currentlyInRegs.insert( 
+                        RegAndDistance(reg, distance(bbNode, reg, iter, walked)) );
+            }
+        }
     } // for each instr
 
     // put in remaining regs from inRegs to inB
@@ -592,7 +591,6 @@ void Spiller::combine(BBNode* bbNode)
      */
 
     RegSet phiArgs;
-    RegSet phiResults;
     
     // for each phi function
     for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
@@ -601,7 +599,9 @@ void Spiller::combine(BBNode* bbNode)
                 "must be a phi instruction here");
         PhiInstr* phi = (PhiInstr*) iter->value_;
         Reg* phiRes = phi->result();
-        phiResults.insert(phiRes);
+        
+        if ( !phiRes->spillReg(typeMask_) )
+            continue;
         
         bool phiSpill;
         RegSet::iterator inBIter = inB.find(phiRes);
@@ -672,6 +672,7 @@ void Spiller::combine(BBNode* bbNode)
             RegDefUse* rdu = new RegDefUse();
             rdu->defs_.append( Def(phiRes, iter, bbNode) );
             rdu->uses_.append( DefUse(iter, bbNode) );
+            swiftAssert( phiRes->spillReg(typeMask_), "wrong reg type" );
             spills_[phiRes] = rdu;
         }
     }
@@ -724,6 +725,7 @@ void Spiller::combine(BBNode* bbNode)
             for (size_t i = 0;  i < spills.size(); ++i)
             {
                 Reg* reg = spills[i];
+                swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
                 insertSpill(bbAppend, reg, appendTo);
             } // for each spill
         }
@@ -750,6 +752,7 @@ void Spiller::combine(BBNode* bbNode)
             {
                 // create and insert reload
                 Reg* reg = reloads[i];
+                swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
                 insertReload(bbAppend, reg, appendTo);
             }
         }
@@ -764,7 +767,7 @@ void Spiller::combine(BBNode* bbNode)
 }
 
 /*
- * SSA reconstruction
+ * SSA reconstruction and rewiring
  */
 
 void Spiller::reconstructSSAForm(RegDefUse* rdu)
@@ -804,6 +807,7 @@ void Spiller::reconstructSSAForm(RegDefUse* rdu)
             DEFLIST_EACH(iter, rdu->defs_)
             {
                 Reg* defReg = iter->value_.reg_;
+                swiftAssert( defReg->spillReg(typeMask_), "wrong reg type" );
 
                 // substitute arg with proper definition
                 if (useReg == defReg)
@@ -851,6 +855,7 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
                 DEFLIST_EACH(iter, rdu->defs_)
                 {
                     Reg* defReg = iter->value_.reg_;
+                    swiftAssert( defReg->spillReg(typeMask_), "wrong reg type" );
 
                     if (abReg == defReg)
                         return abReg; // yes -> return the defined reg
@@ -869,6 +874,7 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
             swiftAssert(bbNode->pred_.size() > 1, 
                     "current basic block must have more than 1 predecessors");
             Reg* reg = rdu->defs_.first()->value_.reg_;
+            swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
 
             // create new result
 #ifdef SWIFT_DEBUG

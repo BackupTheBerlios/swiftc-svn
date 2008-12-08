@@ -27,10 +27,12 @@ me::Op::Type X64::getPreferedIndex() const
 
 void X64::regAlloc(me::Function* function) 
 {
+    X64RegAlloc(function).process();
 }
 
 void X64::codeGen(me::Function* function) 
 {
+    X64CodeGen(function).process();
 }
 
 } // namespace be

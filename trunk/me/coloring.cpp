@@ -1,5 +1,6 @@
 #include "me/coloring.h"
 
+#include <algorithm>
 #include <iostream>
 #include <typeinfo>
 
@@ -12,8 +13,10 @@ namespace me {
  * constructor
  */
 
-Coloring::Coloring(Function* function)
+Coloring::Coloring(Function* function, int typeMask, Colors reservoir)
     : CodePass(function)
+    , typeMask_(typeMask)
+    , reservoir_(reservoir)
 {}
 
 /*
@@ -22,18 +25,20 @@ Coloring::Coloring(Function* function)
 
 int Coloring::findFirstFreeColorAndAllocate(Colors& colors)
 {
-    int firstFreeColor = 0;
-    for (Colors::iterator iter = colors.begin(); iter != colors.end(); ++iter)
-    {
-        if (*iter != firstFreeColor)
-            break; // found a color
-        ++firstFreeColor;
-    }
+    // build vector which holds free colors
+    std::vector<int> freeColors( reservoir_.size() );
 
-    // either allocate the found color in the set or insert a new slot in the set
-    colors.insert(firstFreeColor);
+    std::vector<int>::iterator end = std::set_difference( 
+            reservoir_.begin(), reservoir_.end(), 
+            colors.begin(), colors.end(), 
+            freeColors.begin() );
+    freeColors.erase( end, freeColors.end() ); // truncate properly
 
-    return firstFreeColor;
+    swiftAssert( !freeColors.empty(), "must not be empty" );
+
+    colors.insert(freeColors[0]);
+
+    return freeColors[0];
 }
 
 void Coloring::process()
@@ -55,13 +60,13 @@ void Coloring::colorRecursive(BBNode* bbNode)
     {
         Reg* reg = *iter;
 
-        // do not color memory locations
-        if ( reg->isMem() )
+        // do not color memory locations or regs with wrong types
+        if ( reg->colorReg(typeMask_) )
             continue;
 
         int color = reg->color_;
 
-        swiftAssert(color != -1, "color must be assigned here");
+        swiftAssert(color >= 0, "color must be assigned here");
         // mark as occupied
         colors.insert(color);
     }
@@ -89,7 +94,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
                     Reg* reg = dynamic_cast<Reg*>(ab->rhs_[i]);
 
                     // do not color memory locations
-                    if ( !reg || reg->isMem() )
+                    if ( !reg || reg->colorReg(typeMask_) )
                         continue;
 
                     if ( InstrBase::isLastUse(iter, reg) )
@@ -122,7 +127,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
                 Reg* reg = ab->lhs_[i];
 
                 // do not color memory locations
-                if ( reg->isMem() )
+                if ( reg->colorReg(typeMask_) )
                     continue;
 
                 reg->color_ = findFirstFreeColorAndAllocate(colors);

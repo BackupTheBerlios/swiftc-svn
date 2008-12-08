@@ -118,6 +118,16 @@ bool Reg::isMem() const
     return color_ == MEMORY_LOCATION;
 }
 
+bool Reg::spillReg(int typeMask) const
+{
+    return type_ & typeMask;
+}
+
+bool Reg::colorReg(int typeMask) const
+{
+    return ( !isMem() && spillReg(typeMask) );
+}
+
 std::string Reg::toString() const
 {
     std::ostringstream oss;

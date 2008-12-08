@@ -6,14 +6,15 @@ namespace be {
  * constructor
  */
 
-//X64CodeGen::X64CodeGen(Function* function)
-//{}
+X64CodeGen::X64CodeGen(me::Function* function)
+    : CodeGen(function)
+{}
 
 /*
  * methods
  */
 
-//void x64codegen::process()
-//{}
+void X64CodeGen::process()
+{}
 
 } // namespace be

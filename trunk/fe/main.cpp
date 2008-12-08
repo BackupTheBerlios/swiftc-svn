@@ -16,11 +16,9 @@
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
 
-#include "me/coloring.h"
 #include "me/functab.h"
 #include "me/defusecalc.h"
 #include "me/livenessanalysis.h"
-#include "me/spiller.h"
 
 #include "be/x64.h"
 
@@ -162,11 +160,7 @@ int start(int argc, char** argv)
 
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
-        me::Spiller(function).process();
-
-        me::DefUseCalc(function).process();
-        me::LivenessAnalysis(function).process();
-        me::Coloring(function).process();
+        arch->regAlloc(function);
     }
 
     /*

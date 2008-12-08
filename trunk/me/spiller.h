@@ -21,6 +21,13 @@ class Spiller : public CodePass
 {
 private:
 
+    /*
+     * types and member vars
+     */
+
+    size_t numRegs_;
+    int typeMask_;
+
     /**
      * If vars have to be spilled this counter is used to create new numbers in order to identify
      * same vars.
@@ -142,7 +149,7 @@ public:
      * constructor and destructor
      */
 
-    Spiller(Function* function);
+    Spiller(Function* function, size_t numRegs, int typeMask);
     ~Spiller();
 
     /*
@@ -156,6 +163,10 @@ public:
     virtual void process();
 
 private:
+
+    /*
+     * insertion of spills and reloads
+     */
 
     /** 
      * @brief Inserts a newly created Spill instruction in \p bbNode of register
@@ -179,6 +190,45 @@ private:
      * @param appendTo Append to which instruction?
      */
     void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
+
+    /*
+     * distance calculation via Belady
+     */
+
+    /// Needed for sorting via the distance method.
+    struct RegAndDistance 
+    {
+        Reg* reg_;
+        int distance_;
+
+        /*
+         * constructors
+         */
+
+        RegAndDistance() {}
+
+        RegAndDistance(Reg* reg, int distance)
+            : reg_(reg)
+            , distance_(distance)
+        {}
+
+        /// copy constructor
+        RegAndDistance(const RegAndDistance& rd)
+            : reg_(rd.reg_)
+            , distance_(rd.distance_)
+        {}
+
+        /*
+         * operator
+         */
+
+        /// needed by std::sort
+        bool operator < (const RegAndDistance& r) const
+        {
+            return distance_ > r.distance_; // sort farest first
+        }
+    };
+
 
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
@@ -222,12 +272,29 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
 
+    /*
+     * local spilling
+     */
+
+    typedef std::multiset<RegAndDistance> DistanceBag;
+
+    void discardFarest(DistanceBag& ds);
+
+#ifndef SWIFT_DEBUG
+    static 
+#endif // SWIFT_DEBUG
+    Reg* regFind(DistanceBag& ds, Reg* reg);
+
     /** 
      * @brief Performs the spilling locally in one basic block.
      * 
      * @param bbNode The basic block which should be spilled.
      */
     void spill(BBNode* bbNode);
+
+    /*
+     * global combining
+     */
 
     /** 
      * @brief Combines the spilling results globally.
@@ -236,9 +303,13 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    void reconstructSSAForm(RegDefUse* rdu);
-
     Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
+
+    /*
+     * SSA reconstruction and rewiring
+     */
+
+    void reconstructSSAForm(RegDefUse* rdu);
 };
 
 } // namespace me
