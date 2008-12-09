@@ -1,6 +1,8 @@
 #ifndef BE_X64_REG_ALLOC_H
 #define BE_X64_REG_ALLOC_H
 
+#include <string>
+
 #include "me/codepass.h"
 
 #include "be/arch.h"
@@ -13,14 +15,24 @@ public:
 
     enum Regs
     {
-        R00, 
+        R00,
         R01, 
         R02, 
         R03, 
-        R04, 
+        R04,
         R05, 
         R06, 
         R07, 
+
+        RAX = R00, 
+        RBX = R01, 
+        RCX = R02, 
+        RDX = R03, 
+        RBP = R04, 
+        RSI = R05, 
+        RDI = R06, 
+        RSP = R07, 
+
         R08, 
         R09, 
         R10, 
@@ -80,6 +92,11 @@ public:
      */
 
     virtual void process();
+
+    void registerTargeting();
+    void insertNOP(me::InstrNode* instrNode);
+
+    static std::string reg2String(int reg);
 };
 
 } // namespace be

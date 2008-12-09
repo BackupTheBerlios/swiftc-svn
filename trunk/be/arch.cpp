@@ -2,6 +2,14 @@
 
 namespace be {
 
+/*
+ * init global
+ */
+
+Arch* arch = 0;
+
+//------------------------------------------------------------------------------
+
 RegAlloc::RegAlloc(me::Function* function)
     : CodePass(function)
 {}

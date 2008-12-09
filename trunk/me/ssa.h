@@ -84,9 +84,11 @@ struct AssignmentBase : public InstrBase
     size_t  numLhs_;        ///< Number of left hand side args.
     Reg**   lhs_;           ///< Left hand side Regs.
     int*    lhsOldVarNr_;   ///< Left hand side old varNrs.
+    Colors* lhsConstraints_;
 
     size_t  numRhs_;        ///< Number of righthand side args.
     Op**    rhs_;           ///< Right hand side Ops.
+    Colors* rhsConstraints_;
 
     /*
      * constructor and destructor
@@ -144,6 +146,19 @@ struct AssignmentBase : public InstrBase
      * @return If found \p op is return, 0 otherwise.
      */
     Op* findArg(Op* op);
+
+    bool isConstrainted() const;
+
+    void constraint();
+
+    enum OpType
+    {
+        CONST, 
+        REG,
+        REG_DEAD
+    };
+    
+    OpType getOpType(size_t i) const;
 };
 
 //------------------------------------------------------------------------------
@@ -256,6 +271,39 @@ struct AssignInstr : public AssignmentBase
     std::string getOpString() const;
 };
 
+/** 
+ * @brief A no operation instruction
+ *
+ * This instruction can be used to artificially increase the live span of
+ * the args.
+ */
+struct NOP : public AssignmentBase
+{
+    /*
+     * constructors
+     */
+
+    /** 
+     * @brief Constructor with on Reg arg as use.
+     * 
+     * @param reg 
+     */
+    NOP(Reg* reg);
+
+    /** 
+     * @brief Constructor with serveral Reg args as use.
+     * 
+     * @param numUses 
+     * @param regs 
+     */
+    NOP(size_t numUses, Reg** regs);
+
+    /*
+     * further methods
+     */
+
+    virtual std::string toString() const;
+};
 //------------------------------------------------------------------------------
 
 struct JumpInstr : public AssignmentBase

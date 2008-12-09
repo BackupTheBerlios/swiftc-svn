@@ -35,4 +35,9 @@ void X64::codeGen(me::Function* function)
     X64CodeGen(function).process();
 }
 
+std::string X64::color2String(int color) const
+{
+    return X64RegAlloc::reg2String(color);
+}
+
 } // namespace be

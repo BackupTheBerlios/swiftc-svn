@@ -26,12 +26,6 @@ using namespace swift;
 
 //------------------------------------------------------------------------------
 
-// global
-
-be::Arch* arch;
-
-//------------------------------------------------------------------------------
-
 // forward declarations
 
 void readBuiltinTypes();
@@ -70,7 +64,7 @@ int start(int argc, char** argv)
     /*
      * init globals
      */
-    arch = new be::X64();
+    be::arch = new be::X64();
     initTypeMaps();
 
     syntaxtree = new SyntaxTree();
@@ -160,7 +154,8 @@ int start(int argc, char** argv)
 
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
-        arch->regAlloc(function);
+        be::arch->regAlloc(function);
+        be::arch->codeGen(function);
     }
 
     /*
@@ -180,7 +175,7 @@ int start(int argc, char** argv)
     /*
      * clean up back-end
      */
-    delete arch;
+    delete be::arch;
 
     return 0;
 }
@@ -248,10 +243,10 @@ void initTypeMaps()
     (*BaseType::typeMap_)["real32"] = me::Op::R_REAL32;
     (*BaseType::typeMap_)["real64"] = me::Op::R_REAL64;
 
-    (*BaseType::typeMap_)["int"]    = arch->getPreferedInt();
-    (*BaseType::typeMap_)["uint"]   = arch->getPreferedUInt();
-    (*BaseType::typeMap_)["index"]  = arch->getPreferedIndex();
-    (*BaseType::typeMap_)["real"]   = arch->getPreferedReal();
+    (*BaseType::typeMap_)["int"]    = be::arch->getPreferedInt();
+    (*BaseType::typeMap_)["uint"]   = be::arch->getPreferedUInt();
+    (*BaseType::typeMap_)["index"]  = be::arch->getPreferedIndex();
+    (*BaseType::typeMap_)["real"]   = be::arch->getPreferedReal();
 
 
     Literal::typeMap_ = new Literal::TypeMap();
@@ -278,8 +273,8 @@ void initTypeMaps()
     (*Literal::typeMap_)[L_REAL32] = me::Op::R_REAL32;
     (*Literal::typeMap_)[L_REAL64] = me::Op::R_REAL64;
 
-    (*Literal::typeMap_)[L_INT]    = arch->getPreferedInt();
-    (*Literal::typeMap_)[L_UINT]   = arch->getPreferedUInt();
-    (*Literal::typeMap_)[L_INDEX]  = arch->getPreferedIndex();
-    (*Literal::typeMap_)[L_REAL]   = arch->getPreferedReal();
+    (*Literal::typeMap_)[L_INT]    = be::arch->getPreferedInt();
+    (*Literal::typeMap_)[L_UINT]   = be::arch->getPreferedUInt();
+    (*Literal::typeMap_)[L_INDEX]  = be::arch->getPreferedIndex();
+    (*Literal::typeMap_)[L_REAL]   = be::arch->getPreferedReal();
 }

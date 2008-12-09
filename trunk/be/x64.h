@@ -16,6 +16,8 @@ public:
 
     virtual void regAlloc(me::Function* function);
     virtual void codeGen(me::Function* function);
+
+    virtual std::string color2String(int color) const;
 };
 
 } // namespace be

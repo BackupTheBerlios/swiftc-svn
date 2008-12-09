@@ -47,7 +47,7 @@ inline int infinity()
     return std::numeric_limits<int>::max();
 }
 
-void subOne(int& i)
+inline void subOne(int& i)
 {
     if (i != infinity())
         --i;
@@ -713,22 +713,23 @@ void Spiller::combine(BBNode* bbNode)
          * handle spills
          */
 
-        // build vector which holds all necessary spills
-        RegVec spills( outP.size() );
-        RegVec::iterator end = std::set_difference( 
-                outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
-        spills.erase( end, spills.end() ); // truncate properly
+        //// build vector which holds all necessary spills
+        //RegVec spills( outP.size() );
+        //RegVec::iterator end = std::set_difference( 
+                //outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
+        //spills.erase( end, spills.end() ); // truncate properly
 
-        if (spills.size() != 0)
-        {
-            // for each spill
-            for (size_t i = 0;  i < spills.size(); ++i)
-            {
-                Reg* reg = spills[i];
-                swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
-                insertSpill(bbAppend, reg, appendTo);
-            } // for each spill
-        }
+        //if (spills.size() != 0)
+        //{
+            //// for each spill
+            //for (size_t i = 0;  i < spills.size(); ++i)
+            //{
+                //Reg* reg = spills[i];
+                //swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+                //insertSpill(bbAppend, reg, appendTo);
+                //std::cout << appendTo->next()->value_->toString() << std::endl;
+            //} // for each spill
+        //}
 
         if (here)
             appendTo = bb->getReloadLocation();
@@ -741,7 +742,7 @@ void Spiller::combine(BBNode* bbNode)
 
         // build vector which holds all necessary reloads
         RegVec reloads( inB.size() );
-        end = std::set_difference( 
+        RegVec::iterator end = std::set_difference( 
                 inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
         reloads.erase( end, reloads.end() );// truncate properly
 

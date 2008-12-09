@@ -34,7 +34,11 @@ public:
 
     virtual void regAlloc(me::Function* function) = 0;
     virtual void codeGen(me::Function* function) = 0;
+
+    virtual std::string color2String(int color) const = 0;
 };
+
+extern Arch* arch;
 
 } // namespace be
 

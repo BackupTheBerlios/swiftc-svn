@@ -207,15 +207,6 @@ struct Reg : public Op
     size_t var2Index() const;
 
     /** 
-     * @brief Checks whether this Reg has already been colored. 
-     *
-     * If this is actually a MEMORY_LOCATION an assertion is thrown.
-     * 
-     * @return Has this reg already a color?
-     */
-    bool isColored() const;
-
-    /** 
      * @brief Checks whether this Reg is actually a memory location.
      *
      * @return Is this Reg a memory location?

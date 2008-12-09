@@ -5,6 +5,8 @@
 
 #include "utils/stringhelper.h"
 
+#include "be/arch.h"
+
 namespace me {
 
 //------------------------------------------------------------------------------
@@ -107,12 +109,6 @@ size_t Reg::var2Index() const
     return size_t(-varNr_);
 }
 
-bool Reg::isColored() const
-{
-    swiftAssert(color_ != MEMORY_LOCATION, "this Reg is a mem");
-    return color_ == NOT_COLORED_YET;
-}
-
 bool Reg::isMem() const
 {
     return color_ == MEMORY_LOCATION;
@@ -135,7 +131,11 @@ std::string Reg::toString() const
     if ( isMem() )
         oss << "@";
 
-    if ( !isSSA() )
+    if ( color_ >= 0 )
+    {
+        oss << be::arch->color2String(color_);
+    }
+    else if ( !isSSA() )
     {
 #ifdef SWIFT_DEBUG
         oss << id_;

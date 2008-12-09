@@ -61,7 +61,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         Reg* reg = *iter;
 
         // do not color memory locations or regs with wrong types
-        if ( reg->colorReg(typeMask_) )
+        if ( !reg->colorReg(typeMask_) )
             continue;
 
         int color = reg->color_;
@@ -93,8 +93,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
                 {
                     Reg* reg = dynamic_cast<Reg*>(ab->rhs_[i]);
 
-                    // do not color memory locations
-                    if ( !reg || reg->colorReg(typeMask_) )
+                    // only color regs and regs of proper type
+                    if ( !reg || !reg->colorReg(typeMask_) )
                         continue;
 
                     if ( InstrBase::isLastUse(iter, reg) )
@@ -126,8 +126,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
             {
                 Reg* reg = ab->lhs_[i];
 
-                // do not color memory locations
-                if ( reg->colorReg(typeMask_) )
+                // only color regs and regs of proper type
+                if ( !reg->colorReg(typeMask_) )
                     continue;
 
                 reg->color_ = findFirstFreeColorAndAllocate(colors);
@@ -150,7 +150,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
 
 void Coloring::colorConstraintedInstr(InstrNode* instrNode)
 {
-    swiftAssert( typeid(*instrNode->value_) == typeid(AssignmentBase),
+    swiftAssert( dynamic_cast<AssignmentBase*>(instrNode->value_),
             "must be an AssignmentBase here");
 
     AssignmentBase* ab = (AssignmentBase*) instrNode->value_;

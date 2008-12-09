@@ -22,6 +22,11 @@ public:
      */
 
     virtual void process();
+
+    void genAsmInstr(me::InstrBase* instr);
+
+    void assignInstr2Asm(me::AssignInstr* ab);
+    void RealAssignInstr2Asm(me::AssignInstr* ab);
 };
 
 } // namespace be

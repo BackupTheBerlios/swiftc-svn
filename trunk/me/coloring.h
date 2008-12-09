@@ -8,8 +8,6 @@
 
 namespace me {
 
-typedef std::set<int> Colors;
-
 class Coloring : public CodePass
 {
 public:

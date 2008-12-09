@@ -67,8 +67,10 @@ AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
     : numLhs_(numLhs)
     , lhs_( numLhs ? new Reg*[numLhs] : 0 )
     , lhsOldVarNr_( new int[numLhs] )
+    , lhsConstraints_(0)
     , numRhs_(numRhs)
     , rhs_( numRhs ? new  Op*[numRhs] : 0 )
+    , rhsConstraints_(0)
 {}
 
 AssignmentBase::~AssignmentBase()
@@ -86,6 +88,10 @@ AssignmentBase::~AssignmentBase()
         delete[] lhs_;
     if (rhs_)
         delete[] rhs_;
+    if (lhsConstraints_)
+        delete[] lhsConstraints_;
+    if (rhsConstraints_)
+        delete[] rhsConstraints_;
 
     destroyLhsOldVarNrs(); // TODO this should be done earlier
 }
@@ -135,6 +141,76 @@ Op* AssignmentBase::findArg(Op* op)
 {
     Op** result = std::find(rhs_, rhs_ + numRhs_, op);
     return result == rhs_ + numRhs_ ? 0 : *result;
+}
+
+bool AssignmentBase::isConstrainted() const
+{
+    return lhsConstraints_ == 0 && rhsConstraints_ == 0;
+}
+
+void AssignmentBase::constraint()
+{
+    swiftAssert(lhsConstraints_ == 0, "already inited");
+    swiftAssert(rhsConstraints_ == 0, "already inited");
+
+    lhsConstraints_ = new Colors[numLhs_];
+    rhsConstraints_ = new Colors[numRhs_];
+}
+
+AssignmentBase::OpType AssignmentBase::getOpType(size_t i) const
+{
+    if ( typeid(*rhs_[i]) == typeid(me::Literal) )
+        return CONST;
+
+    swiftAssert( typeid(*rhs_[i]) == typeid(Reg), "must be a Reg" );
+    Reg* reg = (Reg*) rhs_[i];
+
+    if ( liveOut_.find(reg) == liveOut_.end() )
+        return REG_DEAD;
+    else
+        return REG;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructors
+ */
+
+NOP::NOP(Reg* reg)
+    : AssignmentBase(0, 1)
+{
+    rhs_[0] = reg;
+}
+
+NOP::NOP(size_t numRegs, Reg** regs)
+    : AssignmentBase(0, numRegs)
+{
+    for (size_t i = 0; i < numRegs; ++i)
+    {
+        rhs_[i] = regs[i];
+    }
+}
+
+/*
+ * further methods
+ */
+
+std::string NOP::toString() const
+{
+    std::ostringstream oss;
+    oss << "NOP(";
+
+    for (size_t i = 0; i < numRhs_ - 1; ++i)
+    {
+        if (rhs_[i])
+            oss << rhs_[i]->toString() << ", ";
+    }
+
+    if (rhs_[numRhs_ - 1] )
+        oss << rhs_[numRhs_-1]->toString() << ')';
+
+    return oss.str();
 }
 
 //------------------------------------------------------------------------------
