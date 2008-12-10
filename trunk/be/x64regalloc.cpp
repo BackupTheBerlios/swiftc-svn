@@ -31,15 +31,18 @@ void X64RegAlloc::process()
 
     registerTargeting();
 
-    std::cout << "done" << std::endl;
-    std::cout << cfg_->entry_->value_->name() << std::endl;
-    cfg_->entry_->postOrderIndex_ = 0; // HACK
+    // HACK: this should be superfluous when there is a good graph implementation
+    cfg_->entry_->postOrderIndex_ = 0;     
+
+    // new basic blocks habe been inserted so recompute dominance stuff
     cfg_->calcPostOrder(cfg_->entry_);
     cfg_->calcDomTree();
     cfg_->calcDomFrontier();
 
-    std::cout << "kk" << std::endl;
-#if 0
+    // reconstruct SSA form for the newly inserted phi instructions
+    // TODO
+
+    // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
@@ -74,7 +77,6 @@ void X64RegAlloc::process()
     me::LivenessAnalysis(function_).process();
 
     me::Coloring(function_, F_TYPE_MASK, fColors).process();
-#endif
 }
 
 void X64RegAlloc::registerTargeting()
@@ -166,18 +168,7 @@ void X64RegAlloc::registerTargeting()
                 // constraint properly
                 ai->constraint();
                 ai->lhs_[0].constraint_ = RAX;
-                std::cout << "split: " << currentBB->value_->name() << std::endl;
                 cfg_->splitBB(iter, currentBB);
-                std::cout << "new: " << currentBB->value_->name() << std::endl;
-
-                std::cout << "entry: " << cfg_->entry_->value_->name() << std::endl;
-                CFG_RELATIVES_EACH(foo, cfg_->nodes_)
-                {
-                    std::cout << foo->value_->value_->name() << std::endl;
-
-                    CFG_RELATIVES_EACH(bar, foo->value_->succ_)
-                        std::cout << "\t" << bar->value_->value_->name() << std::endl;
-                }
             }
         } // if AssignInstr
     } // for each instruction

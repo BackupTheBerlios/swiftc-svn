@@ -264,6 +264,10 @@ void CFG::calcDomTree()
     if (idoms_)
         delete[] idoms_;
 
+    // clear domChildren_
+    RELATIVES_EACH(iter, nodes_)
+        iter->value_->value_->domChildren_.clear();
+
     idoms_ = new BBNode*[size()];
     memset(idoms_, 0, sizeof(BBNode*) * size());
 
@@ -280,7 +284,6 @@ void CFG::calcDomTree()
         {
             // current node
             BBNode* bb = postOrder_[i];
-            std::cout << bb->value_->name() << std::endl;
             swiftAssert(bb != entry_, "do not process the entry node");
 
             // pick one which has been processed
@@ -354,6 +357,10 @@ BBNode* CFG::intersect(BBNode* b1, BBNode* b2)
 
 void CFG::calcDomFrontier()
 {
+    // clear domFrontier_
+    RELATIVES_EACH(iter, nodes_)
+        iter->value_->value_->domFrontier_.clear();
+
     for (size_t i = 0; i < size(); ++i)
     {
         BBNode* bb = postOrder_[i];
@@ -666,9 +673,6 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
     BasicBlock* bb = bbNode->value_;
     InstrNode* labelNode = bb->begin_;
 
-    std::cout << bb->name() << std::endl;
-    std::cout << instrNode->value_->toString() << std::endl;
-
     // create new beginning Label and insert it in the instruction list
     InstrNode* newLabelNode = instrList_.insert( instrNode->prev(), new LabelInstr() );
 
@@ -692,7 +696,6 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
     {
         BBNode* predNode = iter->value_;
         BasicBlock* pred = predNode->value_;
-        std::cout << "pred: " << pred->name() << std::endl;
 
         // fix succ of pred
         Relative* it = predNode->succ_.find(bbNode);
@@ -717,9 +720,6 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
                 }
             }
         } // if JumpInstr
-
-        std::cout << "succ: " << predNode->succ_.size() << std::endl;
-        std::cout << predNode->succ_.first()->value_->value_->name() << std::endl;
     } // for each pred
 
     // clear bbNode's preds in all cases 
