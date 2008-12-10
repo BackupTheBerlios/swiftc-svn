@@ -48,8 +48,8 @@ public:
 private:
 
     void liveOutAtBlock(BBNode* bbNode,   Reg* var);
-    void liveInAtInstr (InstrNode* instr, Reg* var);
-    void liveOutAtInstr(InstrNode* instr, Reg* var);
+    void liveInAtInstr (InstrNode* instrNode, Reg* var);
+    void liveOutAtInstr(InstrNode* instrNode, Reg* var);
 };
 
 } // namespace me

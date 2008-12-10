@@ -141,10 +141,10 @@ void LivenessAnalysis::process()
 
                 // find the predecessor basic block
                 size_t i = 0;
-                while (phi->rhs_[i] != var)
+                while (phi->rhs_[i].op_ != var)
                     ++i;
 
-                swiftAssert(i < phi->numRhs_, "i too large here");
+                swiftAssert(i < phi->rhs_.size(), "i too large here");
                 BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
@@ -204,40 +204,37 @@ void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)
     }
 }
 
-void LivenessAnalysis::liveOutAtInstr(InstrNode* instr, Reg* var)
+void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
 {
+    InstrBase* instr = instrNode->value_;
+
     // var is live-out at instr
-    instr->value_->liveOut_.insert(var);
+    instr->liveOut_.insert(var);
 
     // knows whether var is defined in instr
     bool varInLhs = false;
 
-    AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr->value_);
-    // for each reg v, that ab defines and is not var itself
-    if (ab)
+    for (size_t i = 0; i < instr->lhs_.size(); ++i)
     {
-        for (size_t i = 0; i < ab->numLhs_; ++i)
+        if ( instr->lhs_[i].reg_ != var )
         {
-            if ( ab->lhs_[i] != var )
-            {
 #ifdef SWIFT_DEBUG
-                Reg* res = ab->lhs_[i];
+            Reg* res = instr->lhs_[i].reg_;
 
-                // add (v, w) to interference graph if it does not already exist
-                if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
-                    && var->varNode_->succ_.find(res->varNode_) == var->varNode_->succ_.sentinel() )
-                {
-                    var->varNode_->link(res->varNode_);
-                }
-#endif // SWIFT_DEBUG
+            // add (v, w) to interference graph if it does not already exist
+            if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
+                && var->varNode_->succ_.find(res->varNode_) == var->varNode_->succ_.sentinel() )
+            {
+                var->varNode_->link(res->varNode_);
             }
-            else
-                varInLhs = true;
+#endif // SWIFT_DEBUG
         }
+        else
+            varInLhs = true;
     }
 
     if (!varInLhs)
-        liveInAtInstr(instr, var);
+        liveInAtInstr(instrNode, var);
 }
 
 void LivenessAnalysis::liveInAtInstr(InstrNode* instr, Reg* var)

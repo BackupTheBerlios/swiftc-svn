@@ -16,6 +16,130 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructor and destructor
+ */
+
+InstrBase::InstrBase(size_t numLhs, size_t numRhs)
+    : lhs_(numLhs)
+    , rhs_(numRhs)
+    , constrainted_(false)
+{}
+
+InstrBase::~InstrBase()
+{
+    // delete all literals
+    for (size_t i = 0; i < rhs_.size(); ++i)
+    {
+        me::Literal* literal = dynamic_cast<me::Literal*>(rhs_[i].op_);
+
+        if ( literal )
+            delete literal;
+    }
+}
+
+/*
+ * further methods
+ */
+
+bool InstrBase::isRegUsed(Reg* reg) 
+{
+    // for each var on the rhs
+    for (size_t i = 0; i < rhs_.size(); ++i) 
+    {
+        if (rhs_[i].op_ == reg)
+            return true;
+    }
+
+    // -> not found
+    return false;
+}
+
+bool InstrBase::isRegDefined(Reg* reg) 
+{
+    // for each var on the lhs
+    for (size_t i = 0; i < lhs_.size(); ++i) 
+    {
+        if (lhs_[i].reg_ == reg)
+            return true;
+    }
+
+    // -> not found
+    return false;
+}
+
+struct ResFinder
+{
+    Reg* reg_;
+
+    ResFinder(Reg* reg)
+        : reg_(reg)
+    {}
+
+    bool operator () (const me::InstrBase::Res& res)
+    {
+        return reg_ == res.reg_;
+    }
+};
+
+struct ArgFinder
+{
+    Op* op_;
+
+    ArgFinder(Op* op)
+        : op_(op)
+    {}
+
+    bool operator () (const me::InstrBase::Arg& arg)
+    {
+        return op_ == arg.op_;
+    }
+};
+
+Reg* InstrBase::findResult(Reg* reg)
+{
+    LHS::const_iterator iter = std::find_if( lhs_.begin(), lhs_.end(), ResFinder(reg) );
+
+    if ( iter == lhs_.end() )
+        return false;
+
+    return iter->reg_;
+}
+
+Op* InstrBase::findArg(Op* op)
+{
+    RHS::const_iterator iter = std::find_if( rhs_.begin(), rhs_.end(), ArgFinder(op) );
+
+    if ( iter == rhs_.end() )
+        return false;
+
+    return iter->op_;
+}
+
+bool InstrBase::isConstrainted() const
+{
+    return constrainted_;
+}
+
+void InstrBase::constraint()
+{
+    constrainted_ = true;
+}
+
+InstrBase::OpType InstrBase::getOpType(size_t i) const
+{
+    if ( typeid(*rhs_[i].op_) == typeid(me::Literal) )
+        return CONST;
+
+    swiftAssert( typeid(*rhs_[i].op_) == typeid(Reg), "must be a Reg" );
+    Reg* reg = (Reg*) rhs_[i].op_;
+
+    if ( liveOut_.find(reg) == liveOut_.end() )
+        return REG_DEAD;
+    else
+        return REG;
+}
+
 bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
@@ -49,6 +173,7 @@ std::string InstrBase::livenessString() const
 int LabelInstr::counter_ = 0;
 
 LabelInstr::LabelInstr()
+    : InstrBase(0, 0)
 {
     std::ostringstream oss;
     oss << "L" << number2String(counter_);
@@ -60,136 +185,13 @@ LabelInstr::LabelInstr()
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
- */
-
-AssignmentBase::AssignmentBase(size_t numLhs, size_t numRhs)
-    : numLhs_(numLhs)
-    , lhs_( numLhs ? new Reg*[numLhs] : 0 )
-    , lhsOldVarNr_( new int[numLhs] )
-    , lhsConstraints_(0)
-    , numRhs_(numRhs)
-    , rhs_( numRhs ? new  Op*[numRhs] : 0 )
-    , rhsConstraints_(0)
-{}
-
-AssignmentBase::~AssignmentBase()
-{
-    // delete all literals
-    for (size_t i = 0; i < numRhs_; ++i)
-    {
-        me::Literal* literal = dynamic_cast<me::Literal*>(rhs_[i]);
-
-        if ( literal )
-            delete literal;
-    }
-
-    if (lhs_)
-        delete[] lhs_;
-    if (rhs_)
-        delete[] rhs_;
-    if (lhsConstraints_)
-        delete[] lhsConstraints_;
-    if (rhsConstraints_)
-        delete[] rhsConstraints_;
-
-    destroyLhsOldVarNrs(); // TODO this should be done earlier
-}
-
-/*
- * further methods
- */
-
-bool AssignmentBase::isRegUsed(Reg* reg) 
-{
-    // for each var on the rhs
-    for (size_t i = 0; i < numRhs_; ++i) 
-    {
-        if (rhs_[i] == reg)
-            return true;
-    }
-
-    // -> not found
-    return false;
-}
-
-bool AssignmentBase::isRegDefined(Reg* reg) 
-{
-    // for each var on the lhs
-    for (size_t i = 0; i < numLhs_; ++i) 
-    {
-        if (lhs_[i] == reg)
-            return true;
-    }
-
-    // -> not found
-    return false;
-}
-
-void AssignmentBase::destroyLhsOldVarNrs()
-{
-    delete[] lhsOldVarNr_;
-}
-
-Reg* AssignmentBase::findResult(Reg* reg)
-{
-    Reg** result = std::find(lhs_, lhs_ + numLhs_, reg);
-    return result == lhs_ + numLhs_ ? 0 : *result;
-}
-
-Op* AssignmentBase::findArg(Op* op)
-{
-    Op** result = std::find(rhs_, rhs_ + numRhs_, op);
-    return result == rhs_ + numRhs_ ? 0 : *result;
-}
-
-bool AssignmentBase::isConstrainted() const
-{
-    return lhsConstraints_ == 0 && rhsConstraints_ == 0;
-}
-
-void AssignmentBase::constraint()
-{
-    swiftAssert(lhsConstraints_ == 0, "already inited");
-    swiftAssert(rhsConstraints_ == 0, "already inited");
-
-    lhsConstraints_ = new int[numLhs_];
-    rhsConstraints_ = new int[numRhs_];
-}
-
-AssignmentBase::OpType AssignmentBase::getOpType(size_t i) const
-{
-    if ( typeid(*rhs_[i]) == typeid(me::Literal) )
-        return CONST;
-
-    swiftAssert( typeid(*rhs_[i]) == typeid(Reg), "must be a Reg" );
-    Reg* reg = (Reg*) rhs_[i];
-
-    if ( liveOut_.find(reg) == liveOut_.end() )
-        return REG_DEAD;
-    else
-        return REG;
-}
-
-//------------------------------------------------------------------------------
-
-/*
  * constructors
  */
 
-NOP::NOP(Reg* reg)
-    : AssignmentBase(0, 1)
+NOP::NOP(Op* op)
+    : InstrBase(0, 1)
 {
-    rhs_[0] = reg;
-}
-
-NOP::NOP(size_t numRegs, Reg** regs)
-    : AssignmentBase(0, numRegs)
-{
-    for (size_t i = 0; i < numRegs; ++i)
-    {
-        rhs_[i] = regs[i];
-    }
+    rhs_[0].op_ = op;
 }
 
 /*
@@ -201,14 +203,14 @@ std::string NOP::toString() const
     std::ostringstream oss;
     oss << "NOP(";
 
-    for (size_t i = 0; i < numRhs_ - 1; ++i)
+    for (size_t i = 0; i < rhs_.size() - 1; ++i)
     {
-        if (rhs_[i])
-            oss << rhs_[i]->toString() << ", ";
+        if (rhs_[i].op_)
+            oss << rhs_[i].op_->toString() << ", ";
     }
 
-    if (rhs_[numRhs_ - 1] )
-        oss << rhs_[numRhs_-1]->toString() << ')';
+    if (rhs_[rhs_.size() - 1].op_ )
+        oss << rhs_[rhs_.size()-1].op_->toString() << ')';
 
     return oss.str();
 }
@@ -220,12 +222,12 @@ std::string NOP::toString() const
  */
 
 PhiInstr::PhiInstr(Reg* result, size_t numRhs)
-    : AssignmentBase(1, numRhs) // phi functions always have one result
+    : InstrBase(1, numRhs) // phi functions always have one result
     , sourceBBs_( new BBNode*[numRhs] )
 {
     // init result
-    lhs_[0] = result;
-    lhsOldVarNr_[0] = result->varNr_;
+    lhs_[0].reg_ = result;
+    lhs_[0].oldVarNr_ = result->varNr_;
 
     // fill everthing with zero -- needed for some debugging
     memset(sourceBBs_, 0, sizeof(BBNode*) * numRhs);
@@ -242,17 +244,17 @@ PhiInstr::~PhiInstr()
 
 Reg* PhiInstr::result()
 {
-    return lhs_[0];
+    return lhs_[0].reg_;
 }
 
 const Reg* PhiInstr::result() const
 {
-    return lhs_[0];
+    return lhs_[0].reg_;
 }
 
 int PhiInstr::oldResultNr() const
 {
-    return lhsOldVarNr_[0];
+    return lhs_[0].oldVarNr_;
 }
 
 /*
@@ -264,19 +266,19 @@ std::string PhiInstr::toString() const
     std::ostringstream oss;
     oss << result()->toString() << "\t= phi(";
 
-    for (size_t i = 0; i < numRhs_ - 1; ++i)
+    for (size_t i = 0; i < rhs_.size() - 1; ++i)
     {
         if (!sourceBBs_[i])
             continue;
 
-        if (rhs_[i] && sourceBBs_[i])
-            oss << rhs_[i]->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
+        if (rhs_[i].op_ && sourceBBs_[i])
+            oss << rhs_[i].op_->toString() << " (" << sourceBBs_[i]->value_->name() << "), ";
         else
             oss << "-, ";
     }
 
-    if (rhs_[numRhs_ - 1] && sourceBBs_[numRhs_ - 1])
-        oss << rhs_[numRhs_-1]->toString() << '(' << sourceBBs_[numRhs_-1]->value_->name()  << ')';
+    if (rhs_[rhs_.size() - 1].op_ && sourceBBs_[rhs_.size() - 1])
+        oss << rhs_[rhs_.size()-1].op_->toString() << '(' << sourceBBs_[rhs_.size()-1]->value_->name()  << ')';
     else
         oss << '-';
 
@@ -293,16 +295,17 @@ std::string PhiInstr::toString() const
 
 AssignInstr::AssignInstr(int kind, Reg* result, Op* op1, Op* op2 /*= 0*/)
     // an AssignInstr always have exactly one result and one or two args
-    : AssignmentBase(1, op2 ? 2 : 1) 
+    : InstrBase(1, op2 ? 2 : 1) 
     , kind_(kind)
 {
-    lhs_[0] = result;
-    lhsOldVarNr_[0] = result->varNr_;
+    lhs_[0].reg_ = result;
+    lhs_[0].oldVarNr_= result->varNr_;
 
-    rhs_[0] = op1;
+
+    rhs_[0].op_ = op1;
 
     if (op2)
-        rhs_[1] = op2;
+        rhs_[1].op_ = op2;
 }
 
 /*
@@ -358,13 +361,13 @@ std::string AssignInstr::toString() const
 {
     std::string opString = getOpString();
     std::ostringstream oss;
-    oss << lhs_[0]->toString() << '\t';
+    oss << lhs_[0].reg_->toString() << '\t';
 
     // is this a binary, an unary instruction or an assignment?
-    if (numRhs_ == 2)
+    if (rhs_.size() == 2)
     {
         // it is a binary instruction
-        oss << "= " << rhs_[0]->toString() << " " << opString << " " << rhs_[1]->toString();
+        oss << "= " << rhs_[0].op_->toString() << " " << opString << " " << rhs_[1].op_->toString();
     }
     else
     {
@@ -378,7 +381,7 @@ std::string AssignInstr::toString() const
             // it is an assignment
             oss << opString;
         }
-        oss << ' ' << rhs_[0]->toString();
+        oss << ' ' << rhs_[0].op_->toString();
     }
 
     return oss.str();
@@ -396,7 +399,7 @@ void AssignInstr::genCode(std::ofstream& ofs)
  */
 
 JumpInstr::JumpInstr(size_t numLhs, size_t numRhs, size_t numTargets)
-    : AssignmentBase(numLhs, numRhs)
+    : InstrBase(numLhs, numRhs)
     , numTargets_(numTargets)
 {
     swiftAssert(numTargets <= 2, 
@@ -454,7 +457,7 @@ BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel
     : JumpInstr(0, 1, 2) // always no results, one rhs, two targets
 {
     swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
-    rhs_[0] = boolOp;
+    rhs_[0].op_ = boolOp;
 
     instrTargets_[0] = trueLabel;
     instrTargets_[1] = falseLabel;
@@ -496,7 +499,7 @@ const LabelInstr* BranchInstr::falseLabel() const
 std::string BranchInstr::toString() const
 {
     std::ostringstream oss;
-    oss << "IF " << rhs_[0]->toString()
+    oss << "IF " << rhs_[0].op_->toString()
         << " THEN " << trueLabel()->toString()
         << " ELSE " << falseLabel()->toString();
 
@@ -510,12 +513,12 @@ std::string BranchInstr::toString() const
  */
 
 Spill::Spill(Reg* result, Reg* arg)
-    : AssignmentBase(1, 1)
+    : InstrBase(1, 1)
 {
     swiftAssert( !arg->isMem(), "arg must not be a memory var" );
     swiftAssert( result->isMem(), "result must be a memory var" );
-    lhs_[0] = result;
-    rhs_[0] = arg;
+    lhs_[0].reg_ = result;
+    rhs_[0].op_  = arg;
 }
 
 /*
@@ -530,7 +533,7 @@ void Spill::genCode(std::ofstream& /*ofs*/)
 std::string Spill::toString() const
 {
     std::ostringstream oss;
-    oss << lhs_[0]->toString() << "\t= spill(" << rhs_[0]->toString() << ")";
+    oss << lhs_[0].reg_->toString() << "\t= spill(" << rhs_[0].op_->toString() << ")";
 
     return oss.str();
 }
@@ -542,12 +545,12 @@ std::string Spill::toString() const
  */
 
 Reload::Reload(Reg* result, Reg* arg)
-    : AssignmentBase(1, 1)
+    : InstrBase(1, 1)
 {
     swiftAssert( arg->isMem(), "arg must be a memory var" );
     swiftAssert( !result->isMem(), "result must not be a memory var" );
-    lhs_[0] = result;
-    rhs_[0] = arg;
+    lhs_[0].reg_ = result;
+    rhs_[0].op_ = arg;
 }
 
 /*
@@ -562,7 +565,7 @@ void Reload::genCode(std::ofstream& /*ofs*/)
 std::string Reload::toString() const
 {
     std::ostringstream oss;
-    oss << lhs_[0]->toString() << "\t= reload(" << rhs_[0]->toString() << ")";
+    oss << lhs_[0].reg_->toString() << "\t= reload(" << rhs_[0].op_->toString() << ")";
 
     return oss.str();
 }

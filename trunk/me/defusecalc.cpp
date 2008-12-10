@@ -64,14 +64,9 @@ void DefUseCalc::calcDef()
             currentBB = cfg_->labelNode2BBNode_[iter]; // new basic block
         else
         {
-            AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
-
-            if (ab)
-            {
-                // for each var on the lhs
-                for (size_t i = 0; i < ab->numLhs_; ++i)
-                    ab->lhs_[i]->def_.set(iter, currentBB); // store def
-            }
+            // for each var on the lhs
+            for (size_t i = 0; i < instr->lhs_.size(); ++i)
+                instr->lhs_[i].reg_->def_.set(iter, currentBB); // store def
         }
     }
 }
@@ -103,11 +98,11 @@ void DefUseCalc::calcUse()
                 "must be a PhiInstr here");
             PhiInstr* phi = (PhiInstr*) iter->value_;
 
-            for (size_t i = 0; i < phi->numRhs_; ++i)
+            for (size_t i = 0; i < phi->rhs_.size(); ++i)
             {
-                swiftAssert(typeid(*phi->rhs_[i]) == typeid(Reg),
+                swiftAssert(typeid(*phi->rhs_[i].op_) == typeid(Reg),
                     "must be a Reg here");
-                Reg* var = (Reg*) phi->rhs_[i];
+                Reg* var = (Reg*) phi->rhs_[i].op_;
 
                 // put this as first use so liveness analysis will be a bit faster
                 var->uses_.prepend( DefUse(iter, bbNode) );
@@ -127,13 +122,9 @@ void DefUseCalc::calcUse(Reg* var, BBNode* bbNode)
     for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
-        AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
 
-        if (ab)
-        {
-            if ( ab->isRegUsed(var) )
-                var->uses_.append( DefUse(iter, bbNode) );
-        }
+        if ( instr->isRegUsed(var) )
+            var->uses_.append( DefUse(iter, bbNode) );
     } // for each instruction
 
     // for each child of bb in the dominator tree

@@ -70,30 +70,28 @@ void X64RegAlloc::registerTargeting()
 {
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
+        me::InstrBase* instr = iter->value_;
         // everything's fine for a NOP
-        if ( typeid(*iter->value_) == typeid(me::NOP) )
+        if ( typeid(*instr) == typeid(me::NOP) )
             continue;
 
         // so it is for a GotoInstr
-        if ( typeid(*iter->value_) == typeid(me::GotoInstr) )
+        if ( typeid(*instr) == typeid(me::GotoInstr) )
             continue;
 
-        if ( !dynamic_cast<me::AssignmentBase*>(iter->value_) )
+        if ( instr->rhs_.empty() )
             continue;
 
-        me::AssignmentBase* ab = (me::AssignmentBase*) iter->value_;
-        swiftAssert( ab->numRhs_ >= 1, "must have at least one arg" );
-
-        if ( typeid(*ab) == typeid(me::AssignInstr) )
+        if ( typeid(*instr) == typeid(me::AssignInstr) )
         {
-            me::AssignInstr* ai = (me::AssignInstr*) ab;
-            swiftAssert( ai->numLhs_ == 1, "one result must be here" );
-            swiftAssert( ai->numRhs_ == 1 || ai->numRhs_ == 2,
+            me::AssignInstr* ai = (me::AssignInstr*) instr;
+            swiftAssert( ai->lhs_.size() == 1, "one result must be here" );
+            swiftAssert( ai->rhs_.size() == 1 || ai->rhs_.size() == 2,
                     "one or two args must be here" );
 
-            me::Op::Type type = ab->rhs_[0]->type_;
+            me::Op::Type type = instr->rhs_[0].op_->type_;
 
-            if (ai->numRhs_ == 1)
+            if (ai->rhs_.size() == 1)
                 continue; // everything's fine in this case
 
             /*
@@ -109,18 +107,18 @@ void X64RegAlloc::registerTargeting()
             std::cout << ai->toString() << std::endl;
             
             ThreeRegs threeRegs = NO;
-            me::AssignmentBase::OpType opType1 = ai->getOpType(0);
-            me::AssignmentBase::OpType opType2 = ai->getOpType(1);
+            me::InstrBase::OpType opType1 = ai->getOpType(0);
+            me::InstrBase::OpType opType2 = ai->getOpType(1);
 
-            if (ai->rhs_[0] != ai->rhs_[1])
+            if (ai->rhs_[0].op_ != ai->rhs_[1].op_)
             {
-                if (opType1 != me::AssignmentBase::CONST && opType2 != me::AssignmentBase::CONST)
+                if (opType1 != me::InstrBase::CONST && opType2 != me::InstrBase::CONST)
                 {
-                    if (opType1 == me::AssignmentBase::REG && opType2 == me::AssignmentBase::REG)
+                    if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG)
                     {
                         threeRegs = YES;
                     }
-                    else if (opType1 == me::AssignmentBase::REG && opType2 == me::AssignmentBase::REG_DEAD)
+                    else if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG_DEAD)
                     {
                         threeRegs = PERHAPS;
                     }
@@ -152,7 +150,7 @@ void X64RegAlloc::registerTargeting()
             {
                 // constraint properly
                 ai->constraint();
-                ai->lhsConstraints_[0] = RAX;
+                ai->lhs_[0].constraint_ = RAX;
             }
         }
     }
@@ -164,12 +162,12 @@ void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
             "must be an AssignInstr here");
     me::AssignInstr* ai = (me::AssignInstr*) instrNode->value_;
 
-    swiftAssert( ai->numRhs_ == 2, "must have exactly two args");
-    me::Reg* reg = (me::Reg*) ai->rhs_[1];
+    swiftAssert( ai->rhs_.size() == 2, "must have exactly two args");
+    me::Reg* reg = (me::Reg*) ai->rhs_[1].op_;
 
-    swiftAssert( typeid(*ai->rhs_[1]) == typeid(me::Reg),
+    swiftAssert( typeid(*ai->rhs_[1].op_) == typeid(me::Reg),
             "must be a Reg here" );
-    swiftAssert( ai->getOpType(1) == me::AssignmentBase::REG_DEAD,
+    swiftAssert( ai->getOpType(1) == me::InstrBase::REG_DEAD,
             "must not be in the live out of this instr" );
 
     cfg_->instrList_.insert( instrNode, new me::NOP(reg) );

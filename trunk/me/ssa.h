@@ -22,102 +22,52 @@ namespace me {
  */
 struct InstrBase
 {
+    struct Res
+    {
+        Reg* reg_;
+        int  oldVarNr_;   ///< Left hand side old varNrs.
+        int  constraint_;
+    };
+
+    struct Arg
+    {
+        Op* op_;
+        int constraint_;
+    };
+
+    typedef std::vector<Res> LHS;
+    typedef std::vector<Arg> RHS;
+
+    LHS lhs_;
+    RHS rhs_;
+    
     RegSet liveIn_; /// regs that are live-in  at this instruction.
     RegSet liveOut_;/// regs that are live-out at this instruction.
+
+    bool constrainted_;
 
     /*
      * destructor
      */
 
-    virtual ~InstrBase() {}
+    InstrBase(size_t numLhs, size_t numRhs);
+    virtual ~InstrBase();
 
     /*
      * further methods
      */
 
-    /**
-     * Computes whether this \p instr ist the first instruction which does not
-     * have \p var in the \a liveOut_.
-     *
-     * @param instrNode The instruction which should be tested. \p instr must have
-     *      a predecessor and must contain a BaseAssignInstr.
-     * @param var The Reg which should be tested.
-     */
-    static bool isLastUse(InstrNode* instrNode, Reg* var);
-
-    virtual std::string toString() const = 0;
-
-    std::string livenessString() const;
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * @brief Instructions of type LabelInstr mark the bounds of a basic block. 
- *
- * So swizzling around other Instr won't invalidate pointers in basic blocks.
- */
-struct LabelInstr : public InstrBase
-{
-    static int counter_;
-    std::string label_;
-
-    LabelInstr();
-    //LabelInstr(const std::string& label)
-        //: label_(label)
-    //{}
-
-    virtual std::string toString() const
-    {
-        return label_;
-    }
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * This is the base class for all instructions with in and out-going arguments.
- * TODO documentation for inout args.
- */
-struct AssignmentBase : public InstrBase
-{
-    size_t  numLhs_;        ///< Number of left hand side args.
-    Reg**   lhs_;           ///< Left hand side Regs.
-    int*    lhsOldVarNr_;   ///< Left hand side old varNrs.
-    int*    lhsConstraints_;
-
-    size_t  numRhs_;        ///< Number of righthand side args.
-    Op**    rhs_;           ///< Right hand side Ops.
-    int*    rhsConstraints_;
-
-    /*
-     * constructor and destructor
-     */
-
-    AssignmentBase(size_t numLhs, size_t numRhs);
-    ~AssignmentBase();
-
-    /*
-     * further methods
-     */
-
-    /**
-     * When fully in SSA form the old var numbers are not needed anymore and
-     * can be destroyed.
-     */
-    void destroyLhsOldVarNrs();
-
-    /** 
-     * @brief Finds out whether \p reg is used in this instruction. 
-     *
-     * I.e. this reg occurs on the right hand side.
-     * 
-     * @param reg The Reg which is looked for.
-     * 
-     * @return True - if this is used here, false otherwise. 
-     */
-    bool isRegUsed(Reg* reg);
-
+     /** 
+      * @brief Finds out whether \p reg is used in this instruction. 
+      *
+      * I.e. this reg occurs on the right hand side.
+      * 
+      * @param reg The Reg which is looked for.
+      * 
+      * @return True - if this is used here, false otherwise. 
+      */
+     bool isRegUsed(Reg* reg);
+ 
     /** 
      * @brief Finds out whether \p reg is defined in this instruction. 
      *
@@ -159,6 +109,42 @@ struct AssignmentBase : public InstrBase
     };
     
     OpType getOpType(size_t i) const;
+    /**
+     * Computes whether this \p instr ist the first instruction which does not
+     * have \p var in the \a liveOut_.
+     *
+     * @param instrNode The instruction which should be tested. \p instr must have
+     *      a predecessor and must contain a BaseAssignInstr.
+     * @param var The Reg which should be tested.
+     */
+    static bool isLastUse(InstrNode* instrNode, Reg* var);
+
+    virtual std::string toString() const = 0;
+
+    std::string livenessString() const;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * @brief Instructions of type LabelInstr mark the bounds of a basic block. 
+ *
+ * So swizzling around other Instr won't invalidate pointers in basic blocks.
+ */
+struct LabelInstr : public InstrBase
+{
+    static int counter_;
+    std::string label_;
+
+    LabelInstr();
+    //LabelInstr(const std::string& label)
+        //: label_(label)
+    //{}
+
+    virtual std::string toString() const
+    {
+        return label_;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -166,7 +152,7 @@ struct AssignmentBase : public InstrBase
 /** 
  * @brief Implements phi functions.
  */
-struct PhiInstr : public AssignmentBase
+struct PhiInstr : public InstrBase
 {
     BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
 
@@ -238,7 +224,7 @@ struct PhiInstr : public AssignmentBase
  * result = op1 <= op2 -> LE <br>
  * result = op1 >= op2 -> GE <br>
 */
-struct AssignInstr : public AssignmentBase
+struct AssignInstr : public InstrBase
 {
     enum
     {
@@ -277,7 +263,7 @@ struct AssignInstr : public AssignmentBase
  * This instruction can be used to artificially increase the live span of
  * the args.
  */
-struct NOP : public AssignmentBase
+struct NOP : public InstrBase
 {
     /*
      * constructors
@@ -286,17 +272,9 @@ struct NOP : public AssignmentBase
     /** 
      * @brief Constructor with on Reg arg as use.
      * 
-     * @param reg 
+     * @param op The Reg which should be used here. 
      */
-    NOP(Reg* reg);
-
-    /** 
-     * @brief Constructor with serveral Reg args as use.
-     * 
-     * @param numUses 
-     * @param regs 
-     */
-    NOP(size_t numUses, Reg** regs);
+    NOP(Op* op);
 
     /*
      * further methods
@@ -306,7 +284,7 @@ struct NOP : public AssignmentBase
 };
 //------------------------------------------------------------------------------
 
-struct JumpInstr : public AssignmentBase
+struct JumpInstr : public InstrBase
 {
     size_t numTargets_;
     InstrNode* instrTargets_[2];
@@ -384,7 +362,7 @@ struct BranchInstr : public JumpInstr
 
 //------------------------------------------------------------------------------
 
-struct Spill : public AssignmentBase
+struct Spill : public InstrBase
 {
     /*
      * constructor
@@ -402,7 +380,7 @@ struct Spill : public AssignmentBase
 
 //------------------------------------------------------------------------------
 
-struct Reload : public AssignmentBase
+struct Reload : public InstrBase
 {
     /*
      * constructor

@@ -31,8 +31,6 @@ namespace me {
 //-helpers----------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-typedef std::vector<Reg*> RegVec;
-
 #define RDUMAP_EACH(iter, rdus) \
     for (RDUMap::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
 
@@ -98,7 +96,7 @@ void Spiller::process()
     {
         PhiInstr* phi = substitutes_[i].phi_;
         size_t arg = substitutes_[i].arg_;
-        phi->rhs_[arg] = spillMap_[ (Reg*) phi->rhs_[arg] ];
+        phi->rhs_[arg].op_ = spillMap_[ (Reg*) phi->rhs_[arg].op_ ];
     }
 
     // register all spills as uses for the reloads_ set
@@ -232,14 +230,9 @@ int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walk
 {
     swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
-    AssignmentBase* ab = dynamic_cast<AssignmentBase*>(instr);
 
-    // is reg used at instr
-    if (ab)
-    {
-        if (ab->isRegUsed(reg))
-            return 0;
-    }
+    if (instr->isRegUsed(reg))
+        return 0;
     // else
 
     return distanceRec(bbNode, reg, instrNode, walked);
@@ -416,12 +409,8 @@ void Spiller::spill(BBNode* bbNode)
     // traverse all ordinary instructions in bb
     for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
     {
-        swiftAssert(dynamic_cast<AssignmentBase*>(iter->value_),
-                "must be an AssignmentBase here");
-
         // points to the current instruction
         InstrBase* instr = iter->value_;
-        AssignmentBase* ab = (AssignmentBase*) instr;
 
         /*
          * points to the last instruction 
@@ -439,12 +428,12 @@ void Spiller::spill(BBNode* bbNode)
          * and count necessary reloads
          */
         int numReloads = 0;
-        for (size_t i = 0; i < ab->numRhs_; ++i)
+        for (size_t i = 0; i < instr->rhs_.size(); ++i)
         {
-            if (typeid(*ab->rhs_[i]) != typeid(Reg))
+            if (typeid(*instr->rhs_[i].op_) != typeid(Reg))
                 continue;
 
-            Reg* reg = (Reg*) ab->rhs_[i];
+            Reg* reg = (Reg*) instr->rhs_[i].op_;
 
             if ( !reg->spillReg(typeMask_) )
                 continue;
@@ -479,11 +468,11 @@ void Spiller::spill(BBNode* bbNode)
             }
         }
 
-        // count how many of ab->lhs_ have a proper type
+        // count how many of instr->lhs_ have a proper type
         int numLhs = 0;
-        for (size_t i = 0;  i < ab->numLhs_; ++i)
+        for (size_t i = 0;  i < instr->lhs_.size(); ++i)
         {
-            Reg* reg = ab->lhs_[i];
+            Reg* reg = instr->lhs_[i].reg_;
 
             if ( reg->spillReg(typeMask_) )
                 ++numLhs;
@@ -533,9 +522,9 @@ void Spiller::spill(BBNode* bbNode)
         currentlyInRegs = newBag;
 
         // add results to currentlyInRegs
-        for (size_t i = 0; i < ab->numLhs_; ++i)
+        for (size_t i = 0; i < instr->lhs_.size(); ++i)
         {
-            Reg* reg = ab->lhs_[i];
+            Reg* reg = instr->lhs_[i].reg_;
 
             if ( reg->spillReg(typeMask_) )
             {
@@ -616,16 +605,16 @@ void Spiller::combine(BBNode* bbNode)
 
         // for each arg
         CFG::Relative* prePhiRelative = bbNode->pred_.first();
-        for (size_t i = 0; i < phi->numRhs_; ++i)
+        for (size_t i = 0; i < phi->rhs_.size(); ++i)
         {
             BBNode* prePhiNode = prePhiRelative->value_;
             BasicBlock* prePhi = prePhiNode->value_;
             RegSet& preOut = out_[prePhiNode];
 
             // get phi argument
-            swiftAssert( typeid(*phi->rhs_[i]) == typeid(Reg),
+            swiftAssert( typeid(*phi->rhs_[i].op_) == typeid(Reg),
                     "must be a Reg here" );
-            Reg* phiArg = (Reg*) phi->rhs_[i];
+            Reg* phiArg = (Reg*) phi->rhs_[i].op_;
             swiftAssert( !phiArg->isMem(), "must not be a memory location" );
 
             if ( phiSpill && preOut.find(phiArg) != preOut.end() )
@@ -634,7 +623,7 @@ void Spiller::combine(BBNode* bbNode)
                 preOut.erase(phiArg);
 
                 // insert spill to predecessor basic block and replace phi arg
-                phi->rhs_[i] = insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
+                phi->rhs_[i].op_ = insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
             }
             else if ( phiSpill && preOut.find(phiArg) == preOut.end() )
             {
@@ -789,17 +778,15 @@ void Spiller::reconstructSSAForm(RegDefUse* rdu)
         DefUse& du = iter->value_;
         BBNode* bbNode = du.bbNode_;
         InstrNode* instrNode = du.instrNode_;
-        swiftAssert( dynamic_cast<AssignmentBase*>(instrNode->value_),
-                "must be castable to AssignmentBase*");
-        AssignmentBase* ab = (AssignmentBase*) instrNode->value_;
+        InstrBase* instr = instrNode->value_;
 
-        // for each arg for which ab->rhs_[i] in defs
-        for (size_t i = 0; i < ab->numRhs_; ++i)
+        // for each arg for which instr->rhs_[i] in defs
+        for (size_t i = 0; i < instr->rhs_.size(); ++i)
         {
-            if ( typeid(*ab->rhs_[i]) != typeid(Reg) )
+            if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
                 continue;
 
-            Reg* useReg = (Reg*) ab->rhs_[i];
+            Reg* useReg = (Reg*) instr->rhs_[i].op_;
 
 #ifdef SWIFT_DEBUG
             bool found = false;
@@ -816,7 +803,7 @@ void Spiller::reconstructSSAForm(RegDefUse* rdu)
 #ifdef SWIFT_DEBUG
                     found = true;
 #endif // SWIFT_DEBUG
-                    ab->rhs_[i] = findDef(i, instrNode, bbNode, rdu, iDF);
+                    instr->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
                 }
             }
 
@@ -841,25 +828,23 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
         // iterate backwards over all instructions without phi instructions
         while (instrNode != bb->begin_)
         {
-            swiftAssert(dynamic_cast<AssignmentBase*>(instrNode->value_), 
-                    "must be castable to AssignmentBase here");
-            AssignmentBase* ab = (AssignmentBase*) instrNode->value_;
+            InstrBase* instr = instrNode->value_; 
 
-            // defines ab one of rdu?
-            for (size_t i = 0; i < ab->numLhs_; ++i)
+            // defines instr one of rdu?
+            for (size_t i = 0; i < instr->lhs_.size(); ++i)
             {
-                if ( typeid(*ab->lhs_[i]) != typeid(Reg) )
+                if ( typeid(*instr->lhs_[i].reg_) != typeid(Reg) )
                     continue;
 
-                Reg* abReg = (Reg*) ab->lhs_[i];
+                Reg* instrReg = (Reg*) instr->lhs_[i].reg_;
 
                 DEFLIST_EACH(iter, rdu->defs_)
                 {
                     Reg* defReg = iter->value_.reg_;
                     swiftAssert( defReg->spillReg(typeMask_), "wrong reg type" );
 
-                    if (abReg == defReg)
-                        return abReg; // yes -> return the defined reg
+                    if (instrReg == defReg)
+                        return instrReg; // yes -> return the defined reg
                 }
             }
 
@@ -902,8 +887,8 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
             // register new definition
             rdu->defs_.append( Def(newReg, instrNode, bbNode) );
 
-            for (size_t i = 0; i < phi->numRhs_; ++i)
-                phi->rhs_[i] = findDef(i, instrNode, bbNode, rdu, iDF);
+            for (size_t i = 0; i < phi->rhs_.size(); ++i)
+                phi->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
 
             return phi->result();
         }
