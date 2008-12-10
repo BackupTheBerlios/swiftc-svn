@@ -13,7 +13,7 @@ namespace me {
  * constructor
  */
 
-Coloring::Coloring(Function* function, int typeMask, Colors reservoir)
+Coloring::Coloring(Function* function, int typeMask, const Colors& reservoir)
     : CodePass(function)
     , typeMask_(typeMask)
     , reservoir_(reservoir)

@@ -30,7 +30,6 @@ struct Reg;
 typedef List<Reg*> RegList;
 typedef std::map<int, Reg*> RegMap;
 typedef std::set<Reg*> RegSet;
-typedef std::set<int> Colors;
 
 } // namespace me
 

@@ -152,7 +152,7 @@ void X64RegAlloc::registerTargeting()
             {
                 // constraint properly
                 ai->constraint();
-                ai->lhsConstraints_[0].insert(RAX);
+                ai->lhsConstraints_[0] = RAX;
             }
         }
     }

@@ -8,6 +8,8 @@
 
 namespace me {
 
+typedef std::set<int> Colors;
+
 class Coloring : public CodePass
 {
 public:
@@ -16,7 +18,7 @@ public:
      * constructor
      */
 
-    Coloring(Function* function, int typeMask, Colors reservoir);
+    Coloring(Function* function, int typeMask, const Colors& reservoir);
 
     /*
      * methods

@@ -153,8 +153,8 @@ void AssignmentBase::constraint()
     swiftAssert(lhsConstraints_ == 0, "already inited");
     swiftAssert(rhsConstraints_ == 0, "already inited");
 
-    lhsConstraints_ = new Colors[numLhs_];
-    rhsConstraints_ = new Colors[numRhs_];
+    lhsConstraints_ = new int[numLhs_];
+    rhsConstraints_ = new int[numRhs_];
 }
 
 AssignmentBase::OpType AssignmentBase::getOpType(size_t i) const

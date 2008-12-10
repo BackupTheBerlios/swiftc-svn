@@ -84,11 +84,11 @@ struct AssignmentBase : public InstrBase
     size_t  numLhs_;        ///< Number of left hand side args.
     Reg**   lhs_;           ///< Left hand side Regs.
     int*    lhsOldVarNr_;   ///< Left hand side old varNrs.
-    Colors* lhsConstraints_;
+    int*    lhsConstraints_;
 
     size_t  numRhs_;        ///< Number of righthand side args.
     Op**    rhs_;           ///< Right hand side Ops.
-    Colors* rhsConstraints_;
+    int*    rhsConstraints_;
 
     /*
      * constructor and destructor
