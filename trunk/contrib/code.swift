@@ -68,10 +68,13 @@ class Test
                         int bar
                         bar = 5 + 8
                         t = 7.0 + r
+                        foo = 2.0
                     else
+                        real bar = foo
                         if b
                             real u
                             u = 5.0 * r
+                        bar = 4.0
                         end
                         t = 8.0
                     end

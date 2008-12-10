@@ -68,18 +68,23 @@ void X64RegAlloc::process()
 
 void X64RegAlloc::registerTargeting()
 {
+    me::BBNode* currentBB;
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
         me::InstrBase* instr = iter->value_;
+
+        if ( typeid(*instr) == typeid(me::LabelInstr) )
+        {
+            currentBB = cfg_->labelNode2BBNode_[iter];
+            continue;
+        }
+
         // everything's fine for a NOP
         if ( typeid(*instr) == typeid(me::NOP) )
             continue;
 
         // so it is for a GotoInstr
         if ( typeid(*instr) == typeid(me::GotoInstr) )
-            continue;
-
-        if ( instr->rhs_.empty() )
             continue;
 
         if ( typeid(*instr) == typeid(me::AssignInstr) )
@@ -104,7 +109,6 @@ void X64RegAlloc::registerTargeting()
                 PERHAPS,
                 YES
             };
-            std::cout << ai->toString() << std::endl;
             
             ThreeRegs threeRegs = NO;
             me::InstrBase::OpType opType1 = ai->getOpType(0);
@@ -151,9 +155,10 @@ void X64RegAlloc::registerTargeting()
                 // constraint properly
                 ai->constraint();
                 ai->lhs_[0].constraint_ = RAX;
+                //cfg_->splitBB(iter, currentBB);
             }
-        }
-    }
+        } // if AssignInstr
+    } // for each instruction
 }
 
 void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
@@ -172,6 +177,8 @@ void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
 
     cfg_->instrList_.insert( instrNode, new me::NOP(reg) );
 }
+
+
 
 std::string X64RegAlloc::reg2String(int reg)
 {

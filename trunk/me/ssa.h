@@ -284,6 +284,11 @@ struct NOP : public InstrBase
 };
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Base for jumps to other BBNode instances.
+ *
+ * IMPORTANT: currently it is assumed that the jump targets are distinct.
+ */
 struct JumpInstr : public InstrBase
 {
     size_t numTargets_;

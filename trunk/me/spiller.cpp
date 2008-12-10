@@ -82,6 +82,10 @@ void Spiller::process()
     spill(cfg_->entry_);
     combine(cfg_->entry_);
 
+#ifdef SWIFT_DEBUG
+    size_t oldSize = phiSpilledReloads_.size();
+#endif // SWIFT_DEBUG
+
     // now the remaining phi spilled reloads can be inserted;
     for (size_t i = 0; i < phiSpilledReloads_.size(); ++i)
     {
@@ -89,6 +93,8 @@ void Spiller::process()
         Reg* reg = phiSpilledReloads_[i].reg_;
         swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
         insertReload( bbNode, reg, bbNode->value_->getBackReloadLocation() );
+
+        swiftAssert( phiSpilledReloads_.size() == oldSize, "sizes must match" );
     }
 
     // now substitute phi spills args
@@ -120,17 +126,17 @@ void Spiller::process()
      * rewire and reconstruct SSA form properly
      */
 
-    RDUMAP_EACH(iter, spills_)
-    {
-        RegDefUse* rdu = iter->second;
-        reconstructSSAForm(rdu);
-    }
+    //RDUMAP_EACH(iter, spills_)
+    //{
+        //RegDefUse* rdu = iter->second;
+        //reconstructSSAForm(rdu);
+    //}
 
-    RDUMAP_EACH(iter, reloads_)
-    {
-        RegDefUse* rdu = iter->second;
-        reconstructSSAForm(rdu);
-    }
+    //RDUMAP_EACH(iter, reloads_)
+    //{
+        //RegDefUse* rdu = iter->second;
+        //reconstructSSAForm(rdu);
+    //}
 }
 
 /*
@@ -639,12 +645,12 @@ void Spiller::combine(BBNode* bbNode)
                 // insert reload to predecessor basic block
                 insertReload( prePhiNode, phiArg, prePhi->getBackReloadLocation() ); // insert reload
             }
-            else
-            {
-                // -> we have no phi spill and phiArg is in preOut
-                // remove it from preOut since no spill is needed there
-                preOut.erase(phiArg);
-            }
+            //else
+            //{
+                //// -> we have no phi spill and phiArg is in preOut
+                //// remove it from preOut since no spill is needed there
+                //preOut.erase(phiArg);
+            //}
 
             // traverse to next predecessor
             prePhiRelative = prePhiRelative->next();
@@ -674,56 +680,25 @@ void Spiller::combine(BBNode* bbNode)
         RegSet& outP = out_[predNode];
 
         /*
-         * find out where to append spills/reloads
+         * find out where to append reloads
          */
 
         InstrNode* appendTo;
         BBNode* bbAppend;
-        bool here;
 
         if ( bbNode->pred_.size() == 1 )
         {
             // place reloads in this block on the top
             bbAppend = bbNode;
-            appendTo = bb->getSpillLocation();
-            here = true;
+            appendTo = bb->getReloadLocation();
         }
         else
         {
             swiftAssert(predNode->succ_.size() == 1, "must exactly have one successor");
             // append to last non phi instruction belonging to pred
             bbAppend = predNode;
-            appendTo = pred->getBackSpillLocation();
-            here = false;
-        }
-
-
-        /*
-         * handle spills
-         */
-
-        //// build vector which holds all necessary spills
-        //RegVec spills( outP.size() );
-        //RegVec::iterator end = std::set_difference( 
-                //outP.begin(), outP.end(), inB.begin(), inB.end(), spills.begin() );
-        //spills.erase( end, spills.end() ); // truncate properly
-
-        //if (spills.size() != 0)
-        //{
-            //// for each spill
-            //for (size_t i = 0;  i < spills.size(); ++i)
-            //{
-                //Reg* reg = spills[i];
-                //swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
-                //insertSpill(bbAppend, reg, appendTo);
-                //std::cout << appendTo->next()->value_->toString() << std::endl;
-            //} // for each spill
-        //}
-
-        if (here)
-            appendTo = bb->getReloadLocation();
-        else
             appendTo = pred->getBackReloadLocation();
+        }
 
         /*
          * handle reloads
@@ -735,16 +710,13 @@ void Spiller::combine(BBNode* bbNode)
                 inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
         reloads.erase( end, reloads.end() );// truncate properly
 
-        if (reloads.size() != 0)
+        // for each reload
+        for (size_t i = 0;  i < reloads.size(); ++i)
         {
-            // for each reload
-            for (size_t i = 0;  i < reloads.size(); ++i)
-            {
-                // create and insert reload
-                Reg* reg = reloads[i];
-                swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
-                insertReload(bbAppend, reg, appendTo);
-            }
+            // create and insert reload
+            Reg* reg = reloads[i];
+            swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+            insertReload(bbAppend, reg, appendTo);
         }
     } // for each predecessor
 

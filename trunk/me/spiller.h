@@ -37,7 +37,7 @@ private:
     /// Reg -> Mem
     typedef std::map<Reg*, Reg*> SpillMap;
 
-    /// This set knows for each spilled var the corresponding memory var. 
+    /// This set knows for each spilled var the first memory var. 
     SpillMap spillMap_;
 
 

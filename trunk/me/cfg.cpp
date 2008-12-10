@@ -183,6 +183,7 @@ void CFG::eliminateCriticalEdges()
         if (bbNode->pred_.size() <= 1)
             continue;
 
+        // we have than one pred -> iterate them
         Relatives pred(bbNode->pred_);
         RELATIVES_EACH(predIter, pred)
         {
@@ -194,32 +195,43 @@ void CFG::eliminateCriticalEdges()
             if (ji == 0 || ji->numTargets_ <= 1)
                 continue;
 
-            size_t jumpIndex = 0;
-            // find index of the jump target in question
-            for (size_t jumpIndex = 0; jumpIndex < ji->numTargets_; ++jumpIndex)
-            {
-                if (ji->bbTargets_[jumpIndex]->value_ == bb)
-                    break; // found
-            }
-            swiftAssert(jumpIndex < ji->numTargets_, "jump target not found");
-
-            // -> edge between pred and iter is critical
+            // -> edge between pred and bbNode is critical
             swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
                     "must be a LabelInstr here");
-            InstrNode* labelNode = bb->begin_;
 
             /*
-             * insert new BasicBlock
-             */
+             * Insert new basic block like this:
+             *
+             * +-------------------+
+             * | predNode/pred     |
+             * |                   |
+             * +------+------+-----+
+             *        |      |
+             *        |      |
+             *               |
+             *          +----+---------------+
+             *          | newBB              | <------ critical edge eliminated
+             *          |     labelNode      |
+             *          +-------------+------+
+             *                        |
+             *                        |          |
+             *                        |          |
+             *                   +----+----------+----+
+             *                   | bbNode/bb          |
+             *                   |     newLabelNode   |
+             *                   ---------------------+
+             */                          
 
+            InstrNode* labelNode = bb->begin_;
+
+            // create new beginning Label and insert it in the instruction list
             InstrNode* newLabelNode = instrList_.insert( labelNode, new LabelInstr() );
 
-            /* 
-             * create new beginning Label and insert it in the instruction list
-             * -> append to current bb's leading LabelInstr
-             */
+            // create newBB
             BBNode* newBB = insert( new BasicBlock(labelNode, newLabelNode) );
-            bb->begin_ = newLabelNode;// this is current bb's new leading label
+
+            // change current bb's leading LabelInstr
+            bb->begin_ = newLabelNode;
 
             // rewire basic blocks
             Relative* it = predNode->succ_.find(bbNode);
@@ -230,11 +242,13 @@ void CFG::eliminateCriticalEdges()
             swiftAssert( it != bbNode->pred_.sentinel(), "node must be found here" );
             bbNode->pred_.erase(it);
             
-            predIter->value_->link(newBB);
+            predNode->link(newBB);
             newBB->link(bbNode);
 
             // fix JumpInstr
-            ji->bbTargets_[jumpIndex] = newBB;
+            size_t jumpIndex = 0;
+            RELATIVES_EACH(succIter, predNode->succ_)
+                ji->bbTargets_[jumpIndex] = succIter->value_;
 
             // fix labelNode2BBNode_
             labelNode2BBNode_[labelNode] = newBB;
@@ -611,6 +625,73 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
     }
 
     return result;
+}
+
+void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bottomNode)
+{
+    BasicBlock* bbBottom = bottomNode->value_;
+
+    std::cout << bottomNode->value_->name() << std::endl;
+    std::cout << instrNode->value_->toString() << std::endl;
+
+    InstrNode* bottomLabel = instrList_.insert( instrNode->prev(), new LabelInstr() );
+    BBNode* topNode = insert( new BasicBlock(bbBottom->begin_, bottomLabel) );
+    BasicBlock* bbTop = topNode->value_;
+
+    // fix bottom basic block
+    bbBottom->begin_ = bottomLabel;
+
+    /*
+     * rewire new basic block
+     */
+
+    // for each former predecessor of bottomNode
+    RELATIVES_EACH(iter, bottomNode->pred_)
+    {
+        BBNode* predNode = iter->value_;
+        BasicBlock* pred = predNode->value_;
+        InstrNode* predLastInstr = pred->end_->prev();
+
+        JumpInstr* ji = dynamic_cast<JumpInstr*>(predLastInstr->value_);
+        if (ji == 0)
+        {
+            swiftAssert(predNode->succ_.size() == 1, "must have exactly one succ");
+            swiftAssert(bottomNode->pred_.size() == 1, "must have exactly one pred");
+
+            predNode->succ_.clear();
+            predNode->link(topNode);
+
+            continue;
+        }
+
+        // fix succ of pred
+        predNode->succ_.erase( predNode->succ_.find(bottomNode) );
+        predNode->link(topNode);
+
+        // find index of the jump target in question
+        for (size_t jumpIndex = 0; jumpIndex < ji->numTargets_; ++jumpIndex)
+        {
+            if (ji->bbTargets_[jumpIndex] == bottomNode)
+            {
+                // fix JumpInstr
+                ji->bbTargets_[jumpIndex] = topNode;
+                break;
+            }
+        }
+    }
+
+    // clear bottomNode's preds in all cases 
+    bottomNode->pred_.clear();
+
+    // and link top with bottom in all cases
+    topNode->link(bottomNode);
+
+    bbTop->fixPointers();
+    bbBottom->fixPointers();
+ 
+    // fix labelNode2BBNode_
+    labelNode2BBNode_[bbTop->begin_] = topNode;
+    labelNode2BBNode_[bbBottom->begin_] = bottomNode;
 }
 
 /*
