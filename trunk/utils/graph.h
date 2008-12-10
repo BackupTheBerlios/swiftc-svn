@@ -298,7 +298,10 @@ void Graph<T>::calcPostOrder(Graph<T>::Node* root)
     {
         // -> we must reset all postOrderIndices
         for (Relative* iter = nodes_.first(); iter != nodes_.sentinel(); iter = iter->next())
+        {
             iter->value_->invalidatePostOrderIndex();
+            iter->value_->visted_ = false;
+        }
 
         // clear old postOrder_ vector
         postOrder_.clear();

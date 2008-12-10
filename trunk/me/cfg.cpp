@@ -19,6 +19,7 @@ CFG::CFG(Function* function)
     , instrList_(function->instrList_)
     , entry_(0)
     , exit_(0)
+    , idoms_(0)
 {}
 
 CFG::~CFG()
@@ -204,21 +205,21 @@ void CFG::eliminateCriticalEdges()
              *
              * +-------------------+
              * | predNode/pred     |
-             * |                   |
+             * |      JumpInstr    | <--- JumpInstr must eventually be fixed
              * +------+------+-----+
              *        |      |
              *        |      |
-             *               |
+             *               v
              *          +----+---------------+
-             *          | newBB              | <------ critical edge eliminated
-             *          |     labelNode      |
+             *          | newBB              | <--- critical edge eliminated
+             *          |     labelNode      | <--- use bb's former leading label
              *          +-------------+------+
              *                        |
              *                        |          |
-             *                        |          |
+             *                        v          v
              *                   +----+----------+----+
              *                   | bbNode/bb          |
-             *                   |     newLabelNode   |
+             *                   |     newLabelNode   | <-- create new label here
              *                   ---------------------+
              */                          
 
@@ -260,6 +261,9 @@ void CFG::eliminateCriticalEdges()
 void CFG::calcDomTree()
 {
     // init dom array
+    if (idoms_)
+        delete[] idoms_;
+
     idoms_ = new BBNode*[size()];
     memset(idoms_, 0, sizeof(BBNode*) * size());
 
@@ -276,6 +280,7 @@ void CFG::calcDomTree()
         {
             // current node
             BBNode* bb = postOrder_[i];
+            std::cout << bb->value_->name() << std::endl;
             swiftAssert(bb != entry_, "do not process the entry node");
 
             // pick one which has been processed
@@ -627,71 +632,108 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
     return result;
 }
 
-void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bottomNode)
+/*
+ *  +-------------------+     +--------------------+
+ *  | predNode/pred     |     | predNode/pred      |
+ *  |     JumpInstr     |     |     JumpInstr      | JumpInstr must eventually be fixed
+ *  +--------------+----+     +----+---------------+
+ *                 |               |
+ *                 |               |
+ *                 v               v
+ *              +--+---------------+--+
+ *              | newNode/newBB       | <--- If this is the first basic block update entry_
+ *              |     labelNode       | <--- bbNode's former leading label
+ *              |     phiNodes        | <--- phi instructions are fine: they have sourceBBs_
+ *              +---------+-----------+
+ *                        |
+ *                        |
+ *                        v
+ *              +--+------+--------+--+
+ *              | bbNode/bb           |
+ *              |     newLabelNode    | <--- newly created label
+ *              |     instrNode       | <--- the split instruction
+ *              |     ...             | <--- nothing to do up here
+ *              +---------------------+
+ *                 |               |
+ *                 |               |
+ *                 v               v
+ *  +--------------+----+     +----+---------------+
+ *  | ...               |     | ...                |
+ *  +-------------------+     +--------------------+
+ */
+void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
 {
-    BasicBlock* bbBottom = bottomNode->value_;
+    BasicBlock* bb = bbNode->value_;
+    InstrNode* labelNode = bb->begin_;
 
-    std::cout << bottomNode->value_->name() << std::endl;
+    std::cout << bb->name() << std::endl;
     std::cout << instrNode->value_->toString() << std::endl;
 
-    InstrNode* bottomLabel = instrList_.insert( instrNode->prev(), new LabelInstr() );
-    BBNode* topNode = insert( new BasicBlock(bbBottom->begin_, bottomLabel) );
-    BasicBlock* bbTop = topNode->value_;
+    // create new beginning Label and insert it in the instruction list
+    InstrNode* newLabelNode = instrList_.insert( instrNode->prev(), new LabelInstr() );
+
+    // create new basic block
+    BBNode* newNode = insert( new BasicBlock(labelNode, newLabelNode) );
+    BasicBlock* newBB = newNode->value_;
+
+    // update entry_ if necessary
+    if (entry_ == bbNode)
+        entry_ = newNode;
 
     // fix bottom basic block
-    bbBottom->begin_ = bottomLabel;
+    bb->begin_ = newLabelNode;
 
     /*
      * rewire new basic block
      */
 
     // for each former predecessor of bottomNode
-    RELATIVES_EACH(iter, bottomNode->pred_)
+    RELATIVES_EACH(iter, bbNode->pred_)
     {
         BBNode* predNode = iter->value_;
         BasicBlock* pred = predNode->value_;
-        InstrNode* predLastInstr = pred->end_->prev();
-
-        JumpInstr* ji = dynamic_cast<JumpInstr*>(predLastInstr->value_);
-        if (ji == 0)
-        {
-            swiftAssert(predNode->succ_.size() == 1, "must have exactly one succ");
-            swiftAssert(bottomNode->pred_.size() == 1, "must have exactly one pred");
-
-            predNode->succ_.clear();
-            predNode->link(topNode);
-
-            continue;
-        }
+        std::cout << "pred: " << pred->name() << std::endl;
 
         // fix succ of pred
-        predNode->succ_.erase( predNode->succ_.find(bottomNode) );
-        predNode->link(topNode);
+        Relative* it = predNode->succ_.find(bbNode);
+        swiftAssert( it != predNode->succ_.sentinel(), "node must be found here" );
+        predNode->succ_.erase(it);
+        predNode->link(newNode);
 
-        // find index of the jump target in question
-        for (size_t jumpIndex = 0; jumpIndex < ji->numTargets_; ++jumpIndex)
+        /*
+         * fix JumpInstrs if applicable
+         */
+        JumpInstr* ji = dynamic_cast<JumpInstr*>(pred->end_->prev()->value_);
+        if (ji)
         {
-            if (ji->bbTargets_[jumpIndex] == bottomNode)
+            // find index of the jump target in question
+            for (size_t jumpIndex = 0; jumpIndex < ji->numTargets_; ++jumpIndex)
             {
-                // fix JumpInstr
-                ji->bbTargets_[jumpIndex] = topNode;
-                break;
+                if (ji->bbTargets_[jumpIndex] == bbNode)
+                {
+                    // and fix it
+                    ji->bbTargets_[jumpIndex] = newNode;
+                    break;
+                }
             }
-        }
-    }
+        } // if JumpInstr
 
-    // clear bottomNode's preds in all cases 
-    bottomNode->pred_.clear();
+        std::cout << "succ: " << predNode->succ_.size() << std::endl;
+        std::cout << predNode->succ_.first()->value_->value_->name() << std::endl;
+    } // for each pred
+
+    // clear bbNode's preds in all cases 
+    bbNode->pred_.clear();
 
     // and link top with bottom in all cases
-    topNode->link(bottomNode);
+    newNode->link(bbNode);
 
-    bbTop->fixPointers();
-    bbBottom->fixPointers();
+    newBB->fixPointers();
+    bb->fixPointers();
  
     // fix labelNode2BBNode_
-    labelNode2BBNode_[bbTop->begin_] = topNode;
-    labelNode2BBNode_[bbBottom->begin_] = bottomNode;
+    labelNode2BBNode_[labelNode] = newNode;
+    labelNode2BBNode_[newLabelNode] = bbNode;
 }
 
 /*

@@ -101,7 +101,7 @@ struct CFG : public Graph<BasicBlock>
      * @param instrNode The instruction where to split
      * @param bbNode The basic block where \p instrNode belongs to.
      */
-    void splitBB(me::InstrNode* instrNode, me::BBNode* bottomNode);
+    void splitBB(me::InstrNode* instrNode, me::BBNode* bbNode);
 
     /*
      * dump methods
