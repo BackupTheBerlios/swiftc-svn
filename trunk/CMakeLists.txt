@@ -1,3 +1,5 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
 PROJECT (SWIFT)
 
 OPTION (BUILD_RELEASE "Should I build the release (on) or debug version (off)?" off)
