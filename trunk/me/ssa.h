@@ -22,17 +22,35 @@ namespace me {
  */
 struct InstrBase
 {
+    enum
+    {
+        NO_CONSTRAINT = -1
+    };
+
     struct Res
     {
         Reg* reg_;
         int  oldVarNr_;   ///< Left hand side old varNrs.
         int  constraint_;
+
+        Res() {}
+        Res(Reg* reg, int oldVarNr, int constraint)
+            : reg_(reg)
+            , oldVarNr_(oldVarNr)
+            , constraint_(constraint)
+        {}
     };
 
     struct Arg
     {
         Op* op_;
         int constraint_;
+
+        Arg() {}
+        Arg(Op* op, int constraint)
+            : op_(op)
+            , constraint_(constraint)
+        {}
     };
 
     typedef std::vector<Res> LHS;
@@ -101,6 +119,8 @@ struct InstrBase
 
     void constraint();
 
+    bool livesThrough(me::Reg* reg);
+
     enum OpType
     {
         CONST, 
@@ -109,6 +129,7 @@ struct InstrBase
     };
     
     OpType getOpType(size_t i) const;
+
     /**
      * Computes whether this \p instr ist the first instruction which does not
      * have \p var in the \a liveOut_.

@@ -24,7 +24,13 @@ InstrBase::InstrBase(size_t numLhs, size_t numRhs)
     : lhs_(numLhs)
     , rhs_(numRhs)
     , constrainted_(false)
-{}
+{
+    for (size_t i = 0; i < lhs_.size(); ++i)
+        lhs_[i].constraint_ = NO_CONSTRAINT;
+
+    for (size_t i = 0; i < rhs_.size(); ++i)
+        rhs_[i].constraint_ = NO_CONSTRAINT;
+}
 
 InstrBase::~InstrBase()
 {
@@ -124,6 +130,12 @@ bool InstrBase::isConstrainted() const
 void InstrBase::constraint()
 {
     constrainted_ = true;
+}
+
+bool InstrBase::livesThrough(me::Reg* reg)
+{
+    return (liveIn_ .find(reg) != liveIn_ .end())
+        && (liveOut_.find(reg) != liveOut_.end());
 }
 
 InstrBase::OpType InstrBase::getOpType(size_t i) const

@@ -206,20 +206,20 @@ void CFG::eliminateCriticalEdges()
              * +-------------------+
              * | predNode/pred     |
              * |      JumpInstr    | <--- JumpInstr must eventually be fixed
-             * +------+------+-----+
-             *        |      |
-             *        |      |
-             *               v
-             *          +----+---------------+
-             *          | newBB              | <--- critical edge eliminated
-             *          |     labelNode      | <--- use bb's former leading label
-             *          +-------------+------+
+             * +----+---------+----+
+             *      |         |
+             *      |         |
+             *                v
+             *           +--------------------+
+             *           | newBB              | <--- critical edge eliminated
+             *           |     labelNode      | <--- use bb's former leading label
+             *           +-------------+------+
              *                        |
              *                        |          |
              *                        v          v
-             *                   +----+----------+----+
+             *                   +--------------------+
              *                   | bbNode/bb          |
-             *                   |     newLabelNode   | <-- create new label here
+             *                   |     newLabelNode   | <--- create new label here
              *                   ---------------------+
              */                          
 
@@ -642,12 +642,12 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
 /*
  *  +-------------------+     +--------------------+
  *  | predNode/pred     |     | predNode/pred      |
- *  |     JumpInstr     |     |     JumpInstr      | JumpInstr must eventually be fixed
+ *  |     JumpInstr     |     |     JumpInstr      | <--- JumpInstr must eventually be fixed
  *  +--------------+----+     +----+---------------+
  *                 |               |
  *                 |               |
  *                 v               v
- *              +--+---------------+--+
+ *              +---------------------+
  *              | newNode/newBB       | <--- If this is the first basic block update entry_
  *              |     labelNode       | <--- bbNode's former leading label
  *              |     phiNodes        | <--- phi instructions are fine: they have sourceBBs_
@@ -655,16 +655,16 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
  *                        |
  *                        |
  *                        v
- *              +--+------+--------+--+
+ *              +---------------------+
  *              | bbNode/bb           |
  *              |     newLabelNode    | <--- newly created label
  *              |     instrNode       | <--- the split instruction
- *              |     ...             | <--- nothing to do up here
+ *              |     ...             | <--- nothing to do from here on
  *              +---------------------+
  *                 |               |
  *                 |               |
  *                 v               v
- *  +--------------+----+     +----+---------------+
+ *  +-------------------+     +--------------------+
  *  | ...               |     | ...                |
  *  +-------------------+     +--------------------+
  */

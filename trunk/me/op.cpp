@@ -11,6 +11,13 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+bool Op::typeCheck(int typeMask) const
+{
+    return type_ & typeMask;
+}
+
+//------------------------------------------------------------------------------
+
 std::string Literal::toString() const
 {
     std::ostringstream oss;
@@ -114,14 +121,9 @@ bool Reg::isMem() const
     return color_ == MEMORY_LOCATION;
 }
 
-bool Reg::spillReg(int typeMask) const
-{
-    return type_ & typeMask;
-}
-
 bool Reg::colorReg(int typeMask) const
 {
-    return ( !isMem() && spillReg(typeMask) );
+    return ( !isMem() && typeCheck(typeMask) );
 }
 
 std::string Reg::toString() const

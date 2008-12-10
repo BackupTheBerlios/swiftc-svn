@@ -91,7 +91,7 @@ void Spiller::process()
     {
         BBNode* bbNode = phiSpilledReloads_[i].bbNode_;
         Reg* reg = phiSpilledReloads_[i].reg_;
-        swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+        swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
         insertReload( bbNode, reg, bbNode->value_->getBackReloadLocation() );
 
         swiftAssert( phiSpilledReloads_.size() == oldSize, "sizes must match" );
@@ -109,7 +109,7 @@ void Spiller::process()
     RDUMAP_EACH(iter, spills_)
     {
         Reg* reg = iter->first;
-        swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+        swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
         RegDefUse* rdu = iter->second;
 
         DEFLIST_EACH(defIter, rdu->defs_)
@@ -145,7 +145,7 @@ void Spiller::process()
 
 Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 {
-    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     BasicBlock* bb = bbNode->value_;
 
     // create a new memory location
@@ -180,7 +180,7 @@ Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 
 void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 {
-    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     if ( spillMap_.find(reg) == spillMap_.end() )
     {
         // remember for later insertion
@@ -234,7 +234,7 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
 
 int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
-    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
 
     if (instr->isRegUsed(reg))
@@ -246,7 +246,7 @@ int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walk
 
 int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
-    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
     BasicBlock* bb = bbNode->value_;
 
@@ -326,7 +326,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
 
 Reg* Spiller::regFind(Spiller::DistanceBag& ds, Reg* reg)
 {
-    swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+    swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     DISTANCEBAG_EACH(iter, ds)
     {
         if ( iter->reg_ == reg)
@@ -358,7 +358,7 @@ void Spiller::spill(BBNode* bbNode)
     {
         Reg* reg = *iter;
 
-        if ( reg->spillReg(typeMask_) )
+        if ( reg->typeCheck(typeMask_) )
             passed.insert(reg);
     }
 
@@ -370,7 +370,7 @@ void Spiller::spill(BBNode* bbNode)
 
         PhiInstr* phi = (PhiInstr*) iter->value_;
 
-        if ( !phi->result()->spillReg(typeMask_) )
+        if ( !phi->result()->typeCheck(typeMask_) )
             continue;
         
         // add result to the passed set
@@ -441,7 +441,7 @@ void Spiller::spill(BBNode* bbNode)
 
             Reg* reg = (Reg*) instr->rhs_[i].op_;
 
-            if ( !reg->spillReg(typeMask_) )
+            if ( !reg->typeCheck(typeMask_) )
                 continue;
 
             /*
@@ -480,7 +480,7 @@ void Spiller::spill(BBNode* bbNode)
         {
             Reg* reg = instr->lhs_[i].reg_;
 
-            if ( reg->spillReg(typeMask_) )
+            if ( reg->typeCheck(typeMask_) )
                 ++numLhs;
         }
 
@@ -532,7 +532,7 @@ void Spiller::spill(BBNode* bbNode)
         {
             Reg* reg = instr->lhs_[i].reg_;
 
-            if ( reg->spillReg(typeMask_) )
+            if ( reg->typeCheck(typeMask_) )
             {
                 currentlyInRegs.insert( 
                         RegAndDistance(reg, distance(bbNode, reg, iter, walked)) );
@@ -595,7 +595,7 @@ void Spiller::combine(BBNode* bbNode)
         PhiInstr* phi = (PhiInstr*) iter->value_;
         Reg* phiRes = phi->result();
         
-        if ( !phiRes->spillReg(typeMask_) )
+        if ( !phiRes->typeCheck(typeMask_) )
             continue;
         
         bool phiSpill;
@@ -667,7 +667,7 @@ void Spiller::combine(BBNode* bbNode)
             RegDefUse* rdu = new RegDefUse();
             rdu->defs_.append( Def(phiRes, iter, bbNode) );
             rdu->uses_.append( DefUse(iter, bbNode) );
-            swiftAssert( phiRes->spillReg(typeMask_), "wrong reg type" );
+            swiftAssert( phiRes->typeCheck(typeMask_), "wrong reg type" );
             spills_[phiRes] = rdu;
         }
     }
@@ -715,7 +715,7 @@ void Spiller::combine(BBNode* bbNode)
         {
             // create and insert reload
             Reg* reg = reloads[i];
-            swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+            swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
             insertReload(bbAppend, reg, appendTo);
         }
     } // for each predecessor
@@ -767,7 +767,7 @@ void Spiller::reconstructSSAForm(RegDefUse* rdu)
             DEFLIST_EACH(iter, rdu->defs_)
             {
                 Reg* defReg = iter->value_.reg_;
-                swiftAssert( defReg->spillReg(typeMask_), "wrong reg type" );
+                swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
 
                 // substitute arg with proper definition
                 if (useReg == defReg)
@@ -813,7 +813,7 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
                 DEFLIST_EACH(iter, rdu->defs_)
                 {
                     Reg* defReg = iter->value_.reg_;
-                    swiftAssert( defReg->spillReg(typeMask_), "wrong reg type" );
+                    swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
 
                     if (instrReg == defReg)
                         return instrReg; // yes -> return the defined reg
@@ -832,7 +832,7 @@ Reg* Spiller::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse*
             swiftAssert(bbNode->pred_.size() > 1, 
                     "current basic block must have more than 1 predecessors");
             Reg* reg = rdu->defs_.first()->value_.reg_;
-            swiftAssert( reg->spillReg(typeMask_), "wrong reg type" );
+            swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
 
             // create new result
 #ifdef SWIFT_DEBUG

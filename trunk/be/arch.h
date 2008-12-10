@@ -11,17 +11,26 @@ namespace me {
 
 namespace be {
 
+//------------------------------------------------------------------------------
+
 class RegAlloc : public me::CodePass
 {
 public:
     RegAlloc(me::Function* function);
+
+    void copyInsertion(me::InstrNode* instrNode);
+    void faithfulFix(me::InstrNode* instrNode, int typeMask, int numRegs);
 };
+
+//------------------------------------------------------------------------------
 
 class CodeGen : public me::CodePass
 {
 public:
     CodeGen(me::Function* function);
 };
+
+//------------------------------------------------------------------------------
 
 class Arch
 {
@@ -37,6 +46,8 @@ public:
 
     virtual std::string color2String(int color) const = 0;
 };
+
+//------------------------------------------------------------------------------
 
 extern Arch* arch;
 

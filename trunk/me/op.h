@@ -73,6 +73,8 @@ struct Op
      * further methods
      */
 
+    bool typeCheck(int typeMask) const;
+
     virtual std::string toString() const = 0;
 };
 
@@ -213,7 +215,6 @@ struct Reg : public Op
      */
     bool isMem() const;
 
-    bool spillReg(int typeMask) const;
     bool colorReg(int typeMask) const;
 
     virtual std::string toString() const;
