@@ -1,13 +1,12 @@
 #ifndef BE_X64_CODE_GEN_H
 #define BE_X64_CODE_GEN_H
 
+#include "me/arch.h"
 #include "me/codepass.h"
-
-#include "be/arch.h"
 
 namespace be {
 
-class X64CodeGen : public CodeGen
+class X64CodeGen : public me::CodeGen
 {
 public:
 

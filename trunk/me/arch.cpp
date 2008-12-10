@@ -1,11 +1,13 @@
-#include "be/arch.h"
+#include "me/arch.h"
 
 #include "me/functab.h"
 
 #include <algorithm>
 #include <typeinfo>
 
-namespace be {
+namespace me {
+
+//------------------------------------------------------------------------------
 
 /*
  * init global
@@ -15,13 +17,13 @@ Arch* arch = 0;
 
 //------------------------------------------------------------------------------
 
-RegAlloc::RegAlloc(me::Function* function)
+RegAlloc::RegAlloc(Function* function)
     : CodePass(function)
 {}
 
-void RegAlloc::copyInsertion(me::InstrNode* instrNode)
+void RegAlloc::copyInsertion(InstrNode* instrNode)
 {
-    me::InstrBase* instr = instrNode->value_;
+    InstrBase* instr = instrNode->value_;
 
     if ( !instr->isConstrainted() )
         return;
@@ -33,13 +35,13 @@ void RegAlloc::copyInsertion(me::InstrNode* instrNode)
     // for each constrainted live-through arg
     for (size_t i = 0; i < instr->rhs_.size(); ++i)
     {
-        if ( instr->rhs_[i].constraint_ == me::InstrBase::NO_CONSTRAINT )
+        if ( instr->rhs_[i].constraint_ == InstrBase::NO_CONSTRAINT )
             continue;
 
-        if ( typeid(*instr->rhs_[i].op_) != typeid(me::Reg) )
+        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
             continue;
 
-        me::Reg* reg = (me::Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->rhs_[i].op_;
 
         if ( !instr->livesThrough(reg) )
             continue;
@@ -63,9 +65,9 @@ void RegAlloc::copyInsertion(me::InstrNode* instrNode)
     } // for each constrainted live-through arg
 }
 
-void RegAlloc::faithfulFix(me::InstrNode* instrNode, int typeMask, int numRegs)
+void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
 {
-    me::InstrBase* instr = instrNode->value_;
+    InstrBase* instr = instrNode->value_;
 
     int numRegsNeeded = 0;
     int numLhs = 0;
@@ -79,10 +81,10 @@ void RegAlloc::faithfulFix(me::InstrNode* instrNode, int typeMask, int numRegs)
     int numRhs = 0;
     for (size_t i = 0; i < instr->rhs_.size(); ++i)
     {
-        if ( typeid(*instr->rhs_[i].op_) != typeid(me::Reg) )
+        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
             continue;
 
-        me::Reg* reg = (me::Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->rhs_[i].op_;
 
         if ( reg->typeCheck(typeMask) )
             ++numRhs;
@@ -94,21 +96,21 @@ void RegAlloc::faithfulFix(me::InstrNode* instrNode, int typeMask, int numRegs)
     int numRegsAllowed = std::max(numLhs + t, numRhs);
 
     int diff = numRegsAllowed - numRegsNeeded;
-    me::RegVec dummies;
+    RegVec dummies;
     for (int i = 0; i < diff; ++i)
     {
-        me::Reg* dummy = function_->newSSA(me::Op::R_INT32);
+        Reg* dummy = function_->newSSA(Op::R_INT32);
 
         // add dummy args
-        instr->rhs_.push_back( me::InstrBase::Arg(dummy, -1) );
+        instr->rhs_.push_back( InstrBase::Arg(dummy, -1) );
         dummies.push_back(dummy);
     }
 }
 
 //------------------------------------------------------------------------------
 
-CodeGen::CodeGen(me::Function* function)
+CodeGen::CodeGen(Function* function)
     : CodePass(function)
 {}
 
-} // namespace be
+} // namespace me

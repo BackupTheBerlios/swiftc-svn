@@ -5,7 +5,7 @@
 
 #include "utils/stringhelper.h"
 
-#include "be/arch.h"
+#include "me/arch.h"
 
 namespace me {
 
@@ -135,7 +135,7 @@ std::string Reg::toString() const
 
     if ( color_ >= 0 )
     {
-        oss << be::arch->color2String(color_);
+        oss << me::arch->color2String(color_);
     }
     else if ( !isSSA() )
     {

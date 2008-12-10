@@ -16,7 +16,7 @@ namespace be {
  */
 
 X64RegAlloc::X64RegAlloc(me::Function* function)
-    : CodeGen(function)
+    : me::RegAlloc(function)
 {}
 
 /*

@@ -3,13 +3,12 @@
 
 #include <string>
 
+#include "me/arch.h"
 #include "me/codepass.h"
-
-#include "be/arch.h"
 
 namespace be {
 
-class X64RegAlloc : public CodeGen
+class X64RegAlloc : public me::RegAlloc
 {
 public:
 

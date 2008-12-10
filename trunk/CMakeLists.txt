@@ -61,6 +61,7 @@ ADD_EXECUTABLE (swift
     fe/cmdlineparser.cpp
     fe/main.cpp
 
+    me/arch.cpp
     me/basicblock.cpp
     me/codepass.cpp
     me/cfg.cpp
@@ -72,7 +73,6 @@ ADD_EXECUTABLE (swift
     me/spiller.cpp
     me/ssa.cpp
 
-    be/arch.cpp
     be/x64.cpp
     be/x64codegen.cpp
     be/x64regalloc.cpp
