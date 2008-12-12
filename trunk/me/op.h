@@ -176,8 +176,8 @@ struct Reg : public Op
      */
     int color_;
 
-    DefUse def_;   ///< knows where the var is defined
-    UseList uses_; ///< knows all uses of this var
+    DefUse def_;      ///< knows where the var is defined
+    DefUseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
     std::string id_; ///< This stores the name of the orignal var in the debug version.

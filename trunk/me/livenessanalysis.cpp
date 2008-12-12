@@ -130,7 +130,7 @@ void LivenessAnalysis::process()
         Reg* var = iter->second;
 
         // for each use of var
-        USELIST_EACH(iter, var->uses_)
+        DEFUSELIST_EACH(iter, var->uses_)
         {
             DefUse& use = iter->value_;
             InstrBase* instr = use.instrNode_->value_;

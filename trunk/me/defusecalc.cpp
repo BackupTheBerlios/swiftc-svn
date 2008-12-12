@@ -66,7 +66,10 @@ void DefUseCalc::calcDef()
         {
             // for each var on the lhs
             for (size_t i = 0; i < instr->lhs_.size(); ++i)
-                instr->lhs_[i].reg_->def_.set(iter, currentBB); // store def
+            {
+                Reg* reg = instr->lhs_[i].reg_;
+                reg->def_.set(reg, iter, currentBB); // store def
+            }
         }
     }
 }
@@ -105,7 +108,7 @@ void DefUseCalc::calcUse()
                 Reg* var = (Reg*) phi->rhs_[i].op_;
 
                 // put this as first use so liveness analysis will be a bit faster
-                var->uses_.prepend( DefUse(iter, bbNode) );
+                var->uses_.prepend( DefUse(var, iter, bbNode) );
             }
         }
     }
@@ -124,7 +127,9 @@ void DefUseCalc::calcUse(Reg* var, BBNode* bbNode)
         InstrBase* instr = iter->value_;
 
         if ( instr->isRegUsed(var) )
-            var->uses_.append( DefUse(iter, bbNode) );
+        {
+            var->uses_.append( DefUse(var, iter, bbNode) );
+        }
     } // for each instruction
 
     // for each child of bb in the dominator tree

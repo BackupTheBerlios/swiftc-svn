@@ -56,31 +56,10 @@ private:
      */
     BB2RegSet out_;
 
-    struct Def
-    {
-        Reg* reg_;
-        InstrNode* instrNode_;
-        BBNode* bbNode_;
-
-        Def() {}
-        Def(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
-            : reg_(reg)
-            , instrNode_(instrNode)
-            , bbNode_(bbNode)
-        {}
-        Def(const Def& d)
-            : reg_(d.reg_)
-            , instrNode_(d.instrNode_)
-            , bbNode_(d.bbNode_)
-        {}
-    };
-    
-    typedef List<Def> DefList;
-
     struct RegDefUse
     {
-        DefList defs_;
-        UseList uses_;
+        DefUseList defs_;
+        DefUseList uses_;
     };
     
     /// Keeps registers with their definitions und uses.
@@ -109,40 +88,25 @@ private:
      * spills are rewired correclty.
      */
     RDUMap reloads_;
-
-    /// Remembers a Spill which remains do during local spilling.
-    struct PhiSpilledReload
-    {
-        BBNode* bbNode_;
-        Reg* reg_;
-
-        PhiSpilledReload(BBNode* bbNode, Reg* reg)
-            : bbNode_(bbNode)
-            , reg_(reg)
-        {}
-    };
-
-    /// std::vector of PhiSpilledReload.
-    typedef std::vector<PhiSpilledReload> PhiSpilledReloads;
-
-    /// Remembers spills which remain to do during local spilling.
-    PhiSpilledReloads phiSpilledReloads_;
     
-    struct Substitute
-    {
-        PhiInstr* phi_;
-        size_t arg_;
+     struct Substitute
+     {
+         PhiInstr* phi_;
+         size_t arg_;
+ 
+         Substitute() {}
+         Substitute(PhiInstr* phi, size_t arg)
+             : phi_(phi)
+             , arg_(arg)
+         {}
+     };
+ 
+     typedef std::vector<Substitute> Substitutes;
+     Substitutes substitutes_;
 
-        Substitute() {}
-        Substitute(PhiInstr* phi, size_t arg)
-            : phi_(phi)
-            , arg_(arg)
-        {}
-    };
-
-    typedef std::vector<Substitute> Substitutes;
-    Substitutes substitutes_;
-    
+     typedef std::vector<DefUse> PhiSpills;
+     PhiSpills phiSpills_;
+     
 public:
 
     /*
@@ -303,13 +267,24 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
+    /** 
+     * @brief 
+     *
+     * Inserts a Spill at the end of a basic block b wich holds this property: <br>
+     * b is first basic block which dominats \p bbNode where reg in is out_[b] 
+     * 
+     * @param reg 
+     * @param bbNode 
+     */
+    void insertSpillIfNecessarry(Reg* reg, BBNode* bbNode);
 
     /*
      * SSA reconstruction and rewiring
      */
 
     void reconstructSSAForm(RegDefUse* rdu);
+
+    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
 };
 
 } // namespace me

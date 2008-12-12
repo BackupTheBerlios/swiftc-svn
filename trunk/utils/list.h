@@ -112,9 +112,17 @@ public:
         delete sentinel_;
     }
 
-    List<T> operator = (const List<T>& l)
+    List<T>& operator = (const List<T>& l)
     {
-        return List(l);
+        Node* n = l.sentinel_->next_;
+
+        while (n != l.sentinel_)
+        {
+            append(n->value_);
+            n = n->next_;
+        }
+
+        return *this;
     }
 
     /**

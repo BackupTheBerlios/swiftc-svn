@@ -32,6 +32,7 @@ int Coloring::findFirstFreeColorAndAllocate(Colors& colors)
             reservoir_.begin(), reservoir_.end(), 
             colors.begin(), colors.end(), 
             freeColors.begin() );
+
     freeColors.erase( end, freeColors.end() ); // truncate properly
 
     swiftAssert( !freeColors.empty(), "must not be empty" );

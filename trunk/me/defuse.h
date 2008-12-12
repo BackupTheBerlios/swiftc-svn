@@ -13,25 +13,28 @@ namespace me {
 struct DefUse
 {
     DefUse() {}
-    DefUse(InstrNode* instrNode, BBNode* bbNode)
-        : instrNode_(instrNode)
+    DefUse(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
+        : reg_(reg)
+        , instrNode_(instrNode)
         , bbNode_(bbNode)
     {}
 
-    void set(InstrNode* instrNode, BBNode* bbNode)
+    void set(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
     {
-        instrNode_ = instrNode;
-        bbNode_ = bbNode;
+        reg_        = reg;
+        instrNode_  = instrNode;
+        bbNode_     = bbNode;
     }
 
-    InstrNode* instrNode_;  ///< The instruction which is referenced here
-    BBNode* bbNode_; ///< The basic block where \a instr_ can be found
+    Reg* reg_;              /// < The register which is referenced here.
+    InstrNode* instrNode_;  ///< The instruction which is referenced here.
+    BBNode* bbNode_;        ///< The basic block where \a instr_ can be found.
 };
 
-typedef List<DefUse> UseList;
+typedef List<DefUse> DefUseList;
 
-#define USELIST_EACH(iter, useList) \
-    for (me::UseList::Node* (iter) = (useList).first(); (iter) != (useList).sentinel(); (iter) = (iter)->next())
+#define DEFUSELIST_EACH(iter, defUseList) \
+    for (me::DefUseList::Node* (iter) = (defUseList).first(); (iter) != (defUseList).sentinel(); (iter) = (iter)->next())
 
 } // namespace me
 
