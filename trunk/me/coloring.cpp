@@ -146,39 +146,67 @@ void Coloring::colorRecursive(BBNode* bbNode)
     }
 }
 
-//void Coloring::colorConstraintedInstr(InstrNode* instrNode)
-//{
-    //InstrBase* instr = instrNode->value_;
+void Coloring::colorConstraintedInstr(InstrNode* instrNode)
+{
+    InstrBase* instr = instrNode->value_;
     
-    //// for each constrained arg
-    //for (size_t i = 0; i < instr->rhs_.size(); ++i)
-    //{
-        //if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
-            //continue;
+    // for each constrained arg
+    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    {
+        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+            continue;
 
-        //Reg* reg = (Reg*) instr->rhs_[i].op_;
-    //}
+        Reg* reg = (Reg*) instr->rhs_[i].op_;
 
-    //// for each constrained result
-    //for (size_t i = 0; i < instr->lhs_.size(); ++i)
-    //{
-        //Reg* reg = (Reg*) instr->lhs_[i].reg_;
-    //}
+        if ( !reg->typeCheck(typeMask_) )
+            continue;
 
-    //// for each unconstrained arg
-    //for (size_t i = 0; i < instr->rhs_.size(); ++i)
-    //{
-        //if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
-            //continue;
+        int constraint = instr->rhs_[i].constraint_;
+        if (constraint == InstrBase::NO_CONSTRAINT)
+            continue;
 
-        //Reg* reg = (Reg*) instr->rhs_[i].op_;
-    //}
+        // TODO
+    }
 
-    //// for each unconstrained result
-    //for (size_t i = 0; i < instr->lhs_.size(); ++i)
-    //{
-        //Reg* reg = (Reg*) instr->lhs_[i].reg_;
-    //}
-//}
+    // for each constrained result
+    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    {
+        Reg* reg = (Reg*) instr->lhs_[i].reg_;
+
+        if ( !reg->typeCheck(typeMask_) )
+            continue;
+
+        int constraint = instr->rhs_[i].constraint_;
+        if (constraint == InstrBase::NO_CONSTRAINT)
+            continue;
+
+        // TODO
+    }
+
+    // for each unconstrained arg
+    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    {
+        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+            continue;
+
+        Reg* reg = (Reg*) instr->rhs_[i].op_;
+
+        if ( !reg->typeCheck(typeMask_) )
+            continue;
+
+        // TODO
+    }
+
+    // for each unconstrained result
+    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    {
+        Reg* reg = (Reg*) instr->lhs_[i].reg_;
+
+        if ( !reg->typeCheck(typeMask_) )
+            continue;
+
+        // TODO
+    }
+}
 
 } // namespace me
