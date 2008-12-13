@@ -106,7 +106,10 @@ private:
 
      typedef std::vector<DefUse> PhiSpills;
      PhiSpills phiSpills_;
-     
+
+    typedef std::vector<DefUse> LaterReloads;
+    LaterReloads laterReloads_;
+    
 public:
 
     /*

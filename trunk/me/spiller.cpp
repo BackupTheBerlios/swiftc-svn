@@ -61,6 +61,16 @@ void Spiller::process()
     spill(cfg_->entry_);
     combine(cfg_->entry_);
 
+    for (size_t i = 0; i < laterReloads_.size(); ++i)
+    {
+        Reg* reg             = laterReloads_[i].reg_;
+        InstrNode* instrNode = laterReloads_[i].instrNode_;
+        BBNode* bbNode       = laterReloads_[i].bbNode_;
+
+        insertSpillIfNecessarry(reg, bbNode);
+        insertReload(bbNode, reg, instrNode);
+    }
+    
     /*
      * erase phiSpills_ in reloads_' uses only in the debug version
      * in order to prevent the "no arg found in defs" assertion in reconstructSSAForm
@@ -470,13 +480,12 @@ void Spiller::spill(BBNode* bbNode)
                 if (                 inB.find(reg) ==           inB.end() 
                         && orignalInRegs.find(reg) != orignalInRegs.end() )
                 {
-                    // add again to inB
-                    inB.insert(reg);
-                    // insert Spill on the top
-                    insertSpill( bbNode, reg, bb->getSpillLocation() );
+                    // mark for later reload insertion
+                    laterReloads_.push_back( DefUse(reg, lastInstrNode, bbNode) );
                 }
+                else
+                    insertReload(bbNode, reg, lastInstrNode);
 
-                insertReload(bbNode, reg, lastInstrNode);
                 currentlyInRegs.insert( RegAndDistance(reg, 0) );
 
                 // keep account of the number of needed reloads here
@@ -652,23 +661,19 @@ void Spiller::combine(BBNode* bbNode)
                 preOut.erase(phiArg);
 
                 // insert spill to predecessor basic block and replace phi arg
-                //phi->rhs_[i].op_ = insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
                 insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
                 substitutes_.push_back( Substitute(phi, i) );
             }
             else if ( phiSpill && preOut.find(phiArg) == preOut.end() )
             {
-                /*
-                 * mark for substitution which must be done 
-                 * after global spill insertion
-                 */
+                // -> we have a phi spill and phiArg is not in preOut
                 substitutes_.push_back( Substitute(phi, i) );
             }
             else if( !phiSpill && preOut.find(phiArg) == preOut.end() )
             {   
                 // -> we have no phi spill and phiArg not in preOut
                 // insert reload to predecessor basic block
-                insertReload( prePhiNode, phiArg, prePhi->getBackReloadLocation() ); // insert reload
+                insertReload( prePhiNode, phiArg, prePhi->getBackReloadLocation() );
             }
 
             // traverse to next predecessor
@@ -687,6 +692,7 @@ void Spiller::combine(BBNode* bbNode)
             rdu->defs_.append( DefUse(phiRes, iter, bbNode) );
             swiftAssert( phiRes->typeCheck(typeMask_), "wrong reg type" );
             spills_[phiRes] = rdu;
+            spillMap_[phiRes] = phiRes; // phi-spills map to them selves
 
             for (size_t i = 0; i < phi->rhs_.size(); ++i)
             {
@@ -766,21 +772,35 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
 
     BasicBlock* bb = bbNode->value_;
 
-    // when there is no spill at all insert one in every case
-    if ( spillMap_.find(reg) != spillMap_.end() )
+    /*
+     * check whether reg is already spilled in this block
+     */
+
+    // is it phi-spilled?
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
     {
-        // check whether reg is already spilled in this block
-        for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
-        {
-            if ( typeid(*iter->value_) != typeid(Spill) )
-                continue;
+        swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
+                "must be a PhiInstr" );
+        PhiInstr* phi = (PhiInstr*) iter->value_;
+        Reg* res = phi->result();
 
-            Spill* spill = (Spill*) iter->value_;
-
-            if ( ((Reg*) spill->rhs_[0].op_) == reg )
-                return; // everything is fine -> there is already a spill
-        }
+        if (res == reg)
+            return; // everything's fine here -> no spill needed
     }
+
+    // is it spilled by an ordinary spill?
+    for (InstrNode* iter = bb->firstOrdinary_; iter != bb->end_; iter = iter->next())
+    {
+        if ( typeid(*iter->value_) != typeid(Spill) )
+            continue;
+
+        Spill* spill = (Spill*) iter->value_;
+
+        if ( ((Reg*) spill->rhs_[0].op_) == reg )
+            return; // everything is fine -> there is already a spill
+    }
+
+    // -> no spill in this basic block, so insert one
 
     // find spill location
     InstrNode* appendTo;

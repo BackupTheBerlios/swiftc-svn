@@ -70,6 +70,8 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
     InstrBase* instr = instrNode->value_;
 
     int numRegsNeeded = 0;
+
+    // count number of results with proper type
     int numLhs = 0;
     for (size_t i = 0; i < instr->lhs_.size(); ++i)
     {
@@ -77,7 +79,9 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
             ++numLhs;
     }
 
-    int t = 0;
+    int numLiveThrough = 0;
+
+    // count number of args with proper type and number of live-through vars
     int numRhs = 0;
     for (size_t i = 0; i < instr->rhs_.size(); ++i)
     {
@@ -90,10 +94,10 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
             ++numRhs;
 
         if ( instr->livesThrough(reg) )
-            ++t;
+            ++numLiveThrough;
     }
 
-    int numRegsAllowed = std::max(numLhs + t, numRhs);
+    int numRegsAllowed = std::max(numLhs + numLiveThrough, numRhs);
 
     int diff = numRegsAllowed - numRegsNeeded;
     RegVec dummies;
