@@ -193,7 +193,7 @@ void X64RegAlloc::registerTargeting()
 
                 // init sourceBBs and arg
                 phi->sourceBBs_[0] = currentBBNode->pred_.first()->value_;
-                phi->rhs_[0].op_ = reg;
+                phi->rhs_[0].op = reg;
 
                 // insert instruction and fix pointer
                 cfg_->instrList_.insert(currentBB->begin_, phi); 
