@@ -12,6 +12,7 @@ namespace me {
 
 // forward declarations
 struct Function;
+struct RegDefUse;
 
 //------------------------------------------------------------------------------
 
@@ -102,6 +103,15 @@ struct CFG : public Graph<BasicBlock>
      * @param bbNode The basic block where \p instrNode belongs to.
      */
     void splitBB(me::InstrNode* instrNode, me::BBNode* bbNode);
+
+
+    /*
+     * SSA reconstruction and rewiring
+     */
+
+    void reconstructSSAForm(RegDefUse* rdu);
+
+    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
 
     /*
      * dump methods

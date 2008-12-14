@@ -31,10 +31,22 @@ struct DefUse
     BBNode* bbNode_;        ///< The basic block where \a instr_ can be found.
 };
 
+//-------------------------------------------------------------------------------
+
 typedef List<DefUse> DefUseList;
 
 #define DEFUSELIST_EACH(iter, defUseList) \
     for (me::DefUseList::Node* (iter) = (defUseList).first(); (iter) != (defUseList).sentinel(); (iter) = (iter)->next())
+
+//-------------------------------------------------------------------------------
+
+struct RegDefUse
+{
+    DefUseList defs_;
+    DefUseList uses_;
+};
+
+//------------------------------------------------------------------------------
 
 } // namespace me
 

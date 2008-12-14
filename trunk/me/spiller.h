@@ -56,12 +56,6 @@ private:
      */
     BB2RegSet out_;
 
-    struct RegDefUse
-    {
-        DefUseList defs_;
-        DefUseList uses_;
-    };
-    
     /// Keeps registers with their definitions und uses.
     typedef std::map<Reg*, RegDefUse*> RDUMap;
 
@@ -280,14 +274,6 @@ distanceRec(bbNode, reg, instrNode) = |
      * @param bbNode 
      */
     void insertSpillIfNecessarry(Reg* reg, BBNode* bbNode);
-
-    /*
-     * SSA reconstruction and rewiring
-     */
-
-    void reconstructSSAForm(RegDefUse* rdu);
-
-    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
 };
 
 } // namespace me

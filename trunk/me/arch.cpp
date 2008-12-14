@@ -55,10 +55,24 @@ void RegAlloc::copyInsertion(InstrNode* instrNode)
             if ( constraint == instr->lhs_[j].constraint_ )
             {
                 // -> copy needed
-                //cfg_->instrList_.insert( instrNode->prev()
+
+                // create new result
+#ifdef SWIFT_DEBUG
+                Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+                Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+                // insert copy
+                cfg_->instrList_.insert( instrNode->prev(), new AssignInstr('=', newReg, reg) );
+
+                // substitute operand with newReg
+                instr->rhs_[i].op_ = newReg;
                 
-                // it is assumed that is no other reg constrainted to the same color
-                // becase of the simple constraint property
+                /*
+                 * it is assumed that is no other reg constrainted to the same color
+                 * becase of the simple constraint property
+                 */
                 break;
             }
         } // for each res

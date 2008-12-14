@@ -736,6 +736,157 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
     labelNode2BBNode_[newLabelNode] = bbNode;
 }
 
+
+/*
+ * SSA reconstruction and rewiring
+ */
+
+void CFG::reconstructSSAForm(RegDefUse* rdu)
+{
+    BBSet defBBs;
+
+    /*
+     * calculate iterated dominance frontier for all defining basic blocks
+     */
+    DEFUSELIST_EACH(iter, rdu->defs_)
+        defBBs.insert(iter->value_.bbNode_);
+
+    BBSet iDF = calcIteratedDomFrontier(defBBs);
+
+    // for each use
+    DEFUSELIST_EACH(iter, rdu->uses_)
+    {
+        DefUse& du = iter->value_;
+        BBNode* bbNode = du.bbNode_;
+        InstrNode* instrNode = du.instrNode_;
+        InstrBase* instr = instrNode->value_;
+
+#ifdef SWIFT_DEBUG
+        bool found = false;
+#endif // SWIFT_DEBUG
+
+        // for each arg for which instr->rhs_[i] in defs
+        for (size_t i = 0; i < instr->rhs_.size(); ++i)
+        {
+            if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+                continue;
+
+            Reg* useReg = (Reg*) instr->rhs_[i].op_;
+
+            DEFUSELIST_EACH(iter, rdu->defs_)
+            {
+                Reg* defReg = iter->value_.reg_;
+                swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
+
+                // substitute arg with proper definition
+                if (useReg == defReg)
+                {
+#ifdef SWIFT_DEBUG
+                    found = true;
+#endif // SWIFT_DEBUG
+                    instr->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+                }
+            } // for each def
+        } // for each arg of use
+        swiftAssert(found, "no arg found in defs");
+    } // for each use
+}
+
+Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF)
+{
+    if ( typeid(*instrNode->value_) == typeid(PhiInstr) )
+    {
+        PhiInstr* phi = (PhiInstr*) instrNode->value_;
+        bbNode = phi->sourceBBs_[p];
+        instrNode = bbNode->value_->end_->prev();
+    }
+
+    BasicBlock* bb = bbNode->value_;
+
+    while (true)
+    {
+        // iterate backwards over all instructions in this basic block
+        while (instrNode != bb->begin_)
+        {
+            InstrBase* instr = instrNode->value_; 
+
+            // defines instr one of rdu?
+            for (size_t i = 0; i < instr->lhs_.size(); ++i)
+            {
+                if ( typeid(*instr->lhs_[i].reg_) != typeid(Reg) )
+                    continue;
+
+                Reg* instrReg = (Reg*) instr->lhs_[i].reg_;
+
+                DEFUSELIST_EACH(iter, rdu->defs_)
+                {
+                    Reg* defReg = iter->value_.reg_;
+                    swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
+
+                    if (instrReg == defReg)
+                        return instrReg; // yes -> return the defined reg
+                }
+            }
+
+            // move backwards
+            instrNode = instrNode->prev();
+        }
+
+        // is this basic block in the iterated dominance frontier?
+        BBSet::iterator bbIter = iDF.find(bbNode);
+        if ( bbIter != iDF.end() )
+        {
+            // -> place phi function
+            swiftAssert(bbNode->pred_.size() > 1, 
+                    "current basic block must have more than 1 predecessors");
+            Reg* reg = rdu->defs_.first()->value_.reg_;
+            swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
+
+            // create new result
+#ifdef SWIFT_DEBUG
+            Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+            Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+            if ( rdu->defs_.first()->value_.reg_->isMem() )
+                newReg->color_ = Reg::MEMORY_LOCATION;
+
+            // create phi instruction
+            PhiInstr* phi = new PhiInstr( newReg, bbNode->pred_.size() );
+
+            // init sourceBBs
+            size_t counter = 0;
+            RELATIVES_EACH(predIter, bbNode->pred_)
+            {
+                phi->sourceBBs_[counter] = predIter->value_;
+                ++counter;
+            }
+
+            instrNode = instrList_.insert(bb->begin_, phi); 
+            bb->firstPhi_ = instrNode;
+
+            // register new definition
+            rdu->defs_.append( DefUse(newReg, instrNode, bbNode) );
+
+            for (size_t i = 0; i < phi->rhs_.size(); ++i)
+            {
+                phi->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+            }
+
+            return phi->result();
+        }
+
+        swiftAssert( entry_ != bbNode, "unreachable code");
+
+        // go up dominance tree -> update bbNode, bb and instrNode
+        bbNode = idoms_[bbNode->postOrderIndex_];
+        bb = bbNode->value_;
+        instrNode = bb->end_->prev();
+    }
+
+    return 0;
+}
 /*
  * dump methods
  */

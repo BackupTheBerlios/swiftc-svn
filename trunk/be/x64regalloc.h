@@ -1,6 +1,7 @@
 #ifndef BE_X64_REG_ALLOC_H
 #define BE_X64_REG_ALLOC_H
 
+#include <set>
 #include <string>
 
 #include "me/arch.h"
@@ -10,6 +11,10 @@ namespace be {
 
 class X64RegAlloc : public me::RegAlloc
 {
+
+    typedef std::set<me::RegDefUse*> RDUSet;
+    RDUSet phis_;
+
 public:
 
     enum Regs

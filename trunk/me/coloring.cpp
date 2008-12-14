@@ -141,7 +141,6 @@ void Coloring::colorRecursive(BBNode* bbNode)
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
         BBNode* domChild = bbIter->value_;
-
         colorRecursive(domChild);
     }
 }

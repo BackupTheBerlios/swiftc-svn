@@ -11,6 +11,9 @@
 
 namespace be {
 
+#define RDUSET_EACH(iter, rdus) \
+    for (RDUSet::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
+
 /*
  * constructor
  */
@@ -40,7 +43,8 @@ void X64RegAlloc::process()
     cfg_->calcDomFrontier();
 
     // reconstruct SSA form for the newly inserted phi instructions
-    // TODO
+    RDUSET_EACH(iter, phis_)
+        cfg_->reconstructSSAForm(*iter);
 
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
@@ -81,14 +85,17 @@ void X64RegAlloc::process()
 
 void X64RegAlloc::registerTargeting()
 {
-    me::BBNode* currentBB;
+    me::BBNode* currentBBNode;
+    me::BasicBlock* currentBB = currentBBNode->value_;
+
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
         me::InstrBase* instr = iter->value_;
 
         if ( typeid(*instr) == typeid(me::LabelInstr) )
         {
-            currentBB = cfg_->labelNode2BBNode_[iter];
+            currentBBNode = cfg_->labelNode2BBNode_[iter];
+            currentBB = currentBBNode->value_;
             continue;
         }
 
@@ -132,13 +139,9 @@ void X64RegAlloc::registerTargeting()
                 if (opType1 != me::InstrBase::CONST && opType2 != me::InstrBase::CONST)
                 {
                     if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG)
-                    {
                         threeRegs = YES;
-                    }
                     else if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG_DEAD)
-                    {
                         threeRegs = PERHAPS;
-                    }
                 }
             }
 
@@ -168,7 +171,32 @@ void X64RegAlloc::registerTargeting()
                 // constraint properly
                 ai->constraint();
                 ai->lhs_[0].constraint_ = RAX;
-                cfg_->splitBB(iter, currentBB);
+                cfg_->splitBB(iter, currentBBNode);
+
+                me::Reg* reg = ai->lhs_[0].reg_;
+
+                /* 
+                 * insert new phi instruction for live range splitting
+                 */
+
+                // create new result
+#ifdef SWIFT_DEBUG
+                me::Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+                me::Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+                // create phi instruction
+                swiftAssert( currentBBNode->pred_.size() == 1, 
+                        "must have exactly one predecessor" );
+                me::PhiInstr* phi = new me::PhiInstr(newReg, 1);
+
+                // init sourceBBs
+                phi->sourceBBs_[0] = currentBBNode->pred_.first()->value_;
+
+                // insert instruction and fix pointer
+                iter = cfg_->instrList_.insert(currentBB->begin_, phi); 
+                currentBB->firstPhi_ = iter;
             }
         } // if AssignInstr
     } // for each instruction
@@ -190,8 +218,6 @@ void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
 
     cfg_->instrList_.insert( instrNode, new me::NOP(reg) );
 }
-
-
 
 std::string X64RegAlloc::reg2String(int reg)
 {
