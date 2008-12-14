@@ -191,11 +191,12 @@ void X64RegAlloc::registerTargeting()
                         "must have exactly one predecessor" );
                 me::PhiInstr* phi = new me::PhiInstr(newReg, 1);
 
-                // init sourceBBs
+                // init sourceBBs and arg
                 phi->sourceBBs_[0] = currentBBNode->pred_.first()->value_;
+                phi->rhs_[0].op_ = reg;
 
                 // insert instruction and fix pointer
-                iter = cfg_->instrList_.insert(currentBB->begin_, phi); 
+                cfg_->instrList_.insert(currentBB->begin_, phi); 
                 currentBB->firstPhi_ = iter;
             }
         } // if AssignInstr
