@@ -141,10 +141,10 @@ void LivenessAnalysis::process()
 
                 // find the predecessor basic block
                 size_t i = 0;
-                while (phi->rhs_[i].op_ != var)
+                while (phi->arg_[i].op_ != var)
                     ++i;
 
-                swiftAssert(i < phi->rhs_.size(), "i too large here");
+                swiftAssert(i < phi->arg_.size(), "i too large here");
                 BBNode* pred = phi->sourceBBs_[i];
 
                 // examine the found block
@@ -214,12 +214,12 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
     // knows whether var is defined in instr
     bool varInLhs = false;
 
-    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        if ( instr->lhs_[i].reg_ != var )
+        if ( instr->res_[i].reg_ != var )
         {
 #ifdef SWIFT_DEBUG
-            Reg* res = instr->lhs_[i].reg_;
+            Reg* res = instr->res_[i].reg_;
 
             // add (v, w) to interference graph if it does not already exist
             if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()

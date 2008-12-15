@@ -56,13 +56,13 @@ struct InstrBase
     typedef std::vector<Res> LHS;
     typedef std::vector<Arg> RHS;
 
-    LHS lhs_;
-    RHS rhs_;
+    LHS res_;
+    RHS arg_;
     
     RegSet liveIn_; /// regs that are live-in  at this instruction.
     RegSet liveOut_;/// regs that are live-out at this instruction.
 
-    bool constrainted_;
+    bool constraint_;
 
     /*
      * destructor
@@ -115,9 +115,9 @@ struct InstrBase
      */
     Op* findArg(Op* op);
 
-    bool isConstrainted() const;
+    bool hasConstraint() const;
 
-    void constraint();
+    void markConstraint();
 
     bool livesThrough(me::Reg* reg);
 
@@ -175,7 +175,7 @@ struct LabelInstr : public InstrBase
  */
 struct PhiInstr : public InstrBase
 {
-    BBNode** sourceBBs_; ///< predecessor basic block of each rhs-arg
+    BBNode** sourceBBs_; ///< predecessor basic block of each arg-arg
 
     /*
      * constructor and destructor

@@ -7,12 +7,10 @@
 #include "me/defusecalc.h"
 #include "me/functab.h"
 #include "me/livenessanalysis.h"
+#include "me/liverangesplitting.h"
 #include "me/spiller.h"
 
 namespace be {
-
-#define RDUSET_EACH(iter, rdus) \
-    for (RDUSet::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
 
 /*
  * constructor
@@ -20,6 +18,7 @@ namespace be {
 
 X64RegAlloc::X64RegAlloc(me::Function* function)
     : me::RegAlloc(function)
+    , omitFramePointer_(false)
 {}
 
 /*
@@ -34,29 +33,24 @@ void X64RegAlloc::process()
 
     registerTargeting();
 
-    // HACK: this should be superfluous when there is a good graph implementation
-    cfg_->entry_->postOrderIndex_ = 0;     
-
-    // new basic blocks habe been inserted so recompute dominance stuff
-    cfg_->calcPostOrder(cfg_->entry_);
-    cfg_->calcDomTree();
-    cfg_->calcDomFrontier();
-
-    // reconstruct SSA form for the newly inserted phi instructions
-    RDUSET_EACH(iter, phis_)
-        cfg_->reconstructSSAForm(*iter);
-
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
     /*
-     * alloc general purpose registers
+     * spill general purpose registers
      */
 
     me::Colors rColors;
     for (int i = R00; i <= R15; ++i)
         rColors.insert(i);
+
+    // do not use stack pointer as a free register
+    rColors.erase(RSP);
+
+    // check whether the frame pointer can be used
+    if (omitFramePointer_)
+        rColors.erase(RBP);
 
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
 
@@ -64,10 +58,8 @@ void X64RegAlloc::process()
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
-    me::Coloring(function_, R_TYPE_MASK, rColors).process();
-
     /*
-     * alloc XMM registers
+     * spill XMM registers
      */
 
     me::Colors fColors;
@@ -80,13 +72,29 @@ void X64RegAlloc::process()
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
+    /*
+     * copy insertion -> faithful fixingl -> live range splitting
+     */
+
+    //me::CopyInsertion(function_).process();
+    //me::FaithFulFixing(function_).process();
+    me::LiveRangeSplitting(function_).process();
+    me::DefUseCalc(function_).process();
+    me::LivenessAnalysis(function_).process();
+
+    /*
+     * color
+     */
+
+    // general purpose registers
     me::Coloring(function_, F_TYPE_MASK, fColors).process();
+    // XMM registers
+    me::Coloring(function_, R_TYPE_MASK, rColors).process(); 
 }
 
 void X64RegAlloc::registerTargeting()
 {
-    me::BBNode* currentBBNode;
-    me::BasicBlock* currentBB = currentBBNode->value_;
+    me::BBNode* currentBB;
 
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
@@ -94,8 +102,7 @@ void X64RegAlloc::registerTargeting()
 
         if ( typeid(*instr) == typeid(me::LabelInstr) )
         {
-            currentBBNode = cfg_->labelNode2BBNode_[iter];
-            currentBB = currentBBNode->value_;
+            currentBB = cfg_->labelNode2BBNode_[iter];
             continue;
         }
 
@@ -110,13 +117,13 @@ void X64RegAlloc::registerTargeting()
         if ( typeid(*instr) == typeid(me::AssignInstr) )
         {
             me::AssignInstr* ai = (me::AssignInstr*) instr;
-            swiftAssert( ai->lhs_.size() == 1, "one result must be here" );
-            swiftAssert( ai->rhs_.size() == 1 || ai->rhs_.size() == 2,
+            swiftAssert( ai->res_.size() == 1, "one result must be here" );
+            swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
                     "one or two args must be here" );
 
-            me::Op::Type type = instr->rhs_[0].op_->type_;
+            me::Op::Type type = instr->arg_[0].op_->type_;
 
-            if (ai->rhs_.size() == 1)
+            if (ai->arg_.size() == 1)
                 continue; // everything's fine in this case
 
             /*
@@ -134,7 +141,7 @@ void X64RegAlloc::registerTargeting()
             me::InstrBase::OpType opType1 = ai->getOpType(0);
             me::InstrBase::OpType opType2 = ai->getOpType(1);
 
-            if (ai->rhs_[0].op_ != ai->rhs_[1].op_)
+            if (ai->arg_[0].op_ != ai->arg_[1].op_)
             {
                 if (opType1 != me::InstrBase::CONST && opType2 != me::InstrBase::CONST)
                 {
@@ -169,35 +176,8 @@ void X64RegAlloc::registerTargeting()
             if (ai->kind_ == '*' || ai->kind_ == '/')
             {
                 // constraint properly
-                ai->constraint();
-                ai->lhs_[0].constraint_ = RAX;
-                cfg_->splitBB(iter, currentBBNode);
-
-                me::Reg* reg = ai->lhs_[0].reg_;
-
-                /* 
-                 * insert new phi instruction for live range splitting
-                 */
-
-                // create new result
-#ifdef SWIFT_DEBUG
-                me::Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-                me::Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
-
-                // create phi instruction
-                swiftAssert( currentBBNode->pred_.size() == 1, 
-                        "must have exactly one predecessor" );
-                me::PhiInstr* phi = new me::PhiInstr(newReg, 1);
-
-                // init sourceBBs and arg
-                phi->sourceBBs_[0] = currentBBNode->pred_.first()->value_;
-                phi->rhs_[0].op = reg;
-
-                // insert instruction and fix pointer
-                cfg_->instrList_.insert(currentBB->begin_, phi); 
-                currentBB->firstPhi_ = iter;
+                ai->markConstraint();
+                ai->res_[0].constraint_ = RAX;
             }
         } // if AssignInstr
     } // for each instruction
@@ -209,10 +189,10 @@ void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
             "must be an AssignInstr here");
     me::AssignInstr* ai = (me::AssignInstr*) instrNode->value_;
 
-    swiftAssert( ai->rhs_.size() == 2, "must have exactly two args");
-    me::Reg* reg = (me::Reg*) ai->rhs_[1].op_;
+    swiftAssert( ai->arg_.size() == 2, "must have exactly two args");
+    me::Reg* reg = (me::Reg*) ai->arg_[1].op_;
 
-    swiftAssert( typeid(*ai->rhs_[1].op_) == typeid(me::Reg),
+    swiftAssert( typeid(*ai->arg_[1].op_) == typeid(me::Reg),
             "must be a Reg here" );
     swiftAssert( ai->getOpType(1) == me::InstrBase::REG_DEAD,
             "must not be in the live out of this instr" );

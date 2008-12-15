@@ -1,5 +1,5 @@
-#ifndef ME_DEF_USE_CALC
-#define ME_DEF_USE_CALC
+#ifndef ME_DEF_USE_CALC_H
+#define ME_DEF_USE_CALC_H
 
 #include <fstream>
 
@@ -52,4 +52,4 @@ private:
 
 } // namespace me
 
-#endif // ME_DEF_USE_CALC
+#endif // ME_DEF_USE_CALC_H

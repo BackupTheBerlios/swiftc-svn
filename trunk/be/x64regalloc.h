@@ -11,9 +11,9 @@ namespace be {
 
 class X64RegAlloc : public me::RegAlloc
 {
+private:
 
-    typedef std::set<me::RegDefUse*> RDUSet;
-    RDUSet phis_;
+    bool omitFramePointer_;
 
 public:
 

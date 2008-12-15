@@ -11,6 +11,7 @@ namespace me {
 class RegAlloc : public CodePass
 {
 public:
+
     RegAlloc(Function* function);
 
     void copyInsertion(InstrNode* instrNode);
@@ -22,6 +23,7 @@ public:
 class CodeGen : public CodePass
 {
 public:
+
     CodeGen(Function* function);
 };
 

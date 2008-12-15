@@ -214,6 +214,8 @@ public:
 
         sentinel_->next_ = sentinel_;
         sentinel_->prev_ = sentinel_;
+
+        size_ = 0;
     }
 
     /**

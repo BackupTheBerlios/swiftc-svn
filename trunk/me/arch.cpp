@@ -25,7 +25,7 @@ void RegAlloc::copyInsertion(InstrNode* instrNode)
 {
     InstrBase* instr = instrNode->value_;
 
-    if ( !instr->isConstrainted() )
+    if ( !instr->hasConstraint() )
         return;
 
     /* 
@@ -33,26 +33,26 @@ void RegAlloc::copyInsertion(InstrNode* instrNode)
      */
 
     // for each constrainted live-through arg
-    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( instr->rhs_[i].constraint_ == InstrBase::NO_CONSTRAINT )
+        if ( instr->arg_[i].constraint_ == InstrBase::NO_CONSTRAINT )
             continue;
 
-        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
             continue;
 
-        Reg* reg = (Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->arg_[i].op_;
 
         if ( !instr->livesThrough(reg) )
             continue;
 
         // -> reg lives-through and is constrained
-        int constraint = instr->rhs_[i].constraint_;
+        int constraint = instr->arg_[i].constraint_;
 
         // is there a result with the same constraint?
-        for (size_t j = 0; j < instr->lhs_.size(); ++j)
+        for (size_t j = 0; j < instr->res_.size(); ++j)
         {
-            if ( constraint == instr->lhs_[j].constraint_ )
+            if ( constraint == instr->res_[j].constraint_ )
             {
                 // -> copy needed
 
@@ -67,7 +67,7 @@ void RegAlloc::copyInsertion(InstrNode* instrNode)
                 cfg_->instrList_.insert( instrNode->prev(), new AssignInstr('=', newReg, reg) );
 
                 // substitute operand with newReg
-                instr->rhs_[i].op_ = newReg;
+                instr->arg_[i].op_ = newReg;
                 
                 /*
                  * it is assumed that is no other reg constrainted to the same color
@@ -87,9 +87,9 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
 
     // count number of results with proper type
     int numLhs = 0;
-    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        if (instr->lhs_[i].reg_->typeCheck(typeMask) )
+        if (instr->res_[i].reg_->typeCheck(typeMask) )
             ++numLhs;
     }
 
@@ -97,12 +97,12 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
 
     // count number of args with proper type and number of live-through vars
     int numRhs = 0;
-    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
             continue;
 
-        Reg* reg = (Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->arg_[i].op_;
 
         if ( reg->typeCheck(typeMask) )
             ++numRhs;
@@ -120,10 +120,11 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
         Reg* dummy = function_->newSSA(Op::R_INT32);
 
         // add dummy args
-        instr->rhs_.push_back( InstrBase::Arg(dummy, -1) );
+        instr->arg_.push_back( InstrBase::Arg(dummy, -1) );
         dummies.push_back(dummy);
     }
 }
+
 
 //------------------------------------------------------------------------------
 

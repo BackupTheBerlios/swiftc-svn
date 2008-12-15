@@ -88,9 +88,9 @@ void Coloring::colorRecursive(BBNode* bbNode)
         if ( typeid(*instr) != typeid(PhiInstr) )
         {
             // for each var on the right hand side
-            for (size_t i = 0; i < instr->rhs_.size(); ++i)
+            for (size_t i = 0; i < instr->arg_.size(); ++i)
             {
-                Reg* reg = dynamic_cast<Reg*>(instr->rhs_[i].op_);
+                Reg* reg = dynamic_cast<Reg*>(instr->arg_[i].op_);
 
                 // only color regs and regs of proper type
                 if ( !reg || !reg->colorReg(typeMask_) )
@@ -117,13 +117,13 @@ void Coloring::colorRecursive(BBNode* bbNode)
                      */
 #endif // SWIFT_DEBUG
                 } // if last use
-            } // for each rhs var
+            } // for each arg var
         } // if no phi instr
 
         // for each var on the left hand side -> assign a color for result
-        for (size_t i = 0; i < instr->lhs_.size(); ++i)
+        for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->lhs_[i].reg_;
+            Reg* reg = instr->res_[i].reg_;
 
             // only color regs and regs of proper type
             if ( !reg->colorReg(typeMask_) )
@@ -150,17 +150,17 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
     InstrBase* instr = instrNode->value_;
     
     // for each constrained arg
-    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
             continue;
 
-        Reg* reg = (Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->arg_[i].op_;
 
         if ( !reg->typeCheck(typeMask_) )
             continue;
 
-        int constraint = instr->rhs_[i].constraint_;
+        int constraint = instr->arg_[i].constraint_;
         if (constraint == InstrBase::NO_CONSTRAINT)
             continue;
 
@@ -168,14 +168,14 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
     }
 
     // for each constrained result
-    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = (Reg*) instr->lhs_[i].reg_;
+        Reg* reg = (Reg*) instr->res_[i].reg_;
 
         if ( !reg->typeCheck(typeMask_) )
             continue;
 
-        int constraint = instr->rhs_[i].constraint_;
+        int constraint = instr->arg_[i].constraint_;
         if (constraint == InstrBase::NO_CONSTRAINT)
             continue;
 
@@ -183,12 +183,12 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
     }
 
     // for each unconstrained arg
-    for (size_t i = 0; i < instr->rhs_.size(); ++i)
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
             continue;
 
-        Reg* reg = (Reg*) instr->rhs_[i].op_;
+        Reg* reg = (Reg*) instr->arg_[i].op_;
 
         if ( !reg->typeCheck(typeMask_) )
             continue;
@@ -197,9 +197,9 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
     }
 
     // for each unconstrained result
-    for (size_t i = 0; i < instr->lhs_.size(); ++i)
+    for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = (Reg*) instr->lhs_[i].reg_;
+        Reg* reg = (Reg*) instr->res_[i].reg_;
 
         if ( !reg->typeCheck(typeMask_) )
             continue;

@@ -1,8 +1,6 @@
 #ifndef ME_SPILLER_H
 #define ME_SPILLER_H
 
-#include <fstream>
-#include <map>
 #include <vector>
 
 #include "me/codepass.h"
@@ -40,7 +38,6 @@ private:
     /// This set knows for each spilled var the first memory var. 
     SpillMap spillMap_;
 
-
     /// BBNode -> RegSet
     typedef std::map<BBNode*, RegSet> BB2RegSet;
 
@@ -55,9 +52,6 @@ private:
      * out of that basic block in \em real registers.
      */
     BB2RegSet out_;
-
-    /// Keeps registers with their definitions und uses.
-    typedef std::map<Reg*, RegDefUse*> RDUMap;
 
     /**
      * Contains for each reg inside: <br>

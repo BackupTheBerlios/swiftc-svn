@@ -1,6 +1,8 @@
 #ifndef ME_DEFUSE_H
 #define ME_DEFUSE_H
 
+#include <map>
+
 #include "utils/list.h"
 #include "utils/graph.h"
 
@@ -45,6 +47,14 @@ struct RegDefUse
     DefUseList defs_;
     DefUseList uses_;
 };
+
+//------------------------------------------------------------------------------
+
+/// Keeps registers with their definitions und uses.
+typedef std::map<Reg*, RegDefUse*> RDUMap;
+
+#define RDUMAP_EACH(iter, rdus) \
+    for (RDUMap::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
 
 //------------------------------------------------------------------------------
 

@@ -149,9 +149,9 @@ void CFG::calcCFG()
         }
 
         // for each var on the left hand side
-        for (size_t i = 0; i < instr->lhs_.size(); ++i)
+        for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            me::Reg* reg = instr->lhs_[i].reg_;
+            me::Reg* reg = instr->res_[i].reg_;
 
             if ( !reg->isSSA() )
             {
@@ -513,32 +513,32 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
         if ( typeid(*instr) != typeid(PhiInstr) )
         {
             // replace vars on the right hand side
-            for (size_t i = 0; i < instr->rhs_.size(); ++i)
+            for (size_t i = 0; i < instr->arg_.size(); ++i)
             {
-                me::Reg* reg = dynamic_cast<me::Reg*>( instr->rhs_[i].op_ );
+                me::Reg* reg = dynamic_cast<me::Reg*>( instr->arg_[i].op_ );
 
                 if ( reg && !reg->isSSA() )
                 {
                     swiftAssert( !names[ reg->var2Index() ].empty(), "stack is empty here");
-                    instr->rhs_[i].op_ = names[ reg->var2Index() ].top();
+                    instr->arg_[i].op_ = names[ reg->var2Index() ].top();
                 }
             }
         }
 
         // replace var on the left hand side in all cases
-        for (size_t i = 0; i < instr->lhs_.size(); ++i)
+        for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            if ( !instr->lhs_[i].reg_->isSSA() )
+            if ( !instr->res_[i].reg_->isSSA() )
             {
 #ifdef SWIFT_DEBUG
-                Reg* reg = function_->newSSA(instr->lhs_[i].reg_->type_, &instr->lhs_[i].reg_->id_);
+                Reg* reg = function_->newSSA(instr->res_[i].reg_->type_, &instr->res_[i].reg_->id_);
 #else // SWIFT_DEBUG
-                Reg* reg = function_->newSSA(instr->lhs_[i].reg_->type_);
+                Reg* reg = function_->newSSA(instr->res_[i].reg_->type_);
 #endif // SWIFT_DEBUG
 
-                swiftAssert(size_t(-instr->lhs_[i].oldVarNr_) < names.size(), "index out of bounds");
-                names[ -instr->lhs_[i].oldVarNr_ ].push(reg);
-                instr->lhs_[i].reg_ = reg;
+                swiftAssert(size_t(-instr->res_[i].oldVarNr_) < names.size(), "index out of bounds");
+                names[ -instr->res_[i].oldVarNr_ ].push(reg);
+                instr->res_[i].reg_ = reg;
             }
         }
     } // for each instruction
@@ -558,10 +558,10 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
 
             PhiInstr* phi = static_cast<PhiInstr*>(iter->value_);
 
-            if ( names[ -phi->lhs_[0].oldVarNr_ ].empty() )
+            if ( names[ -phi->res_[0].oldVarNr_ ].empty() )
                 continue; // var not found
 
-            phi->rhs_[j].op_ = names[ -phi->oldResultNr() ].top();
+            phi->arg_[j].op_ = names[ -phi->oldResultNr() ].top();
             phi->sourceBBs_[j] = bb;
         }
     }
@@ -579,12 +579,12 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
         InstrBase* instr = iter->value_;
 
         // for each var on the left hand side
-        for (size_t i = 0; i < instr->lhs_.size(); ++i)
+        for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            if (instr->lhs_[i].oldVarNr_ < 0) // if this is a var
+            if (instr->res_[i].oldVarNr_ < 0) // if this is a var
             {
-                swiftAssert( names[- instr->lhs_[i].oldVarNr_].size() > 0, "cannot pop here");
-                names[ - instr->lhs_[i].oldVarNr_ ].pop();
+                swiftAssert( names[- instr->res_[i].oldVarNr_].size() > 0, "cannot pop here");
+                names[ - instr->res_[i].oldVarNr_ ].pop();
             }
         } // for ech var on the left hand side
     } // for each AssignmentBase
@@ -765,18 +765,17 @@ void CFG::reconstructSSAForm(RegDefUse* rdu)
         bool found = false;
 #endif // SWIFT_DEBUG
 
-        // for each arg for which instr->rhs_[i] in defs
-        for (size_t i = 0; i < instr->rhs_.size(); ++i)
+        // for each arg for which instr->arg_[i] in defs
+        for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            if ( typeid(*instr->rhs_[i].op_) != typeid(Reg) )
+            if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
                 continue;
 
-            Reg* useReg = (Reg*) instr->rhs_[i].op_;
+            Reg* useReg = (Reg*) instr->arg_[i].op_;
 
             DEFUSELIST_EACH(iter, rdu->defs_)
             {
                 Reg* defReg = iter->value_.reg_;
-                swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
 
                 // substitute arg with proper definition
                 if (useReg == defReg)
@@ -784,7 +783,7 @@ void CFG::reconstructSSAForm(RegDefUse* rdu)
 #ifdef SWIFT_DEBUG
                     found = true;
 #endif // SWIFT_DEBUG
-                    instr->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+                    instr->arg_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
                 }
             } // for each def
         } // for each arg of use
@@ -811,17 +810,16 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             InstrBase* instr = instrNode->value_; 
 
             // defines instr one of rdu?
-            for (size_t i = 0; i < instr->lhs_.size(); ++i)
+            for (size_t i = 0; i < instr->res_.size(); ++i)
             {
-                if ( typeid(*instr->lhs_[i].reg_) != typeid(Reg) )
+                if ( typeid(*instr->res_[i].reg_) != typeid(Reg) )
                     continue;
 
-                Reg* instrReg = (Reg*) instr->lhs_[i].reg_;
+                Reg* instrReg = (Reg*) instr->res_[i].reg_;
 
                 DEFUSELIST_EACH(iter, rdu->defs_)
                 {
                     Reg* defReg = iter->value_.reg_;
-                    swiftAssert( defReg->typeCheck(typeMask_), "wrong reg type" );
 
                     if (instrReg == defReg)
                         return instrReg; // yes -> return the defined reg
@@ -840,7 +838,6 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             swiftAssert(bbNode->pred_.size() > 1, 
                     "current basic block must have more than 1 predecessors");
             Reg* reg = rdu->defs_.first()->value_.reg_;
-            swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
 
             // create new result
 #ifdef SWIFT_DEBUG
@@ -869,9 +866,9 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             // register new definition
             rdu->defs_.append( DefUse(newReg, instrNode, bbNode) );
 
-            for (size_t i = 0; i < phi->rhs_.size(); ++i)
+            for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
-                phi->rhs_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+                phi->arg_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
             }
 
             return phi->result();

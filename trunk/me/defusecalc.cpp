@@ -64,10 +64,10 @@ void DefUseCalc::calcDef()
             currentBB = cfg_->labelNode2BBNode_[iter]; // new basic block
         else
         {
-            // for each var on the lhs
-            for (size_t i = 0; i < instr->lhs_.size(); ++i)
+            // for each var on the res
+            for (size_t i = 0; i < instr->res_.size(); ++i)
             {
-                Reg* reg = instr->lhs_[i].reg_;
+                Reg* reg = instr->res_[i].reg_;
                 reg->def_.set(reg, iter, currentBB); // store def
             }
         }
@@ -101,11 +101,11 @@ void DefUseCalc::calcUse()
                 "must be a PhiInstr here");
             PhiInstr* phi = (PhiInstr*) iter->value_;
 
-            for (size_t i = 0; i < phi->rhs_.size(); ++i)
+            for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
-                swiftAssert(typeid(*phi->rhs_[i].op_) == typeid(Reg),
+                swiftAssert(typeid(*phi->arg_[i].op_) == typeid(Reg),
                     "must be a Reg here");
-                Reg* var = (Reg*) phi->rhs_[i].op_;
+                Reg* var = (Reg*) phi->arg_[i].op_;
 
                 // put this as first use so liveness analysis will be a bit faster
                 var->uses_.prepend( DefUse(var, iter, bbNode) );

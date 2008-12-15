@@ -13,9 +13,6 @@ namespace me {
 //-helpers----------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#define RDUMAP_EACH(iter, rdus) \
-    for (RDUMap::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
-
 #define DISTANCEBAG_EACH(iter, db) \
     for (DistanceBag::iterator (iter) = (db).begin(); (iter) != (db).end(); ++(iter))
 
@@ -82,9 +79,9 @@ void Spiller::process()
         InstrNode* phiNode = phiSpills_[i].instrNode_;
         InstrBase* phi = phiNode->value_;
 
-        for (size_t j = 0; j < phi->rhs_.size(); ++j)
+        for (size_t j = 0; j < phi->arg_.size(); ++j)
         {
-            Reg* phiArg = (Reg*) phi->rhs_[j].op_;
+            Reg* phiArg = (Reg*) phi->arg_[j].op_;
 
             // check whether a reload uses this as use
             RDUMAP_EACH(iter, reloads_)
@@ -112,7 +109,7 @@ void Spiller::process()
     {
         PhiInstr* phi = substitutes_[i].phi_;
         size_t arg = substitutes_[i].arg_;
-        phi->rhs_[arg].op_ = spillMap_[ (Reg*) phi->rhs_[arg].op_ ];
+        phi->arg_[arg].op_ = spillMap_[ (Reg*) phi->arg_[arg].op_ ];
     }
 
     // register phiSpill uses
@@ -123,9 +120,9 @@ void Spiller::process()
         InstrBase* phi = phiNode->value_;
         BBNode* bbNode = phiSpills_[i].bbNode_;
 
-        for (size_t j = 0; j < phi->rhs_.size(); ++j)
+        for (size_t j = 0; j < phi->arg_.size(); ++j)
         {
-            Reg* phiArg = (Reg*) phi->rhs_[j].op_;
+            Reg* phiArg = (Reg*) phi->arg_[j].op_;
             spills_[orignal]->uses_.append( DefUse(phiArg, phiNode, bbNode) );
         }
     }
@@ -413,7 +410,7 @@ void Spiller::spill(BBNode* bbNode)
     // put in all regs from passed and calculate the distance to its next use
     REGSET_EACH(iter, passed)
     {
-        // because inRegs doesn't contain regs of phi's rhs, we can start with firstOrdinary_
+        // because inRegs doesn't contain regs of phi's arg, we can start with firstOrdinary_
         currentlyInRegs.insert( RegAndDistance(*iter, 
                     distance(bbNode, *iter, bb->firstOrdinary_, walked)) );
     }
@@ -450,16 +447,16 @@ void Spiller::spill(BBNode* bbNode)
         InstrNode* lastInstrNode = iter->prev_;
 
         /*
-         * check whether all regs on the rhs are in regs 
+         * check whether all regs on the arg are in regs 
          * and count necessary reloads
          */
         int numReloads = 0;
-        for (size_t i = 0; i < instr->rhs_.size(); ++i)
+        for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            if (typeid(*instr->rhs_[i].op_) != typeid(Reg))
+            if (typeid(*instr->arg_[i].op_) != typeid(Reg))
                 continue;
 
-            Reg* reg = (Reg*) instr->rhs_[i].op_;
+            Reg* reg = (Reg*) instr->arg_[i].op_;
 
             if ( !reg->typeCheck(typeMask_) )
                 continue;
@@ -504,11 +501,11 @@ void Spiller::spill(BBNode* bbNode)
             }
         }
 
-        // count how many of instr->lhs_ have a proper type
+        // count how many of instr->res_ have a proper type
         int numLhs = 0;
-        for (size_t i = 0;  i < instr->lhs_.size(); ++i)
+        for (size_t i = 0;  i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->lhs_[i].reg_;
+            Reg* reg = instr->res_[i].reg_;
 
             if ( reg->typeCheck(typeMask_) )
                 ++numLhs;
@@ -558,9 +555,9 @@ void Spiller::spill(BBNode* bbNode)
         currentlyInRegs = newBag;
 
         // add results to currentlyInRegs
-        for (size_t i = 0; i < instr->lhs_.size(); ++i)
+        for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->lhs_[i].reg_;
+            Reg* reg = instr->res_[i].reg_;
 
             if ( reg->typeCheck(typeMask_) )
             {
@@ -641,16 +638,16 @@ void Spiller::combine(BBNode* bbNode)
 
         // for each arg
         CFG::Relative* prePhiRelative = bbNode->pred_.first();
-        for (size_t i = 0; i < phi->rhs_.size(); ++i)
+        for (size_t i = 0; i < phi->arg_.size(); ++i)
         {
             BBNode* prePhiNode = prePhiRelative->value_;
             BasicBlock* prePhi = prePhiNode->value_;
             RegSet& preOut = out_[prePhiNode];
 
             // get phi argument
-            swiftAssert( typeid(*phi->rhs_[i].op_) == typeid(Reg),
+            swiftAssert( typeid(*phi->arg_[i].op_) == typeid(Reg),
                     "must be a Reg here" );
-            Reg* phiArg = (Reg*) phi->rhs_[i].op_;
+            Reg* phiArg = (Reg*) phi->arg_[i].op_;
             swiftAssert( !phiArg->isMem(), "must not be a memory location" );
 
             if ( phiSpill && preOut.find(phiArg) != preOut.end() )
@@ -692,9 +689,9 @@ void Spiller::combine(BBNode* bbNode)
             spills_[phiRes] = rdu;
             spillMap_[phiRes] = phiRes; // phi-spills map to them selves
 
-            for (size_t i = 0; i < phi->rhs_.size(); ++i)
+            for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
-                Reg* reg = (Reg*) phi->rhs_[i].op_;
+                Reg* reg = (Reg*) phi->arg_[i].op_;
                 phiSpills_.push_back( DefUse(reg, iter, bbNode) );
             }
         }
@@ -794,7 +791,7 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
 
         Spill* spill = (Spill*) iter->value_;
 
-        if ( ((Reg*) spill->rhs_[0].op_) == reg )
+        if ( ((Reg*) spill->arg_[0].op_) == reg )
             return; // everything is fine -> there is already a spill
     }
 
