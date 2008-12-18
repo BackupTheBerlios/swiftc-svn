@@ -14,7 +14,6 @@ public:
 
     RegAlloc(Function* function);
 
-    void copyInsertion(InstrNode* instrNode);
     void faithfulFix(InstrNode* instrNode, int typeMask, int numRegs);
 };
 

@@ -23,7 +23,7 @@ namespace me {
 InstrBase::InstrBase(size_t numLhs, size_t numRhs)
     : res_(numLhs)
     , arg_(numRhs)
-    , constraint_(false)
+    , constrained_(false)
 {
     for (size_t i = 0; i < res_.size(); ++i)
         res_[i].constraint_ = NO_CONSTRAINT;
@@ -37,7 +37,7 @@ InstrBase::~InstrBase()
     // delete all literals
     for (size_t i = 0; i < arg_.size(); ++i)
     {
-        me::Literal* literal = dynamic_cast<me::Literal*>(arg_[i].op_);
+        Literal* literal = dynamic_cast<Literal*>(arg_[i].op_);
 
         if ( literal )
             delete literal;
@@ -82,7 +82,7 @@ struct ResFinder
         : reg_(reg)
     {}
 
-    bool operator () (const me::InstrBase::Res& res)
+    bool operator () (const Res& res)
     {
         return reg_ == res.reg_;
     }
@@ -96,7 +96,7 @@ struct ArgFinder
         : op_(op)
     {}
 
-    bool operator () (const me::InstrBase::Arg& arg)
+    bool operator () (const Arg& arg)
     {
         return op_ == arg.op_;
     }
@@ -122,17 +122,35 @@ Op* InstrBase::findArg(Op* op)
     return iter->op_;
 }
 
-bool InstrBase::hasConstraint() const
+bool InstrBase::isConstrained() const
 {
-    return constraint_;
+    return constrained_;
 }
 
-void InstrBase::markConstraint()
+void InstrBase::constrain()
 {
-    constraint_ = true;
+    constrained_ = true;
 }
 
-bool InstrBase::livesThrough(me::Reg* reg)
+void InstrBase::unconstrainIfPossible()
+{
+    for (size_t i = 0; i < res_.size(); ++i)
+    {
+        if (res_[i].constraint_ != NO_CONSTRAINT)
+            return;
+    }
+
+    for (size_t i = 0; i < arg_.size(); ++i)
+    {
+        if (arg_[i].constraint_ != NO_CONSTRAINT)
+            return;
+    }
+
+    // all constraints were removed from this instruction
+    constrained_ = false;
+}
+
+bool InstrBase::livesThrough(Reg* reg)
 {
     return (liveIn_ .find(reg) != liveIn_ .end())
         && (liveOut_.find(reg) != liveOut_.end());
@@ -140,7 +158,7 @@ bool InstrBase::livesThrough(me::Reg* reg)
 
 InstrBase::OpType InstrBase::getOpType(size_t i) const
 {
-    if ( typeid(*arg_[i].op_) == typeid(me::Literal) )
+    if ( typeid(*arg_[i].op_) == typeid(Literal) )
         return CONST;
 
     swiftAssert( typeid(*arg_[i].op_) == typeid(Reg), "must be a Reg" );

@@ -12,6 +12,11 @@ typedef std::set<int> Colors;
 
 class Coloring : public CodePass
 {
+private: 
+
+    int typeMask_;
+    const Colors reservoir_;
+
 public:
 
     /*
@@ -28,13 +33,10 @@ public:
 
 private:
 
-    int typeMask_;
-    const Colors reservoir_;
-
     int findFirstFreeColorAndAllocate(Colors& colors);
     void color();
     void colorRecursive(BBNode* bbNode);
-    void colorConstraintedInstr(InstrNode* instrNode);
+    void colorConstraintedInstr(InstrNode* instrNode, Colors& colors);
 };
 
 } // namespace me

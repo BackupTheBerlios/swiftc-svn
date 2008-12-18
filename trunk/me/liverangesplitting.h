@@ -8,7 +8,7 @@ namespace me {
 
 class LiveRangeSplitting : public CodePass
 {
-protected:
+private:
 
     RDUMap phis_;
 

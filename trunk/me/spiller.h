@@ -236,7 +236,7 @@ distanceRec(bbNode, reg, instrNode) = |
     void discardFarest(DistanceBag& ds);
 
 #ifndef SWIFT_DEBUG
-    static 
+    static // a type check is only made in the debug version 
 #endif // SWIFT_DEBUG
     Reg* regFind(DistanceBag& ds, Reg* reg);
 

@@ -17,6 +17,36 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+struct Res
+{
+    Reg* reg_;
+    int  oldVarNr_;   ///< Left hand side old varNrs.
+    int  constraint_;
+
+    Res() {}
+    Res(Reg* reg, int oldVarNr, int constraint)
+        : reg_(reg)
+        , oldVarNr_(oldVarNr)
+        , constraint_(constraint)
+    {}
+};
+
+//------------------------------------------------------------------------------
+
+struct Arg
+{
+    Op* op_;
+    int constraint_;
+
+    Arg() {}
+    Arg(Op* op, int constraint)
+        : op_(op)
+        , constraint_(constraint)
+    {}
+};
+
+//------------------------------------------------------------------------------
+
 /**
  * Base class for all instructions.
  */
@@ -25,32 +55,6 @@ struct InstrBase
     enum
     {
         NO_CONSTRAINT = -1
-    };
-
-    struct Res
-    {
-        Reg* reg_;
-        int  oldVarNr_;   ///< Left hand side old varNrs.
-        int  constraint_;
-
-        Res() {}
-        Res(Reg* reg, int oldVarNr, int constraint)
-            : reg_(reg)
-            , oldVarNr_(oldVarNr)
-            , constraint_(constraint)
-        {}
-    };
-
-    struct Arg
-    {
-        Op* op_;
-        int constraint_;
-
-        Arg() {}
-        Arg(Op* op, int constraint)
-            : op_(op)
-            , constraint_(constraint)
-        {}
     };
 
     typedef std::vector<Res> LHS;
@@ -62,7 +66,7 @@ struct InstrBase
     RegSet liveIn_; /// regs that are live-in  at this instruction.
     RegSet liveOut_;/// regs that are live-out at this instruction.
 
-    bool constraint_;
+    bool constrained_;
 
     /*
      * destructor
@@ -115,9 +119,11 @@ struct InstrBase
      */
     Op* findArg(Op* op);
 
-    bool hasConstraint() const;
+    bool isConstrained() const;
 
-    void markConstraint();
+    void constrain();
+
+    void unconstrainIfPossible();
 
     bool livesThrough(me::Reg* reg);
 

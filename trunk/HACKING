@@ -53,3 +53,8 @@ identifier      id
 ostringstream   oss
 expression      expr
 register        reg
+InstrNode*      instrNode
+InstrBase*      instr
+BBNode*         bbNode
+BasicBlock*     bb
+

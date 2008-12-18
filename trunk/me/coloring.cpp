@@ -28,12 +28,12 @@ int Coloring::findFirstFreeColorAndAllocate(Colors& colors)
     // build vector which holds free colors
     std::vector<int> freeColors( reservoir_.size() );
 
-    std::vector<int>::iterator end = std::set_difference( 
-            reservoir_.begin(), reservoir_.end(), 
-            colors.begin(), colors.end(), 
-            freeColors.begin() );
-
-    freeColors.erase( end, freeColors.end() ); // truncate properly
+    freeColors.erase( 
+            std::set_difference( 
+                reservoir_.begin(), reservoir_.end(), 
+                colors.begin(), colors.end(), 
+                freeColors.begin() ), 
+            freeColors.end() );
 
     swiftAssert( !freeColors.empty(), "must not be empty" );
 
@@ -66,8 +66,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
             continue;
 
         int color = reg->color_;
-
         swiftAssert(color >= 0, "color must be assigned here");
+
         // mark as occupied
         colors.insert(color);
     }
@@ -145,10 +145,46 @@ void Coloring::colorRecursive(BBNode* bbNode)
     }
 }
 
-void Coloring::colorConstraintedInstr(InstrNode* instrNode)
+void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
 {
     InstrBase* instr = instrNode->value_;
     
+    RegVec liveThrough;
+    RegVec args;
+    // for each constrained arg
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
+    {
+        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
+            continue;
+
+        Reg* reg = (Reg*) instr->arg_[i].op_;
+
+        if ( !reg->typeCheck(typeMask_) )
+            continue;
+
+        if ( instr->livesThrough(reg) )
+            liveThrough.push_back(reg);
+    }
+
+    // a = arg(instr) \ liveThrough(instr)
+    std::sort( liveThrough.begin(), liveThrough.end() );
+    std::sort( args.begin(), args.end() );
+    RegVec a( args.size() );
+    a.erase( 
+            std::set_difference( 
+                args.begin(), args.end(),
+                liveThrough.begin(), liveThrough.end(),
+                a.begin() ), 
+            a.end() );
+
+    // def = res(instr)
+    RegVec def;
+    for (size_t i = 0; i < instr->res_.size(); ++i)
+        def.push_back( instr->res_[i].reg_ );
+
+    Colors colorsD, colorsA;
+    Colors freeColors(reservoir_);
+
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
@@ -164,7 +200,11 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
         if (constraint == InstrBase::NO_CONSTRAINT)
             continue;
 
-        // TODO
+        // mark reg as occupied
+        colorsA.insert(reg->color_);
+
+        //if ( std::find(liveThrough.begin(), liveThrough.end() ) != liveThrough.end() )
+            //freeColors.erase(reg->color_);
     }
 
     // for each constrained result
@@ -179,7 +219,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode)
         if (constraint == InstrBase::NO_CONSTRAINT)
             continue;
 
-        // TODO
+        colorsD.insert(reg->color_);
+        //def_.
     }
 
     // for each unconstrained arg

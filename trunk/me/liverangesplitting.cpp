@@ -2,13 +2,6 @@
 
 #include <typeinfo>
 
-//-------------------------------------------------------------------------------
-
-#define RDULIST_EACH(iter, rdus) \
-    for (RDUList::Node* (iter) = (rdus).first(); (iter) != (rdus).sentinel(); (iter) = (iter)->next())
-
-//-------------------------------------------------------------------------------
-
 namespace me {
 
 /*
@@ -43,7 +36,7 @@ void LiveRangeSplitting::process()
             continue;
         }
 
-        if ( instr->hasConstraint() )
+        if ( instr->isConstrained() )
             liveRangeSplit(iter, currentBB);
     }
 

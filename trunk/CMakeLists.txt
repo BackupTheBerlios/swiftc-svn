@@ -66,6 +66,7 @@ ADD_EXECUTABLE (swift
     me/codepass.cpp
     me/cfg.cpp
     me/coloring.cpp
+    me/copyinsertion.cpp
     me/defusecalc.cpp
     me/functab.cpp
     me/livenessanalysis.cpp

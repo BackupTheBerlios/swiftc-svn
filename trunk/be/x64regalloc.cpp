@@ -4,6 +4,7 @@
 #include <typeinfo>
 
 #include "me/coloring.h"
+#include "me/copyinsertion.h"
 #include "me/defusecalc.h"
 #include "me/functab.h"
 #include "me/livenessanalysis.h"
@@ -76,9 +77,22 @@ void X64RegAlloc::process()
      * copy insertion -> faithful fixingl -> live range splitting
      */
 
-    //me::CopyInsertion(function_).process();
+    me::CopyInsertion(function_).process();
+    // recalulate def-use and liveness stuff
+    me::DefUseCalc(function_).process();
+    me::LivenessAnalysis(function_).process();
+
+
+    /*
+     * TODO FaithFulFixing is ignored at the moment !!!!!!
+     */
     //me::FaithFulFixing(function_).process();
+    // recalulate def-use and liveness stuff
+    //me::LiveRangeSplitting(function_).process();
+    //me::DefUseCalc(function_).process();
+
     me::LiveRangeSplitting(function_).process();
+    // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
@@ -176,7 +190,7 @@ void X64RegAlloc::registerTargeting()
             if (ai->kind_ == '*' || ai->kind_ == '/')
             {
                 // constraint properly
-                ai->markConstraint();
+                ai->constrain();
                 ai->res_[0].constraint_ = RAX;
             }
         } // if AssignInstr
