@@ -138,12 +138,10 @@ int start(int argc, char** argv)
     /*
      * build up back-end and generate assembly code
      */
-    // TODO
 
-    //std::ostringstream oss;
-    //oss << cmdLineParser.filename_ << ".asm";
-
-    //std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
+    std::ostringstream oss;
+    oss << cmdLineParser.filename_ << ".asm";
+    std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
     /*
      * build up pipeline
@@ -155,7 +153,7 @@ int start(int argc, char** argv)
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         me::arch->regAlloc(function);
-        //me::arch->codeGen(function);
+        me::arch->codeGen(function, ofs);
     }
 
     /*
@@ -165,7 +163,7 @@ int start(int argc, char** argv)
     me::functab->dumpDot();
 
     // finish
-    //ofs.close();
+    ofs.close();
 
     /*
      * clean up middle-end

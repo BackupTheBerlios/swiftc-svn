@@ -1,14 +1,14 @@
 #ifndef ME_COLORING_H
 #define ME_COLORING_H
 
-#include <set>
+#include "utils/set.h"
 
 #include "me/codepass.h"
 #include "me/forward.h"
 
 namespace me {
 
-typedef std::set<int> Colors;
+typedef Set<int> Colors;
 
 class Coloring : public CodePass
 {

@@ -16,7 +16,6 @@ class LivenessAnalysis : public CodePass
 private:
 
     /// Knows during the liveness analysis which basic blocks have already been visted.
-    typedef std::set<BasicBlock*> BBSet;
     BBSet walked_;
 
 #ifdef SWIFT_DEBUG

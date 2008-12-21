@@ -2,10 +2,10 @@
 #define ME_FORWARD_H
 
 #include <map>
-#include <set>
 
 #include "utils/list.h"
 #include "utils/graph.h"
+#include "utils/set.h"
 
 // include this file for useful forward declarations
 
@@ -14,7 +14,7 @@ namespace me {
 struct BasicBlock;
 typedef Graph<BasicBlock>::Node BBNode;
 typedef List<BBNode*> BBList;
-typedef std::set<BBNode*> BBSet;
+typedef Set<BBNode*> BBSet;
 
 struct Function;
 
@@ -29,7 +29,7 @@ struct Mem;
 struct Reg;
 typedef List<Reg*> RegList;
 typedef std::map<int, Reg*> RegMap;
-typedef std::set<Reg*> RegSet;
+typedef Set<Reg*> RegSet;
 typedef std::vector<Reg*> RegVec;
 
 } // namespace me

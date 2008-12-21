@@ -624,7 +624,7 @@ BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
         {
             BBNode* df = iter->value_;
 
-            if ( result.find(df) == result.end() )
+            if ( !result.contains(df) )
             {
                 // df -> not in result so add to result and to work list
                 swiftAssert(df->pred_.size() > 1,

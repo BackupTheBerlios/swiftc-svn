@@ -268,7 +268,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
     BasicBlock* bb = bbNode->value_;
 
     // is reg live at instr?
-    if ( instr->liveIn_.find(reg) == instr->liveIn_.end() ) 
+    if ( !instr->liveIn_.contains(reg) ) 
         return infinity(); // no -> return "infinity"
     // else
 
@@ -285,7 +285,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
         {
             BBNode* target = ji->bbTargets_[i];
 
-            if ( walked.find(target) != walked.end() )
+            if ( walked.contains(target) )
             {
                 // already walked so put in infinity -> another target will yield a value < inf
                 results[i] = infinity();
@@ -310,7 +310,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
 
         BBNode* succ = bbNode->succ_.first()->value_;
 
-        if ( walked.find(succ) != walked.end() )
+        if ( walked.contains(succ) )
         {
             // already walked so put in infinity -> another target will yield a value < inf
             result = infinity();
@@ -472,8 +472,7 @@ void Spiller::spill(BBNode* bbNode)
                  */
 
                 // check whether reg hast been discaded but is actually in passed
-                if (          inB.find(reg) ==    inB.end() 
-                        && passed.find(reg) != passed.end() )
+                if ( !inB.contains(reg) && passed.contains(reg) )
                 {
                     // mark for later reload insertion
                     laterReloads_.push_back( DefUse(reg, lastInstrNode, bbNode) );
@@ -650,7 +649,7 @@ void Spiller::combine(BBNode* bbNode)
             Reg* phiArg = (Reg*) phi->arg_[i].op_;
             swiftAssert( !phiArg->isMem(), "must not be a memory location" );
 
-            if ( phiSpill && preOut.find(phiArg) != preOut.end() )
+            if ( phiSpill && preOut.contains(phiArg) )
             {
                 // -> we have a phi spill and phiArg in preOut
                 preOut.erase(phiArg);
@@ -659,12 +658,12 @@ void Spiller::combine(BBNode* bbNode)
                 insertSpill( prePhiNode, phiArg, prePhi->getBackSpillLocation() );
                 substitutes_.push_back( Substitute(phi, i) );
             }
-            else if ( phiSpill && preOut.find(phiArg) == preOut.end() )
+            else if ( phiSpill && !preOut.contains(phiArg) )
             {
                 // -> we have a phi spill and phiArg is not in preOut
                 substitutes_.push_back( Substitute(phi, i) );
             }
-            else if( !phiSpill && preOut.find(phiArg) == preOut.end() )
+            else if( !phiSpill && !preOut.contains(phiArg) )
             {   
                 // -> we have no phi spill and phiArg not in preOut
                 // insert reload to predecessor basic block
@@ -760,9 +759,9 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
 {
     /*
      * go up dominance tree until we found the first dominating block 
-     * which has reg as incoming var
+     * which has reg not in 'in_'
      */
-    while ( in_[bbNode].find(reg) != in_[bbNode].end() )
+    while ( in_[bbNode].contains(reg) )
         bbNode = cfg_->idoms_[bbNode->postOrderIndex_];
 
     BasicBlock* bb = bbNode->value_;

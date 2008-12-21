@@ -226,10 +226,6 @@ struct Reg : public Op
  * typedefs and defines for easy usage
  */
 
-typedef std::map<int, Reg*> RegMap;
-typedef std::set<Reg*> RegSet;
-typedef List<Reg*> RegList;
-
 /// Use this macro in order to easily visit all elements of a RegMap
 #define REGMAP_EACH(iter, regMap) \
     for (me::RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))

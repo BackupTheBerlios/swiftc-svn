@@ -73,8 +73,9 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
 
 //------------------------------------------------------------------------------
 
-CodeGen::CodeGen(Function* function)
+CodeGen::CodeGen(Function* function, std::ofstream& ofs)
     : CodePass(function)
+    , ofs_(ofs)
 {}
 
 } // namespace me

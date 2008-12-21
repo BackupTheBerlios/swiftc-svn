@@ -125,7 +125,7 @@ struct InstrBase
 
     void unconstrainIfPossible();
 
-    bool livesThrough(me::Reg* reg);
+    bool livesThrough(me::Reg* reg) const;
 
     enum OpType
     {

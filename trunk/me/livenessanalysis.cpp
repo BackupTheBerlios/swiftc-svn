@@ -197,9 +197,9 @@ void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)
     bb->liveOut_.insert(var);
 
     // if bb not in walked_
-    if ( walked_.find(bb) == walked_.end() )
+    if ( !walked_.contains(bbNode) )
     {
-        walked_.insert(bb);
+        walked_.insert(bbNode);
         liveOutAtInstr(bb->end_->prev(), var);
     }
 }

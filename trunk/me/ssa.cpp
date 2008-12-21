@@ -150,10 +150,9 @@ void InstrBase::unconstrainIfPossible()
     constrained_ = false;
 }
 
-bool InstrBase::livesThrough(Reg* reg)
+bool InstrBase::livesThrough(Reg* reg) const
 {
-    return (liveIn_ .find(reg) != liveIn_ .end())
-        && (liveOut_.find(reg) != liveOut_.end());
+    return liveIn_.contains(reg) && liveOut_.contains(reg);
 }
 
 InstrBase::OpType InstrBase::getOpType(size_t i) const
@@ -164,7 +163,7 @@ InstrBase::OpType InstrBase::getOpType(size_t i) const
     swiftAssert( typeid(*arg_[i].op_) == typeid(Reg), "must be a Reg" );
     Reg* reg = (Reg*) arg_[i].op_;
 
-    if ( liveOut_.find(reg) == liveOut_.end() )
+    if ( !liveOut_.contains(reg) )
         return REG_DEAD;
     else
         return REG;
@@ -174,8 +173,8 @@ bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
 
-    return  instr->liveIn_ .find(var) != instr->liveOut_.end()  // must be in the live in
-        &&  instr->liveOut_.find(var) == instr->liveOut_.end(); // but not in the live out
+    return  instr->liveIn_ .contains(var)  // must be in the live in
+        &&  instr->liveOut_.contains(var); // but not in the live out
 }
 
 std::string InstrBase::livenessString() const

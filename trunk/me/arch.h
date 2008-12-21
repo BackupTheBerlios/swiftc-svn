@@ -1,6 +1,8 @@
 #ifndef ME_ARCH_H
 #define ME_ARCH_H
 
+#include <fstream>
+
 #include "me/codepass.h"
 #include "me/op.h"
 
@@ -21,9 +23,13 @@ public:
 
 class CodeGen : public CodePass
 {
+protected:
+
+    std::ofstream& ofs_;
+
 public:
 
-    CodeGen(Function* function);
+    CodeGen(Function* function, std::ofstream& ofs);
 };
 
 //------------------------------------------------------------------------------
@@ -38,7 +44,7 @@ public:
     virtual Op::Type getPreferedIndex() const = 0;
 
     virtual void regAlloc(Function* function) = 0;
-    virtual void codeGen(Function* function) = 0;
+    virtual void codeGen(Function* function, std::ofstream& ofs) = 0;
 
     virtual std::string color2String(int color) const = 0;
 };

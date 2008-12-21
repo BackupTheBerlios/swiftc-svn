@@ -30,9 +30,9 @@ void X64::regAlloc(me::Function* function)
     X64RegAlloc(function).process();
 }
 
-void X64::codeGen(me::Function* function) 
+void X64::codeGen(me::Function* function, std::ofstream& ofs)
 {
-    X64CodeGen(function).process();
+    X64CodeGen(function, ofs).process();
 }
 
 std::string X64::color2String(int color) const

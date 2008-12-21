@@ -216,18 +216,20 @@ void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
 
 std::string X64RegAlloc::reg2String(int reg)
 {
+    swiftAssert(reg >= 0, "no valid color here");
+
     std::ostringstream oss;
 
     switch (reg)
     {
-        case RAX: oss << "rAX"; break;
-        case RBX: oss << "rBX"; break;
-        case RCX: oss << "rCX"; break;
-        case RDX: oss << "rDX"; break;
-        case RBP: oss << "rBP"; break;
-        case RSI: oss << "rSI"; break;
-        case RDI: oss << "rDI"; break;
-        case RSP: oss << "rSP"; break;
+        case RAX: oss << "rax"; break;
+        case RBX: oss << "rbx"; break;
+        case RCX: oss << "rcx"; break;
+        case RDX: oss << "rdx"; break;
+        case RBP: oss << "rbp"; break;
+        case RSI: oss << "rsi"; break;
+        case RDI: oss << "rdi"; break;
+        case RSP: oss << "rsp"; break;
         case R08: oss << "r08"; break;
         case R09: oss << "r09"; break;
         case R10: oss << "r10"; break;

@@ -9,6 +9,8 @@
 
 namespace me {
 
+typedef Colors::ResultVec IntVec;
+
 /*
  * constructor
  */
@@ -26,15 +28,7 @@ Coloring::Coloring(Function* function, int typeMask, const Colors& reservoir)
 int Coloring::findFirstFreeColorAndAllocate(Colors& colors)
 {
     // build vector which holds free colors
-    std::vector<int> freeColors( reservoir_.size() );
-
-    freeColors.erase( 
-            std::set_difference( 
-                reservoir_.begin(), reservoir_.end(), 
-                colors.begin(), colors.end(), 
-                freeColors.begin() ), 
-            freeColors.end() );
-
+    IntVec freeColors = reservoir_.difference(colors);
     swiftAssert( !freeColors.empty(), "must not be empty" );
 
     colors.insert(freeColors[0]);
@@ -102,7 +96,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
                     Colors::iterator colorIter = colors.find(reg->color_);
 #ifdef SWIFT_DEBUG
                     // has this reg already been erased due to a double entry like a = b + b?
-                    if ( erased.find(reg) != erased.end() )
+                    if ( erased.contains(reg) )
                         continue;
 
                     swiftAssert( colorIter != colors.end(), "color must be found here" );
@@ -132,7 +126,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
             reg->color_ = findFirstFreeColorAndAllocate(colors);
 
             // pointless definitions should be optimized away
-            if (instr->liveOut_.find(reg) == instr->liveOut_.end())
+            if ( !instr->liveOut_.contains(reg) )
                 colors.erase( colors.find(reg->color_) );
         }
     } // for each instruction
@@ -149,8 +143,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
 {
     InstrBase* instr = instrNode->value_;
     
-    RegVec liveThrough;
-    RegVec args;
+    RegSet liveThrough;
+    RegSet args;
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
@@ -163,24 +157,16 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
             continue;
 
         if ( instr->livesThrough(reg) )
-            liveThrough.push_back(reg);
+            liveThrough.insert(reg);
     }
 
     // a = arg(instr) \ liveThrough(instr)
-    std::sort( liveThrough.begin(), liveThrough.end() );
-    std::sort( args.begin(), args.end() );
-    RegVec a( args.size() );
-    a.erase( 
-            std::set_difference( 
-                args.begin(), args.end(),
-                liveThrough.begin(), liveThrough.end(),
-                a.begin() ), 
-            a.end() );
+    RegVec a = args.difference(liveThrough);
 
     // def = res(instr)
-    RegVec def;
+    RegSet def;
     for (size_t i = 0; i < instr->res_.size(); ++i)
-        def.push_back( instr->res_[i].reg_ );
+        def.insert( instr->res_[i].reg_ );
 
     Colors colorsD, colorsA;
     Colors freeColors(reservoir_);
@@ -203,8 +189,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
         // mark reg as occupied
         colorsA.insert(reg->color_);
 
-        //if ( std::find(liveThrough.begin(), liveThrough.end() ) != liveThrough.end() )
-            //freeColors.erase(reg->color_);
+        if ( liveThrough.contains(reg) )
+            freeColors.erase(reg->color_);
     }
 
     // for each constrained result
@@ -220,7 +206,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
             continue;
 
         colorsD.insert(reg->color_);
-        //def_.
+        def.erase(reg);
     }
 
     // for each unconstrained arg
@@ -234,7 +220,18 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
         if ( !reg->typeCheck(typeMask_) )
             continue;
 
-        // TODO
+        // try to use a color of the results
+        IntVec c_d_without_c_a = colorsD.difference(colorsA);
+
+        if ( !c_d_without_c_a.empty() )
+            reg->color_ = c_d_without_c_a[0];
+        else
+        {
+            // -> there is none -> use a fresh color
+            IntVec free_without_c_a = freeColors.difference(colorsA);
+            swiftAssert( !free_without_c_a.empty(), "must not be empty" );
+            reg->color_ = free_without_c_a[0];
+        }
     }
 
     // for each unconstrained result
@@ -245,7 +242,17 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
         if ( !reg->typeCheck(typeMask_) )
             continue;
 
-        // TODO
+        IntVec c_a_without_c_d = colorsA.difference(colorsD);
+
+        if ( !c_a_without_c_d.empty() )
+            reg->color_ = c_a_without_c_d[0];
+        else
+        {
+            // -> there is none -> use a fresh color
+            IntVec free_without_c_d = freeColors.difference(colorsA);
+            swiftAssert( !free_without_c_d.empty(), "must not be empty" );
+            reg->color_ = free_without_c_d[0];
+        }
     }
 }
 
