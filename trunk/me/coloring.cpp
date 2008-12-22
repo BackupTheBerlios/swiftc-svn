@@ -145,6 +145,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors)
     
     RegSet liveThrough;
     RegSet args;
+
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
