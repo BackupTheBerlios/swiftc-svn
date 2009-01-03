@@ -148,6 +148,8 @@ void InstrBase::unconstrainIfPossible()
 
     // all constraints were removed from this instruction
     constrained_ = false;
+
+    std::cout << "worked" << std::endl;
 }
 
 bool InstrBase::livesThrough(Reg* reg) const

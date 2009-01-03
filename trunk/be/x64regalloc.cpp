@@ -26,6 +26,25 @@ X64RegAlloc::X64RegAlloc(me::Function* function)
  * methods
  */
 
+/*
+ *  register targeting
+ *          |
+ *          v
+ *  spill general purpose registers
+ *          |
+ *          v
+ *  spill XMM registers
+ *          |
+ *          v
+ *  live range splitting
+ *          |
+ *          v
+ *  color general purpose registers
+ *          |
+ *          v
+ *  color XMM registers
+ */
+
 void X64RegAlloc::process()
 {
     /*
@@ -74,7 +93,7 @@ void X64RegAlloc::process()
     me::LivenessAnalysis(function_).process();
 
     /*
-     * copy insertion -> faithful fixingl -> live range splitting
+     * copy insertion -> faithful fixing -> live range splitting
      */
 
     me::CopyInsertion(function_).process();
@@ -88,8 +107,8 @@ void X64RegAlloc::process()
      */
     //me::FaithFulFixing(function_).process();
     // recalulate def-use and liveness stuff
-    //me::LiveRangeSplitting(function_).process();
     //me::DefUseCalc(function_).process();
+    //me::LivenessAnalysis(function_).process();
 
     me::LiveRangeSplitting(function_).process();
     // recalulate def-use and liveness stuff
@@ -97,7 +116,7 @@ void X64RegAlloc::process()
     me::LivenessAnalysis(function_).process();
 
     /*
-     * color
+     * coloring
      */
 
     // general purpose registers

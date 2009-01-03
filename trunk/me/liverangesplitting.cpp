@@ -43,7 +43,7 @@ void LiveRangeSplitting::process()
     // HACK: this should be superfluous when there is a good graph implementation
     cfg_->entry_->postOrderIndex_ = 0;     
 
-    // new basic blocks habe been inserted so recompute dominance stuff
+    // new basic blocks have been inserted, so recompute dominance stuff
     cfg_->calcPostOrder(cfg_->entry_);
     cfg_->calcDomTree();
     cfg_->calcDomFrontier();

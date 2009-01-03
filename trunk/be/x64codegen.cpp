@@ -93,7 +93,7 @@ char X64CodeGen::type2postfix(me::Op::Type type)
             return 'q';
 
         default:
-            return 't';
+            return 'T';
     }
 }
 
