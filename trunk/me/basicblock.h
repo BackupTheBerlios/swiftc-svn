@@ -111,8 +111,9 @@ struct BasicBlock
 
     void fixPointers();
 
-
     bool hasPhiInstr() const;
+
+    bool hasConstrainedInstr() const;
 
     /// Returns the title string of this BasicBlock.
     std::string name() const;

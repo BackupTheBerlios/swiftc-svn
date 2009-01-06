@@ -92,63 +92,27 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
          * keep track of def-use stuff
          */
 
+        RegDefUse* rdu;
+
         // do we already have def-use information for this reg?
         RDUMap::iterator iter = phis_.find(reg);
         if ( iter == phis_.end() )
         {
-            RegDefUse* rdu = new RegDefUse(); 
-            rdu->defs_.append( DefUse(newReg, phiNode, bbNode) ); // newly created definition
+            rdu = new RegDefUse(); 
             rdu->defs_.append( DefUse(reg, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
             rdu->uses_ = reg->uses_; // orignal uses
             phis_[reg] = rdu;
         }
         else
-        {
-            RegDefUse* rdu = iter->second;
-            rdu->defs_.append( DefUse(newReg, phiNode, bbNode) ); // newly created definition
-        }
+            rdu = iter->second;
+
+        rdu->defs_.append( DefUse(newReg, phiNode, bbNode) ); // newly created definition
+        rdu->uses_.append( DefUse(reg, phiNode, bbNode) ); // newly created use
     }
 
     bb->fixPointers();
-
-    /* 
-     * now constrain phi instructions
-     */
-
-    // for each constrained arg of instr
-    for (size_t i = 0; i < instr->arg_.size(); ++i)
-    {
-        int constraint = instr->arg_[i].constraint_;
-
-        if ( constraint == InstrBase::NO_CONSTRAINT )
-            continue;
-
-#ifdef SWIFT_DEBUG
-        bool found = false;
-#endif // SWIFT_DEBUG
-
-        for ( InstrNode* iter = instrNode->prev(); iter != bb->begin_; iter = iter->prev() )
-        {
-            swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), "must be a PhiInstr" );
-            PhiInstr* phi = (PhiInstr*) iter->value_;
-
-            if ( instr->arg_[i].op_ == phi->arg_[0].op_ )
-            {
-                // found
-                phi->constrain();
-                phi->res_[0].constraint_ = constraint;
-
-#ifdef SWIFT_DEBUG
-                found = true;
-#endif // SWIFT_DEBUG
-
-                // continue with outer loop
-                break;
-            }
-        }
-
-        swiftAssert( found, "phi not found" );
-    }
+    swiftAssert( bb->hasConstrainedInstr(),
+            "this must be the constrained instruction" );
 }
 
 } // namespace me

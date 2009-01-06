@@ -101,6 +101,12 @@ bool BasicBlock::hasPhiInstr() const
     return firstPhi_ != firstOrdinary_;
 }
 
+bool BasicBlock::hasConstrainedInstr() const
+{
+    return (firstOrdinary_ != end_) 
+        && (firstOrdinary_->value_->isConstrained());
+}
+
 std::string BasicBlock::name() const
 {
     std::ostringstream oss;
