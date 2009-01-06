@@ -6,6 +6,12 @@
 
 namespace me {
 
+/** 
+ * @brief Insert copies of regs if necessary.
+ *
+ * This pass ensures that a live-through arg which is constrained to a same
+ * color as a result is copied.
+ */
 class CopyInsertion : public CodePass
 {
 private:

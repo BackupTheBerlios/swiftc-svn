@@ -31,7 +31,7 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
 {
     InstrBase* instr = instrNode->value_;
 
-    // for each constrainted live-through arg
+    // for each constrained live-through arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
         if ( instr->arg_[i].constraint_ == InstrBase::NO_CONSTRAINT )
@@ -70,20 +70,17 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
                 instr->arg_[i].op_ = newReg;
                 
                 // transfer constraint to new instruction
+                newCopy->constrain();
                 newCopy->arg_[0].constraint_ = constraint;
-                instr->arg_[i].constraint_ = InstrBase::NO_CONSTRAINT;
                 
                 /*
-                 * it is assumed that no other reg is constrained to the same color
-                 * because of the simple constraint property
+                 * it is assumed that no other reg is constrained to the 
+                 * current color because of the simple constraint property
                  */
                 break;
             }
         } // for each res
-    } // for each constrainted live-through arg
-
-    // try to unconstrain instruction
-    instr->unconstrainIfPossible();
+    } // for each constrained live-through arg
 }
 
 } // namespace me

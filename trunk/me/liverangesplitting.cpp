@@ -40,7 +40,7 @@ void LiveRangeSplitting::process()
             liveRangeSplit(iter, currentBB);
     }
 
-    // HACK: this should be superfluous when there is a good graph implementation
+    // HACK this should be superfluous when there is a good graph implementation
     cfg_->entry_->postOrderIndex_ = 0;     
 
     // new basic blocks have been inserted, so recompute dominance stuff
@@ -56,15 +56,17 @@ void LiveRangeSplitting::process()
 void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
+    InstrBase* instr = instrNode->value_;
 
     // create new basic block
     cfg_->splitBB(instrNode, bbNode);
+    swiftAssert(bb->begin_ == instrNode->prev(), "splitting went wrong");
 
     /* 
      * insert new phi instruction for each live-in var
      */
 
-    REGSET_EACH(iter, instrNode->value_->liveIn_)
+    REGSET_EACH(iter, instr->liveIn_)
     {
         Reg* reg = *iter;
 
@@ -83,7 +85,7 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
         phi->sourceBBs_[0] = bbNode->pred_.first()->value_;
         phi->arg_[0].op_ = reg;
 
-        // insert instruction and fix pointer
+        // insert instruction
         InstrNode* phiNode = cfg_->instrList_.insert(bb->begin_, phi); 
 
         /*
@@ -108,6 +110,45 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
     }
 
     bb->fixPointers();
+
+    /* 
+     * now constrain phi instructions
+     */
+
+    // for each constrained arg of instr
+    for (size_t i = 0; i < instr->arg_.size(); ++i)
+    {
+        int constraint = instr->arg_[i].constraint_;
+
+        if ( constraint == InstrBase::NO_CONSTRAINT )
+            continue;
+
+#ifdef SWIFT_DEBUG
+        bool found = false;
+#endif // SWIFT_DEBUG
+
+        for ( InstrNode* iter = instrNode->prev(); iter != bb->begin_; iter = iter->prev() )
+        {
+            swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), "must be a PhiInstr" );
+            PhiInstr* phi = (PhiInstr*) iter->value_;
+
+            if ( instr->arg_[i].op_ == phi->arg_[0].op_ )
+            {
+                // found
+                phi->constrain();
+                phi->res_[0].constraint_ = constraint;
+
+#ifdef SWIFT_DEBUG
+                found = true;
+#endif // SWIFT_DEBUG
+
+                // continue with outer loop
+                break;
+            }
+        }
+
+        swiftAssert( found, "phi not found" );
+    }
 }
 
 } // namespace me

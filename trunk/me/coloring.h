@@ -33,7 +33,6 @@ public:
 
 private:
 
-    int findFirstFreeColorAndAllocate(Colors& colors);
     void color();
     void colorRecursive(BBNode* bbNode);
     void colorConstraintedInstr(InstrNode* instrNode, Colors& colors);

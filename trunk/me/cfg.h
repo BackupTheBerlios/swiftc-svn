@@ -97,7 +97,8 @@ struct CFG : public Graph<BasicBlock>
      * @brief Splits the basic block referenced by \p bb at \p instrNode.
      *
      * \p instrNode itself will be the first instruction after the leading
-     * LabelInstr in the bottom basic block.
+     * LabelInstr in the bottom basic block. \p bbNode will point to the bottom
+     * basic block.
      * 
      * @param instrNode The instruction where to split
      * @param bbNode The basic block where \p instrNode belongs to.

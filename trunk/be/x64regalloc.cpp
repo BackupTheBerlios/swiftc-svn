@@ -210,6 +210,7 @@ void X64RegAlloc::registerTargeting()
             {
                 // constraint properly
                 ai->constrain();
+                ai->arg_[0].constraint_ = RAX;
                 ai->res_[0].constraint_ = RAX;
             }
         } // if AssignInstr

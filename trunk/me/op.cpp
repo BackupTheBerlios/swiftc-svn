@@ -133,11 +133,7 @@ std::string Reg::toString() const
     if ( isMem() )
         oss << "@";
 
-    if ( color_ >= 0 )
-    {
-        oss << me::arch->color2String(color_);
-    }
-    else if ( !isSSA() )
+    if ( !isSSA() )
     {
 #ifdef SWIFT_DEBUG
         oss << id_;
@@ -160,6 +156,9 @@ std::string Reg::toString() const
 #endif // SWIFT_DEBUG
         oss << number2String( varNr_);
     }
+
+    if ( color_ >= 0 )
+        oss << " (" << me::arch->color2String(color_) << ')';
 
     return oss.str();
 }

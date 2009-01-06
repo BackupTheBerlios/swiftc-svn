@@ -416,6 +416,9 @@ std::string AssignInstr::toString() const
         oss << ' ' << arg_[0].op_->toString();
     }
 
+    if ( isConstrained() )
+        oss << " (c)";
+
     return oss.str();
 }
 

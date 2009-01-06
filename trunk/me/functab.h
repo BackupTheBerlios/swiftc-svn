@@ -38,6 +38,9 @@ struct Function
 
     CFG  cfg_;
 
+    typedef std::map<Reg*, int> Reg2Color;
+    Reg2Color reg2Color_;
+
     /// Indicates whether a LivenessAnalysis CodePass has already been performed.
     bool firstLiveness_;
 
