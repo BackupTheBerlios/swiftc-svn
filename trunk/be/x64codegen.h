@@ -2,6 +2,7 @@
 #define BE_X64_CODE_GEN_H
 
 #include <fstream>
+#include <string>
 
 #include "me/arch.h"
 #include "me/codepass.h"
@@ -36,7 +37,8 @@ private:
 
     void genMemPhiInstr();
 
-    static char type2postfix(me::Op::Type type);
+    static std::string type2postfix(me::Op::Type type);
+    static std::string op2string(me::Op* op);
 };
 
 } // namespace be

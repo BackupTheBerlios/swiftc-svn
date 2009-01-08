@@ -44,7 +44,6 @@ X64RegAlloc::X64RegAlloc(me::Function* function)
  *          v
  *  color XMM registers
  */
-
 void X64RegAlloc::process()
 {
     /*

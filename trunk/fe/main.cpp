@@ -16,6 +16,7 @@
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
 
+#include "me/constpool.h"
 #include "me/functab.h"
 #include "me/defusecalc.h"
 #include "me/livenessanalysis.h"
@@ -75,6 +76,8 @@ int start(int argc, char** argv)
 
     error = new ErrorHandler(cmdLineParser.filename_);
     me::functab = new me::FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
+
+    me::constpool = new me::ConstPool();
 
     // populate symtab with builtin types
     readBuiltinTypes();
@@ -169,6 +172,7 @@ int start(int argc, char** argv)
      * clean up middle-end
      */
     delete me::functab;
+    delete me::constpool;
 
     /*
      * clean up back-end
