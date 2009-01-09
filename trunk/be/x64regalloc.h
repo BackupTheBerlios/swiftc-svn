@@ -28,14 +28,15 @@ public:
         R06, 
         R07, 
 
+        // yes, this order is correct
         RAX = R00, 
-        RBX = R01, 
-        RCX = R02, 
-        RDX = R03, 
-        RBP = R04, 
-        RSI = R05, 
-        RDI = R06, 
-        RSP = R07, 
+        RCX = R01, 
+        RDX = R02, 
+        RBX = R03,
+        RSP = R04, 
+        RBP = R05, 
+        RSI = R06, 
+        RDI = R07, 
 
         R08, 
         R09, 
@@ -100,7 +101,7 @@ public:
     void registerTargeting();
     void insertNOP(me::InstrNode* instrNode);
 
-    static std::string reg2String(int reg);
+    static std::string reg2String(const me::Reg* reg);
 };
 
 } // namespace be

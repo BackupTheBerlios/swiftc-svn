@@ -46,7 +46,7 @@ bool Method::analyze()
      */
     std::ostringstream oss;
 
-    oss << *symtab->class_->id_ << '#';
+    oss << *symtab->class_->id_ << '$';
 
     if (methodQualifier_ == OPERATOR)
         oss << "operator";
@@ -55,7 +55,7 @@ bool Method::analyze()
 
     static int counter = 0;
 
-    oss << '#' << counter;
+    oss << '$' << counter;
     ++counter;
 
     me::functab->insertFunction( new std::string(oss.str()) );

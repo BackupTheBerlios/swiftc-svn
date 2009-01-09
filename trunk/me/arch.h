@@ -44,9 +44,10 @@ public:
     virtual Op::Type getPreferedIndex() const = 0;
 
     virtual void regAlloc(Function* function) = 0;
+    virtual void dumpConstants(std::ofstream& ofs) = 0;
     virtual void codeGen(Function* function, std::ofstream& ofs) = 0;
 
-    virtual std::string color2String(int color) const = 0;
+    virtual std::string reg2String(const Reg* reg) const = 0;
 };
 
 //------------------------------------------------------------------------------

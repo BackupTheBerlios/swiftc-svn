@@ -175,8 +175,8 @@ bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
 {
     InstrBase* instr = instrNode->value_;
 
-    return  instr->liveIn_ .contains(var)  // must be in the live in
-        &&  instr->liveOut_.contains(var); // but not in the live out
+    return   instr->liveIn_ .contains(var)  // must be in the live in
+        &&  !instr->liveOut_.contains(var); // but not in the live out
 }
 
 std::string InstrBase::livenessString() const
@@ -207,7 +207,7 @@ LabelInstr::LabelInstr()
     : InstrBase(0, 0)
 {
     std::ostringstream oss;
-    oss << "L" << number2String(counter_);
+    oss << ".L" << number2String(counter_);
     label_ = oss.str();
 
     ++counter_;

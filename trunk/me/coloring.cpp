@@ -113,6 +113,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
     {
         InstrBase* instr = iter->value_;
 
+        std::vector<int> freeHere;
+
 #ifdef SWIFT_DEBUG
         /*
          * In the debug version this set knows vars which were already
@@ -140,11 +142,15 @@ void Coloring::colorRecursive(BBNode* bbNode)
                     continue;
 
                 swiftAssert( colorIter != colors.end(), "color must be found here" );
+                freeHere.push_back(*colorIter);
                 colors.erase(colorIter); // last use of reg
                 erased.insert(reg);
 #else // SWIFT_DEBUG
                 if ( colorIter != colors.end() )
+                {
+                    freeHere.push_back(*colorIter);
                     colors.erase(colorIter); // last use of reg
+                }
                 /*
                  * else -> the reg must already been removed which must
                  *      be caused by a double entry like a = b + b
@@ -162,11 +168,20 @@ void Coloring::colorRecursive(BBNode* bbNode)
             if ( !reg->colorReg(typeMask_) )
                 continue;
 
-            IntVec freeColors = reservoir_.difference(colors);
-            swiftAssert( !freeColors.empty(), "must not be empty" );
+            // try to use a color which has just been freed here
+            if ( !freeHere.empty() )
+            {
+                colors.insert(freeHere[0]);
+                reg->color_ = freeHere[0];
+            }
+            else
+            {
+                IntVec freeColors = reservoir_.difference(colors);
+                swiftAssert( !freeColors.empty(), "must not be empty" );
 
-            colors.insert(freeColors[0]);
-            reg->color_ = freeColors[0];
+                colors.insert(freeColors[0]);
+                reg->color_ = freeColors[0];
+            }
 
             // pointless definitions should be optimized away
             if ( !instr->liveOut_.contains(reg) )

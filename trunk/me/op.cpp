@@ -60,7 +60,6 @@ std::string Literal::toString() const
                 oss << ".q";
             else
                 oss << "q"; // FIXME
-                std::cout << "TODO" << fmod(value_.real64_, 1.0) << std::endl;
             break;
         default:
             swiftAssert(false, "VR_* not implemented yet");
@@ -158,7 +157,7 @@ std::string Reg::toString() const
     }
 
     if ( color_ >= 0 )
-        oss << " (" << me::arch->color2String(color_) << ')';
+        oss << " (" << me::arch->reg2String(this) << ')';
 
     return oss.str();
 }

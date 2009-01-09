@@ -156,8 +156,14 @@ int start(int argc, char** argv)
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         me::arch->regAlloc(function);
-        me::arch->codeGen(function, ofs);
     }
+
+    // write constants to assembly language file
+    me::arch->dumpConstants(ofs);
+
+    // finally generate assembly code
+    for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
+        me::arch->codeGen(iter->second, ofs);
 
     /*
      * debug output

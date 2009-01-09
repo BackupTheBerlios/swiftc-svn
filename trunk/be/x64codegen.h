@@ -27,11 +27,9 @@ public:
 
 private:
 
-    void genFunctionEntry();
-
-    void genFunctionExit();
-
     void genAsmInstr(me::InstrBase* instr);
+    void genGeneralPurposeInstr(me::InstrBase* instr);
+    void genFloatingPointInstr(me::InstrBase* instr);
 
     void genPhiInstr();
 

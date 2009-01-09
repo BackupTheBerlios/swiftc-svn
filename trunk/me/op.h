@@ -88,6 +88,10 @@ struct Op
  */
 struct Undef : public Op
 {
+    Undef(Type type)
+        : Op(type)
+    {}
+
     virtual std::string toString() const;
 };
 
@@ -104,7 +108,6 @@ struct Literal : public Op
     {
         size_t      index_;
 
-        int         int_;
         int8_t      int8_;
         int16_t     int16_;
         int32_t     int32_;
@@ -112,7 +115,6 @@ struct Literal : public Op
         int8_t      sat8_;
         int16_t     sat16_;
 
-        uint        uint_;
         uint8_t     uint8_;
         uint16_t    uint16_;
         uint32_t    uint32_;

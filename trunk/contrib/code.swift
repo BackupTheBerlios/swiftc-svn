@@ -36,6 +36,10 @@ class Test
         real r
         r = 7.0
         bool b
+        int aa = 1
+        int bb = 2
+        int cc = aa + bb
+        int dd = cc + aa + bb
 
         b = r * 5.0 > 7.0
         real foo
@@ -96,6 +100,7 @@ end
 class Foo
     create ()
         int i = 6
+        real64 d = 5.0q
     end
 end
 

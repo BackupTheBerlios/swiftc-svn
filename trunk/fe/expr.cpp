@@ -128,17 +128,17 @@ void Literal::genSSA()
     {
         case L_INDEX:   literal->value_.index_     = index_;   break;
 
-        case L_INT:     literal->value_.int_       = int_;     break;
         case L_INT8:    literal->value_.int8_      = int8_;    break;
         case L_INT16:   literal->value_.int16_     = int16_;   break;
+        case L_INT: // TODO do this arch independently
         case L_INT32:   literal->value_.int32_     = int32_;   break;
         case L_INT64:   literal->value_.int64_     = int64_;   break;
         case L_SAT8:    literal->value_.sat8_      = sat8_;    break;
         case L_SAT16:   literal->value_.sat16_     = sat16_;   break;
 
-        case L_UINT:    literal->value_.uint_      = uint_;    break;
         case L_UINT8:   literal->value_.uint8_     = uint8_;   break;
         case L_UINT16:  literal->value_.uint16_    = uint16_;  break;
+        case L_UINT: // TODO do this arch independently
         case L_UINT32:  literal->value_.uint32_    = uint32_;  break;
         case L_UINT64:  literal->value_.uint64_    = uint64_;  break;
         case L_USAT8:   literal->value_.usat8_     = usat8_;   break;

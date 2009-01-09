@@ -895,7 +895,7 @@ std::string CFG::name() const
 
     for (size_t i = 0; i < result.size(); ++i)
     {
-        if (result[i] == '#')
+        if (result[i] == '$')
             result[i] = '_';
     }
 
