@@ -228,7 +228,7 @@ void X64RegAlloc::registerTargeting()
                 {
                     me::Literal* literal = (me::Literal*) op1;
 
-                    if (type == me::Op::R_INT32)
+                    if (type == me::Op::R_REAL32)
                         me::constpool->insert(literal->value_.real32_);
                     else
                         me::constpool->insert(literal->value_.real64_);
@@ -238,7 +238,7 @@ void X64RegAlloc::registerTargeting()
                 {
                     me::Literal* literal = (me::Literal*) op2;
 
-                    if (type == me::Op::R_INT32)
+                    if (type == me::Op::R_REAL64)
                         me::constpool->insert(literal->value_.real32_);
                     else
                         me::constpool->insert(literal->value_.real64_);
@@ -258,8 +258,6 @@ void X64RegAlloc::registerTargeting()
                 ai->arg_[0].constraint_ = RAX;
                 ai->res_[0].constraint_ = RAX;
 
-                // TODO
-#if 0
                 me::Reg* newReg = function_->newSSA(type);
                 if (ai->kind_ == '*')
                 {
@@ -269,11 +267,10 @@ void X64RegAlloc::registerTargeting()
                 else
                 {
                     // define newReg with undef
-                    cfg_->instrList_.insert( iter, 
+                    cfg_->instrList_.insert( iter->prev(),
                             new me::AssignInstr('=', newReg, new me::Undef(type)) );
                     ai->arg_.push_back( me::Arg(newReg, RDX) );
                 }
-#endif
             }
         } // if AssignInstr
     } // for each instruction

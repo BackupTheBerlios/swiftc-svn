@@ -34,13 +34,12 @@ InstrBase::InstrBase(size_t numLhs, size_t numRhs)
 
 InstrBase::~InstrBase()
 {
-    // delete all literals
+    // delete all literals and undefs
     for (size_t i = 0; i < arg_.size(); ++i)
     {
-        Literal* literal = dynamic_cast<Literal*>(arg_[i].op_);
-
-        if ( literal )
-            delete literal;
+        if ( typeid(*arg_[i].op_) == typeid(Literal) 
+                || typeid(*arg_[i].op_) == typeid(Undef) )
+            delete arg_[i].op_;
     }
 }
 
@@ -393,13 +392,23 @@ std::string AssignInstr::toString() const
 {
     std::string opString = getOpString();
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << '\t';
+    oss << res_[0].reg_->toString();
+
+    for (size_t i = 1; i < res_.size(); ++i)
+        oss << ", " << res_[i].reg_->toString();
+
+    oss << '\t';
+
+    // FIXME not accurate with dummy args
 
     // is this a binary, an unary instruction or an assignment?
-    if (arg_.size() == 2)
+    if (arg_.size() >= 2)
     {
         // it is a binary instruction
         oss << "= " << arg_[0].op_->toString() << " " << opString << " " << arg_[1].op_->toString();
+
+        for (size_t i = 2; i < arg_.size(); ++i)
+            oss << ", " << arg_[i].op_->toString();
     }
     else
     {
