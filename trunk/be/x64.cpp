@@ -34,8 +34,6 @@ void X64::regAlloc(me::Function* function)
 
 void X64::dumpConstants(std::ofstream& ofs)
 {
-    ofs << "/* globals */\n\n";
-
     UINT32MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ": \n";
@@ -45,7 +43,7 @@ void X64::dumpConstants(std::ofstream& ofs)
     UINT64MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ": \n";
-        ofs << ".long " << iter->first << '\n';
+        ofs << ".quad " << iter->first << '\n';
     }
 
     ofs << '\n';

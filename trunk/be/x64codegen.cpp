@@ -100,6 +100,10 @@ void X64CodeGen::genGeneralPurposeInstr(me::InstrBase* instr)
             if ( typeid(*op1) == typeid(me::Undef) )
                 break;
 
+            // ignore r = r
+            if ( typeid(*op1) == typeid(me::Reg) && res->color_ == ((me::Reg*) op1)->color_)
+                break;
+
             ofs_ << "\tmov" << type2postfix(res->type_) << ' ';
             ofs_ << op2string(op1) << ", ";
             ofs_ << X64RegAlloc::reg2String(res) << "\n";
@@ -128,6 +132,10 @@ void X64CodeGen::genFloatingPointInstr(me::InstrBase* instr)
         case '=':
             // ignore undefined inits
             if ( typeid(*op1) == typeid(me::Undef) )
+                break;
+
+            // ignore r = r
+            if ( typeid(*op1) == typeid(me::Reg) && res->color_ == ((me::Reg*) op1)->color_)
                 break;
 
             ofs_ << "\tmov" << type2postfix(res->type_) << ' ';
