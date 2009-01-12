@@ -480,7 +480,7 @@ void CFG::renameVars()
     RegMap& vars = function_->vars_;
 
     std::vector< std::stack<Reg*> > names;
-    // since index 0 is reserved for literals the stack-array's size must be increased by one
+    // since index 0 is reserved for constants the stack-array's size must be increased by one
     names.resize( -vars.begin()->first + 1 );
 
     // start with the first basic block

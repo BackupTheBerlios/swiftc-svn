@@ -30,7 +30,7 @@ std::string* operatorToString(int _operator);
 
 } // namespace swift
 
-// include auto generated parser header for tokens
+// include auto generated parser header before tokens
 #include "parser.tab.hpp"
 
-#endif // SWIFT_TOKENS
+#endif // SWIFT_PARSER_H

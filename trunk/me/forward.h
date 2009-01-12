@@ -23,7 +23,7 @@ typedef List<InstrBase*> InstrList;
 typedef InstrList::Node InstrNode;
 
 struct Op;
-struct Literal;
+struct Const;
 struct Var;
 struct Mem;
 struct Reg;

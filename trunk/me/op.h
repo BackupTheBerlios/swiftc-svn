@@ -98,11 +98,11 @@ struct Undef : public Op
 //------------------------------------------------------------------------------
 
 /** 
- * @brief Represents a Literal.
+ * @brief Represents a Const.
  *
  * That is a constant which can be of different builtin types.
  */
-struct Literal : public Op
+struct Const : public Op
 {
     union Value
     {
@@ -137,9 +137,11 @@ struct Literal : public Op
      * constructor
      */
 
-    Literal(Type type)
+    Const(Type type)
         : Op(type)
-    {}
+    {
+        value_.uint64_ = 0; // clear all bits
+    }
 
     /*
      * further methods

@@ -493,7 +493,7 @@ void Spiller::spill(BBNode* bbNode)
                 RegSet::iterator regIter = inRegs.find(reg);
                 if ( regIter != inRegs.end() )
                 {
-                    // reg is used befor discarded
+                    // reg is used before discarded
                     inB.insert(*regIter);
                     inRegs.erase(regIter);
                 }
@@ -523,7 +523,7 @@ void Spiller::spill(BBNode* bbNode)
             // manage inB and inRegs
             RegSet::iterator regIter = inRegs.find(toBeSpilled);
             if ( regIter != inRegs.end() )
-                inRegs.erase(regIter); // reg is not used befor -> don't spill
+                inRegs.erase(regIter); // reg is not used before -> don't spill
             else
             {
                 // insert spill instruction

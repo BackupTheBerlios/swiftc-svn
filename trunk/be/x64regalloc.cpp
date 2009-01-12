@@ -224,24 +224,24 @@ void X64RegAlloc::registerTargeting()
 
             if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
             {
-                if ( typeid(*op1) == typeid(me::Literal) )
+                if ( typeid(*op1) == typeid(me::Const) )
                 {
-                    me::Literal* literal = (me::Literal*) op1;
+                    me::Const* cst = (me::Const*) op1;
 
                     if (type == me::Op::R_REAL32)
-                        me::constpool->insert(literal->value_.real32_);
+                        me::constpool->insert(cst->value_.real32_);
                     else
-                        me::constpool->insert(literal->value_.real64_);
+                        me::constpool->insert(cst->value_.real64_);
                 }
 
-                if ( op2 && typeid(*op2) == typeid(me::Literal) )
+                if ( op2 && typeid(*op2) == typeid(me::Const) )
                 {
-                    me::Literal* literal = (me::Literal*) op2;
+                    me::Const* cst = (me::Const*) op2;
 
                     if (type == me::Op::R_REAL64)
-                        me::constpool->insert(literal->value_.real32_);
+                        me::constpool->insert(cst->value_.real32_);
                     else
-                        me::constpool->insert(literal->value_.real64_);
+                        me::constpool->insert(cst->value_.real64_);
                 }
                 
                 continue;

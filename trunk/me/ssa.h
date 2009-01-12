@@ -278,6 +278,12 @@ struct AssignInstr : public InstrBase
      * further methods
      */
 
+    Reg* resReg()
+    {
+        swiftAssert( !res_.empty(), "must not be empty" );
+        return res_[0].reg_;
+    }
+
     std::string toString() const;
     void genCode(std::ofstream& ofs);
 

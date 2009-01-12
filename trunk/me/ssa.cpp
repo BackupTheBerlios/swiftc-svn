@@ -34,10 +34,10 @@ InstrBase::InstrBase(size_t numLhs, size_t numRhs)
 
 InstrBase::~InstrBase()
 {
-    // delete all literals and undefs
+    // delete all consts and undefs
     for (size_t i = 0; i < arg_.size(); ++i)
     {
-        if ( typeid(*arg_[i].op_) == typeid(Literal) 
+        if ( typeid(*arg_[i].op_) == typeid(Const) 
                 || typeid(*arg_[i].op_) == typeid(Undef) )
             delete arg_[i].op_;
     }
@@ -158,7 +158,7 @@ bool InstrBase::livesThrough(Reg* reg) const
 
 InstrBase::OpType InstrBase::getOpType(size_t i) const
 {
-    if ( typeid(*arg_[i].op_) == typeid(Literal) )
+    if ( typeid(*arg_[i].op_) == typeid(Const) )
         return CONST;
 
     swiftAssert( typeid(*arg_[i].op_) == typeid(Reg), "must be a Reg" );

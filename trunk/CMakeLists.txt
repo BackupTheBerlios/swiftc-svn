@@ -13,8 +13,9 @@ ENDIF (BUILD_RELEASE)
 # add . as include path
 INCLUDE_DIRECTORIES(.)
 
+#-------------------------------------------------------------------------------
 
-# call bison
+# call bison for the front-end
 IF (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
         OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp
@@ -29,12 +30,31 @@ ELSE (BUILD_RELEASE)
     )
 ENDIF (BUILD_RELEASE)
 
-# call flex
+# call flex for the front-end
 ADD_CUSTOM_COMMAND (
     OUTPUT  fe/lex.yy.cpp
     COMMAND flex -P swift -o fe/lex.yy.cpp fe/lexer.l
     DEPENDS fe/lexer.l
 )
+
+#-------------------------------------------------------------------------------
+
+# call bison for the x64 back-end
+IF (BUILD_RELEASE)
+    ADD_CUSTOM_COMMAND (
+        OUTPUT  be/x64parser.tab.cpp be/x64parser.tab.hpp
+        COMMAND bison -p x64 -d -o be/x64parser.tab.cpp be/x64parser.y
+        DEPENDS be/x64parser.y
+    )
+ELSE (BUILD_RELEASE)
+    ADD_CUSTOM_COMMAND (
+        OUTPUT  be/x64parser.tab.cpp be/x64parser.tab.hpp be/x64parser.output
+        COMMAND bison -p x64 -t -d -v -o be/x64parser.tab.cpp be/x64parser.y
+        DEPENDS be/x64parser.y
+    )
+ENDIF (BUILD_RELEASE)
+
+#-------------------------------------------------------------------------------
 
 # sources
 ADD_EXECUTABLE (swift
@@ -79,7 +99,11 @@ ADD_EXECUTABLE (swift
     be/x64.cpp
     be/x64codegen.cpp
     be/x64regalloc.cpp
+    be/x64parser.tab.cpp
+    be/x64parser.tab.hpp
 )
+
+#-------------------------------------------------------------------------------
 
 # autogenerate builtin types
 ADD_CUSTOM_COMMAND (

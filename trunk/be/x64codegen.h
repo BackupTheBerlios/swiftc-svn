@@ -24,22 +24,11 @@ public:
      */
 
     virtual void process();
-
-private:
-
-    void genAsmInstr(me::InstrBase* instr);
-    void genGeneralPurposeInstr(me::InstrBase* instr);
-    void genFloatingPointInstr(me::InstrBase* instr);
-
-    void genPhiInstr();
-
-    void genMemPhiInstr();
-
-    static std::string type2postfix(me::Op::Type type);
-    static std::string op2string(me::Op* op);
 };
 
 } // namespace be
+
+int x64lex();
 
 #endif // BE_X64_CODE_GEN_H
 

@@ -121,7 +121,7 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate Reg
-    me::Literal* literal = new me::Literal( toType() );
+    me::Const* literal = new me::Const( toType() );
     place_ = literal;
 
     switch (kind_)

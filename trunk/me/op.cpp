@@ -18,7 +18,7 @@ bool Op::typeCheck(int typeMask) const
 
 //------------------------------------------------------------------------------
 
-std::string Literal::toString() const
+std::string Const::toString() const
 {
     std::ostringstream oss;
 
