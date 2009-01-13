@@ -34,6 +34,16 @@ void X64::regAlloc(me::Function* function)
 
 void X64::dumpConstants(std::ofstream& ofs)
 {
+    UINT8MAP_EACH(iter)
+    {
+        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".byte " << iter->first << '\n';
+    }
+    UINT16MAP_EACH(iter)
+    {
+        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".short " << iter->first << '\n';
+    }
     UINT32MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ": \n";

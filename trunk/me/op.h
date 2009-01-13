@@ -122,7 +122,6 @@ struct Const : public Op
         uint8_t     usat8_;
         uint16_t    usat16_;
 
-        float       real_;
         float       real32_;
         double      real64_;
 

@@ -144,7 +144,7 @@ void Literal::genSSA()
         case L_USAT8:   literal->value_.usat8_     = usat8_;   break;
         case L_USAT16:  literal->value_.usat16_    = usat16_;  break;
 
-        case L_REAL:    literal->value_.real_      = real_;    break;
+        case L_REAL: // TODO do this arch independently
         case L_REAL32:  literal->value_.real32_    = real32_;  break;
         case L_REAL64:  literal->value_.real64_    = real64_;  break;
 
