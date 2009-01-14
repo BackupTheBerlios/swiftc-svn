@@ -124,6 +124,16 @@ void X64RegAlloc::process()
     me::Coloring(function_, R_TYPE_MASK, rColors).process(); 
 }
 
+/*
+ * forbidden instructions:
+ *
+ * integer:
+ *      r1 = c / r1
+ *
+ * real:
+ *      r1 = c / r1
+ */
+
 void X64RegAlloc::registerTargeting()
 {
     me::BBNode* currentBB;
@@ -294,17 +304,22 @@ void X64RegAlloc::registerTargeting()
                 ai->res_[0].constraint_ = RAX;
 
                 me::Reg* newReg = function_->newSSA(type);
-                if (ai->kind_ == '*')
+
+                // int8 and uint8 muls just go to ax and not al:dl
+                if (type != me::Op::R_INT8 && type != me::Op::R_UINT8)
                 {
-                    // newReg is defined here
-                    ai->res_.push_back( me::Res(newReg, 0, RDX) );
-                }
-                else
-                {
-                    // define newReg with undef
-                    cfg_->instrList_.insert( iter->prev(),
-                            new me::AssignInstr('=', newReg, new me::Undef(type)) );
-                    ai->arg_.push_back( me::Arg(newReg, RDX) );
+                    if (ai->kind_ == '*')
+                    {
+                        // newReg is defined here
+                        ai->res_.push_back( me::Res(newReg, 0, RDX) );
+                    }
+                    else
+                    {
+                        // define newReg with undef
+                        cfg_->instrList_.insert( iter->prev(),
+                                new me::AssignInstr('=', newReg, new me::Undef(type)) );
+                        ai->arg_.push_back( me::Arg(newReg, RDX) );
+                    }
                 }
             }
         } // if AssignInstr

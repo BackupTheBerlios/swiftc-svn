@@ -18,6 +18,11 @@ class Test
     create (real r)
         int z
         z = 5
+        real64 foo = 1.0q
+        real a = 1.0
+        real b = 2.0
+        real c = 3.0
+        real d = a - b - 8.0 - 5.0 * c - a + 9.0
     end
 
     routine test(Foo foo) -> real re, int rs, inout int bs
@@ -40,6 +45,7 @@ class Test
         int bb = 2
         int cc = aa + bb
         int dd = cc + aa + bb
+        bool zz = aa < bb
 
         b = r * 5.0 > 7.0
         real foo

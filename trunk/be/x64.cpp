@@ -36,25 +36,33 @@ void X64::dumpConstants(std::ofstream& ofs)
 {
     UINT8MAP_EACH(iter)
     {
-        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".LC" << iter->second << ":\n";
         ofs << ".byte " << iter->first << '\n';
     }
     UINT16MAP_EACH(iter)
     {
-        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".LC" << iter->second << ":\n";
         ofs << ".short " << iter->first << '\n';
     }
     UINT32MAP_EACH(iter)
     {
-        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".LC" << iter->second << ":\n";
         ofs << ".long " << iter->first << '\n';
     }
 
+    // sign mask for real32
+    ofs << ".LCS32:\n";
+    ofs << ".long " << 0x80000000 << '\n';
+
     UINT64MAP_EACH(iter)
     {
-        ofs << ".LC" << iter->second << ": \n";
+        ofs << ".LC" << iter->second << ":\n";
         ofs << ".quad " << iter->first << '\n';
     }
+
+    // sign mask for real64
+    ofs << ".LCS64:\n";
+    ofs << ".quad " << 0x8000000000000000 << '\n';
 
     ofs << '\n';
 }

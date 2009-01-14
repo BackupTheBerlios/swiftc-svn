@@ -117,8 +117,13 @@ int x64lex()
                     case '-': return X64_SUB;
                     case '*': return X64_MUL;
                     case '/': return X64_DIV;
+                    case me::AssignInstr::EQ: return X64_EQ;
+                    case me::AssignInstr::NE: return X64_NE;
+                    case '<': return X64_L;
+                    case '>': return X64_G;
+                    case me::AssignInstr::LE: return X64_LE;
+                    case me::AssignInstr::GE: return X64_GE;
                     default:
-                        return 0;
                         swiftAssert(false, "unreachable code");
                 }
             }

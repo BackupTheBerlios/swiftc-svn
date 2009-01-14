@@ -9,9 +9,11 @@ extern std::ofstream* x64_ofs;
 namespace me {
 
 // it is important to declare all union members of YYSTYPE here
+struct Op;
 struct Undef;
 struct Const;
 struct Reg;
+
 struct LabelInstr;
 struct GotoInstr;
 struct BranchInstr;

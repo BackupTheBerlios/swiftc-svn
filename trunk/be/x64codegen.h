@@ -29,6 +29,7 @@ public:
 } // namespace be
 
 int x64lex();
+void x64error(char* s);
 
 #endif // BE_X64_CODE_GEN_H
 
