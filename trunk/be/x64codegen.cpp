@@ -228,11 +228,21 @@ int x64lex()
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
 
+                /*
+                 * The following cases should be considered:
+                 * - res.color == op2.color                 -> reg1
+                 * - op1 == reg, op1.color == op2.color_    -> reg2
+                 * - op1 == reg1                            -> reg2
+                 * - op1 == const                           -> reg2
+                 * else -> reg3
+                 */
                 if ( currentInstr->res_[0].reg_->color_ == reg->color_ )
                     lastOp = X64_REG_1;
                 else if ( lastOp == X64_REG_2 && ((me::Reg*) currentInstr->arg_[0].op_)->color_ == reg->color_ )
                     lastOp = X64_REG_2;
                 else if (lastOp == X64_REG_1)
+                    lastOp = X64_REG_2;
+                else if (lastOp == X64_CONST)
                     lastOp = X64_REG_2;
                 else
                     return X64_REG_3;

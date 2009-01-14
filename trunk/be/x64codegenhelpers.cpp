@@ -185,20 +185,25 @@ std::string const_cmp_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst
     swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );
 
     int kind = ai->kind_;
-    if (kind == me::AssignInstr::EQ)
-    {
-        if (cst1->value_.uint64_ == cst2->value_.uint64_)
-            return "$1";
-        else 
-            return "$0";
-    }
 
-    if (kind == me::AssignInstr::NE)
+    // real32 and real64 need special handling 
+    if (cst1->type_ != me::Op::R_REAL32 && cst1->type_ != me::Op::R_REAL64)
     {
-        if (cst1->value_.uint64_ != cst2->value_.uint64_)
-            return "$1";
-        else 
-            return "$0";
+        if (kind == me::AssignInstr::EQ)
+        {
+            if (cst1->value_.uint64_ == cst2->value_.uint64_)
+                return "$1";
+            else 
+                return "$0";
+        }
+
+        if (kind == me::AssignInstr::NE)
+        {
+            if (cst1->value_.uint64_ != cst2->value_.uint64_)
+                return "$1";
+            else 
+                return "$0";
+        }
     }
 
     switch (cst1->type_)
@@ -315,6 +320,42 @@ std::string const_cmp_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst
                 default:
                     swiftAssert(false, "unreachable code"); 
             }
+        case me::Op::R_REAL32:
+            switch (kind)
+            {
+                case me::AssignInstr::EQ:
+                    if (cst1->value_.real64_ == cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::NE:
+                    if (cst1->value_.real64_ != cst2->value_.real64_) return "$1"; else return "$0";
+                case '<':
+                    if (cst1->value_.real64_ <  cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::LE:
+                    if (cst1->value_.real64_ <= cst2->value_.real64_) return "$1"; else return "$0";
+                case '>':
+                    if (cst1->value_.real64_ >  cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::GE:
+                    if (cst1->value_.real64_ >= cst2->value_.real64_) return "$1"; else return "$0";
+                default:
+                    swiftAssert(false, "unreachable code"); 
+            }
+        case me::Op::R_REAL64:
+            switch (kind)
+            {
+                case me::AssignInstr::EQ:
+                    if (cst1->value_.real64_ == cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::NE:
+                    if (cst1->value_.real64_ != cst2->value_.real64_) return "$1"; else return "$0";
+                case '<':
+                    if (cst1->value_.real64_ <  cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::LE:
+                    if (cst1->value_.real64_ <= cst2->value_.real64_) return "$1"; else return "$0";
+                case '>':
+                    if (cst1->value_.real64_ >  cst2->value_.real64_) return "$1"; else return "$0";
+                case me::AssignInstr::GE:
+                    if (cst1->value_.real64_ >= cst2->value_.real64_) return "$1"; else return "$0";
+                default:
+                    swiftAssert(false, "unreachable code"); 
+            }
         default:
             swiftAssert(false, "unreachable code"); 
     }
@@ -365,6 +406,8 @@ std::string ccsuffix(me::AssignInstr* ai, int type, bool neg /*= false*/)
         case X64_UINT16:
         case X64_UINT32:
         case X64_UINT64:
+        case X64_REAL32:
+        case X64_REAL64:
             switch (kind)
             {
                 case '<' : if (neg) return "nb";  else return "b";

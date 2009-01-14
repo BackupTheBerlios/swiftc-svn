@@ -132,6 +132,7 @@ void X64RegAlloc::process()
  *
  * real:
  *      r1 = c / r1
+ *      b1 = c cmp r2
  */
 
 void X64RegAlloc::registerTargeting()

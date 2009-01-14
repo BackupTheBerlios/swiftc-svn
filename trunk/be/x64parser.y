@@ -21,7 +21,6 @@ using namespace be;
 {
     int int_;
 
-    me::Op*    op_;
     me::Undef* undef_;
     me::Const* const_;
     me::Reg*   reg_;
@@ -63,7 +62,7 @@ using namespace be;
 
 %type <int_> bool_type int_type sint_type uint_type real_type int_or_bool_type
 %type <assign_> add_or_mul cmp
-%type <op_> any_reg
+%type <reg_> any_reg
 
 %% 
 
@@ -105,6 +104,7 @@ assign_instruction
     | real_add_mul
     | real_sub
     | real_div
+    | real_cmp
     ;
 
 int_mov
@@ -268,19 +268,19 @@ int_cmp
     { 
           EMIT("movb " << const_cmp_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
-    | cmp int_type X64_CONST any_reg /* cmp op1, op2 */
+    | cmp int_type X64_CONST any_reg /* cmp r, c */
     { 
-          EMIT("cmp" << suffix($2) << ' ' <<  op2str($4) << ", " << op2str($3))
+          EMIT("cmp" << suffix($2) << ' ' << reg2str($4) << ", " << cst2str($3))
           EMIT("set" << ccsuffix($1, $2) << "b " << reg2str($1->resReg())) 
     }
-    | cmp int_type any_reg X64_CONST /* same as above */
+    | cmp int_type any_reg X64_CONST /* cmp r, c */
     { 
-          EMIT("cmp" << suffix($2) << ' ' <<  op2str($4) << ", " << op2str($3))
+          EMIT("cmp" << suffix($2) << ' ' << cst2str($4) << ", " << reg2str($3))
           EMIT("set" << ccsuffix($1, $2) << "b " << reg2str($1->resReg())) 
     }
-    | cmp int_type any_reg any_reg   /* same as avbove */
+    | cmp int_type any_reg any_reg   /* cmp r, r */
     { 
-          EMIT("cmp" << suffix($2) << ' ' <<  op2str($4) << ", " << op2str($3))
+          EMIT("cmp" << suffix($2) << ' ' << reg2str($4) << ", " << reg2str($3))
           EMIT("set" << ccsuffix($1, $2) << "b " << reg2str($1->resReg())) 
     }
     ;
@@ -437,6 +437,23 @@ real_div
     {
         EMIT("mov" << suffix($2) << ' ' << reg2str($3) << ", " << reg2str($1->resReg()))
         EMIT("div" << suffix($2) << ' ' << reg2str($4) << ", " << reg2str($1->resReg())) 
+    }
+    ;
+
+real_cmp
+    : cmp real_type X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
+    { 
+          EMIT("movb " << const_cmp_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+    }
+    | cmp real_type any_reg X64_CONST /* cmp c, r */
+    { 
+          EMIT("comi" << suffix($2) << ' ' << mcst2str($4) << ", " << reg2str($3))
+          EMIT("set" << ccsuffix($1, $2) << "b " << reg2str($1->resReg())) 
+    }
+    | cmp real_type any_reg any_reg   /* cmp r, r */
+    { 
+          EMIT("comi" << suffix($2) << ' ' << reg2str($4) << ", " << reg2str($3))
+          EMIT("set" << ccsuffix($1, $2) << "b " << reg2str($1->resReg())) 
     }
     ;
 
