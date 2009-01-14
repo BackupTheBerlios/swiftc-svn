@@ -158,12 +158,12 @@ int start(int argc, char** argv)
         me::arch->regAlloc(function);
     }
 
-    // write constants to assembly language file
-    me::arch->dumpConstants(ofs);
-
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
         me::arch->codeGen(iter->second, ofs);
+
+    // write constants to assembly language file
+    me::arch->dumpConstants(ofs);
 
     /*
      * debug output

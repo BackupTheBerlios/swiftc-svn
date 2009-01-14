@@ -33,7 +33,7 @@ std::string instr2str(me::AssignInstr* ai);
 std::string mul2str(int type);
 std::string div2str(int type);
 
-std::string const_op_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2);
+std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem = false);
 
 std::string neg_mask(int type);
 

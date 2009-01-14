@@ -235,27 +235,6 @@ void X64RegAlloc::registerTargeting()
 
             if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
             {
-                // TODO remove copy&paste code
-                if ( typeid(*op1) == typeid(me::Const) )
-                {
-                    me::Const* cst = (me::Const*) op1;
-
-                    if (type == me::Op::R_REAL32)
-                        me::constpool->insert(cst->value_.real32_);
-                    else
-                        me::constpool->insert(cst->value_.real64_);
-                }
-
-                if ( op2 && typeid(*op2) == typeid(me::Const) )
-                {
-                    me::Const* cst = (me::Const*) op2;
-
-                    if (type == me::Op::R_REAL64)
-                        me::constpool->insert(cst->value_.real32_);
-                    else
-                        me::constpool->insert(cst->value_.real64_);
-                }
-                
                 continue;
             }
 
@@ -265,38 +244,6 @@ void X64RegAlloc::registerTargeting()
 
             if (ai->kind_ == '*' || ai->kind_ == '/')
             {
-                /*
-                 * insert constants
-                 */
-                // TODO remove copy&paste code
-                if ( typeid(*op1) == typeid(me::Const) )
-                {
-                    me::Const* cst = (me::Const*) op1;
-
-                    if (type == me::Op::R_INT8 || type == me::Op::R_UINT8)
-                        me::constpool->insert(cst->value_.uint8_);
-                    else if (type == me::Op::R_INT16 || type == me::Op::R_UINT16)
-                        me::constpool->insert(cst->value_.uint16_);
-                    else if (type == me::Op::R_INT32 || type == me::Op::R_UINT32)
-                        me::constpool->insert(cst->value_.uint32_);
-                    else
-                        me::constpool->insert(cst->value_.uint64_);
-                }
-
-                if ( op2 && typeid(*op2) == typeid(me::Const) )
-                {
-                    me::Const* cst = (me::Const*) op2;
-
-                    if (type == me::Op::R_INT8 || type == me::Op::R_UINT8)
-                        me::constpool->insert(cst->value_.uint8_);
-                    else if (type == me::Op::R_INT16 || type == me::Op::R_UINT16)
-                        me::constpool->insert(cst->value_.uint16_);
-                    else if (type == me::Op::R_INT32 || type == me::Op::R_UINT32)
-                        me::constpool->insert(cst->value_.uint32_);
-                    else
-                        me::constpool->insert(cst->value_.uint64_);
-                }
-
                 /*
                  * constrain properly
                  */

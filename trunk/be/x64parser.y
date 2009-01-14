@@ -129,7 +129,7 @@ int_mov
 int_add
     : X64_ADD int_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
     {
-        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+        EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4) << ", " << reg2str($1->resReg())) 
     } 
     | X64_ADD int_type X64_CONST X64_REG_1 /* add c, r1 */
     {
@@ -176,7 +176,7 @@ int_add
 int_sub
     : X64_SUB int_type X64_CONST X64_CONST /* mov (c1 - c2), r1 */
     { 
-          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4) << ", " << reg2str($1->resReg())) 
     } 
     | X64_SUB int_type X64_CONST X64_REG_1 /* sub c, r1; neg r1 */
     { 
@@ -224,7 +224,7 @@ int_sub
 int_mul
     : X64_MUL int_type X64_CONST X64_CONST /* mov (c1 * c2), r1 */
     { 
-          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     } 
     | X64_MUL int_type X64_CONST X64_REG_1 /* mul c */
     { 
@@ -247,7 +247,7 @@ int_mul
 int_div
     : X64_DIV int_type X64_CONST X64_CONST /* mov 1, r1 */
     { 
-          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
     | X64_DIV int_type X64_REG_1 X64_CONST /* div c */
     { 
@@ -266,7 +266,7 @@ int_div
 int_cmp
     : cmp int_type X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
     { 
-          EMIT("movb " << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("movb " << cst_op_cst($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | cmp int_type X64_CONST any_reg /* cmp r, c */
     { 
@@ -307,7 +307,7 @@ real_mov
 real_add_mul
     : add_or_mul real_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
     { 
-          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
     | add_or_mul real_type X64_CONST X64_REG_1 /* add c, r1 */
     { 
@@ -354,7 +354,7 @@ real_add_mul
 real_sub
     : X64_SUB real_type X64_CONST X64_CONST /* mov (c1 - c2), r1 */
     {
-        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+        EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
     | X64_SUB real_type X64_CONST X64_REG_1 /* sub c, r1; xor signmask, r1 */
     {
@@ -401,7 +401,7 @@ real_sub
 real_div
     : X64_DIV real_type X64_CONST X64_CONST /* mov (c1 / c2), r1 */
     {
-        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+        EMIT("mov" << suffix($2) << ' ' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
     | X64_DIV real_type X64_CONST X64_REG_2 /* mov c, r1; div r2, r1 */ 
     {
@@ -443,7 +443,7 @@ real_div
 real_cmp
     : cmp real_type X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
     { 
-          EMIT("movb " << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("movb " << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
     | cmp real_type any_reg X64_CONST /* cmp c, r */
     { 

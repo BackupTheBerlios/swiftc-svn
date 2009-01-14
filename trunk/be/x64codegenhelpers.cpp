@@ -51,22 +51,54 @@ std::string mcst2str(me::Const* cst)
     {
         case me::Op::R_INT8:
         case me::Op::R_UINT8:
+        {
+            me::ConstPool::UInt8Map::iterator iter =
+                me::constpool->uint8_.find(cst->value_.uint8_);
+
+            if ( iter == me::constpool->uint8_.end() )
+                me::constpool->insert(cst->value_.uint8_);
+
             oss << ".LC" << me::constpool->uint8_[cst->value_.uint8_];
             break;
+        }
         case me::Op::R_INT16:
         case me::Op::R_UINT16:
+        {
+            me::ConstPool::UInt16Map::iterator iter =
+                me::constpool->uint16_.find(cst->value_.uint16_);
+
+            if ( iter == me::constpool->uint16_.end() )
+                me::constpool->insert(cst->value_.uint16_);
+
             oss << ".LC" << me::constpool->uint16_[cst->value_.uint16_];
             break;
+        }
         case me::Op::R_INT32:
         case me::Op::R_UINT32:
         case me::Op::R_REAL32:
+        {
+            me::ConstPool::UInt32Map::iterator iter =
+                me::constpool->uint32_.find(cst->value_.uint32_);
+
+            if ( iter == me::constpool->uint32_.end() )
+                me::constpool->insert(cst->value_.uint32_);
+
             oss << ".LC" << me::constpool->uint32_[cst->value_.uint32_];
             break;
+        }
         case me::Op::R_INT64:
         case me::Op::R_UINT64:
         case me::Op::R_REAL64:
+        {
+            me::ConstPool::UInt64Map::iterator iter =
+                me::constpool->uint64_.find(cst->value_.uint64_);
+
+            if ( iter == me::constpool->uint64_.end() )
+                me::constpool->insert(cst->value_.uint64_);
+
             oss << ".LC" << me::constpool->uint64_[cst->value_.uint64_];
             break;
+        }
         default:
             swiftAssert(false, "unreachable code");
     }
@@ -140,7 +172,7 @@ std::string div2str(int type)
     return "error";
 }
 
-std::string const_op_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2)
+std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem /*= false*/)
 {
     swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );
 
@@ -180,8 +212,14 @@ std::string const_op_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2
             default:\
                 swiftAssert(false, "unreachable code"); \
         }\
+        if (mem)\
+        {\
+            me::Const cst(cst1->type_);\
+            cst.value_ = box;\
+            return mcst2str(&cst);\
+        }\
         oss << box.box_member;\
-        return oss.str();
+        return oss.str();\
 
         CONST_OP_CONST_CASE(R_INT8,  int8_,  int32_)
         CONST_OP_CONST_CASE(R_INT16, int16_, int16_)
