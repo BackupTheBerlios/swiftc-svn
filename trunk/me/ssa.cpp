@@ -206,10 +206,15 @@ LabelInstr::LabelInstr()
     : InstrBase(0, 0)
 {
     std::ostringstream oss;
-    oss << ".L" << number2String(counter_);
+    oss << "L" << number2String(counter_);
     label_ = oss.str();
 
     ++counter_;
+}
+
+std::string LabelInstr::asmName() const
+{
+    return std::string(".") + label_;
 }
 
 //------------------------------------------------------------------------------

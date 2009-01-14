@@ -1,5 +1,4 @@
 # Swift Language test file
-
 class Test
     Foo foo
 
@@ -27,6 +26,10 @@ class Test
 
     routine test(Foo foo) -> real re, int rs, inout int bs
         int e = 4
+
+        real gg = 2.0 + 3.0
+
+        int8 gh = 2b - 5b
 
         if e > 5
             e = e + 2

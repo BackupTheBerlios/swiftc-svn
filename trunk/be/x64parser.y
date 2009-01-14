@@ -67,7 +67,7 @@ using namespace be;
 %% 
 
 instruction
-    : X64_LABEL { *x64_ofs << $1->toString() << ":\n"; }
+    : X64_LABEL { *x64_ofs << $1->asmName() << ":\n"; }
     | X64_NOP { /* do nothing */ }
     | jump_instruction
     | assign_instruction
@@ -76,20 +76,20 @@ instruction
 jump_instruction
     : X64_GOTO 
     { 
-        EMIT("jmp " << $1->label()->toString()) 
+        EMIT("jmp " << $1->label()->asmName()) 
     }
     | X64_BRANCH bool_type X64_CONST 
     {   
         if ($3->value_.bool_) 
-            EMIT("jmp " << $1->trueLabel()->toString())
+            EMIT("jmp " << $1->trueLabel()->asmName())
         else
-            EMIT("jmp " << $1->falseLabel()->toString())
+            EMIT("jmp " << $1->falseLabel()->asmName())
     }
     | X64_BRANCH bool_type X64_REG_2 /* test r1, r1; jz falseLabel; jmp trueLabel */
     { 
         EMIT("testb " << reg2str($3) << ", " << reg2str($3))
-        EMIT("jz " << $1->trueLabel()->toString())
-        EMIT("jmp " << $1->falseLabel()->toString()) 
+        EMIT("jz " << $1->trueLabel()->asmName())
+        EMIT("jmp " << $1->falseLabel()->asmName()) 
     }
     ;
 
@@ -129,7 +129,7 @@ int_mov
 int_add
     : X64_ADD int_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
     {
-        EMIT("mov" << suffix($2) << ' ' << ($3->value_.uint64_ + $4->value_.uint64_) << ", " << reg2str($1->resReg())) 
+        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     } 
     | X64_ADD int_type X64_CONST X64_REG_1 /* add c, r1 */
     {
@@ -176,7 +176,7 @@ int_add
 int_sub
     : X64_SUB int_type X64_CONST X64_CONST /* mov (c1 - c2), r1 */
     { 
-          EMIT("mov" << suffix($2) << ' ' << ($3->value_.uint64_ - $4->value_.uint64_) << ", " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     } 
     | X64_SUB int_type X64_CONST X64_REG_1 /* sub c, r1; neg r1 */
     { 
@@ -224,8 +224,8 @@ int_sub
 int_mul
     : X64_MUL int_type X64_CONST X64_CONST /* mov (c1 * c2), r1 */
     { 
-          swiftAssert(false, "TODO"); 
-    }
+          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+    } 
     | X64_MUL int_type X64_CONST X64_REG_1 /* mul c */
     { 
           EMIT(mul2str($2) << suffix($2) << ' ' << mcst2str($3)) 
@@ -247,7 +247,7 @@ int_mul
 int_div
     : X64_DIV int_type X64_CONST X64_CONST /* mov 1, r1 */
     { 
-          EMIT("mov" << suffix($2) << "$1, " << reg2str($1->resReg())) 
+          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | X64_DIV int_type X64_REG_1 X64_CONST /* div c */
     { 
@@ -266,7 +266,7 @@ int_div
 int_cmp
     : cmp int_type X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
     { 
-          EMIT("movb " << const_cmp_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("movb " << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | cmp int_type X64_CONST any_reg /* cmp r, c */
     { 
@@ -307,7 +307,7 @@ real_mov
 real_add_mul
     : add_or_mul real_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
     { 
-          swiftAssert(false, "not allowed code sequence"); 
+          EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | add_or_mul real_type X64_CONST X64_REG_1 /* add c, r1 */
     { 
@@ -352,9 +352,9 @@ real_add_mul
     ;
 
 real_sub
-    : X64_SUB real_type X64_CONST X64_CONST /* xor r1, r1 */
+    : X64_SUB real_type X64_CONST X64_CONST /* mov (c1 - c2), r1 */
     {
-        EMIT("xor" << suffix($2) << ' ' << reg2str($1->resReg()) << ", " << reg2str($1->resReg())) 
+        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | X64_SUB real_type X64_CONST X64_REG_1 /* sub c, r1; xor signmask, r1 */
     {
@@ -399,9 +399,9 @@ real_sub
     ;
 
 real_div
-    : X64_DIV real_type X64_CONST X64_CONST /* load with 1 */
+    : X64_DIV real_type X64_CONST X64_CONST /* mov (c1 / c2), r1 */
     {
-          swiftAssert(false, "TODO"); 
+        EMIT("mov" << suffix($2) << ' ' << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | X64_DIV real_type X64_CONST X64_REG_2 /* mov c, r1; div r2, r1 */ 
     {
@@ -443,7 +443,7 @@ real_div
 real_cmp
     : cmp real_type X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
     { 
-          EMIT("movb " << const_cmp_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
+          EMIT("movb " << const_op_const($1, $3, $4) << ", " << reg2str($1->resReg())) 
     }
     | cmp real_type any_reg X64_CONST /* cmp c, r */
     { 

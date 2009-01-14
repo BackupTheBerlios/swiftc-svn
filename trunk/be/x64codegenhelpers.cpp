@@ -83,20 +83,6 @@ std::string cst2str(me::Const* cst)
     return oss.str();
 }
 
-std::string op2str(me::Op* op)
-{
-    if ( typeid(*op) == typeid(me::Const) )
-        return cst2str( (me::Const*) op );
-    else
-    {
-        swiftAssert( typeid(*op) == typeid(me::Reg), "must be a Reg" );
-        return reg2str( (me::Reg*) op );
-    }
-
-    // avoid warning
-    return "";
-}
-
 std::string instr2str(me::AssignInstr* ai)
 {
     switch (ai->kind_)
@@ -110,32 +96,6 @@ std::string instr2str(me::AssignInstr* ai)
     }
 
     return "";
-}
-
-std::string const_add_or_mul_const(int instr, me::Const* cst1, me::Const* cst2)
-{
-    swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );
-    swiftAssert(cst1->type_ == me::Op::R_REAL32 
-             || cst2->type_ == me::Op::R_REAL64 , "type must be a real");
-    swiftAssert(instr == X64_ADD || instr == X64_MUL, "must be X64_ADD or X64_MUL");
-
-    std::ostringstream oss;
-    if (cst1->type_ == me::Op::R_REAL32)
-    {
-        if (instr == X64_ADD)
-            oss << (cst1->value_.real32_ + cst2->value_.real32_);
-        else
-            oss << (cst1->value_.real32_ * cst2->value_.real32_);
-    }
-    else
-    {
-        if (instr == X64_ADD)
-            oss << (cst1->value_.real64_ + cst2->value_.real64_);
-        else
-            oss << (cst1->value_.real64_ * cst2->value_.real64_);
-    }
-
-    return oss.str();
 }
 
 std::string mul2str(int type)
@@ -180,184 +140,66 @@ std::string div2str(int type)
     return "error";
 }
 
-std::string const_cmp_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2)
+std::string const_op_const(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2)
 {
     swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );
 
+    std::ostringstream oss;
+    oss << '$';
     int kind = ai->kind_;
 
-    // real32 and real64 need special handling 
-    if (cst1->type_ != me::Op::R_REAL32 && cst1->type_ != me::Op::R_REAL64)
-    {
-        if (kind == me::AssignInstr::EQ)
-        {
-            if (cst1->value_.uint64_ == cst2->value_.uint64_)
-                return "$1";
-            else 
-                return "$0";
-        }
+    me::Const::Value box;
 
-        if (kind == me::AssignInstr::NE)
-        {
-            if (cst1->value_.uint64_ != cst2->value_.uint64_)
-                return "$1";
-            else 
-                return "$0";
-        }
-    }
+    /*
+     * signed integers
+     */
 
     switch (cst1->type_)
     {
-        case me::Op::R_INT8:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.int8_ <  cst2->value_.int8_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.int8_ <= cst2->value_.int8_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.int8_ >  cst2->value_.int8_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.int8_ >= cst2->value_.int8_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_INT16:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.int16_ <  cst2->value_.int16_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.int16_ <= cst2->value_.int16_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.int16_ >  cst2->value_.int16_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.int16_ >= cst2->value_.int16_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_INT32:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.int32_ <  cst2->value_.int32_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.int32_ <= cst2->value_.int32_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.int32_ >  cst2->value_.int32_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.int32_ >= cst2->value_.int32_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_INT64:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.int64_ <  cst2->value_.int64_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.int64_ <= cst2->value_.int64_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.int64_ >  cst2->value_.int64_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.int64_ >= cst2->value_.int64_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_UINT8:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.uint8_ <  cst2->value_.uint8_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.uint8_ <= cst2->value_.uint8_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.uint8_ >  cst2->value_.uint8_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.uint8_ >= cst2->value_.uint8_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_UINT16:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.uint16_ <  cst2->value_.uint16_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.uint16_ <= cst2->value_.uint16_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.uint16_ >  cst2->value_.uint16_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.uint16_ >= cst2->value_.uint16_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_UINT32:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.uint32_ <  cst2->value_.uint32_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.uint32_ <= cst2->value_.uint32_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.uint32_ >  cst2->value_.uint32_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.uint32_ >= cst2->value_.uint32_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_UINT64:
-            switch (kind)
-            {
-                case '<':
-                    if (cst1->value_.uint64_ <  cst2->value_.uint64_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.uint64_ <= cst2->value_.uint64_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.uint64_ >  cst2->value_.uint64_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.uint64_ >= cst2->value_.uint64_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_REAL32:
-            switch (kind)
-            {
-                case me::AssignInstr::EQ:
-                    if (cst1->value_.real64_ == cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::NE:
-                    if (cst1->value_.real64_ != cst2->value_.real64_) return "$1"; else return "$0";
-                case '<':
-                    if (cst1->value_.real64_ <  cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.real64_ <= cst2->value_.real64_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.real64_ >  cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.real64_ >= cst2->value_.real64_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
-        case me::Op::R_REAL64:
-            switch (kind)
-            {
-                case me::AssignInstr::EQ:
-                    if (cst1->value_.real64_ == cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::NE:
-                    if (cst1->value_.real64_ != cst2->value_.real64_) return "$1"; else return "$0";
-                case '<':
-                    if (cst1->value_.real64_ <  cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::LE:
-                    if (cst1->value_.real64_ <= cst2->value_.real64_) return "$1"; else return "$0";
-                case '>':
-                    if (cst1->value_.real64_ >  cst2->value_.real64_) return "$1"; else return "$0";
-                case me::AssignInstr::GE:
-                    if (cst1->value_.real64_ >= cst2->value_.real64_) return "$1"; else return "$0";
-                default:
-                    swiftAssert(false, "unreachable code"); 
-            }
+
+#define CONST_OP_CONST_CASE(type, member, box_member)\
+    case me::Op::type :\
+        switch (kind)\
+        {\
+            case '+': box.member = cst1->value_.member + cst2->value_.member; break;\
+            case '-': box.member = cst1->value_.member - cst2->value_.member; break;\
+            case '*': box.member = cst1->value_.member * cst2->value_.member; break;\
+            case '/': box.member = cst1->value_.member / cst2->value_.member; break;\
+            case me::AssignInstr::EQ:\
+                if (cst1->value_.member == cst2->value_.member) return "$1"; else return "$0";\
+            case me::AssignInstr::NE:\
+                if (cst1->value_.member != cst2->value_.member) return "$1"; else return "$0";\
+            case '<':\
+                if (cst1->value_.member <  cst2->value_.member) return "$1"; else return "$0";\
+            case me::AssignInstr::LE:\
+                if (cst1->value_.member <= cst2->value_.member) return "$1"; else return "$0";\
+            case '>':\
+                if (cst1->value_.member >  cst2->value_.member) return "$1"; else return "$0";\
+            case me::AssignInstr::GE:\
+                if (cst1->value_.member >= cst2->value_.member) return "$1"; else return "$0";\
+            default:\
+                swiftAssert(false, "unreachable code"); \
+        }\
+        oss << box.box_member;\
+        return oss.str();
+
+        CONST_OP_CONST_CASE(R_INT8,  int8_,  int32_)
+        CONST_OP_CONST_CASE(R_INT16, int16_, int16_)
+        CONST_OP_CONST_CASE(R_INT32, int32_, int32_)
+        CONST_OP_CONST_CASE(R_INT64, int64_, int64_)
+
+        CONST_OP_CONST_CASE(R_UINT8,  uint8_ , uint32_) 
+        CONST_OP_CONST_CASE(R_UINT16, uint16_, uint16_)
+        CONST_OP_CONST_CASE(R_UINT32, uint32_, uint32_)
+        CONST_OP_CONST_CASE(R_UINT64, uint64_, uint64_)
+
+        CONST_OP_CONST_CASE(R_REAL32, real32_, uint32_)
+        CONST_OP_CONST_CASE(R_REAL64, real64_, uint64_)
+
+#undef CONST_OP_CONST_CASE
+
         default:
-            swiftAssert(false, "unreachable code"); 
+            swiftAssert(false, "unreachable code");
     }
 
     return "error";
