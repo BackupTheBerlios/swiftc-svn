@@ -24,6 +24,8 @@ public:
      */
 
     virtual void process();
+    void genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode);
+    void genMove(me::Op::Type type, int r1, int r2);
 };
 
 } // namespace be

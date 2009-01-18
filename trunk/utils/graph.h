@@ -58,12 +58,12 @@ public:
 
         bool isPred(const Node* n) const
         {
-            return pred_.search(n) != pred_.sentinel();
+            return pred_.find(n) != pred_.sentinel();
         }
 
         bool isSucc(const Node* n) const
         {
-            return succ_.search(n) != succ_.sentinel();
+            return succ_.find(n) != succ_.sentinel();
         }
 
         size_t numPreds() const
@@ -200,7 +200,7 @@ void Graph<T>::erase(Node* n)
     // for each predecessor
     for (Relative* iter = n->pred_.first(); iter != n->pred_.sentinel(); iter = iter->next())
     {
-        Relative* f = iter->value_->succ_.search(n);
+        Relative* f = iter->value_->succ_.find(n);
         // erase this node
         iter->value_->succ_.erase( f );
     }
@@ -208,12 +208,12 @@ void Graph<T>::erase(Node* n)
     // for each successor
     for (Relative* iter = n->succ_.first(); iter != n->succ_.sentinel(); iter = iter->next())
     {
-        Relative* f = iter->value_->pred_.search(n);
+        Relative* f = iter->value_->pred_.find(n);
         // erase this node
         iter->value_->pred_.erase(f  );
     }
 
-    nodes_.erase( nodes_.search(n) );
+    nodes_.erase( nodes_.find(n) );
     delete n;
 }
 

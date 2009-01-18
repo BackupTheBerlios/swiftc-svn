@@ -7,6 +7,7 @@
 #include "me/functab.h"
 
 #include "be/x64parser.h"
+#include "be/x64codegenhelpers.h"
 
 //------------------------------------------------------------------------------
 
@@ -52,17 +53,235 @@ void X64CodeGen::process()
     ofs_ << *function_->id_ << ":\n";
     ofs_ << "\tenter $0, $32\n";
 
+    me::BBNode* currentNode = 0;
+
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
         me::InstrBase* instr = iter->value_;
+
+        // check whether we have a new basic block
+        if ( typeid(*instr) == typeid(me::LabelInstr) )
+        {
+            me::BBNode* oldNode = currentNode;
+            currentNode = cfg_->labelNode2BBNode_[iter];
+
+            if (currentNode)
+                genPhiInstr(oldNode, currentNode);
+        }
+        else if ( typeid(*instr) == typeid(me::PhiInstr) )
+            continue;
+
+        // update globals for x64lex
         currentInstr = instr;
         location = INSTRUCTION;
+
         x64parse();
     }
 
-    ofs_ << "\tleave\n\n";
+    ofs_ << "\tleave\n";
     ofs_ << "\tret\n";
     ofs_ << '\n';
+}
+
+// helpers
+
+struct TReg
+{
+    int color_;
+    me::Op::Type type_;
+
+    TReg(int color, me::Op::Type type)
+        : color_(color)
+        , type_(type)
+    {}
+};
+
+class RegGraph : public Graph<TReg>
+{
+    virtual std::string name() const
+    {
+        return "";
+    }
+};
+
+typedef RegGraph::Node* RGNode;
+
+void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
+{
+    me::Reg op1(type, -1);
+    me::Reg op2(type, -1);
+    op1.color_ = r1;
+    op2.color_ = r2;
+
+    if (type == me::Op::R_REAL32)
+        ofs_  << "\tmovaps\t" << reg2str(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
+    else if (type == me::Op::R_REAL64)
+        ofs_  << "\tmovapd\t" << reg2str(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
+    else
+        ofs_  << "\tmovq\t" << X64RegAlloc::reg2String(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
+}
+
+void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
+{
+    me::BasicBlock* nextBB = nextNode->value_;
+
+    if ( !nextBB->hasPhiInstr() )
+        return;
+
+    ofs_ << "\t /* phi functions */\n";
+
+    /* 
+     * Because of the critical edge elimination prevNode's 
+     * successors can't have phi functions when prevNode has more than
+     * one successor.
+     */
+    swiftAssert( prevNode->succ_.size() == 1, "must have exactly one successor");
+
+    size_t phiIndex = nextNode->whichPred(prevNode);
+
+    RegGraph rg;
+    std::map<int, RegGraph::Node*> inserted;
+
+    // for each phi function in nextBB
+    for (me::InstrNode* iter = nextBB->firstPhi_; iter != nextBB->firstOrdinary_; iter = iter->next())
+    {
+        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
+                "must be a PhiInstr here" );
+        me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
+
+        if ( phi->result()->isMem() )
+            continue; // TODO
+
+        // is this a pointless definition? (should be optimized away)
+        if ( !phi->liveOut_.contains(phi->result()) )
+            continue;
+
+        // get regs
+        me::Reg* srcReg = ((me::Reg*) phi->arg_[phiIndex].op_);
+        me::Reg* dstReg = phi->result();
+
+        // get colors
+        int srcColor = srcReg->color_;
+        int dstColor = dstReg->color_;
+
+        // get Types
+        me::Op::Type srcType = srcReg->type_;
+        me::Op::Type dstType = dstReg->type_;
+
+        /* 
+         * check whether these colors have already been inserted 
+         * and insert if applicable
+         */
+        std::map<int, RegGraph::Node*>::iterator srcIter = inserted.find(srcColor);
+        if ( srcIter == inserted.end() )
+            srcIter = inserted.insert( std::make_pair(srcColor, rg.insert(new TReg(srcColor, srcType))) ).first;
+
+        std::map<int, RegGraph::Node*>::iterator dstIter = inserted.find(dstColor);
+        if ( dstIter == inserted.end() )
+            dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new TReg(dstColor, dstType))) ).first;
+
+        srcIter->second->link(dstIter->second);
+    }
+
+    /*
+     * while there is an edge e = (r, s) with r != s 
+     * where the outdegree of s equals 0 ...
+     */
+    bool changed = true;
+    while (changed)
+    {
+        changed = false;
+
+        RegGraph::Relative* iter = rg.nodes_.first();
+        while (iter != rg.nodes_.sentinel())
+        {
+            RegGraph::Node* n = iter->value_;
+
+            // go here further thus erasing the current node won't crash the loop
+            iter = iter->next();
+
+            if ( n->succ_.empty() )
+            {
+                changed = true;
+
+                // ... resolve this by a move p -> n
+                swiftAssert( n->pred_.size() == 1, 
+                        "must have exactly one predecessor" );
+                RegGraph::Node* p = n->pred_.first()->value_;
+
+                me::Op::Type type = n->value_->type_;
+                genMove(type, p->value_->color_, n->value_->color_);
+
+                std::cout << "erase" << std::endl;
+                rg.erase(n);
+            }
+        }
+    }
+
+    /*
+     * now remove cycles
+     */
+
+    // while there are still nodes left
+    while ( !rg.nodes_.empty() )
+    {
+        // take first node
+        RegGraph::Relative* relative = rg.nodes_.first();
+        RegGraph::Node* node = relative->value_;
+
+        /*
+         * remove trivial self loops 
+         * without generating any instructions
+         */
+        if (node->succ_.first()->value_ == node)
+        {
+            rg.erase(node);
+            continue;
+        }
+            
+        /*
+         * -> we have a non-trivial cycle:
+         * R1 -> R2 -> R3 -> ... -> Rn -> r1
+         *
+         * -> generate these moves:
+         *  mov r1, free
+         *  mov r2, r1
+         *  mov r3, r2
+         *  ...
+         *  mov rn, free
+         */
+
+        // mov r1, free
+        me::Op::Type type = node->value_->type_;
+        genMove(type, node->value_->color_, X64RegAlloc::R15); // TODO
+
+        std::vector<RegGraph::Node*> toBeErased;
+        toBeErased.push_back(node);
+
+        // iterate over the cycle
+        RegGraph::Node* predIter = node; // current node
+        RegGraph::Node* cylcleIter = node->succ_.first()->value_; // start with next node
+        while (cylcleIter != node) // until we reach r1 again
+        {
+            // mov r_current, r_pred
+            genMove(type, cylcleIter->value_->color_, predIter->value_->color_);
+
+            // remember for erasion
+            toBeErased.push_back(cylcleIter);
+
+            // go to next node
+            predIter = predIter->succ_.first()->value_;
+            cylcleIter = cylcleIter->succ_.first()->value_;
+        }
+
+        // mov free, rn
+        genMove(type, X64RegAlloc::R15, predIter->value_->color_); // TODO
+
+        // remove all handled nodes
+        for (size_t i = 0; i < toBeErased.size(); ++i)
+            rg.erase( toBeErased[i] );
+    }
+    ofs_ << "\t /* end phi functions */\n";
 }
 
 } // namespace be

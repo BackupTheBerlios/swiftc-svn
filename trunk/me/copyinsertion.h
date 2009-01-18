@@ -9,7 +9,7 @@ namespace me {
 /** 
  * @brief Insert copies of regs if necessary.
  *
- * This pass ensures that a live-through arg which is constrained to a same
+ * This pass ensures that a live-through arg which is constrained to the same
  * color as a result is copied.
  */
 class CopyInsertion : public CodePass
@@ -35,6 +35,8 @@ public:
 private:
 
     void insertIfNecessary(InstrNode* instrNode);
+
+    void insertCopy(size_t regIdx, InstrNode* instrNode);
 };
 
 } // namespace me

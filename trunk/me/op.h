@@ -21,7 +21,7 @@ struct InstrBase;
 #ifdef SWIFT_DEBUG
 
 struct IVar;
-typedef Graph<IVar>::Node* VarNode;
+typedef Graph<IVar>::Node VarNode;
 
 #endif // SWIFT_DEBUG
 
@@ -183,8 +183,8 @@ struct Reg : public Op
     DefUseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
-    std::string id_; ///< This stores the name of the orignal var in the debug version.
-    VarNode varNode_; ///< This stores the graph node of the IG in the debug version.
+    std::string id_;    ///< This stores the name of the orignal var in the debug version.
+    VarNode* varNode_;  ///< This stores the graph node of the IG in the debug version.
 #endif // SWIFT_DEBUG
 
     /*

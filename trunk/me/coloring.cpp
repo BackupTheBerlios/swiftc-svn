@@ -37,25 +37,55 @@ void Coloring::process()
 void Coloring::colorRecursive(BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
-    Colors colors;
-
+    Colors colors; // colors already used go here
     InstrNode* start;
 
     if ( bb->hasConstrainedInstr() )
     {
-        InstrNode* constrainedInstr = bb->firstOrdinary_;
+        InstrNode* constrainedInstrNode = bb->firstOrdinary_;
+        InstrBase* constrainedInstr = constrainedInstrNode->value_;
         
+        swiftAssert( constrainedInstr->isConstrained(), "must be constrained");
         swiftAssert( bb->liveIn_.empty(), 
                 "liveIn should be empty with a constrained instruction" );
 
         RegSet alreadyColored;
-
-        colorConstraintedInstr(constrainedInstr, colors, alreadyColored);
+        colorConstraintedInstr(constrainedInstrNode, alreadyColored);
 
         /*
-         * color definitions of preceding phi instructions not in 
+         * colors which must not be used above in the phi functions:
          * res(constrainedInstr) or arg(constrainedInstr)
          */
+        Colors occupied; 
+
+        for (size_t i = 0; i < constrainedInstr->arg_.size(); ++i)
+        {
+            if ( typeid(*constrainedInstr->arg_[i].op_) != typeid(Reg) )
+                continue;
+
+            Reg* reg = (Reg*) constrainedInstr->arg_[i].op_;
+
+            if ( !reg->colorReg(typeMask_) )
+                continue;
+
+            occupied.insert(reg->color_);
+
+            if ( constrainedInstr->livesThrough(reg) )
+                colors.insert(reg->color_); // this one must not be used afterwards
+        }
+
+        for (size_t i = 0; i < constrainedInstr->res_.size(); ++i)
+        {
+            Reg* reg = (Reg*) constrainedInstr->res_[i].reg_;
+
+            if ( !reg->colorReg(typeMask_) )
+                continue;
+
+            occupied.insert(reg->color_);
+
+            if ( constrainedInstr->liveOut_.contains(reg) )
+                colors.insert(reg->color_); // this one must not be used afterwards
+        }
 
         // for each PhiInstr
         for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
@@ -70,21 +100,27 @@ void Coloring::colorRecursive(BBNode* bbNode)
             if ( !alreadyColored.contains(phiRes) )
             {
                 // -> assign a fresh color here
-
-                IntVec freeColors = reservoir_.difference(colors);
+                IntVec freeColors = reservoir_.difference(occupied);
                 swiftAssert( !freeColors.empty(), "must not be empty" );
-
-                colors.insert(freeColors[0]);
                 phiRes->color_ = freeColors[0];
 
                 // pointless definitions should be optimized away
-                if ( !phi->liveOut_.contains(phiRes) )
-                    colors.erase( colors.find(phiRes->color_) );
+                if ( phi->liveOut_.contains(phiRes) )
+                {
+                    occupied.insert(phiRes->color_);
+
+                    /*
+                     * insert it only in colors 
+                     * if it is in the liveOut of constrainedInstr
+                     */
+                    if ( constrainedInstr->liveOut_.contains(phiRes) )
+                        colors.insert(phiRes->color_);
+                }
             }
         }
 
         // start with the first instr which is followed by the constrained one
-        start = constrainedInstr->next();
+        start = constrainedInstrNode->next();
     }
     else
     {
@@ -197,7 +233,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
     }
 }
 
-void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegSet& alreadyColored)
+void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColored)
 {
     InstrBase* instr = instrNode->value_;
     
@@ -236,7 +272,6 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
         if ( !reg->colorReg(typeMask_) )
             continue;
 
-        alreadyColored.insert(reg);
         unconstrainedDefs.insert(reg);
     }
 
@@ -262,10 +297,6 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
         // mark register as occupied
         colorsA.insert(constraint); 
 
-        // mark arg as assigned
-        dyingArgs.erase(reg);
-        liveThrough.erase(reg);
-
         // set color
         reg->color_ = constraint;
 
@@ -273,10 +304,11 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
         {
             swiftAssert( freeColors.contains(constraint), "must be found here" );
             freeColors.erase(constraint);
-
-            swiftAssert( !colors.contains(constraint), "must not be found here" );
-            colors.insert(constraint);
         }
+
+        // mark arg as assigned
+        dyingArgs.erase(reg);
+        liveThrough.erase(reg);
     }
 
     // for each constrained result
@@ -301,13 +333,6 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
 
         // set color
         reg->color_ = constraint;
-
-        swiftAssert( !colors.contains(constraint), "must not be found here" );
-        colors.insert(constraint);
-
-        // pointless definitions should be optimized away
-        if ( !instr->liveOut_.contains(reg) )
-            colors.erase( colors.find(reg->color_) );
     }
 
     // for each unconstrained arg which does not live through
@@ -343,15 +368,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
             // -> there is none -> use a fresh color
             IntVec free_without_c_d = freeColors.difference(colorsA);
             swiftAssert( !free_without_c_d.empty(), "must not be empty" );
-            int constraint = free_without_c_d[0];
-            reg->color_ = constraint;
-
-            swiftAssert( !colors.contains(constraint), "must not be found here" );
-            colors.insert(constraint);
-
-            // pointless definitions should be optimized away
-            if ( !instr->liveOut_.contains(reg) )
-                colors.erase( colors.find(reg->color_) );
+            reg->color_ = free_without_c_d[0];
         }
     }
 
@@ -372,9 +389,6 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegS
         IntVec free = freeColors.difference(c_d_union_c_a);
         swiftAssert( !free.empty(), "must not be empty" );
         reg->color_ = free[0];
-
-        swiftAssert( !colors.contains(reg->color_), "color must be free" );
-        colors.insert(reg->color_);
     }
 }
 

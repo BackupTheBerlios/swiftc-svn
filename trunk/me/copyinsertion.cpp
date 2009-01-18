@@ -31,7 +31,7 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
 {
     InstrBase* instr = instrNode->value_;
 
-    // for each constrained live-through arg
+    // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
         if ( instr->arg_[i].constraint_ == InstrBase::NO_CONSTRAINT )
@@ -42,37 +42,44 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
 
         Reg* reg = (Reg*) instr->arg_[i].op_;
 
+        bool sameArgWithDifferentConstraint = false;
+
+        /*
+         * check whether there is the same arg with a different constraint
+         */
+        for (size_t j = i + 1; j < instr->arg_.size(); ++j)
+        {
+            if ( instr->arg_[j].constraint_ == InstrBase::NO_CONSTRAINT )
+                continue;
+
+            if ( typeid(*instr->arg_[j].op_) != typeid(Reg) )
+                continue;
+
+            Reg* reg2 = (Reg*) instr->arg_[j].op_;
+
+            if (reg == reg2 && reg->color_ == reg2->color_)
+            {
+                insertCopy(i, instrNode);
+                sameArgWithDifferentConstraint = true;
+            }
+        }
+
+        if (sameArgWithDifferentConstraint)
+            break; // in this is reg can't be a liveThrough arg
+
+        /*
+         * check whether this is a liveThrough arg
+         * and has a result with the same constraint
+         */
         if ( !instr->livesThrough(reg) )
             continue;
-
-        // -> reg lives-through and is constrained
-        int constraint = instr->arg_[i].constraint_;
 
         // is there a result with the same constraint?
         for (size_t j = 0; j < instr->res_.size(); ++j)
         {
-            if ( constraint == instr->res_[j].constraint_ )
+            if ( instr->arg_[i].constraint_ == instr->res_[j].constraint_ )
             {
-                // -> copy needed
-
-                // create new result
-#ifdef SWIFT_DEBUG
-                Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-                Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
-
-                // create and insert copy
-                AssignInstr* newCopy = new AssignInstr('=', newReg, reg); 
-                cfg_->instrList_.insert( instrNode->prev(), newCopy );
-
-                // substitute operand with newReg
-                instr->arg_[i].op_ = newReg;
-                
-                // transfer constraint to new instruction
-                newCopy->constrain();
-                newCopy->arg_[0].constraint_ = constraint;
-                
+                insertCopy(i, instrNode);
                 /*
                  * it is assumed that no other reg is constrained to the 
                  * current color because of the simple constraint property
@@ -80,7 +87,29 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
                 break;
             }
         } // for each res
-    } // for each constrained live-through arg
+    } // for each constrained arg
+}
+
+void CopyInsertion::insertCopy(size_t regIdx, InstrNode* instrNode)
+{
+    InstrBase* instr = instrNode->value_;
+    swiftAssert( typeid(*instr->arg_[regIdx].op_) == typeid(Reg),
+            "must be a Reg here" );
+    Reg* reg = (Reg*) instr->arg_[regIdx].op_;
+
+    // create new result
+#ifdef SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
+#else // SWIFT_DEBUG
+    Reg* newReg = function_->newSSA(reg->type_);
+#endif // SWIFT_DEBUG
+
+    // create and insert copy
+    AssignInstr* newCopy = new AssignInstr('=', newReg, reg); 
+    cfg_->instrList_.insert( instrNode->prev(), newCopy );
+
+    // substitute operand with newReg
+    instrNode->value_->arg_[regIdx].op_ = newReg;
 }
 
 } // namespace me

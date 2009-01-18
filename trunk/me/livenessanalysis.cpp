@@ -54,7 +54,7 @@ struct IGraph : public Graph<IVar>
     std::string name_;
 };
 
-typedef Graph<IVar>::Node* VarNode;
+typedef Graph<IVar>::Node VarNode;
 
 #endif // SWIFT_DEBUG
 
@@ -115,7 +115,7 @@ void LivenessAnalysis::process()
     {
         Reg* var = iter->second;
 
-        VarNode varNode = ig_->insert( new IVar(var) );
+        VarNode* varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
     }
 #endif // SWIFT_DEBUG

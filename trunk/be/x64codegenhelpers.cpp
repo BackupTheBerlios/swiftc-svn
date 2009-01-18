@@ -106,6 +106,84 @@ std::string mcst2str(me::Const* cst)
     return oss.str();
 }
 
+std::string sar_cst2str(int type)
+{
+    switch (type)
+    {
+        case X64_INT8 : return "$7";
+        case X64_INT16: return "$15";
+        case X64_INT32: return "$31";
+        case X64_INT64: return "$63";
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return "error";
+}
+
+std::string sgn_cst2str(me::Const* cst)
+{
+    switch (cst->type_)
+    {
+        case me::Op::R_INT8 : 
+            if (cst->value_.uint16_ < 0)  
+                return "$255"; 
+            else 
+                return "$0";
+        case me::Op::R_INT16: 
+            if (cst->value_.uint16_ < 0) 
+                return  "$65535"; 
+            else 
+                return "$0";
+        case me::Op::R_INT32: 
+            if (cst->value_.uint32_ < 0) 
+                return  "$4294967295"; 
+            else 
+                return "$0";
+        case me::Op::R_INT64: 
+            if (cst->value_.uint64_ < 0) 
+                return  "$18446744073709551615"; 
+            else 
+                return "$0";
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return "error";
+}
+
+std::string rdx2str(int type)
+{
+    switch (type)
+    {
+        case X64_INT8: 
+        case X64_UINT8: 
+            return "%dl";
+        case X64_INT16: 
+        case X64_UINT16: 
+            return "%dx";
+        case X64_INT32: 
+        case X64_UINT32: 
+            return "%edx";
+        case X64_INT64: 
+        case X64_UINT64: 
+            return "%rdx";
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return "error";
+}
+
+std::string div2str(int type)
+{
+    if (type == X64_INT8)
+        return "idiv";
+
+    swiftAssert(type == X64_UINT8, "must be uint8");
+    return "div";
+}
+
 std::string cst2str(me::Const* cst)
 {
     std::ostringstream oss;
@@ -144,27 +222,6 @@ std::string mul2str(int type)
         case X64_UINT32:
         case X64_UINT64:
             return "mul";
-        default:
-            swiftAssert(false, "unreachable code"); 
-    }
-
-    return "error";
-}
-
-std::string div2str(int type)
-{
-    switch (type)
-    {
-        case X64_INT8:
-        case X64_INT16:
-        case X64_INT32:
-        case X64_INT64:
-            return "idiv";
-        case X64_UINT8:
-        case X64_UINT16:
-        case X64_UINT32:
-        case X64_UINT64:
-            return "div";
         default:
             swiftAssert(false, "unreachable code"); 
     }

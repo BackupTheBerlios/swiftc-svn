@@ -29,6 +29,11 @@ std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string cst2str(me::Const* cst);
 std::string mcst2str(me::Const* cst);
 
+std::string sar_cst2str(int type);
+std::string sgn_cst2str(me::Const* cst);
+std::string rdx2str(int type);
+std::string div2str(int type);
+
 std::string instr2str(me::AssignInstr* ai);
 std::string mul2str(int type);
 std::string div2str(int type);

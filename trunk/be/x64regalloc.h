@@ -99,7 +99,6 @@ public:
     virtual void process();
 
     void registerTargeting();
-    void insertNOP(me::InstrNode* instrNode);
 
     static std::string reg2String(const me::Reg* reg);
 };

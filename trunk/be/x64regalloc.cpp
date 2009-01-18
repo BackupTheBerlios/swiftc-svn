@@ -68,7 +68,7 @@ void X64RegAlloc::process()
     rColors.erase(RSP);
 
     // check whether the frame pointer can be used
-    if (omitFramePointer_)
+    if (!omitFramePointer_)
         rColors.erase(RBP);
 
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
@@ -119,21 +119,11 @@ void X64RegAlloc::process()
      */
 
     // general purpose registers
-    me::Coloring(function_, F_TYPE_MASK, fColors).process();
-    // XMM registers
-    me::Coloring(function_, R_TYPE_MASK, rColors).process(); 
-}
+    me::Coloring(function_, R_TYPE_MASK, rColors).process();
 
-/*
- * forbidden instructions:
- *
- * integer:
- *      r1 = c / r1
- *
- * real:
- *      r1 = c / r1
- *      b1 = c cmp r2
- */
+    // XMM registers
+    me::Coloring(function_, F_TYPE_MASK, fColors).process(); 
+}
 
 void X64RegAlloc::registerTargeting()
 {
@@ -185,65 +175,72 @@ void X64RegAlloc::registerTargeting()
             }
 
             /*
-             * do we really need three regs?
+             * forbidden instructions:
+             * r1 =  c / r1     ( reg = c / reg_dead )
+             *      rewrite as:
+             *      tmp = c
+             *      a = tmp / b
+             *
+             * r1 = r2 / r1     ( reg = reg / reg_dead)
+             *      rewrite as:
+             *      a = b / c
+             *      NOP(c)
+             *      
              */
 
-            enum ThreeRegs
-            {
-                NO,
-                PERHAPS,
-                YES
-            };
-
-            ThreeRegs threeRegs = NO;
-
-            if (ai->arg_.size() > 1)
+            if (ai->kind_ == '/')
             {
                 swiftAssert( ai->arg_.size() == 2, "must have exactly two args" );
             
                 me::InstrBase::OpType opType1 = ai->getOpType(0);
                 me::InstrBase::OpType opType2 = ai->getOpType(1);
 
-                if (op1 != op2)
+                if (opType2 == me::InstrBase::REG_DEAD)
                 {
-                    if (opType1 != me::InstrBase::CONST && opType2 != me::InstrBase::CONST)
+                    if (opType1 == me::InstrBase::CONST)
                     {
-                        if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG)
-                            threeRegs = YES;
-                        else if (opType1 == me::InstrBase::REG && opType2 == me::InstrBase::REG_DEAD)
-                            threeRegs = PERHAPS;
+                        swiftAssert( typeid(*ai->arg_[1].op_) == typeid(me::Const), 
+                                "must be a Const here");
+                        me::Const* cst = (me::Const*) ai->arg_[1].op_;
+
+                        // create reg which will hold the constant, the assignment and insert
+                        me::Reg* newReg = function_->newSSA(type);
+                        me::AssignInstr* newCopy = new me::AssignInstr('=', newReg, cst);
+                        cfg_->instrList_.insert( iter->prev(), newCopy );
+
+                        // substitute operand with newReg
+                        instr->arg_[1].op_ = newReg;
+
+                        currentBB->value_->fixPointers();
                     }
-                }
-            }
+                    else if (opType1 == me::InstrBase::REG)
+                    {
+                        // insert artificial use for all critical cases
+                        me::Reg* reg = (me::Reg*) ai->arg_[1].op_;
+                        cfg_->instrList_.insert( iter, new me::NOP(reg) );
 
-            if (threeRegs == YES)
-                insertNOP(iter);
-            else 
-                if (threeRegs == PERHAPS)
-            {
-                /*
-                 * insert artificial use for all critical cases
-                 */
-
-                if ( (ai->kind_ == '/')
-                     || ( (type == me::Op::R_REAL32 || type == me::Op::R_REAL64) 
-                         && (ai->kind_ == '-')) )
-                {
-                    insertNOP(iter);
-                }
-            }
-
-            if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
-            {
-                continue;
-            }
+                        currentBB->value_->fixPointers();
+                    }
+                } // if op2 REG_DEAD
+            } // if div
 
             /*
-             * do register targeting on mul, imul, div and idiv instructions
+             * do register targeting on mul, div and idiv instructions
              */
+
+            if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
+                continue;
 
             if (ai->kind_ == '*' || ai->kind_ == '/')
             {
+                if ( ai->kind_ == '*' && 
+                        (type == me::Op::R_INT8  || type == me::Op::R_INT16 || 
+                         type == me::Op::R_INT32 || type == me::Op::R_INT64) )
+                {
+                    // this is signed int = signed int * signed int
+                    continue; // -> everything's fine
+                }
+                
                 /*
                  * constrain properly
                  */
@@ -251,41 +248,30 @@ void X64RegAlloc::registerTargeting()
                 ai->arg_[0].constraint_ = RAX;
                 ai->res_[0].constraint_ = RAX;
 
-                me::Reg* newReg = function_->newSSA(type);
-
-                // int8 and uint8 muls just go to ax and not al:dl
+                // int8 and uint8 just go to ax/al/ah and not dl:al or something
                 if (type != me::Op::R_INT8 && type != me::Op::R_UINT8)
                 {
-                    if (ai->kind_ == '*')
+                    // RDX is destroyed in all cases
+                    ai->res_.push_back( me::Res(function_->newSSA(type), 0, RDX) );
+
+                    if (ai->kind_ == '/')
                     {
-                        // newReg is defined here
-                        ai->res_.push_back( me::Res(newReg, 0, RDX) );
-                    }
-                    else
-                    {
-                        // define newReg with undef
-                        cfg_->instrList_.insert( iter->prev(),
-                                new me::AssignInstr('=', newReg, new me::Undef(type)) );
-                        ai->arg_.push_back( me::Arg(newReg, RDX) );
+                        // no input reg may be RDX
+
+                        // define a new Reg which is initialized with undef
+                        me::Reg* dummy = function_->newSSA(type);
+                        cfg_->instrList_.insert( iter->prev(), 
+                            new me::AssignInstr('=', dummy, new me::Undef(type)) );
+
+                        // avoid that RDX is spilled here
+                        ai->arg_.push_back( me::Arg(dummy, RDX) );
+
+                        currentBB->value_->fixPointers();
                     }
                 }
             }
         } // if AssignInstr
     } // for each instruction
-}
-
-void X64RegAlloc::insertNOP(me::InstrNode* instrNode)
-{
-    swiftAssert( typeid(*instrNode->value_) == typeid(me::AssignInstr),
-            "must be an AssignInstr here");
-    me::AssignInstr* ai = (me::AssignInstr*) instrNode->value_;
-
-    swiftAssert( typeid(*ai->arg_[1].op_) == typeid(me::Reg),
-            "must be a Reg here" );
-    swiftAssert( ai->arg_.size() == 2, "must have exactly two args");
-    me::Reg* reg = (me::Reg*) ai->arg_[1].op_;
-
-    cfg_->instrList_.insert( instrNode, new me::NOP(reg) );
 }
 
 std::string X64RegAlloc::reg2String(const me::Reg* reg)

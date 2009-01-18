@@ -35,7 +35,7 @@ private:
 
     void color();
     void colorRecursive(BBNode* bbNode);
-    void colorConstraintedInstr(InstrNode* instrNode, Colors& colors, RegSet& alreadyColored);
+    void colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColored);
 };
 
 } // namespace me
