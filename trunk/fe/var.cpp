@@ -2,15 +2,18 @@
 
 #include "fe/type.h"
 
+#include "me/functab.h"
+
 namespace swift {
 
 /*
     constructor and destructor
 */
 
-Var::Var(Type* type, std::string* id, int line /*= NO_LINE*/)
+Var::Var(Type* type, std::string* id, int varNr, int line /*= NO_LINE*/)
     : Symbol(id, 0, line) // Vars (Params or Locals) never have parents
     , type_(type)
+    , varNr_(varNr)
 {}
 
 Var::~Var()
@@ -25,8 +28,7 @@ Var::~Var()
 */
 
 Local::Local(Type* type, std::string* id, int varNr, int line /*= NO_LINE*/)
-    : Var(type, id, line)
-    , varNr_(varNr)
+    : Var(type, id, varNr, line)
 {}
 
 //------------------------------------------------------------------------------
@@ -35,8 +37,8 @@ Local::Local(Type* type, std::string* id, int varNr, int line /*= NO_LINE*/)
     constructor and destructor
 */
 
-Param::Param(Kind kind, Type* type, std::string* id /*= 0*/, int line /*= NO_LINE*/)
-    : Var(type, id, line)
+Param::Param(Kind kind, Type* type, std::string* id, int varNr, int line /*= NO_LINE*/)
+    : Var(type, id, varNr, line)
     , kind_(kind)
 {}
 
@@ -60,6 +62,12 @@ bool Param::check(const Param* param1, const Param* param2)
 
 bool Param::analyze() const
 {
+#ifdef SWIFT_DEBUG
+    me::functab->newVar( type_->baseType_->toType(), varNr_, id_ );
+#else // SWIFT_DEBUG
+    me::functab->newVar( type_->baseType_->toType(), varNr_ );
+#endif // SWIFT_DEBUG
+
     return type_->validate();
 }
 

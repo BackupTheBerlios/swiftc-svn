@@ -6,15 +6,14 @@
 #include <stack>
 #include <map>
 
+#include "fe/var.h"
+
 namespace swift {
 
 // forward declarations
-struct Class;
-struct Local;
 struct MemberVar;
 struct Method;
 struct Module;
-struct Param;
 struct Scope;
 struct Sig;
 struct Type;
@@ -104,13 +103,6 @@ struct SymbolTable
      * @return The Var or 0 if not found.
      */
     Var* lookupVar(std::string* id);
-
-    /**
-     * Lookups a Var -- either a Local or a Param -- by varNr.
-     *
-     * @return The Var or 0 if not found.
-     */
-    Var* lookupVar(int varNr);
 
     /**
      * Lookups a Class by name.

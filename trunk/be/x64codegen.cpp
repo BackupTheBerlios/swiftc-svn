@@ -70,6 +70,16 @@ void X64CodeGen::process()
         }
         else if ( typeid(*instr) == typeid(me::PhiInstr) )
             continue;
+        else if ( typeid(*instr) == typeid(me::SetParams) )
+        {
+            // TODO
+            continue;
+        }
+        else if ( typeid(*instr) == typeid(me::SetResults) )
+        {
+            // TODO
+            continue;
+        }
 
         // update globals for x64lex
         currentInstr = instr;
@@ -149,16 +159,28 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                 "must be a PhiInstr here" );
         me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
 
-        if ( phi->result()->isMem() )
-            continue; // TODO
-
-        // is this a pointless definition? (should be optimized away)
-        if ( !phi->liveOut_.contains(phi->result()) )
-            continue;
-
         // get regs
         me::Reg* srcReg = ((me::Reg*) phi->arg_[phiIndex].op_);
         me::Reg* dstReg = phi->result();
+
+        if ( dstReg->isMem() )
+            continue; // TODO
+
+        // is this a pointless definition? (should be optimized away)
+        if ( !phi->liveOut_.contains(dstReg) )
+            continue;
+
+        // is this a move of the dummy value UNDEF?
+        me::InstrNode* def = srcReg->def_.instrNode_;
+        if ( typeid(*def->value_) == typeid(me::AssignInstr) )
+        {
+            me::AssignInstr* ai = (me::AssignInstr*) def->value_;
+            if (ai->kind_ == '=')
+            {
+                if ( typeid(*ai->arg_[0].op_) == typeid(me::Undef) )
+                    continue; // yes -> so ignore this phi function
+            }
+        }
 
         // get colors
         int srcColor = srcReg->color_;

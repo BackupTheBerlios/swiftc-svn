@@ -20,26 +20,6 @@ struct Var : public Symbol
 {
     Type* type_;
 
-    enum
-    {
-        NO_LINE = -1
-    };
-/*
-    constructor and destructor
-*/
-
-    Var(Type* type, std::string* id, int line = NO_LINE);
-    virtual ~Var();
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * This class represents either an ordinary local variable used by the
- * programmer or a compiler generated variable used to store a temporary value.
- */
-struct Local : public Var
-{
     /**
      * varNr_ > 0   a TEMP with nr varNr_ <br>
      * varNr_ = 0   invalid (is reserved for literals) <br>
@@ -52,9 +32,31 @@ struct Local : public Var
      */
     int varNr_;
 
+    enum
+    {
+        NO_LINE = -1
+    };
 /*
-    constructor
+    constructor and destructor
 */
+
+    Var(Type* type, std::string* id, int varNr, int line = NO_LINE);
+    virtual ~Var();
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * This class represents either an ordinary local variable used by the
+ * programmer or a compiler generated variable used to store a temporary value.
+ */
+struct Local : public Var
+{
+    // TODO perhaps merge this with Var
+
+    /*
+     * constructor
+     */
 
     Local(Type* type, std::string* id, int varNr, int line = NO_LINE);
 };
@@ -83,7 +85,7 @@ struct Param : public Var
     constructor
 */
 
-    Param(Kind kind, Type* type, std::string* id = 0, int line = NO_LINE);
+    Param(Kind kind, Type* type, std::string* id, int varNr, int line = NO_LINE);
 
 /*
     further methods

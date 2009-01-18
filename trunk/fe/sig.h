@@ -65,7 +65,7 @@ struct Sig
      * @return The first RES or RES_INOUT Param, 0 if there exists no outgoing
      *      Param.
      */
-    const Param* findFirstOut(size_t& numIn) const;
+    const Params::Node* findFirstOut(size_t& numIn) const;
 
     /**
      * Finds first RES or RES_INOUT Param in the Params List.
@@ -73,7 +73,7 @@ struct Sig
      * @return The first RES or RES_INOUT Param, 0 if there exists no outgoing
      *      Param.
      */
-    const Param* findFirstOut() const;
+    const Params::Node* findFirstOut() const;
 
     /**
      * Find a Param by name.
@@ -102,12 +102,10 @@ struct Scope
 {
     typedef List<Scope*> ScopeList;
     typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
-    typedef std::map<int, Local*> VarNrMap;
 
     Scope* parent_;         ///< 0 if root.
     ScopeList childScopes_; ///< List of child scopes.
     LocalMap locals_;       ///< Map of locals in this scope sorted by identifier.
-    VarNrMap varNrs_;       ///< Map of locals in this scope sorted by varNr.
 
 /*
     constructor and destructor
@@ -122,9 +120,6 @@ struct Scope
 
     /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
     Local* lookupLocal(std::string* id);
-
-    /// Returns the local by varNr, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(int varNr);
 };
 
 } // namespace swift

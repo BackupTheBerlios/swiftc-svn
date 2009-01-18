@@ -291,7 +291,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
             continue;
 
         int constraint = instr->arg_[i].constraint_;
-        if (constraint == InstrBase::NO_CONSTRAINT)
+        if (constraint == NO_CONSTRAINT)
             continue;
 
         // mark register as occupied
@@ -321,7 +321,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
             continue;
 
         int constraint = instr->res_[i].constraint_;
-        if (constraint == InstrBase::NO_CONSTRAINT)
+        if (constraint == NO_CONSTRAINT)
             continue;
 
         // mark register as occupied

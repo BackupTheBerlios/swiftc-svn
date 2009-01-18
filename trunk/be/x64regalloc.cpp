@@ -154,14 +154,7 @@ void X64RegAlloc::registerTargeting()
             swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
                     "one or two args must be here" );
 
-            me::Reg* res = ai->res_[0].reg_;
-            me::Op*  op1 = ai->arg_[0].op_;
-            me::Op*  op2 = 0;
-
-            if ( ai->arg_.size() == 2 )
-                op2 = ai->arg_[1].op_;
-
-            me::Op::Type type = res->type_;
+            me::Op::Type type = ai->res_[0].reg_->type_;
 
             if (       ai->kind_ == me::AssignInstr::EQ
                     || ai->kind_ == me::AssignInstr::NE

@@ -17,6 +17,14 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    NO_CONSTRAINT = -1
+};
+
+
+//------------------------------------------------------------------------------
+
 struct Res
 {
     Reg* reg_;
@@ -52,11 +60,6 @@ struct Arg
  */
 struct InstrBase
 {
-    enum
-    {
-        NO_CONSTRAINT = -1
-    };
-
     typedef std::vector<Res> LHS;
     typedef std::vector<Arg> RHS;
 
@@ -203,7 +206,6 @@ struct PhiInstr : public InstrBase
      */
 
     std::string toString() const;
-    void genCode(std::ofstream& /*ofs*/) {}
 };
 
 //------------------------------------------------------------------------------
@@ -284,7 +286,6 @@ struct AssignInstr : public InstrBase
     }
 
     std::string toString() const;
-    void genCode(std::ofstream& ofs);
 
     std::string getOpString() const;
 };
@@ -411,7 +412,6 @@ struct Spill : public InstrBase
      * further methods
      */
 
-    void genCode(std::ofstream& ofs);
     std::string toString() const;
 };
 
@@ -429,7 +429,40 @@ struct Reload : public InstrBase
      * further methods
      */
 
-    void genCode(std::ofstream& ofs);
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct SetParams : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    SetParams(size_t numLhs);
+
+    /*
+     * further methods
+     */
+
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct SetResults : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    SetResults(size_t numRhs);
+
+    /*
+     * further methods
+     */
+
     std::string toString() const;
 };
 

@@ -249,29 +249,25 @@ bool Id::analyze()
     else
         type_ = var->type_->clone();
 
-    swiftAssert( typeid(*var) == typeid(Local), "This is not a Local!");
-    Local* local = (Local*) var;
-    place_ = me::functab->lookupReg(local->varNr_);
-
+    place_ = me::functab->lookupReg(var->varNr_);
     if (place_ == 0)
     {
         me::Reg* reg;
 #ifdef SWIFT_DEBUG
-        reg = me::functab->newVar( local->type_->baseType_->toType(), local->varNr_, id_ );
+        reg = me::functab->newVar( var->type_->baseType_->toType(), var->varNr_, id_ );
 #else // SWIFT_DEBUG
-        reg = me::functab->newVar( local->type_->baseType_->toType(), local->varNr_ );
+        reg = me::functab->newVar( var->type_->baseType_->toType(), var->varNr_ );
 #endif // SWIFT_DEBUG
         place_ = reg;
 
-        local->varNr_ = reg->varNr_;
-        symtab->insertLocalByVarNr(local);
+        var->varNr_ = reg->varNr_;
+        //symtab->insertLocalByVarNr(local);
     }
 
     return true;
 }
 
 //------------------------------------------------------------------------------
-
 
 /*
  * constructor and destructor
@@ -407,12 +403,13 @@ bool BinExpr::analyze()
         return false;
     }
 
-    // checke whether there is an operator which fits
+    // check whether there is an operator which fits
     Sig sig;
-    sig.params_.append( new Param(Param::ARG, op1_->type_->clone()) );
-    sig.params_.append( new Param(Param::ARG, op2_->type_->clone()) );
+    sig.params_.append( new Param(Param::ARG, op1_->type_->clone(), 0, 0) );
+    sig.params_.append( new Param(Param::ARG, op2_->type_->clone(), 0, 0) );
     std::string* opString = operatorToString(kind_); // TODO remove pointer stuff here
     Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, opString, OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
+
     delete opString;
 
     if (!method)
@@ -426,7 +423,7 @@ bool BinExpr::analyze()
     // else
 
     // find first out parameter and clone this type
-    type_ = method->sig_.findFirstOut()->type_->clone();
+    type_ = method->sig_.findFirstOut()->value_->type_->clone();
     swiftAssert(type_, "an operator should always return a type");
 
     genSSA();

@@ -305,7 +305,7 @@ parameter_list
     ;
 
 parameter
-    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, currentLine) ); }
+    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, symtab->newVarNr(), currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -319,8 +319,8 @@ return_type_list
     ;
 
 return_type
-    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, currentLine) ); }
-    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, currentLine) ); }
+    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, symtab->newVarNr(), currentLine) ); }
+    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, symtab->newVarNr(), currentLine) ); }
     ;
 
 /*

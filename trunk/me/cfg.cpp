@@ -436,11 +436,16 @@ void CFG::placePhiFunctions()
          * mark dominance frontier of the basic block with the first occurance
          * of var as hasAlready
          */
-        BBNode* firstBB = firstOccurance_.find(var->varNr_)->second;
+        FirstOccurance::iterator iter = firstOccurance_.find(var->varNr_);
 
-        // for each basic block from DF(fristBB)
-        BBLIST_EACH(iter, firstBB->value_->domFrontier_)
-            hasAlready[iter->value_->postOrderIndex_] = iterCount;
+        if ( iter != firstOccurance_.end() )
+        {
+            BBNode* firstBB = iter->second;
+
+            // for each basic block from DF(fristBB)
+            BBLIST_EACH(iter, firstBB->value_->domFrontier_)
+                hasAlready[iter->value_->postOrderIndex_] = iterCount;
+        }
 
         // for each basic block in the work list
         while ( !work.empty() )

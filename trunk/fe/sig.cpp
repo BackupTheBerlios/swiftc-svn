@@ -70,7 +70,7 @@ bool Sig::checkIngoing(const Sig& insig) const
     // count the number of ingoing paramters
     size_t numIn;
     // and find first outcoming parameter of this signatur
-    const Param* firstOut = findFirstOut(numIn);
+    const Param* firstOut = findFirstOut(numIn)->value_;
 
     // if the sizes do not match the signature is obviously different
     if ( numIn != insig.params_.size() )
@@ -94,7 +94,7 @@ bool Sig::checkIngoing(const Sig& insig) const
     return result;
 }
 
-const Param* Sig::findFirstOut(size_t& numIn) const
+const Sig::Params::Node* Sig::findFirstOut(size_t& numIn) const
 {
     numIn = 0;
     // shall hold the result
@@ -105,15 +105,16 @@ const Param* Sig::findFirstOut(size_t& numIn) const
         firstOut = iter->value_;
 
         if (firstOut->kind_ != Param::ARG)
-            break; // found first out
+            return iter; // found first outcoming
         else
             ++numIn;
     }
 
-    return firstOut;
+    // not found
+    return 0;
 }
 
-const Param* Sig::findFirstOut() const
+const Sig::Params::Node* Sig::findFirstOut() const
 {
     size_t dummy;
     return findFirstOut(dummy);
@@ -184,21 +185,6 @@ Local* Scope::lookupLocal(std::string* id)
         // try to find in parent scope
         if (parent_)
             return parent_->lookupLocal(id);
-        else
-            return 0;
-    }
-}
-
-Local* Scope::lookupLocal(int varNr)
-{
-    VarNrMap::iterator iter = varNrs_.find(varNr);
-    if ( iter != varNrs_.end() )
-        return iter->second;
-    else
-    {
-        // try to find in parent scope
-        if (parent_)
-            return parent_->lookupLocal(varNr);
         else
             return 0;
     }

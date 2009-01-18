@@ -34,7 +34,7 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( instr->arg_[i].constraint_ == InstrBase::NO_CONSTRAINT )
+        if ( instr->arg_[i].constraint_ == NO_CONSTRAINT )
             continue;
 
         if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
@@ -49,7 +49,7 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
          */
         for (size_t j = i + 1; j < instr->arg_.size(); ++j)
         {
-            if ( instr->arg_[j].constraint_ == InstrBase::NO_CONSTRAINT )
+            if ( instr->arg_[j].constraint_ == NO_CONSTRAINT )
                 continue;
 
             if ( typeid(*instr->arg_[j].op_) != typeid(Reg) )

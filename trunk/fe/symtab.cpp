@@ -151,13 +151,6 @@ bool SymbolTable::insert(Local* local)
     return true;
 }
 
-void SymbolTable::insertLocalByVarNr(Local* local)
-{
-    pair<Scope::VarNrMap::iterator, bool> p
-        = currentScope()->varNrs_.insert( std::make_pair(local->varNr_, local) );
-    swiftAssert(p.second, "there is already a local with this varNr in the map");
-}
-
 /*
  * enter and leave methods
  */
@@ -231,11 +224,6 @@ Var* SymbolTable::lookupVar(string* id)
 
     // no - perhaps a parameter?
     return sig_->findParam(id); // will return 0, if not found
-}
-
-Var* SymbolTable::lookupVar(int varNr)
-{
-    return currentScope()->lookupLocal(varNr);
 }
 
 Class* SymbolTable::lookupClass(string* id)
@@ -319,10 +307,7 @@ Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /
 {
     // create Local
     Local* local = new Local(type->clone(), id, newVarNr(), line);
-
-    // insert into both maps
     symtab->insert(local);
-    symtab->insertLocalByVarNr(local);
 
     return local;
 }

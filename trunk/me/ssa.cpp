@@ -436,11 +436,6 @@ std::string AssignInstr::toString() const
     return oss.str();
 }
 
-void AssignInstr::genCode(std::ofstream& ofs)
-{
-    ofs << "bi" << std::endl;
-};
-
 //------------------------------------------------------------------------------
 
 /*
@@ -574,11 +569,6 @@ Spill::Spill(Reg* result, Reg* arg)
  * further methods
  */
 
-void Spill::genCode(std::ofstream& /*ofs*/)
-{
-    // TODO
-}
-
 std::string Spill::toString() const
 {
     std::ostringstream oss;
@@ -606,11 +596,6 @@ Reload::Reload(Reg* result, Reg* arg)
  * further methods
  */
 
-void Reload::genCode(std::ofstream& /*ofs*/)
-{
-    // TODO
-}
-
 std::string Reload::toString() const
 {
     std::ostringstream oss;
@@ -618,5 +603,63 @@ std::string Reload::toString() const
 
     return oss.str();
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+SetParams::SetParams(size_t numLhs)
+    : InstrBase(numLhs, 0)
+{}
+
+/*
+ * further methods
+ */
+
+std::string SetParams::toString() const
+{
+    swiftAssert( res_.size() >= 1, "must have at least one res" );
+    
+    std::ostringstream oss;
+
+    for (size_t i = 0; i < res_.size() - 1; ++i)
+        oss << res_[i].reg_->toString() << ", ";
+
+    oss << res_[ res_.size() - 1 ].reg_->toString() << " = setParams()";
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+SetResults::SetResults(size_t numRhs)
+    : InstrBase(0, numRhs)
+{}
+
+/*
+ * further methods
+ */
+
+std::string SetResults::toString() const
+{
+    swiftAssert( arg_.size() >= 1, "must have at least one arg" );
+
+    std::ostringstream oss;
+    oss << "\t\tsetResults(";
+
+    for (size_t i = 0; i < arg_.size() - 1; ++i)
+        oss << arg_[i].op_->toString() << ", ";
+
+    oss << arg_[ arg_.size() - 1 ].op_->toString() << ')';
+
+    return oss.str();
+}
+
 
 } // namespace me

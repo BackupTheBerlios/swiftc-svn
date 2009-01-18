@@ -35,8 +35,6 @@ Method::~Method()
 
 bool Method::analyze()
 {
-    bool result = true;
-
     symtab->enterMethod(this);
 
     /*
@@ -59,6 +57,10 @@ bool Method::analyze()
     ++counter;
 
     me::functab->insertFunction( new std::string(oss.str()) );
+
+    bool result = true;
+    result &= sig_.analyze(); // needs the valid function in the functab
+
     // insert the first label since every function must start with one
     me::functab->appendInstr( new me::LabelInstr() );
 
@@ -143,9 +145,50 @@ bool Method::analyze()
         }
     }
 
+    const Sig::Params::Node* firstOut = sig_.findFirstOut();
+
+    // is there at least one argument?
+    if ( !sig_.params_.empty() && sig_.params_.first() != firstOut)
+    {
+        // build function entry
+        me::SetParams* setParams = new me::SetParams(0); // start with 0 args
+        
+        PARAMS_CONST_EACH(iter, sig_.params_)
+        {
+            const Param* param = iter->value_;
+
+            me::Reg* reg = me::functab->lookupReg(param->varNr_);
+            swiftAssert(reg, "must be found here");
+            setParams->res_.push_back( me::Res(reg, param->varNr_, me::NO_CONSTRAINT) );
+        }
+
+        me::functab->appendInstr(setParams);
+    }
+
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
+
+    // insert the last label since every function must end with one
+    me::functab->appendInstr( new me::LabelInstr() );
+
+    // is there at least one result?
+    if (firstOut)
+    {
+        // build function exit
+        me::SetResults* setResults = new me::SetResults(0); // start with 0 args
+        
+        for (const Sig::Params::Node* iter = firstOut; iter != sig_.params_.sentinel(); iter = iter->next())
+        {
+            const Param* param = iter->value_;
+
+            me::Reg* reg = me::functab->lookupReg(param->varNr_);
+            swiftAssert(reg, "must be found here");
+            setResults->arg_.push_back( me::Arg(reg, me::NO_CONSTRAINT) );
+        }
+
+        me::functab->appendInstr(setResults);
+    }
 
     // insert the last label since every function must end with one
     me::functab->appendInstr( new me::LabelInstr() );

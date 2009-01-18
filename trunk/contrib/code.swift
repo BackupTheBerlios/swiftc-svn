@@ -2,12 +2,10 @@
 class Test
     Foo foo
 
-    routine test(Foo foo, int i) -> real re, int rs, inout int bs
+    routine test(int i, int j, int k, real uu) -> real re, int rs, inout int bs
         int z
-        z = 5 + 4
-    end
-
-    operator + (Test f1, Foo f2) -> Foo res
+        z = 5 + 4 * j
+        j = 7
     end
 
     create ()
@@ -24,7 +22,7 @@ class Test
         real d = a - b - 8.0 - 5.0 * c - a + 9.0
     end
 
-    routine test(Foo foo) -> real re, int rs, inout int bs
+    routine test(real foo) -> real re, int rs, inout int bs
         int e = 4
 
         real gg = 2.0 + 3.0
