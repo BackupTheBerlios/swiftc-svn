@@ -126,22 +126,22 @@ std::string sgn_cst2str(me::Const* cst)
     switch (cst->type_)
     {
         case me::Op::R_INT8 : 
-            if (cst->value_.uint16_ < 0)  
+            if (cst->value_.int16_ < 0)  
                 return "$255"; 
             else 
                 return "$0";
         case me::Op::R_INT16: 
-            if (cst->value_.uint16_ < 0) 
+            if (cst->value_.int16_ < 0) 
                 return  "$65535"; 
             else 
                 return "$0";
         case me::Op::R_INT32: 
-            if (cst->value_.uint32_ < 0) 
+            if (cst->value_.int32_ < 0) 
                 return  "$4294967295"; 
             else 
                 return "$0";
         case me::Op::R_INT64: 
-            if (cst->value_.uint64_ < 0) 
+            if (cst->value_.int64_ < 0) 
                 return  "$18446744073709551615"; 
             else 
                 return "$0";
