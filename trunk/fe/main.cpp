@@ -165,11 +165,15 @@ int start(int argc, char** argv)
     // write constants to assembly language file
     me::arch->dumpConstants(ofs);
 
+#ifdef SWIFT_DEBUG
+
     /*
      * debug output
      */
     me::functab->dumpSSA();
     me::functab->dumpDot();
+
+#endif // SWIFT_DEBUG
 
     // finish
     ofs.close();

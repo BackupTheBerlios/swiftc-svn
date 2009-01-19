@@ -329,7 +329,11 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
         // mov r1, free
         me::Op::Type type = node->value_->type_;
-        genMove(type, node->value_->color_, X64RegAlloc::R15); // TODO
+
+        if (type == me::Op::R_REAL32 || me::Op::R_REAL64)
+            genMove(type, node->value_->color_, X64RegAlloc::XMM15); // TODO
+        else
+            genMove(type, node->value_->color_, X64RegAlloc::R15); // TODO
 
         std::vector<RegGraph::Node*> toBeErased;
         toBeErased.push_back(node);
@@ -351,7 +355,10 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         }
 
         // mov free, rn
-        genMove(type, X64RegAlloc::R15, predIter->value_->color_); // TODO
+        if (type == me::Op::R_REAL32 || me::Op::R_REAL64)
+            genMove(type, X64RegAlloc::XMM15, predIter->value_->color_); // TODO
+        else
+            genMove(type, X64RegAlloc::R15, predIter->value_->color_); // TODO
 
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)
