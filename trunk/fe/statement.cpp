@@ -262,28 +262,12 @@ WhileStatement::~WhileStatement()
 
 bool WhileStatement::analyze()
 {
-    bool result = expr_->analyze();
-
-    // check whether expr_ is a boolean expr only if analyze resulted true
-    if (result)
-    {
-        if ( !expr_->type_->isBool() )
-        {
-            errorf(line_, "the prefacing expression of an if statement must be a boolean expression");
-            result = false;
-        }
-    }
-
-    // create labels
-    me::InstrNode* whileLabelNode = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-
     /*
      * generate this SSA code:
      *
      * whileLabelNode:
-     *     IF expr THEN trueLabelNode ELSE nextLabelNode
+     *     expr
+     *     IF expr_result THEN trueLabelNode ELSE nextLabelNode
      * trueLabelNode:
      *     //...
      *     GOTO whileLabelNode
@@ -291,10 +275,28 @@ bool WhileStatement::analyze()
      *     //...
      */
 
+    me::InstrNode* whileLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::functab->appendInstrNode(whileLabelNode);
+
+    bool result = expr_->analyze();
+
+    // check whether expr_ is a boolean expr only if analyze resulted true
+    if (result)
+    {
+        if ( !expr_->type_->isBool() )
+        {
+            errorf(line_, "the prefacing expression of an while statement must be a boolean expression");
+            result = false;
+        }
+    }
+
+    // create labels
+    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+
     if (result)
     {
         // generate instructions as you can see above if types are correct
-        me::functab->appendInstrNode(whileLabelNode);
         me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
         me::functab->appendInstrNode(trueLabelNode);
     }
@@ -458,6 +460,27 @@ bool IfElStatement::analyze()
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+CFStatement::CFStatement(int kind, int line /*= NO_LINE*/)
+    : Statement(line)
+    , kind_(kind)
+{}
+
+/*
+ * further methods
+ */
+
+bool CFStatement::analyze()
+{
+    me::functab->appendInstr( new me::GotoInstr(me::functab->getLastLabelNode()) );
+    return true;
 }
 
 } // namespace swift

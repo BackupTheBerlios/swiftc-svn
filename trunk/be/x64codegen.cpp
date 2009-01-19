@@ -49,11 +49,20 @@ X64CodeGen::X64CodeGen(me::Function* function, std::ofstream& ofs)
 
 void X64CodeGen::process()
 {
-    ofs_ << '\n';
-    ofs_ << *function_->id_ << ":\n";
-    ofs_ << "\tenter $0, $32\n";
+    static int counter = 1;
+
+    ofs_ << "\t.p2align 4,,15\n";
+    ofs_ << ".globl swift_" << counter << '\n';
+    ofs_ << "\t.type\tswift_" << counter << ", @function\n";
+    ofs_ << "swift_" << counter << ":\n";
+    ofs_ << ".LFB" << counter << ":\n";
+
+    //ofs_ << '\n';
+    //ofs_ << *function_->id_ << ":\n";
+    //ofs_ << "\tenter $0, $32\n";
 
     me::BBNode* currentNode = 0;
+    bool phisInserted = false;
 
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
@@ -65,8 +74,24 @@ void X64CodeGen::process()
             me::BBNode* oldNode = currentNode;
             currentNode = cfg_->labelNode2BBNode_[iter];
 
-            if (currentNode)
+            if (!phisInserted)
                 genPhiInstr(oldNode, currentNode);
+
+            currentNode = cfg_->labelNode2BBNode_[iter];
+            phisInserted = false;
+        }
+        else if ( dynamic_cast<me::JumpInstr*>(instr) )
+        {
+            // generate phi stuff already here
+            swiftAssert( typeid(*iter->next()->value_) == typeid(me::LabelInstr),
+                    "must be a LabelInstr here");
+
+            // there must be exactly one successor
+            if ( currentNode->succ_.size() == 1 )
+            {
+                genPhiInstr( currentNode, currentNode->succ_.first()->value_ );
+                phisInserted = true;
+            }
         }
         else if ( typeid(*instr) == typeid(me::PhiInstr) )
             continue;
@@ -88,8 +113,12 @@ void X64CodeGen::process()
         x64parse();
     }
 
-    ofs_ << "\tleave\n";
+    //ofs_ << "\tleave\n";
     ofs_ << "\tret\n";
+    ofs_ << ".LFE" << counter << ":\n";
+    ofs_ << "\t.size\t" << "swift_" << counter << ", .-" << "swift_" << counter << '\n';
+
+    counter++;
     ofs_ << '\n';
 }
 
@@ -116,6 +145,39 @@ class RegGraph : public Graph<TReg>
 
 typedef RegGraph::Node* RGNode;
 
+int meType2beType(me::Op::Type type)
+{
+    switch (type)
+    {
+        case me::Op::R_BOOL:  return X64_BOOL;
+
+        case me::Op::R_INT8:  return X64_INT8;
+        case me::Op::R_INT16: return X64_INT16;
+        case me::Op::R_INT32: return X64_INT32;
+        case me::Op::R_INT64: return X64_INT64;
+
+        case me::Op::R_SAT8:  return X64_SAT8;
+        case me::Op::R_SAT16: return X64_SAT16;
+
+        case me::Op::R_UINT8:  return X64_UINT8;
+        case me::Op::R_UINT16: return X64_UINT16;
+        case me::Op::R_UINT32: return X64_UINT32;
+        case me::Op::R_UINT64: return X64_UINT64;
+
+        case me::Op::R_USAT8:  return X64_USAT8;
+        case me::Op::R_USAT16: return X64_USAT16;
+
+        case me::Op::R_REAL32: return X64_REAL32;
+        case me::Op::R_REAL64: return X64_REAL64;
+
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return -1;
+}
+
+
 void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
 {
     me::Reg op1(type, -1);
@@ -123,12 +185,7 @@ void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
     op1.color_ = r1;
     op2.color_ = r2;
 
-    if (type == me::Op::R_REAL32)
-        ofs_  << "\tmovaps\t" << reg2str(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
-    else if (type == me::Op::R_REAL64)
-        ofs_  << "\tmovapd\t" << reg2str(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
-    else
-        ofs_  << "\tmovq\t" << X64RegAlloc::reg2String(&op1) << ", " << X64RegAlloc::reg2String(&op2) << '\n';
+    ofs_  << "\tmov" << suffix(meType2beType(type)) << '\t' << reg2str(&op1) << ", " << reg2str(&op2) << '\n';
 }
 
 void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
@@ -209,35 +266,32 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
      * while there is an edge e = (r, s) with r != s 
      * where the outdegree of s equals 0 ...
      */
-    bool changed = true;
-    while (changed)
+    while (true)
     {
-        changed = false;
-
         RegGraph::Relative* iter = rg.nodes_.first();
-        while (iter != rg.nodes_.sentinel())
+        while ( iter != rg.nodes_.sentinel() && !iter->value_->succ_.empty() )
+            iter = iter->next();
+
+        if ( iter != rg.nodes_.sentinel() )
         {
             RegGraph::Node* n = iter->value_;
 
-            // go here further thus erasing the current node won't crash the loop
-            iter = iter->next();
+            // ... resolve this by a move p -> n
+            swiftAssert( n->pred_.size() == 1, 
+                    "must have exactly one predecessor" );
+            RegGraph::Node* p = n->pred_.first()->value_;
 
-            if ( n->succ_.empty() )
-            {
-                changed = true;
+            me::Op::Type type = n->value_->type_;
+            genMove(type, p->value_->color_, n->value_->color_);
 
-                // ... resolve this by a move p -> n
-                swiftAssert( n->pred_.size() == 1, 
-                        "must have exactly one predecessor" );
-                RegGraph::Node* p = n->pred_.first()->value_;
+            rg.erase(n);
 
-                me::Op::Type type = n->value_->type_;
-                genMove(type, p->value_->color_, n->value_->color_);
-
-                std::cout << "erase" << std::endl;
-                rg.erase(n);
-            }
+            // if p doesn't have a predecessor erase it, too
+            if ( p->pred_.empty() )
+                rg.erase(p);
         }
+        else
+            break;
     }
 
     /*

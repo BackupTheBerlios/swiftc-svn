@@ -45,7 +45,8 @@ using namespace be;
 
 /* types */
 %token X64_BOOL 
-%token X64_INT8  X64_INT16  X64_INT32  X64_INT64   X64_SAT8  X64_SAT16
+%token X64_INT8  UINT8
+%token X64_INT16  X64_INT32  X64_INT64   X64_SAT8  X64_SAT16
 %token X64_UINT8 X64_UINT16 X64_UINT32 X64_UINT64 X64_USAT8 X64_USAT16 
 %token X64_REAL32 X64_REAL64
 
@@ -88,7 +89,7 @@ jump_instruction
     | X64_BRANCH bool_type X64_REG_2 /* test r1, r1; jz falseLabel; jmp trueLabel */
     { 
         EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
-        EMIT("jz\t" << $1->trueLabel()->asmName())
+        EMIT("jnz\t" << $1->trueLabel()->asmName())
         EMIT("jmp\t" << $1->falseLabel()->asmName()) 
     }
     ;

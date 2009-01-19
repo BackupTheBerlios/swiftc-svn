@@ -579,7 +579,7 @@ void Spiller::spill(BBNode* bbNode)
      */
 
 #if 0
-    std::cout << bb->name() << std::endl;
+    std::cout << "!!!" << bb->name() << std::endl;
 
     std::cout << "\tinB:" << std::endl;
     REGSET_EACH(iter, inB)

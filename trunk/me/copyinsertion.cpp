@@ -37,6 +37,27 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
         if ( instr->arg_[i].constraint_ == NO_CONSTRAINT )
             continue;
 
+        /*
+         * check whether there is a constrained constant
+         */
+        if ( typeid(*instr->arg_[i].op_) == typeid(Const) )
+        {
+            InstrBase* instr = instrNode->value_;
+            Const* cst = (Const*) instr->arg_[i].op_;
+
+            // create new result
+            Reg* newReg = function_->newSSA(cst->type_);
+
+            // create and insert copy
+            AssignInstr* newCopy = new AssignInstr('=', newReg, cst); 
+            cfg_->instrList_.insert( instrNode->prev(), newCopy );
+
+            // substitute operand with newReg
+            instrNode->value_->arg_[i].op_ = newReg;
+
+            continue;
+        }
+
         if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
             continue;
 

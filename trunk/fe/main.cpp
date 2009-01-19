@@ -136,12 +136,6 @@ int start(int argc, char** argv)
      * calculate the dominance frontier,
      * place phi-functions in SSA form and update vars
      */
-    /*
-     * debug output
-     */
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-    //return 0;
     me::functab->buildUpME();
     
     /*

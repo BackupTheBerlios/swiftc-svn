@@ -15,6 +15,41 @@
 namespace me {
 
 //------------------------------------------------------------------------------
+// helpers
+//------------------------------------------------------------------------------
+
+std::string args2str(const InstrBase::RHS& arg)
+{
+    if ( arg.empty() )
+        return "";
+
+    std::ostringstream oss;
+
+    for (size_t i = 0; i < arg.size() - 1; ++i)
+        oss << arg[i].op_->toString() << ", ";
+
+    oss << arg[ arg.size() - 1 ].op_->toString();
+
+    return oss.str();
+}
+
+std::string res2str(const InstrBase::LHS& res)
+{
+    if ( res.empty() )
+        return "";
+
+    std::ostringstream oss;
+
+    for (size_t i = 0; i < res.size() - 1; ++i)
+        oss << res[i].reg_->toString() << ", ";
+
+    oss << res[ res.size() - 1 ].reg_->toString();
+
+    return oss.str();
+}
+
+
+//------------------------------------------------------------------------------
 
 /*
  * constructor and destructor
@@ -200,7 +235,7 @@ std::string InstrBase::livenessString() const
 //------------------------------------------------------------------------------
 
 // init static
-int LabelInstr::counter_ = 0;
+int LabelInstr::counter_ = 1;
 
 LabelInstr::LabelInstr()
     : InstrBase(0, 0)
@@ -623,11 +658,7 @@ std::string SetParams::toString() const
     swiftAssert( res_.size() >= 1, "must have at least one res" );
     
     std::ostringstream oss;
-
-    for (size_t i = 0; i < res_.size() - 1; ++i)
-        oss << res_[i].reg_->toString() << ", ";
-
-    oss << res_[ res_.size() - 1 ].reg_->toString() << " = setParams()";
+    oss << res2str(res_) << "\t= setParams()";
 
     return oss.str();
 }
@@ -651,15 +682,9 @@ std::string SetResults::toString() const
     swiftAssert( arg_.size() >= 1, "must have at least one arg" );
 
     std::ostringstream oss;
-    oss << "\t\tsetResults(";
-
-    for (size_t i = 0; i < arg_.size() - 1; ++i)
-        oss << arg_[i].op_->toString() << ", ";
-
-    oss << arg_[ arg_.size() - 1 ].op_->toString() << ')';
+    oss << "setResults(" << args2str(arg_) << ')';
 
     return oss.str();
 }
-
 
 } // namespace me

@@ -85,6 +85,10 @@ for      { return FOR; }
 while    { return WHILE; }
 do_while { return DO_WHILE; }
 
+return   { return RETURN; }
+break    { return BREAK; }
+continue { return CONTINUE; }
+
 scope   { keyLine = currentLine; return SCOPE; }
 class   { keyLine = currentLine; return CLASS; }
 end     { keyLine = currentLine; return END; }

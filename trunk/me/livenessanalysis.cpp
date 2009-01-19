@@ -139,16 +139,20 @@ void LivenessAnalysis::process()
             {
                 PhiInstr* phi = (PhiInstr*) instr;
 
-                // find the predecessor basic block
-                size_t i = 0;
-                while (phi->arg_[i].op_ != var)
-                    ++i;
-
-                swiftAssert(i < phi->arg_.size(), "i too large here");
-                BBNode* pred = phi->sourceBBs_[i];
-
-                // examine the found block
-                liveOutAtBlock(pred, var);
+                /*
+                 * find the predecessor basic block
+                 * NOTE in the case of a double entry there may be more than just one predecessor
+                 * basic block 
+                 */
+                for (size_t i = 0; i < phi->arg_.size(); ++i)
+                {
+                    if ( phi->arg_[i].op_ == var )
+                    {
+                        // examine the found block
+                        BBNode* pred = phi->sourceBBs_[i];
+                        liveOutAtBlock(pred, var);
+                    }
+                }
             }
             else
                 liveInAtInstr(use.instrNode_, var);

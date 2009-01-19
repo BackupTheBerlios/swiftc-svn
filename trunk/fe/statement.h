@@ -181,6 +181,24 @@ struct IfElStatement : public Statement
     virtual std::string toString() const { return std::string(""); }
 };
 
+struct CFStatement : public Statement
+{
+    int kind_;
+
+    /*
+     * constructor
+     */
+
+    CFStatement(int kind, int line = NO_LINE);
+
+    /*
+     * further methods
+     */
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
 } // namespace swift
 
 #endif // SWIFT_STATEMENT_H

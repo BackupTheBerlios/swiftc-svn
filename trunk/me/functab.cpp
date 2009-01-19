@@ -25,6 +25,7 @@ Function::Function(std::string* id)
     , cfg_(this)
     , firstLiveness_(false)
     , firstDefUse_(false)
+    , lastLabelNode_( new InstrNode(new LabelInstr()) )
 {}
 
 Function::~Function()
@@ -256,6 +257,11 @@ void FunctionTable::dumpDot()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_ + '.' + *iter->second->id_);
+}
+
+InstrNode* FunctionTable::getLastLabelNode()
+{
+    return current_->lastLabelNode_;
 }
 
 } // namespace me

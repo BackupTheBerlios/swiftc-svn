@@ -28,6 +28,16 @@ struct Function
     std::string* id_;
     int regCounter_;
     size_t indexCounter_;
+    CFG  cfg_;
+
+    /// Indicates whether a LivenessAnalysis CodePass has already been performed.
+    bool firstLiveness_;
+
+    /// Indicates whether a DefUseCalc CodePass has already been performed.
+    bool firstDefUse_;
+
+    InstrNode* lastLabelNode_;
+
 
     InstrList instrList_;
 
@@ -36,16 +46,9 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-    CFG  cfg_;
 
     typedef std::map<Reg*, int> Reg2Color;
     Reg2Color reg2Color_;
-
-    /// Indicates whether a LivenessAnalysis CodePass has already been performed.
-    bool firstLiveness_;
-
-    /// Indicates whether a DefUseCalc CodePass has already been performed.
-    bool firstDefUse_;
 
     /*
      * constructor and destructor
@@ -200,6 +203,8 @@ struct FunctionTable
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode* node);
+    InstrNode* getLastLabelNode();
+
     void buildUpME();
 
     void dumpSSA();

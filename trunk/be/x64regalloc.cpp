@@ -61,7 +61,7 @@ void X64RegAlloc::process()
      */
 
     me::Colors rColors;
-    for (int i = R00; i <= R15; ++i)
+    for (int i = R0; i <= R15; ++i)
         rColors.insert(i);
 
     // do not use stack pointer as a free register
@@ -82,7 +82,7 @@ void X64RegAlloc::process()
      */
 
     me::Colors fColors;
-    for (int i = XMM00; i <= XMM15; ++i)
+    for (int i = XMM0; i <= XMM15; ++i)
         fColors.insert(i);
 
     me::Spiller( function_, fColors.size(), F_TYPE_MASK ).process();
@@ -147,10 +147,96 @@ void X64RegAlloc::registerTargeting()
         if ( typeid(*instr) == typeid(me::GotoInstr) )
             continue;
 
+        static int  intRegs[6] = {RDI, RSI, RDX, RCX, R8, R9};
+        static int realRegs[8] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+        
+        if ( typeid(*instr) == typeid(me::SetParams) )
+        {
+            me::SetParams* sp = (me::SetParams*) instr;
+
+            if ( !sp->res_.empty() )
+                sp->constrain();
+
+            int intCounter = 0;
+            int realCounter = 0;
+
+            for (size_t i = 0; i < sp->res_.size(); ++i)
+            {
+                me::Op::Type type = sp->res_[i].reg_->type_;
+
+                switch (type)
+                {
+                    case me::Op::R_BOOL:
+                    case me::Op::R_INT8:
+                    case me::Op::R_INT16:
+                    case me::Op::R_INT32:
+                    case me::Op::R_INT64:
+                    case me::Op::R_SAT8:
+                    case me::Op::R_SAT16:
+                    case me::Op::R_UINT8:
+                    case me::Op::R_UINT16:
+                    case me::Op::R_UINT32:
+                    case me::Op::R_UINT64:
+                    case me::Op::R_USAT8:
+                    case me::Op::R_USAT16:
+                        sp->res_[i].constraint_ = intRegs[intCounter++];
+                        break;
+
+                    case me::Op::R_REAL32:
+                    case me::Op::R_REAL64:
+                        sp->res_[i].constraint_ = realRegs[realCounter++];
+                        break;
+
+                    default:
+                        swiftAssert( false, "unreachable code" );
+                }
+            }
+
+            continue;
+        }
+
+        if ( typeid(*instr) == typeid(me::SetResults) )
+        {
+            me::SetResults* sr = (me::SetResults*) instr;
+            swiftAssert( !sr->arg_.empty(), "must not be empty" );
+            sr->constrain();
+
+            // TODO only one result supported
+            me::Op::Type type = sr->arg_[0].op_->type_;
+            switch (type)
+            {
+                case me::Op::R_BOOL:
+                case me::Op::R_INT8:
+                case me::Op::R_INT16:
+                case me::Op::R_INT32:
+                case me::Op::R_INT64:
+                case me::Op::R_SAT8:
+                case me::Op::R_SAT16:
+                case me::Op::R_UINT8:
+                case me::Op::R_UINT16:
+                case me::Op::R_UINT32:
+                case me::Op::R_UINT64:
+                case me::Op::R_USAT8:
+                case me::Op::R_USAT16:
+                    sr->arg_[0].constraint_ = RAX;
+                    break;
+
+                case me::Op::R_REAL32:
+                case me::Op::R_REAL64:
+                    sr->arg_[0].constraint_ = XMM0;
+                    break;
+
+                default:
+                    swiftAssert( false, "unreachable code" );
+            }
+
+            continue;
+        }
+
         if ( typeid(*instr) == typeid(me::AssignInstr) )
         {
             me::AssignInstr* ai = (me::AssignInstr*) instr;
-            swiftAssert( ai->res_.size() == 1, "one result must be here" );
+            swiftAssert( ai->res_.size() >= 1, "one or more results must be here" );
             swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
                     "one or two args must be here" );
 
@@ -294,8 +380,8 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
                 case RBP: oss << "bpl"; break;
                 case RSI: oss << "sil"; break;
                 case RDI: oss << "dil"; break;
-                case R08: oss << "r8b"; break;
-                case R09: oss << "r9b"; break;
+                case R8:  oss << "r8b"; break;
+                case R9:  oss << "r9b"; break;
                 case R10: oss << "r10b"; break;
                 case R11: oss << "r11b"; break;
                 case R12: oss << "r12b"; break;
@@ -320,8 +406,8 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
                 case RBP: oss << "bp"; break;
                 case RSI: oss << "si"; break;
                 case RDI: oss << "di"; break;
-                case R08: oss << "r8w"; break;
-                case R09: oss << "r9w"; break;
+                case R8:  oss << "r8w"; break;
+                case R9:  oss << "r9w"; break;
                 case R10: oss << "r10w"; break;
                 case R11: oss << "r11w"; break;
                 case R12: oss << "r12w"; break;
@@ -346,8 +432,8 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
                 case RBP: oss << "ebp"; break;
                 case RSI: oss << "esi"; break;
                 case RDI: oss << "edi"; break;
-                case R08: oss << "r8d"; break;
-                case R09: oss << "r9d"; break;
+                case R8:  oss << "r8d"; break;
+                case R9:  oss << "r9d"; break;
                 case R10: oss << "r10d"; break;
                 case R11: oss << "r11d"; break;
                 case R12: oss << "r12d"; break;
@@ -372,8 +458,8 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
                 case RBP: oss << "rbp"; break;
                 case RSI: oss << "rsi"; break;
                 case RDI: oss << "rdi"; break;
-                case R08: oss << "r8"; break;
-                case R09: oss << "r9"; break;
+                case R8:  oss << "r8"; break;
+                case R9:  oss << "r9"; break;
                 case R10: oss << "r10"; break;
                 case R11: oss << "r11"; break;
                 case R12: oss << "r12"; break;
@@ -390,16 +476,16 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
         case me::Op::R_REAL64:
             switch (color)
             {
-                case XMM00: oss << "xmm0"; break;
-                case XMM01: oss << "xmm1"; break;
-                case XMM02: oss << "xmm2"; break;
-                case XMM03: oss << "xmm3"; break;
-                case XMM04: oss << "xmm4"; break;
-                case XMM05: oss << "xmm5"; break;
-                case XMM06: oss << "xmm6"; break;
-                case XMM07: oss << "xmm7"; break;
-                case XMM08: oss << "xmm8"; break;
-                case XMM09: oss << "xmm9"; break;
+                case XMM0: oss << "xmm0"; break;
+                case XMM1: oss << "xmm1"; break;
+                case XMM2: oss << "xmm2"; break;
+                case XMM3: oss << "xmm3"; break;
+                case XMM4: oss << "xmm4"; break;
+                case XMM5: oss << "xmm5"; break;
+                case XMM6: oss << "xmm6"; break;
+                case XMM7: oss << "xmm7"; break;
+                case XMM8: oss << "xmm8"; break;
+                case XMM9: oss << "xmm9"; break;
                 case XMM10: oss << "xmm10"; break;
                 case XMM11: oss << "xmm11"; break;
                 case XMM12: oss << "xmm12"; break;

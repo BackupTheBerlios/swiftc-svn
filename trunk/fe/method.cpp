@@ -145,32 +145,50 @@ bool Method::analyze()
         }
     }
 
-    const Sig::Params::Node* firstOut = sig_.findFirstOut();
-
-    // is there at least one argument?
-    if ( !sig_.params_.empty() && sig_.params_.first() != firstOut)
+    // build function entry
+    me::SetParams* setParams = 0;
+    me::AssignInstr* returnValues = 0;
+    
+    PARAMS_CONST_EACH(iter, sig_.params_)
     {
-        // build function entry
-        me::SetParams* setParams = new me::SetParams(0); // start with 0 args
-        
-        PARAMS_CONST_EACH(iter, sig_.params_)
+        const Param* param = iter->value_;
+
+        me::Reg* reg = me::functab->lookupReg(param->varNr_);
+        swiftAssert(reg, "must be found here");
+
+        if (param->kind_ == Param::RES)
         {
-            const Param* param = iter->value_;
-
-            me::Reg* reg = me::functab->lookupReg(param->varNr_);
-            swiftAssert(reg, "must be found here");
-            setParams->res_.push_back( me::Res(reg, param->varNr_, me::NO_CONSTRAINT) );
+            if (returnValues)
+                returnValues->res_.push_back( me::Res(reg, param->varNr_, me::NO_CONSTRAINT) );
+            else
+                returnValues = new me::AssignInstr( '=', reg, new me::Undef(reg->type_) );
         }
-
-        me::functab->appendInstr(setParams);
+        else
+        {
+            if (setParams)
+                setParams->res_.push_back( me::Res(reg, param->varNr_, me::NO_CONSTRAINT) );
+            else
+            {
+                setParams = new me::SetParams(0);
+                setParams->res_.push_back( me::Res(reg, param->varNr_, me::NO_CONSTRAINT) );
+            }
+        }
     }
+
+    if (setParams)
+        me::functab->appendInstr(setParams);
+
+    if (returnValues)
+        me::functab->appendInstr(returnValues);
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
 
     // insert the last label since every function must end with one
-    me::functab->appendInstr( new me::LabelInstr() );
+    me::functab->appendInstrNode( me::functab->getLastLabelNode() );
+
+    const Sig::Params::Node* firstOut = sig_.findFirstOut();
 
     // is there at least one result?
     if (firstOut)
