@@ -361,8 +361,8 @@ statement
     | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine); }
     
     | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
-    | BREAK     EOL { $$ = new CFStatement(BREAK), currentLine;    }
-    | CONTINUE  EOL { $$ = new CFStatement(CONTINUE), currentLine; }
+    | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
+    | CONTINUE  EOL { $$ = new CFStatement(CONTINUE, currentLine); }
 
     ;
 
