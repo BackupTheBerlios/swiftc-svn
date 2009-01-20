@@ -19,14 +19,11 @@ public:
 
     enum Regs
     {
-        R0,
-        R1, 
-        R2, 
-        R3, 
-        R4,
-        R5, 
-        R6, 
-        R7, 
+        /*
+         * general purpose registers
+         */
+        R0, R1, R2,  R3,  R4,  R5,  R6,  R7, 
+        R8, R9, R10, R11, R12, R13, R14, R15, 
 
         // yes, this order is correct
         RAX = R0, 
@@ -38,31 +35,21 @@ public:
         RSI = R6, 
         RDI = R7, 
 
-        R8, 
-        R9, 
-        R10, 
-        R11, 
-        R12, 
-        R13, 
-        R14, 
-        R15, 
+        /*
+         * XMM registers
+         */
+        XMM0, XMM1, XMM2,  XMM3,  XMM4,  XMM5,  XMM6,  XMM7, 
+        XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, XMM15
+    };
 
-        XMM0,
-        XMM1, 
-        XMM2, 
-        XMM3, 
-        XMM4, 
-        XMM5, 
-        XMM6, 
-        XMM7, 
-        XMM8, 
-        XMM9, 
-        XMM10, 
-        XMM11, 
-        XMM12, 
-        XMM13, 
-        XMM14, 
-        XMM15,
+    /*
+     * condition codes
+     */
+    enum CC
+    {
+        C_EQ, C_NE,
+        C_L,  C_LE,
+        C_G,  C_GE
     };
 
     enum
@@ -75,15 +62,7 @@ public:
             | me::Op::R_USAT8 | me::Op::R_USAT16,
 
         F_TYPE_MASK
-            = me::Op::R_REAL32| me::Op::R_REAL64,
-
-        V_TYPE_MASK
-            = me::Op::R_BOOL
-            | me::Op::R_INT8  | me::Op::R_INT16  | me::Op::R_INT32  | me::Op::R_INT64 
-            | me::Op::R_UINT8 | me::Op::R_UINT16 | me::Op::R_UINT32 | me::Op::R_UINT64
-            | me::Op::R_SAT8  | me::Op::R_SAT16
-            | me::Op::R_USAT8 | me::Op::R_USAT16
-            | me::Op::R_REAL32| me::Op::R_REAL64
+            = me::Op::R_REAL32| me::Op::R_REAL64
     };
 
     /*

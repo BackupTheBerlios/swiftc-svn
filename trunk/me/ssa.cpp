@@ -428,6 +428,19 @@ std::string AssignInstr::getOpString() const
     return opString;
 }
 
+bool AssignInstr::isArithmetic() const
+{
+    return (kind_ == EQ  || kind_ == NE  || 
+            kind_ == '<' || kind_ == '>' ||
+            kind_ == LE  || kind_ == GE);
+}
+
+bool AssignInstr::isComparison() const
+{
+    return (kind_ == '+' || kind_ == '-' || 
+            kind_ == '*' || kind_ == '/');
+}
+
 std::string AssignInstr::toString() const
 {
     std::string opString = getOpString();
@@ -534,6 +547,7 @@ std::string GotoInstr::toString() const
 
 BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel)
     : JumpInstr(0, 1, 2) // always no results, one arg, two targets
+    , cc_(-1)
 {
     swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
     arg_[0].op_ = boolOp;
@@ -569,6 +583,16 @@ LabelInstr* BranchInstr::falseLabel()
 const LabelInstr* BranchInstr::falseLabel() const
 {
     return (LabelInstr*) instrTargets_[1]->value_;
+}
+
+Op* BranchInstr::getOp()
+{
+    return arg_[0].op_;
+}
+
+const Op* BranchInstr::getOp() const
+{
+    return arg_[0].op_;
 }
 
 /*

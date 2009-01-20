@@ -55,7 +55,10 @@ struct Op
 
         // floating points
         R_REAL32    = 1 << 13,
-        R_REAL64    = 1 << 14
+        R_REAL64    = 1 << 14,
+
+        // Use this to do something special by hand
+        R_SPECIAL   = 1 << 15
     };
 
     Type type_;

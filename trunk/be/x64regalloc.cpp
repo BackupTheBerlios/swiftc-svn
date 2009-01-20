@@ -133,24 +133,72 @@ void X64RegAlloc::registerTargeting()
     {
         me::InstrBase* instr = iter->value_;
 
+        static int  intRegs[6] = {RDI, RSI, RDX, RCX, R8, R9};
+        static int realRegs[8] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+        
         if ( typeid(*instr) == typeid(me::LabelInstr) )
         {
             currentBB = cfg_->labelNode2BBNode_[iter];
             continue;
         }
+        else if ( typeid(*instr) == typeid(me::BranchInstr) )
+        {
+            me::BranchInstr* bi = (me::BranchInstr*) instr;
+            // the default is testing whether the zero flag is not set
+            bi->cc_ = C_NE;
 
-        // everything's fine for a NOP
-        if ( typeid(*instr) == typeid(me::NOP) )
+            /* 
+             * check whether the preceding instruction is the definition
+             * of bi->getOp()
+             */
+
+            me::InstrNode* preNode = iter->prev();
+
+            if ( typeid(*bi->getOp()) == typeid(me::Reg) )
+            {
+                me::Reg* reg = (me::Reg*) bi->getOp();
+
+                if (reg->def_.instrNode_ == preNode)
+                {
+                    // is it even an AssignInstr?
+                    if ( typeid(*preNode->value_) == typeid(me::AssignInstr) )
+                    {
+                        me::AssignInstr* ai = (me::AssignInstr*) preNode->value_;
+
+                        // check whether this is the only use
+                        if (reg->uses_.size() == 1)
+                        {
+                            // do not color this reg
+                            //reg->type_ = me::Op::R_SPECIAL;
+                        }
+
+                        if ( ai->isComparison() )
+                        {
+                            switch (ai->kind_)
+                            {
+                                case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
+                                case me::AssignInstr::NE: bi->cc_ = C_NE; break;
+                                case '<':                 bi->cc_ = C_L ; break;
+                                case '>':                 bi->cc_ = C_G ; break;
+                                case me::AssignInstr::LE: bi->cc_ = C_LE; break;
+                                case me::AssignInstr::GE: bi->cc_ = C_GE; break;
+                                default:
+                                    swiftAssert(false, "unreachable code");
+                            }
+                        }
+                    } 
+                        continue;
+                } 
+            }
+            else 
+            {
+                swiftAssert( typeid(*bi->getOp()) == typeid(me::Const),
+                        "must be a me::Const here" );
+            }
+
             continue;
-
-        // so it is for a GotoInstr
-        if ( typeid(*instr) == typeid(me::GotoInstr) )
-            continue;
-
-        static int  intRegs[6] = {RDI, RSI, RDX, RCX, R8, R9};
-        static int realRegs[8] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
-        
-        if ( typeid(*instr) == typeid(me::SetParams) )
+        }
+        else if ( typeid(*instr) == typeid(me::SetParams) )
         {
             me::SetParams* sp = (me::SetParams*) instr;
 
@@ -194,8 +242,7 @@ void X64RegAlloc::registerTargeting()
 
             continue;
         }
-
-        if ( typeid(*instr) == typeid(me::SetResults) )
+        else if ( typeid(*instr) == typeid(me::SetResults) )
         {
             me::SetResults* sr = (me::SetResults*) instr;
             swiftAssert( !sr->arg_.empty(), "must not be empty" );
@@ -232,8 +279,7 @@ void X64RegAlloc::registerTargeting()
 
             continue;
         }
-
-        if ( typeid(*instr) == typeid(me::AssignInstr) )
+        else if ( typeid(*instr) == typeid(me::AssignInstr) )
         {
             me::AssignInstr* ai = (me::AssignInstr*) instr;
             swiftAssert( ai->res_.size() >= 1, "one or more results must be here" );

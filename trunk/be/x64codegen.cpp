@@ -24,7 +24,7 @@ enum Location
     END
 };
 
-me::InstrBase* currentInstr;
+me::InstrNode* currentInstrNode;
 Location location;
 std::ofstream* x64_ofs = 0;
 int lastOp;
@@ -107,7 +107,7 @@ void X64CodeGen::process()
         }
 
         // update globals for x64lex
-        currentInstr = instr;
+        currentInstrNode = iter;
         location = INSTRUCTION;
 
         x64parse();
@@ -195,7 +195,9 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
     if ( !nextBB->hasPhiInstr() )
         return;
 
+#ifdef SWIFT_DEBUG
     ofs_ << "\t /* phi functions */\n";
+#endif // SWIFT_DEBUG
 
     /* 
      * Because of the critical edge elimination prevNode's 
@@ -364,7 +366,10 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         for (size_t i = 0; i < toBeErased.size(); ++i)
             rg.erase( toBeErased[i] );
     }
+
+#ifdef SWIFT_DEBUG
     ofs_ << "\t /* end phi functions */\n";
+#endif // SWIFT_DEBUG
 }
 
 } // namespace be
@@ -377,11 +382,13 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
 void x64error(char *s)
 {
-    printf( "%s: could not parse '%s'\n", s, currentInstr->toString().c_str() );
+    printf( "%s: could not parse '%s'\n", s, currentInstrNode->value_->toString().c_str() );
 }
 
 int x64lex()
 {
+    me::InstrBase* currentInstr = currentInstrNode->value_;
+
     switch (location)
     {
         case INSTRUCTION:
@@ -404,8 +411,20 @@ int x64lex()
             }
             else if (instrTypeId == typeid(me::BranchInstr) )
             {
+                me::BranchInstr* bi = (me::BranchInstr*) currentInstr;
                 x64lval.branch_ = (me::BranchInstr*) currentInstr;
-                return X64_BRANCH;
+
+                me::InstrNode* nextNode = currentInstrNode->next();
+                swiftAssert( typeid(*nextNode->value_) == typeid(me::LabelInstr),
+                        "must be a LabelInstr" );
+                me::LabelInstr* nextLabel = (me::LabelInstr*) nextNode->value_;
+
+                if (bi->trueLabel() == nextLabel)
+                    return X64_BRANCH_FALSE;
+                else if (bi->falseLabel() == nextLabel)
+                    return X64_BRANCH_TRUE;
+                else
+                    return X64_BRANCH;
             }
             else if ( instrTypeId == typeid(me::AssignInstr) )
             {

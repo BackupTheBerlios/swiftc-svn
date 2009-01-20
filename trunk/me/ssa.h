@@ -285,6 +285,9 @@ struct AssignInstr : public InstrBase
         return res_[0].reg_;
     }
 
+    bool isArithmetic() const;
+    bool isComparison() const;
+
     std::string toString() const;
 
     std::string getOpString() const;
@@ -369,6 +372,9 @@ struct GotoInstr : public JumpInstr
 
 struct BranchInstr : public JumpInstr
 {
+    /// Use this for some back-end specific stuff for condition code handling
+    int cc_;
+
     InstrNode* trueLabelNode_;
     InstrNode* falseLabelNode_;
 
@@ -390,6 +396,9 @@ struct BranchInstr : public JumpInstr
 
     LabelInstr* falseLabel();
     const LabelInstr* falseLabel() const;
+
+    Op* getOp();
+    const Op* getOp() const;
 
     /*
      * further methods

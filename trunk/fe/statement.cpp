@@ -275,6 +275,20 @@ bool WhileStatement::analyze()
      *     //...
      */
 
+    /*
+     * generate this SSA code:
+     *
+     * whileLabelNode:
+     *     expr
+     *     IF expr_result THEN trueLabelNode ELSE nextLabelNode
+     * trueLabelNode:
+     *     //...
+     *     expr
+     *     IF expr_result THEN trueLabelNode ELSE nextLabelNode
+     * nextLabelNode:
+     *     //...
+     */
+
     me::InstrNode* whileLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
     me::functab->appendInstrNode(whileLabelNode);
 
@@ -314,7 +328,8 @@ bool WhileStatement::analyze()
     // generate instructions as you can see above
     if (result)
     {
-        me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
+        expr_->genSSA();
+        me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
         me::functab->appendInstrNode(nextLabelNode);
     }
 

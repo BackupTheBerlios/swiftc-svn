@@ -267,6 +267,8 @@ bool Id::analyze()
     return true;
 }
 
+void Id::genSSA() {} // do nothing
+
 //------------------------------------------------------------------------------
 
 /*
@@ -326,7 +328,7 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-    me::Reg* reg = me::functab->newSSA( type_->baseType_->toType() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
     place_ = reg;
 
     int kind;
@@ -433,7 +435,7 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-    me::Reg* reg = me::functab->newSSA( type_->baseType_->toType() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
     place_ = reg;
 
     int kind;

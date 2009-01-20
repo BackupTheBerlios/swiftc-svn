@@ -43,6 +43,7 @@ struct Expr : public Node
      * @return true -> syntax corrent, false oterwise
      */
     virtual bool analyze() = 0;
+    virtual void genSSA() = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -91,7 +92,7 @@ struct Literal : public Expr
 
     me::Op::Type toType() const;
     virtual bool analyze();
-    void genSSA();
+    virtual void genSSA();
     std::string toString() const;
 
     typedef std::map<int, me::Op::Type> TypeMap;
@@ -119,6 +120,7 @@ struct Id : public Expr
      */
 
     virtual bool analyze();
+    virtual void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -154,7 +156,7 @@ struct UnExpr : public Expr
      */
 
     virtual bool analyze();
-    void genSSA();
+    virtual void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -190,7 +192,7 @@ struct BinExpr : public Expr
     std::string getExprName() const;
     std::string getOpString() const;
     virtual bool analyze();
-    void genSSA();
+    virtual void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -240,7 +242,7 @@ struct FunctionCall : public Expr
     }
 
     bool analyze();
-    void genSSA();
+    virtual void genSSA();
 };
 
 } // namespace swift

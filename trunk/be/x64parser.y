@@ -38,7 +38,7 @@ using namespace be;
 /* instructions */
 %token <label_>  X64_LABEL
 %token <goto_>   X64_GOTO
-%token <branch_> X64_BRANCH
+%token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
 %token X64_NOP
@@ -89,8 +89,28 @@ jump_instruction
     | X64_BRANCH bool_type X64_REG_2 /* test r1, r1; jz falseLabel; jmp trueLabel */
     { 
         EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
-        EMIT("jnz\t" << $1->trueLabel()->asmName())
-        EMIT("jmp\t" << $1->falseLabel()->asmName()) 
+        EMIT("jz\t"  << $1->falseLabel()->asmName())
+        EMIT("jmp\t" << $1->trueLabel()->asmName()) 
+    }
+    | X64_BRANCH_TRUE bool_type X64_CONST 
+    {   
+        if ($3->value_.bool_) 
+            EMIT("jmp\t" << $1->trueLabel()->asmName())
+    }
+    | X64_BRANCH_TRUE bool_type X64_REG_2 
+    { 
+        EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
+        EMIT("jnz\t"  << $1->trueLabel()->asmName())
+    }
+    | X64_BRANCH_FALSE bool_type X64_CONST 
+    {   
+        if (!$3->value_.bool_) 
+            EMIT("jmp\t" << $1->falseLabel()->asmName())
+    }
+    | X64_BRANCH_FALSE bool_type X64_REG_2 
+    { 
+        EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
+        EMIT("jz\t"  << $1->falseLabel()->asmName())
     }
     ;
 
