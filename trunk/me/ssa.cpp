@@ -413,7 +413,7 @@ std::string AssignInstr::getOpString() const
             opString = "<=";
             break;
         case GE:
-            opString = ">=";
+            opString = "\\>=";
             break;
         case '<':
             opString = "\\<"; // must be escaped for graphviz' dot

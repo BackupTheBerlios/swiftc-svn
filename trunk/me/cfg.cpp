@@ -200,6 +200,10 @@ void CFG::eliminateCriticalEdges()
             swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
                     "must be a LabelInstr here");
 
+            // is this a self loop?
+            bool selfLoop = false;
+            if (pred == bb)
+                selfLoop = true;
             /*
              * Insert new basic block like this:
              *
@@ -228,8 +232,8 @@ void CFG::eliminateCriticalEdges()
             // create new beginning Label and insert it in the instruction list
             InstrNode* newLabelNode = instrList_.insert( labelNode, new LabelInstr() );
 
-            // create newBB
-            BBNode* newBB = insert( new BasicBlock(labelNode, newLabelNode) );
+            // create newBBNode
+            BBNode* newBBNode = insert( new BasicBlock(labelNode, newLabelNode) );
 
             // change current bb's leading LabelInstr
             bb->begin_ = newLabelNode;
@@ -243,17 +247,57 @@ void CFG::eliminateCriticalEdges()
             swiftAssert( it != bbNode->pred_.sentinel(), "node must be found here" );
             bbNode->pred_.erase(it);
             
-            predNode->link(newBB);
-            newBB->link(bbNode);
+            predNode->link(newBBNode);
+            newBBNode->link(bbNode);
 
             // fix JumpInstr
             size_t jumpIndex = 0;
             RELATIVES_EACH(succIter, predNode->succ_)
+            {
                 ji->bbTargets_[jumpIndex] = succIter->value_;
+                ji->instrTargets_[jumpIndex] = succIter->value_->value_->begin_;
+                ++jumpIndex;
+            }
 
             // fix labelNode2BBNode_
-            labelNode2BBNode_[labelNode] = newBB;
+            labelNode2BBNode_[labelNode] = newBBNode;
             labelNode2BBNode_[newLabelNode] = bbNode;
+
+            /*
+             * handle self loops
+             */
+            if (selfLoop)
+            {
+                // TODO perhaps this can be done smarter
+                BasicBlock* newBB = newBBNode->value_;
+
+                // find newBB's predecessor
+                InstrNode* backIter = newBB->begin_->prev();
+                while (true)
+                {
+                    InstrBase* instr = backIter->value_;
+                    swiftAssert( !dynamic_cast<JumpInstr*>(instr),
+                            "there may not be a jump" );
+
+                    if ( typeid(*instr) == typeid(LabelInstr) )
+                    {
+                        /*
+                         * this is the preceding basic block 
+                         * without a jump at the end
+                         */
+
+                        BBNode* toBeFixedNode = labelNode2BBNode_[backIter];
+
+                        GotoInstr* gi = new GotoInstr(toBeFixedNode->succ_.first()->value_->value_->begin_);
+                        gi->bbTargets_[0] = toBeFixedNode->succ_.first()->value_;
+                        instrList_.insert( toBeFixedNode->value_->end_->prev(), gi );
+
+                        break;
+                    }
+                    // iterate backwards
+                    backIter = backIter->prev();
+                }
+            }
         } // for each predecessor
     } // for each CFG node
 }
@@ -721,6 +765,7 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
                 {
                     // and fix it
                     ji->bbTargets_[jumpIndex] = newNode;
+                    ji->instrTargets_[jumpIndex] = newNode->value_->begin_;
                     break;
                 }
             }

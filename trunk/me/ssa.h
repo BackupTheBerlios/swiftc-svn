@@ -375,9 +375,6 @@ struct BranchInstr : public JumpInstr
     /// Use this for some back-end specific stuff for condition code handling
     int cc_;
 
-    InstrNode* trueLabelNode_;
-    InstrNode* falseLabelNode_;
-
     BBNode* trueBB_;
     BBNode* falseBB_;
 

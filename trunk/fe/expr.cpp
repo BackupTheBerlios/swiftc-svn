@@ -328,7 +328,13 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
+#ifdef SWIFT_DEBUG
+    std::string str = "tmp";
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr(), &str );
+#else // SWIFT_DEBUG
     me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
+#endif // SWIFT_DEBUG
+
     place_ = reg;
 
     int kind;
@@ -435,7 +441,12 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
+#ifdef SWIFT_DEBUG
+    std::string str = "tmp";
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr(), &str );
+#else // SWIFT_DEBUG
     me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
+#endif // SWIFT_DEBUG
     place_ = reg;
 
     int kind;
