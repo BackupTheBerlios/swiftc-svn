@@ -197,6 +197,8 @@ Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
         rdu->defs_.append( DefUse(mem, spillNode, bbNode) ); // newly created definition
     }
 
+    bb->fixPointers();
+
     return mem;
 }
 
@@ -243,6 +245,8 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
         RegDefUse* rdu = iter->second;
         rdu->defs_.append( DefUse(newReg, reloadNode, bbNode) ); // newly created definition
     }
+
+    bbNode->value_->fixPointers();
 }
 
 /*
@@ -510,6 +514,7 @@ void Spiller::spill(BBNode* bbNode)
                 ++numLhs;
         }
 
+        swiftAssert(size_t(numLhs) <= numRegs_, "not enough regs");
         // numRemove -> number of regs which must be removed from currentlyInRegs
         int numRemove = std::max( numLhs + numReloads + int(currentlyInRegs.size()) - int(numRegs_), 0 );
 
@@ -526,8 +531,9 @@ void Spiller::spill(BBNode* bbNode)
                 inRegs.erase(regIter); // reg is not used before -> don't spill
             else
             {
-                // insert spill instruction
-                insertSpill(bbNode, toBeSpilled, lastInstrNode);
+                // insert spill instruction if toBeSpilled is used afterwards
+                if ( instr->liveOut_.contains(toBeSpilled) )
+                    insertSpill(bbNode, toBeSpilled, lastInstrNode);
             }
 
             // remove first reg
@@ -667,6 +673,7 @@ void Spiller::combine(BBNode* bbNode)
             {   
                 // -> we have no phi spill and phiArg not in preOut
                 // insert reload to predecessor basic block
+                insertSpillIfNecessarry(phiArg, prePhiNode);
                 insertReload( prePhiNode, phiArg, prePhi->getBackReloadLocation() );
             }
 
@@ -679,7 +686,7 @@ void Spiller::combine(BBNode* bbNode)
         if (phiSpill)
         {
             // convert phi result to a memory location
-            phiRes->color_ = Reg::MEMORY_LOCATION;
+            phiRes->isMem_ = true;
 
             // add to spills_
             RegDefUse* rdu = new RegDefUse();
@@ -743,7 +750,7 @@ void Spiller::combine(BBNode* bbNode)
 
             // ensure that every reload is dominated by a spill
             insertSpillIfNecessarry(reg, predNode);
-            insertReload( bbAppend, reg, bbAppend->value_->getBackReloadLocation() );
+            insertReload( bbAppend, reg, appendTo );
         }
     } // for each predecessor
 
@@ -755,20 +762,10 @@ void Spiller::combine(BBNode* bbNode)
     }
 }
 
-void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
+
+bool isSpilled(Reg* reg, BBNode* bbNode)
 {
-    /*
-     * go up dominance tree until we found the first dominating block 
-     * which has reg not in 'in_'
-     */
-    while ( in_[bbNode].contains(reg) )
-        bbNode = cfg_->idoms_[bbNode->postOrderIndex_];
-
     BasicBlock* bb = bbNode->value_;
-
-    /*
-     * check whether reg is already spilled in this block
-     */
 
     // is it phi-spilled?
     for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next())
@@ -779,7 +776,7 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
         Reg* res = phi->result();
 
         if (res == reg)
-            return; // everything's fine here -> no spill needed
+            return true; // found
     }
 
     // is it spilled by an ordinary spill?
@@ -791,21 +788,60 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
         Spill* spill = (Spill*) iter->value_;
 
         if ( ((Reg*) spill->arg_[0].op_) == reg )
-            return; // everything is fine -> there is already a spill
+            return true; // found
     }
 
-    // -> no spill in this basic block, so insert one
+    // not spilled in this basic block
+    return false;
+}
 
-    // find spill location
-    InstrNode* appendTo;
+void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
+{
+    if ( spillMap_.find(reg) != spillMap_.end() )
+    {
+        // -> in this case we need to check whether we have a dominating spill
 
-    if (reg->def_.bbNode_ == bbNode)
-        appendTo = reg->def_.instrNode_;
-    else
-        appendTo = bb->getSpillLocation();
+        /*
+         * go up dominance tree until we found the first dominating block 
+         * which has a spill of reg
+         */
+        while ( bbNode != cfg_->entry_ && !isSpilled(reg, bbNode) )
+            bbNode = cfg_->idoms_[bbNode->postOrderIndex_];
+
+        if (bbNode == cfg_->entry_)
+        {
+            if ( isSpilled(reg, bbNode) )
+                return;
+        }
+        else 
+            return;
+    }
+
+    // no dominating spill found -> insert one
+    InstrNode* appendTo = reg->def_.instrNode_;
+    if ( typeid(*appendTo->value_) == typeid(PhiInstr) )
+    {
+        std::cout << "fjdklfjdl" << std::endl;
+        appendTo = reg->def_.bbNode_->value_->firstOrdinary_->prev();
+    }
+    insertSpill(reg->def_.bbNode_, reg, appendTo);
+
+    /*
+     * check whether reg is already spilled in this block
+     */
+    //// -> no spill in this basic block, so insert one
+
+    //// find spill location
+    //InstrNode* appendTo;
+
+    //if (reg->def_.bbNode_ == bbNode)
+        //appendTo = reg->def_.instrNode_;
+    //else
+        //appendTo = bb->end_->prev();
     
-    // insert spill
-    insertSpill(bbNode, reg, appendTo);
+    //// insert spill
+    //insertSpill(bbNode, reg, appendTo);
+    //bb->fixPointers();
 }
 
 } // namespace me

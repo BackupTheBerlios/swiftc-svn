@@ -50,6 +50,8 @@ struct Function
     typedef std::map<Reg*, int> Reg2Color;
     Reg2Color reg2Color_;
 
+    int spillSlots_;
+
     /*
      * constructor and destructor
      */

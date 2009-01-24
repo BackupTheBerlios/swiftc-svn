@@ -99,6 +99,7 @@ Reg::Reg(Type type, int varNr, std::string* id /*= 0*/)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
+    , isMem_(false)
     , id_( id ? *id : "")
 {}
 
@@ -108,6 +109,7 @@ Reg::Reg(Type type, int varNr)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
+    , isMem_(false)
 {}
 
 #endif // SWIFT_DEBUG
@@ -130,7 +132,7 @@ size_t Reg::var2Index() const
 
 bool Reg::isMem() const
 {
-    return color_ == MEMORY_LOCATION;
+    return isMem_;
 }
 
 bool Reg::colorReg(int typeMask) const
@@ -169,7 +171,9 @@ std::string Reg::toString() const
         oss << number2String( varNr_);
     }
 
-    if ( color_ >= 0 )
+    if ( isMem() )
+        oss << " (" << color_ << ')';
+    else if ( color_ >= 0 )
         oss << " (" << me::arch->reg2String(this) << ')';
 
     return oss.str();

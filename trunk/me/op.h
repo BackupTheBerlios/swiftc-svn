@@ -161,7 +161,6 @@ struct Reg : public Op
     enum
     {
         NOT_COLORED_YET = -1,
-        MEMORY_LOCATION = -2
     };
 
     /**
@@ -178,6 +177,8 @@ struct Reg : public Op
      * \a MEMORY_LOCATION if it is a memory location and thus needn't be colored
      */
     int color_;
+
+    bool isMem_;
 
     DefUse def_;      ///< knows where the var is defined
     DefUseList uses_; ///< knows all uses of this var

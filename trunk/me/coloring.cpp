@@ -1,10 +1,10 @@
 #include "me/coloring.h"
 
 #include <algorithm>
-#include <iostream>
 #include <typeinfo>
 
 #include "me/cfg.h"
+#include "me/functab.h"
 #include "me/op.h"
 
 namespace me {
@@ -12,8 +12,14 @@ namespace me {
 typedef Colors::ResultVec IntVec;
 
 /*
- * constructor
+ * constructors
  */
+
+Coloring::Coloring(Function* function)
+    : CodePass(function)
+    , typeMask_(-1)         // not used in this case
+    , reservoir_(Colors())  // use an empty set
+{}
 
 Coloring::Coloring(Function* function, int typeMask, const Colors& reservoir)
     : CodePass(function)
@@ -31,8 +37,131 @@ void Coloring::process()
      * start with the first true basic block
      * and perform a pre-order walk of the dominator tree
      */
-    colorRecursive(cfg_->entry_);
+
+    if ( reservoir_.empty() )
+        colorRecursiveMem(cfg_->entry_);
+    else
+        colorRecursive(cfg_->entry_);
 }
+
+/*
+ * memory location coloring
+ */
+
+int Coloring::getFreeMemColor(Colors& colors)
+{
+    int color = 0;
+
+    for (Colors::iterator iter = colors.begin(); iter != colors.end(); ++iter)
+    {
+        if ( color != *iter )
+            break;
+
+        ++color;
+    }
+
+    colors.insert(color);
+
+    // update the number of spill slots used
+    function_->spillSlots_ = std::max(function_->spillSlots_, color);
+
+    return color;
+}
+
+void Coloring::colorRecursiveMem(BBNode* bbNode)
+{
+    BasicBlock* bb = bbNode->value_;
+    Colors colors; // colors already used go here
+
+    // all vars in liveIn_ have already been colored
+    REGSET_EACH(iter, bb->liveIn_)
+    {
+        Reg* reg = *iter;
+
+        // do not color memory locations or regs with wrong types
+        if ( !reg->isMem() )
+            continue;
+
+        int color = reg->color_;
+        swiftAssert(color >= 0, "color must be assigned here");
+
+        // mark as occupied
+        colors.insert(color);
+    }
+
+    // for each instruction 
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->end_; iter = iter->next())
+    {
+        InstrBase* instr = iter->value_;
+
+#ifdef SWIFT_DEBUG
+        /*
+         * In the debug version this set knows vars which were already
+         * removed. This allows more precise assertions (see below).
+         */
+        RegSet erased;
+#endif // SWIFT_DEBUG
+
+        // for each var on the right hand side
+        for (size_t i = 0; i < instr->arg_.size(); ++i)
+        {
+            Reg* reg = dynamic_cast<Reg*>(instr->arg_[i].op_);
+
+            // only memory regs are considered here
+            if ( !reg || !reg->isMem() )
+                continue;
+
+            if ( InstrBase::isLastUse(iter, reg) )
+            {
+                // -> its the last use of reg
+                Colors::iterator colorIter = colors.find(reg->color_);
+#ifdef SWIFT_DEBUG
+                // has this reg already been erased due to a double entry like a = b + b?
+                if ( erased.contains(reg) )
+                    continue;
+
+                swiftAssert( colorIter != colors.end(), "color must be found here" );
+                colors.erase(colorIter); // last use of reg
+                erased.insert(reg);
+#else // SWIFT_DEBUG
+                if ( colorIter != colors.end() )
+                    colors.erase(colorIter); // last use of reg
+                /*
+                 * else -> the reg must already been removed which must
+                 *      be caused by a double entry like a = b + b
+                 */
+#endif // SWIFT_DEBUG
+            } // if last use
+        } // for each arg var
+
+        // for each var on the left hand side -> assign a color for result
+        for (size_t i = 0; i < instr->res_.size(); ++i)
+        {
+            Reg* reg = instr->res_[i].reg_;
+
+            // only memory regs are considered here
+            if ( !reg->isMem() )
+                continue;
+
+            reg->color_ = getFreeMemColor(colors);
+
+            // pointless definitions should be optimized away
+            if ( !instr->liveOut_.contains(reg) )
+                colors.erase( colors.find(reg->color_) );
+        }
+    } // for each instruction
+
+    // for each child of bb in the dominator tree
+    BBLIST_EACH(bbIter, bb->domChildren_)
+    {
+        BBNode* domChild = bbIter->value_;
+        colorRecursiveMem(domChild);
+    }
+}
+
+/*
+ * register coloring
+ */
 
 void Coloring::colorRecursive(BBNode* bbNode)
 {

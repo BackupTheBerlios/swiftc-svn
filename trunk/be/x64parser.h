@@ -18,6 +18,8 @@ struct LabelInstr;
 struct GotoInstr;
 struct BranchInstr;
 struct AssignInstr;
+struct Spill;
+struct Reload;
 
 } // namespace be
 

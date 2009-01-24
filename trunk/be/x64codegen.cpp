@@ -59,7 +59,8 @@ void X64CodeGen::process()
 
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
-    //ofs_ << "\tenter $0, $32\n";
+    //int localStackSize = (function_->spillSlots_ + 1) * 16;
+    //ofs_ << "\tenter $0, $" << localStackSize << '\n';
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -114,7 +115,11 @@ void X64CodeGen::process()
     }
 
     //ofs_ << "\tleave\n";
-    ofs_ << "\tret\n";
+    //if (localStackSize == 0)
+        ofs_ << "\tret\n";
+    //else
+        //ofs_ << "\tret $" << localStackSize << '\n';
+
     ofs_ << ".LFE" << counter << ":\n";
     ofs_ << "\t.size\t" << "swift_" << counter << ", .-" << "swift_" << counter << '\n';
 
@@ -396,6 +401,7 @@ void x64error(char *s)
 int x64lex()
 {
     me::InstrBase* currentInstr = currentInstrNode->value_;
+    //std::cout << currentInstr->toString() << std::endl;
 
     switch (location)
     {
@@ -456,10 +462,21 @@ int x64lex()
                         swiftAssert(false, "unreachable code");
                 }
             }
+            else if ( instrTypeId == typeid(me::Spill) )
+            {
+                me::Spill* spill = (me::Spill*) currentInstr;
+                x64lval.spill_ = spill;
+                return X64_SPILL;
+            }
+            else if ( instrTypeId == typeid(me::Reload) )
+            {
+                me::Reload* reload = (me::Reload*) currentInstr;
+                x64lval.reload_ = reload;
+                return X64_RELOAD;
+            }
             else if ( instrTypeId == typeid(me::PhiInstr) )
             {
-                //me::PhiInstr* phi = (me::PhiInstr*) currentInstr;
-                // TODO
+                swiftAssert(false, "unreachable code");
             }
             else
             {
@@ -524,6 +541,9 @@ int x64lex()
                 swiftAssert( opTypeId == typeid(me::Reg), "must be a Reg" );
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
+
+                if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->isMem() )
+                    return X64_REG_2;
 
                 if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->color_ == reg->color_ )
                     lastOp = X64_REG_1;

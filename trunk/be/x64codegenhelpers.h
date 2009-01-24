@@ -19,10 +19,7 @@ namespace be {
 
 std::string suffix(int);
 
-inline std::string reg2str(me::Reg* reg)
-{
-    return X64RegAlloc::reg2String(reg);
-}
+std::string reg2str(me::Reg* reg);
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string jcc(me::BranchInstr* bi, bool neg = false);

@@ -29,6 +29,8 @@ using namespace be;
     me::GotoInstr*   goto_;
     me::BranchInstr* branch_;
     me::AssignInstr* assign_;
+    me::Spill*       spill_;
+    me::Reload*      reload_;
 }
 
 /*
@@ -41,6 +43,8 @@ using namespace be;
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
+%token <spill_>  X64_SPILL
+%token <reload_> X64_RELOAD
 %token X64_NOP
 
 /* types */
@@ -53,7 +57,7 @@ using namespace be;
 /* operands */
 %token <undef_> X64_UNDEF
 %token <const_> X64_CONST X64_CST_0 X64_CST_1
-%token <reg_>   X64_REG_1 X64_REG_2 X64_REG_3
+%token <reg_>   X64_REG_1 X64_REG_2 X64_REG_3 X64_REG_M
 
 %start instruction
 
@@ -72,6 +76,7 @@ instruction
     | X64_NOP { /* do nothing */ }
     | jump_instruction
     | assign_instruction
+    | spill_reload
     ;
 
 jump_instruction
@@ -131,6 +136,17 @@ jump_instruction
             EMIT("j" << jcc($1, true) << '\t' << $1->falseLabel()->asmName())
     }
     ;
+
+spill_reload
+    : int_spill_reload
+    ;
+
+int_spill_reload
+    : X64_SPILL int_or_bool_type X64_REG_M
+    {
+        EMIT("mov" << suffix($2) << 't' << reg2str($3) << ", " << reg2str($1->resReg()))
+    }
+
 
 assign_instruction
     : int_mov

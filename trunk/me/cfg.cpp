@@ -897,7 +897,7 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
 #endif // SWIFT_DEBUG
 
             if ( rdu->defs_.first()->value_.reg_->isMem() )
-                newReg->color_ = Reg::MEMORY_LOCATION;
+                newReg->isMem_ = true;
 
             // create phi instruction
             PhiInstr* phi = new PhiInstr( newReg, bbNode->pred_.size() );

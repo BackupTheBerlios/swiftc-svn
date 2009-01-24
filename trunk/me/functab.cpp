@@ -26,6 +26,7 @@ Function::Function(std::string* id)
     , firstLiveness_(false)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
+    , spillSlots_(0)
 {}
 
 Function::~Function()
@@ -82,7 +83,7 @@ Reg* Function::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
     Reg* reg = new Reg(type, regCounter_++, id);
-    reg->color_ = Reg::MEMORY_LOCATION;
+    reg->isMem_ = true;
     insert(reg);
 
     return reg;
@@ -111,7 +112,7 @@ Reg* Function::newMem(Op::Type type, int varNr)
 {
     swiftAssert(varNr < 0, "varNr must be less than zero");
     Reg* reg = new Reg(type, regCounter_++);
-    reg->color_ = Reg::MEMORY_LOCATION;
+    reg->isMem_ = true;
     insert(reg);
 
     return reg;

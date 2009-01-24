@@ -43,6 +43,18 @@ std::string suffix(int type)
     }
 }
 
+std::string reg2str(me::Reg* reg)
+{
+    if ( reg->isMem() )
+    {
+        std::ostringstream oss;
+        oss << "$-" << reg->color_ * 16 << "(%rbp)";
+        return oss.str();
+    }
+    else
+        return X64RegAlloc::reg2String(reg);
+}
+
 std::string mcst2str(me::Const* cst)
 {
     std::ostringstream oss;

@@ -20,9 +20,11 @@ private:
 public:
 
     /*
-     * constructor
+     * constructors
      */
 
+    /// Use this one for coloring of memory locations.
+    Coloring(Function* function);
     Coloring(Function* function, int typeMask, const Colors& reservoir);
 
     /*
@@ -33,7 +35,17 @@ public:
 
 private:
 
-    void color();
+    /*
+     * memory location coloring
+     */
+
+    void colorRecursiveMem(BBNode* bbNode);
+    int getFreeMemColor(Colors& colors);
+
+    /*
+     * register coloring
+     */
+
     void colorRecursive(BBNode* bbNode);
     void colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColored);
 };

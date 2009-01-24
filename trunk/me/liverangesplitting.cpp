@@ -58,9 +58,12 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
     BasicBlock* bb = bbNode->value_;
     InstrBase* instr = instrNode->value_;
 
-    // create new basic block
-    cfg_->splitBB(instrNode, bbNode);
-    swiftAssert(bb->begin_ == instrNode->prev(), "splitting went wrong");
+    // create new basic block if necessary
+    if ( bb->begin_ != instrNode->prev() )
+    {
+        cfg_->splitBB(instrNode, bbNode);
+        swiftAssert(bb->begin_ == instrNode->prev(), "splitting went wrong");
+    }
 
     /* 
      * insert new phi instruction for each live-in var
@@ -76,6 +79,9 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
 #else // SWIFT_DEBUG
         Reg* newReg = function_->newSSA(reg->type_);
 #endif // SWIFT_DEBUG
+
+        if ( reg->isMem() )
+            newReg->isMem_ = true;
 
         // create phi instruction
         swiftAssert( bbNode->pred_.size() == 1, "must have exactly one predecessor" );

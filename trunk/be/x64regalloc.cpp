@@ -71,6 +71,19 @@ void X64RegAlloc::process()
     if (!omitFramePointer_)
         rColors.erase(RBP);
 
+    //rColors.erase(RCX);
+    //rColors.erase(RSI);
+    //rColors.erase(RDI);
+    //rColors.erase(R8 );
+    //rColors.erase(R9 );
+    //rColors.erase(R10);
+    //rColors.erase(R11);
+    //rColors.erase(R12);
+    //rColors.erase(R13);
+    //rColors.erase(R14);
+    //rColors.erase(R15);
+
+
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
 
     // recalulate def-use and liveness stuff
@@ -100,7 +113,6 @@ void X64RegAlloc::process()
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
-
     /*
      * TODO FaithFulFixing is ignored at the moment !!!!!!
      */
@@ -123,6 +135,9 @@ void X64RegAlloc::process()
 
     // XMM registers
     me::Coloring(function_, F_TYPE_MASK, fColors).process(); 
+
+    // color memory locations / spill slots
+    me::Coloring(function_).process();
 }
 
 void X64RegAlloc::registerTargeting()

@@ -2,7 +2,7 @@
 class Test
     Foo foo
 
-    routine test(int i, int j, int k, real uu) -> real re, int rs, inout int bs
+    routine test(int i, int j, real uu) -> real re, int rs, inout int bs
         int z
         z = 5 + 4 * j
         j = 7
