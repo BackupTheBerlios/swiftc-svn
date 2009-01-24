@@ -32,15 +32,7 @@ Function::~Function()
 {
     // delete all instructions
     for (InstrNode* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
-    {
-        if ( typeid(*iter->value_) == typeid(LabelInstr) )
-            std::cout << iter->value_->toString() << std::endl;
-
-        std::cout << typeid(*iter->value_).name() << std::endl;
-        std::cout << "a" << std::endl;
         delete iter->value_;
-        std::cout << "b" << std::endl;
-    }
 
     // delete all pseudo regs
     for (RegMap::iterator iter = in_   .begin(); iter != in_   .end(); ++iter)

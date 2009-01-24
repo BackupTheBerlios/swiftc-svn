@@ -136,14 +136,11 @@ struct Const : public Op
     Value value_;
 
     /*
-     * constructor
+     * constructor and destructor
      */
 
-    Const(Type type)
-        : Op(type)
-    {
-        value_.uint64_ = 0; // clear all bits
-    }
+    Const(Type type);
+    virtual ~Const();
 
     /*
      * further methods

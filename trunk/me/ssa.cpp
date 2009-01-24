@@ -72,7 +72,6 @@ InstrBase::~InstrBase()
     // delete all consts and undefs
     for (size_t i = 0; i < arg_.size(); ++i)
     {
-        std::cout << i << std::endl;
         if (       typeid(*arg_[i].op_) == typeid(Const) 
                 || typeid(*arg_[i].op_) == typeid(Undef) )
         {
@@ -185,8 +184,6 @@ void InstrBase::unconstrainIfPossible()
 
     // all constraints were removed from this instruction
     constrained_ = false;
-
-    std::cout << "worked" << std::endl;
 }
 
 bool InstrBase::livesThrough(Reg* reg) const

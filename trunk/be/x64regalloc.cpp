@@ -163,15 +163,21 @@ void X64RegAlloc::registerTargeting()
                     {
                         me::AssignInstr* ai = (me::AssignInstr*) preNode->value_;
 
-                        // check whether this is the only use
-                        if (reg->uses_.size() == 1)
-                        {
-                            // do not color this reg
-                            //reg->type_ = me::Op::R_SPECIAL;
-                        }
-
                         if ( ai->isComparison() )
                         {
+                            // do nothing when both are Consts,
+                            // this should be optimized away
+                            if ( typeid(*ai->arg_[0].op_) == typeid(me::Const)
+                                    && typeid(*ai->arg_[0].op_) == typeid(me::Const))
+                                continue;
+
+                            // check whether this is the only use
+                            if (reg->uses_.size() == 1)
+                            {
+                                // do not color this reg
+                                reg->type_ = me::Op::R_SPECIAL;
+                            }
+
                             me::Op::Type type = ai->arg_[0].op_->type_;
 
                             if (       type == me::Op::R_INT8  || type == me::Op::R_INT16 
