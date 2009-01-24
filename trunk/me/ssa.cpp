@@ -72,9 +72,12 @@ InstrBase::~InstrBase()
     // delete all consts and undefs
     for (size_t i = 0; i < arg_.size(); ++i)
     {
-        if ( typeid(*arg_[i].op_) == typeid(Const) 
+        std::cout << i << std::endl;
+        if (       typeid(*arg_[i].op_) == typeid(Const) 
                 || typeid(*arg_[i].op_) == typeid(Undef) )
+        {
             delete arg_[i].op_;
+        }
     }
 }
 
@@ -428,14 +431,14 @@ std::string AssignInstr::getOpString() const
     return opString;
 }
 
-bool AssignInstr::isArithmetic() const
+bool AssignInstr::isComparison() const
 {
     return (kind_ == EQ  || kind_ == NE  || 
             kind_ == '<' || kind_ == '>' ||
             kind_ == LE  || kind_ == GE);
 }
 
-bool AssignInstr::isComparison() const
+bool AssignInstr::isArithmetic() const
 {
     return (kind_ == '+' || kind_ == '-' || 
             kind_ == '*' || kind_ == '/');
@@ -547,7 +550,7 @@ std::string GotoInstr::toString() const
 
 BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel)
     : JumpInstr(0, 1, 2) // always no results, one arg, two targets
-    , cc_(-1)
+    , cc_(CC_NOT_SET)
 {
     swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
     arg_[0].op_ = boolOp;

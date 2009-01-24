@@ -49,7 +49,9 @@ public:
     {
         C_EQ, C_NE,
         C_L,  C_LE,
-        C_G,  C_GE
+        C_G,  C_GE,
+        C_B,  C_BE,
+        C_A,  C_AE
     };
 
     enum

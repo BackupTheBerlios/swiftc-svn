@@ -361,6 +361,27 @@ std::string ccsuffix(me::AssignInstr* ai, int type, bool neg /*= false*/)
     return "error";
 }
 
+std::string jcc(me::BranchInstr* bi, bool neg /*= false*/)
+{
+    switch (bi->cc_)
+    {
+        case X64RegAlloc::C_EQ: if (neg) return "ne";  else return "e";
+        case X64RegAlloc::C_NE: if (neg) return  "e";  else return "ne";
+        case X64RegAlloc::C_L : if (neg) return "nl";  else return "l";
+        case X64RegAlloc::C_LE: if (neg) return "nle"; else return "le";
+        case X64RegAlloc::C_G:  if (neg) return "ng";  else return "g";
+        case X64RegAlloc::C_GE: if (neg) return "nge"; else return "ge";
+        case X64RegAlloc::C_B : if (neg) return "nb";  else return "b";
+        case X64RegAlloc::C_BE: if (neg) return "nbe"; else return "be";
+        case X64RegAlloc::C_A:  if (neg) return "na";  else return "a";
+        case X64RegAlloc::C_AE: if (neg) return "nae"; else return "ae";
+        default:
+            swiftAssert(false, "unreachable code"); 
+    }
+
+    return "error";
+}
+
 std::string neg_mask(int type)
 {
     std::ostringstream oss;

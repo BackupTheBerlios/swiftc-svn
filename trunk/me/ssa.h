@@ -183,7 +183,7 @@ struct LabelInstr : public InstrBase
  */
 struct PhiInstr : public InstrBase
 {
-    BBNode** sourceBBs_; ///< predecessor basic block of each arg-arg
+    BBNode** sourceBBs_; ///< predecessor basic block of each arg
 
     /*
      * constructor and destructor
@@ -372,6 +372,11 @@ struct GotoInstr : public JumpInstr
 
 struct BranchInstr : public JumpInstr
 {
+    enum
+    {
+        CC_NOT_SET = -1
+    };
+
     /// Use this for some back-end specific stuff for condition code handling
     int cc_;
 

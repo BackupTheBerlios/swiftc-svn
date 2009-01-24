@@ -25,6 +25,7 @@ inline std::string reg2str(me::Reg* reg)
 }
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
+std::string jcc(me::BranchInstr* bi, bool neg = false);
 
 std::string cst2str(me::Const* cst);
 std::string mcst2str(me::Const* cst);

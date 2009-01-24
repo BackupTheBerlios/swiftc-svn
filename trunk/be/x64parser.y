@@ -88,9 +88,17 @@ jump_instruction
     }
     | X64_BRANCH bool_type X64_REG_2 /* test r1, r1; jz falseLabel; jmp trueLabel */
     { 
-        EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
-        EMIT("jz\t"  << $1->falseLabel()->asmName())
-        EMIT("jmp\t" << $1->trueLabel()->asmName()) 
+        if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
+        {
+            EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
+            EMIT("jnz\t" << $1->trueLabel()->asmName())
+            EMIT("jmp\t" << $1->falseLabel()->asmName()) 
+        }
+        else
+        {
+            EMIT("j" << jcc($1) << '\t' << $1->trueLabel()->asmName())
+            EMIT("jmp\t" << $1->falseLabel()->asmName()) 
+        }
     }
     | X64_BRANCH_TRUE bool_type X64_CONST 
     {   
@@ -99,8 +107,13 @@ jump_instruction
     }
     | X64_BRANCH_TRUE bool_type X64_REG_2 
     { 
-        EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
-        EMIT("jnz\t"  << $1->trueLabel()->asmName())
+        if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
+        {
+            EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
+            EMIT("jnz\t"  << $1->trueLabel()->asmName())
+        }
+        else
+            EMIT("j" << jcc($1) << '\t' << $1->trueLabel()->asmName())
     }
     | X64_BRANCH_FALSE bool_type X64_CONST 
     {   
@@ -109,8 +122,13 @@ jump_instruction
     }
     | X64_BRANCH_FALSE bool_type X64_REG_2 
     { 
-        EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
-        EMIT("jz\t"  << $1->falseLabel()->asmName())
+        if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
+        {
+            EMIT("testb\t" << reg2str($3) << ", " << reg2str($3))
+            EMIT("jz\t"  << $1->falseLabel()->asmName())
+        }
+        else
+            EMIT("j" << jcc($1, true) << '\t' << $1->falseLabel()->asmName())
     }
     ;
 
@@ -402,17 +420,20 @@ int_cmp
     | cmp int_type X64_CONST any_reg /* cmp r, c */
     { 
           EMIT("cmp" << suffix($2) << '\t' << reg2str($4) << ", " << cst2str($3))
-          EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp int_type any_reg X64_CONST /* cmp r, c */
     { 
           EMIT("cmp" << suffix($2) << '\t' << cst2str($4) << ", " << reg2str($3))
-          EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp int_type any_reg any_reg   /* cmp r, r */
     { 
           EMIT("cmp" << suffix($2) << '\t' << reg2str($4) << ", " << reg2str($3))
-          EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     ;
     
@@ -579,17 +600,20 @@ real_cmp
     | cmp real_type any_reg X64_CONST /* cmp c, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << mcst2str($4) << ", " << reg2str($3))
-          EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp real_type X64_CONST any_reg /* cmpn c, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << mcst2str($3) << ", " << reg2str($4))
-          EMIT("set" << ccsuffix($1, $2, true) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2, true) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp real_type any_reg any_reg   /* cmp r, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << reg2str($4) << ", " << reg2str($3))
-          EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
+          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     ;
 

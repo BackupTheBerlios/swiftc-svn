@@ -144,8 +144,6 @@ void X64RegAlloc::registerTargeting()
         else if ( typeid(*instr) == typeid(me::BranchInstr) )
         {
             me::BranchInstr* bi = (me::BranchInstr*) instr;
-            // the default is testing whether the zero flag is not set
-            bi->cc_ = C_NE;
 
             /* 
              * check whether the preceding instruction is the definition
@@ -174,22 +172,43 @@ void X64RegAlloc::registerTargeting()
 
                         if ( ai->isComparison() )
                         {
-                            switch (ai->kind_)
+                            me::Op::Type type = ai->arg_[0].op_->type_;
+
+                            if (       type == me::Op::R_INT8  || type == me::Op::R_INT16 
+                                    || type == me::Op::R_INT32 || type == me::Op::R_INT64
+                                    || type == me::Op::R_SAT8  || type == me::Op::R_SAT16)
                             {
-                                case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
-                                case me::AssignInstr::NE: bi->cc_ = C_NE; break;
-                                case '<':                 bi->cc_ = C_L ; break;
-                                case '>':                 bi->cc_ = C_G ; break;
-                                case me::AssignInstr::LE: bi->cc_ = C_LE; break;
-                                case me::AssignInstr::GE: bi->cc_ = C_GE; break;
-                                default:
-                                    swiftAssert(false, "unreachable code");
+                                switch (ai->kind_)
+                                {
+                                    case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
+                                    case me::AssignInstr::NE: bi->cc_ = C_NE; break;
+                                    case '<':                 bi->cc_ = C_L ; break;
+                                    case '>':                 bi->cc_ = C_G ; break;
+                                    case me::AssignInstr::LE: bi->cc_ = C_LE; break;
+                                    case me::AssignInstr::GE: bi->cc_ = C_GE; break;
+                                    default:
+                                        swiftAssert(false, "unreachable code");
+                                }
                             }
-                        }
-                    } 
-                        continue;
-                } 
-            }
+                            else
+                            {
+                                switch (ai->kind_)
+                                {
+                                    case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
+                                    case me::AssignInstr::NE: bi->cc_ = C_NE; break;
+                                    case '<':                 bi->cc_ = C_B ; break;
+                                    case '>':                 bi->cc_ = C_A ; break;
+                                    case me::AssignInstr::LE: bi->cc_ = C_BE; break;
+                                    case me::AssignInstr::GE: bi->cc_ = C_AE; break;
+                                    default:
+                                        swiftAssert(false, "unreachable code");
+                                }
+                            }
+                        } // if comparison
+                    } // if AssignInstr
+                    continue;
+                } // if reg defined in previous instruction
+            } // if bi->getOP() is a Reg
             else 
             {
                 swiftAssert( typeid(*bi->getOp()) == typeid(me::Const),

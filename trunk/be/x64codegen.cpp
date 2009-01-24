@@ -133,6 +133,13 @@ struct TReg
         : color_(color)
         , type_(type)
     {}
+
+    std::string toString() const
+    {
+        std::ostringstream oss;
+        oss << "color: " << color_ << " type: " << type_;
+        return oss.str();
+    }
 };
 
 class RegGraph : public Graph<TReg>
@@ -262,6 +269,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new TReg(dstColor, dstType))) ).first;
 
         srcIter->second->link(dstIter->second);
+        //std::cout << srcIter->second->value_->toString() << " -> " << dstIter->second->value_->toString() << std::endl;
     }
 
     /*
@@ -332,7 +340,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         // mov r1, free
         me::Op::Type type = node->value_->type_;
 
-        if (type == me::Op::R_REAL32 || me::Op::R_REAL64)
+        if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
             genMove(type, node->value_->color_, X64RegAlloc::XMM15); // TODO
         else
             genMove(type, node->value_->color_, X64RegAlloc::R15); // TODO
@@ -357,7 +365,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         }
 
         // mov free, rn
-        if (type == me::Op::R_REAL32 || me::Op::R_REAL64)
+        if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
             genMove(type, X64RegAlloc::XMM15, predIter->value_->color_); // TODO
         else
             genMove(type, X64RegAlloc::R15, predIter->value_->color_); // TODO
@@ -470,6 +478,7 @@ int x64lex()
             me::Op::Type type =  currentInstr->arg_[0].op_->type_;
             switch (type)
             {
+                case me::Op::R_SPECIAL:
                 case me::Op::R_BOOL:  return X64_BOOL;
 
                 case me::Op::R_INT8:  return X64_INT8;

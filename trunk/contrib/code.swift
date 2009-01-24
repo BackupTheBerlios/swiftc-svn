@@ -72,7 +72,7 @@ class Test
                 real t
                 t = 5.0
 
-                while t > 3.0
+                while t > 3.1434
                     if b
                         bool b
                         b  = false
