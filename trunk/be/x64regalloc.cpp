@@ -71,17 +71,17 @@ void X64RegAlloc::process()
     if (!omitFramePointer_)
         rColors.erase(RBP);
 
-    //rColors.erase(RCX);
-    //rColors.erase(RSI);
-    //rColors.erase(RDI);
-    //rColors.erase(R8 );
-    //rColors.erase(R9 );
-    //rColors.erase(R10);
-    //rColors.erase(R11);
-    //rColors.erase(R12);
-    //rColors.erase(R13);
-    //rColors.erase(R14);
-    //rColors.erase(R15);
+    rColors.erase(RCX);
+    rColors.erase(RSI);
+    rColors.erase(RDI);
+    rColors.erase(R8 );
+    rColors.erase(R9 );
+    rColors.erase(R10);
+    rColors.erase(R11);
+    rColors.erase(R12);
+    rColors.erase(R13);
+    rColors.erase(R14);
+    rColors.erase(R15);
 
 
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();

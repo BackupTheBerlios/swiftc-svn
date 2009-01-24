@@ -62,7 +62,7 @@ void X64::dumpConstants(std::ofstream& ofs)
 
     // sign mask for real64
     ofs << ".LCS64:\n";
-    ofs << ".quad " << 0x8000000000000000 << '\n';
+    ofs << ".quad " << 0x8000000000000000ULL << '\n';
 
     ofs << '\n';
 }

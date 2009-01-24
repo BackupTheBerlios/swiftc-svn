@@ -48,7 +48,7 @@ std::string reg2str(me::Reg* reg)
     if ( reg->isMem() )
     {
         std::ostringstream oss;
-        oss << "$-" << reg->color_ * 16 << "(%rbp)";
+        oss << "-" << reg->color_ * 16 << "(%rbp)";
         return oss.str();
     }
     else

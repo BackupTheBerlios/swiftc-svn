@@ -821,7 +821,6 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
     InstrNode* appendTo = reg->def_.instrNode_;
     if ( typeid(*appendTo->value_) == typeid(PhiInstr) )
     {
-        std::cout << "fjdklfjdl" << std::endl;
         appendTo = reg->def_.bbNode_->value_->firstOrdinary_->prev();
     }
     insertSpill(reg->def_.bbNode_, reg, appendTo);

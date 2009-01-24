@@ -59,8 +59,8 @@ void X64CodeGen::process()
 
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
-    //int localStackSize = (function_->spillSlots_ + 1) * 16;
-    //ofs_ << "\tenter $0, $" << localStackSize << '\n';
+    int localStackSize = (function_->spillSlots_ + 1) * 16;
+    ofs_ << "\tenter $0, $" << localStackSize << '\n';
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -401,7 +401,6 @@ void x64error(char *s)
 int x64lex()
 {
     me::InstrBase* currentInstr = currentInstrNode->value_;
-    //std::cout << currentInstr->toString() << std::endl;
 
     switch (location)
     {

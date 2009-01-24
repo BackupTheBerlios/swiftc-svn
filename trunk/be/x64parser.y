@@ -142,9 +142,13 @@ spill_reload
     ;
 
 int_spill_reload
-    : X64_SPILL int_or_bool_type X64_REG_M
+    : X64_SPILL int_or_bool_type X64_REG_2
     {
-        EMIT("mov" << suffix($2) << 't' << reg2str($3) << ", " << reg2str($1->resReg()))
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+    }
+    | X64_RELOAD int_or_bool_type X64_REG_2
+    {
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
     }
 
 
