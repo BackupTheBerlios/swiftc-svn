@@ -55,8 +55,9 @@ Rechenoperation der Form:
 \end{eqnarray*}
 
 Etwas komplizierter wird es, sobald bedingter Code gebraucht wird. Dies wird realisiert, indem eine
-Maske erzeugt wird. Bestimmte Stellen werden dann durch geschicktes Benutzen von AND oder NAND
-ausgeblendet und die Ergebnisse werden mit OR verknüpft. Dieses Code-Fragment
+Maske erzeugt wird und die Resultate entsprechend verknüpft:
+
+Diesen Code
 
 \begin{verbatim}
 for i in [0, n[
@@ -67,6 +68,15 @@ for i in [0, n[
 \end{verbatim}
     
 schreibt man dann als:
+
+\begin{verbatim}
+mask = a > 10                       # erzeugt in jedem Element entweder 1 oder 0
+a = a + mask * b + inv(mask) * c    # inv(mask) erzeugt die invertierte Maske von mask
+\end{verbatim}
+
+Alternativ, kann man auch durch geschicktes Nutzen von AND, NAND und OR die Operanden
+verknüpfen, wenn der Vergleich eine Maske zurückgibt, die ein komplett gesetztes Bitmuster
+im Falle von \emph{true} zurückgibt, und ein komplett gelöschtes im Falle von \emph{false}:
 
 \begin{verbatim}
 mask = a > 10
@@ -516,45 +526,69 @@ end
 
 Ein SIMD-Container liefert automatisch das Speicherlayout eines AoSoA. Weiter erzeugt der Compiler
 automatisch eine zweite Version des +-Operators und der \texttt{cross}-Routine, die Parameter in
-eimen SIMD-Kontext erwarten. Was dies genau heißt, zeigen die folgenden Abschnitte.
-Konvertierungsroutinen werden auch automatisch erzeugt.
+eimen SIMD-Kontext erwarten.
+
+Für die Aggregatstypen eines Typen, der SIMD-Methoden nutzt und/oder innerhalb eines
+SIMD-Containers verwendet wird, gelten folgende Einschränkungen:
+
+\begin{itemize}
+
+    \item Ist der betrachtete Aggregatstyp kein atomarer Typ, so wende die Einschränkungen rekursiv
+    auf dessen Aggregatstypen an.
+
+    \item Der betrachtete Aggregatstyp darf kein Zeiger sein.
+
+    \item \texttt{sizeof(T)} muss für alle verwendeten atomaren Aggregatstypen \texttt{T} gleich
+    sein.
+
+\end{itemize}
+
+Diese Typen, die diese Eigenschaft erfüllen, werden im folgendem \emph{homogen} genannt. Die einheitliche
+Größe der atomaren Typen heißt \emph{SIMD-Breite}.
+
+Für die Parameter- bzw Rückgabetypen und die Typen aller lokalen Variablen einer SIMD-Methode des
+Typen \texttt{T}, gelten folgende Einschränkungen:
+
+\begin{itemize}
+
+    \item Ist der Typ kein atomarer Typ, so wende diese Einschränkungen rekursiv auf dessen 
+    Aggregatstypen an.
+
+    \item Der betrachtete darf kein Zeiger sein.
+
+    \item Ist der Typ \texttt{U} atomar, so muss \texttt{sizeof(U)} identisch sein, mit der
+    SIMD-Breite von \texttt{T} sein.
+
+\end{itemize}
+
+Insbesondere erfüllt \texttt{T} immer diese Eigenschaften.
+
+Bei einer SIMD-Anweisung muss jeder Eingabetyp entweder mit dem entsprechendem Parametertyp in der
+entsprechenden Methode übereinstimmen, oder es ist ein SIMD-Containers des Typs. Weiter muss wenigstens
+ein Eingabe- oder Ausgabetyp ein SIMD-Container sein.
 
 Die Code-Transformationen in den nächsten Abschnitten gehen von einer Zwischendarstellung in
 SSA-Form (Static Single Assignment Form) aus. Eine gute Einführung findet sich beispielsweise in der
 Wikipedia: \texttt{http://en.wikipedia.org/wiki/Static\_single\_assignment\_form}
 
-\subsection{Parameter-Transformation}
+\subsection{Lineare Programm-Transformationen}
 
-Jeder Parameter- und Rückgabetyp wird daraufhin untersucht, wie viele Elemente mindestens vorliegen
-müssen, damit man es in ein SIMD-Register laden kann. Diese Anzahl heißt \emph{SIMD-Breite}
-($W_{simd})$. Die Breite des Registers heißt \emph{Register-Breite} ($W_{reg}$). Beide Größen werden
-in Byte gemessen. Der \texttt{sizeof} Operator liefert die Größe eines Typen in Bytes. Es wird
-angenommen, dass alle Werte Zweierpotenzen sind.
+Solange das Programm keine Schleifen enthält, müssen lediglich die vorkommenden Variablen in
+SIMD-Variablen/Konstanten transformiert werden. Sind die Variablen \texttt{a} und \texttt{b} der
+Anweisung
+\begin{verbatim}
+    a = b + 10.0
+\end{verbatim}
+vom Typ Float, so werden die Typen in einen Vektor von Floats transformiert (4 Floats im Falle von
+SSE). Die Konstante wird in einen Konstanten Vektor transformiert, bei dem jedes Element die 
+Konstante $1.0$ hält. Die Addition verhält sich parallel. In der Notation wird im folgendem kein 
+Unterschied gemacht, da aus dem Zusammenhang klar ist, ob Skalare oder Vektoren gemeint sind.
 
-Um die SIMD-Breite eines Datentypen $T$ zu ermitteln, wird folgendes Verfahren benutzt:
-
-\begin{itemize}
-
-    \item Ist $T$ ein atomarer Datentyp, so ist $W_{simd} = \frac{W_{reg}}{\texttt{sizeof}(T)}$.
-
-    \item Ist $T$ ein zusammengesetzter Datentyp, so wende diese Verfahren rekursiv auf die
-    Aggregatstypen $A_i$ an und setze $W_{simd}$ auf das größte Teilergebnis.
-
-\end{itemize}
-
-Im Falle eines Typen bestehend aus einem Double (acht Bytes) und einem Word (zwei Bytes) ergibt sich
-im Falle von SSE (16 Byte-Register) eine SIMD-Breite von acht.
-
-Das Speicherlayout in einem SIMD-Container der Größe $size$, ergibt sich nun wie folgt: Jedes
-atomare Aggregat taucht $W_{simd}$-mal im Speicher auf. Dies wird $ceil(size/W_{simd})$-mal
-wiederholt.  Ist $size$ nicht durch $W_{simd}$ teilbar, müssen am Ende Dummy-Werte hinzugefügt
-werden. Ist die Anzahl zur Compilezeit nicht bekannt, kann die interne Größe auch einfauch pauschal
-um $W_{simd}-1$ erhöht werden. 
-
-Nun müssen noch die SIMD-Funktionen transformiert werden. Ausgehend vom Origimal haben alle
-Variablen und Parameter in der SIMD-Version einen Vektor des Origimaltyps der Größe $W_{simd}$. In
-der Registerzuteilung muss ggf. darauf geachtet werden, dass evt. mehr als ein SIMD-Register
-benötigt wird.
+Besondere Aufmerksam verdienen Anweisungen, die einen Boolean zurückgeben, wie Vergleiche.  In der
+vektorisierten Version wird stattdessen ein Vektor zurückgegeben, der die gleiche Größe hat, wie die
+Vergleichsoperanden. Der Vergleich wird elementweise durchgeführt. Ein Ergebnis von \texttt{TRUE},
+erzeugt in diesem Element, ein Bitmuster, das komplett gesetzt ist. Ein Ergebnis von \texttt{FALSE}
+erzeugt ein komplett gelöschtes Bitmuster.
 
 \subsection{Transformation von Verzweigungen}
 
@@ -564,8 +598,7 @@ relativ einfach transformieren:
 \begin{itemize}
 
     \item Finde Für jede $\Phi$-Funktion, die eine SIMD-Variable $s = \Phi(s_i, s_e)$ definiert, den
-    direkten Dominator $D$.  Das ist die Stelle, wo der Kontrollfluss sich aufteilt. Sei $s_p$ der
-    Name der Variablen in $D$ und vorher.
+    direkten Dominator $D$.  Das ist die Stelle, wo der Kontrollfluss sich aufteilt. 
 
     \item Stelle den Kontrollfluss so um, dass er wieder linear wird, indem erst der If-Block ausgeführt wird
     und anschließend der Else-Block. 
@@ -619,10 +652,23 @@ c1 = OR( AND(mask, c1), NAND(mask, c0) )
 
 \subsection{Transformation von Schleifen}
 
-Schleifen werden ähnlich transformiert wie If-Else-Anweisungen. Die Abbruchbedingung muss etwas
-angepasst werden: Erst wenn die Bedingung für alle Elemte der SIMD-Variablen greift, muss die
-Schleife abgebrochen werden. Da die Abbruchbedingung nicht notwendigerweise die Schleife dominiert,
-muss für die Maske eine Initialiserung durchgeführt werden.
+Zuerst werden innerhalb von Schleifen alle If-Else-Anweisungen, die keine Abbruchbedingung für die
+Schleife darstellen, eliminiert. Danach werden Schleifen von innen nach außen transformiert:
+
+%\begin{itemize}
+
+    %\item Transformiere alle Abbruchbedingungen so um, dass sie erste greifen, wenn sie für alle
+    %Elemente der SIMD-Variablen gelten. Eine maske, muss alle SIMD-Variablen, enstsprechend
+    %maskieren.
+
+    %\item Wird die Schleife verlassen, müssen alle Blöcke, die Abbruchbedingungen darstellen
+    %durchlaufen werden, und entsprechend maskiert werden.
+
+    %\item Da ggf. mehrer Definitionen der Masken-Variablen auftreten könne, muss danach eine
+    %SSA-Wiederherstellung durchgeführt werden. $\Phi$-Funktionen für die Masken-Variablen werden
+    %von diesem Standard-Algorithmus ebenfalls eingeführt.
+
+%\end{itemize}
 
 Diese Schleife
 
@@ -642,7 +688,7 @@ L3:
     ...
 \end{verbatim}
 
-muss in diese veränderte Schleifen transformiert werden:
+wird dann enstsprechend in diesen Ablauf transformiert:
 
 \begin{verbatim}
 L1:
@@ -665,9 +711,43 @@ L3:
     ...
 \end{verbatim}
 
-\newpage
-\section{Implementierung und Evaluierung}
+%\section{Inhomegene Datentypen}
 
-\subsection{Der Swift-Compiler}
+%Prinzipiell, funktionieren die vorgestellten Techniken auch mit inhomogenen Datentypen. Dies
+%ist zum einen nicht mehr ganz so performant, da Konvertierungen an vielen Stellen nötig sind und
+%der Registerdruck wächst, und zum anderen komplizierter zu implementieren.
+
+%TODO
+
+%Jeder Parameter- und Rückgabetyp wird daraufhin untersucht, wie viele Elemente mindestens vorliegen
+%müssen, damit man es in ein SIMD-Register laden kann. Diese Anzahl heißt \emph{SIMD-Breite}
+%($W_{simd})$. Die Breite des Registers heißt \emph{Register-Breite} ($W_{reg}$). Beide Größen werden
+%in Byte gemessen. Der \texttt{sizeof} Operator liefert die Größe eines Typen in Bytes. Es wird
+%angenommen, dass alle Werte Zweierpotenzen sind.
+
+%Um die SIMD-Breite eines Datentypen $T$ zu ermitteln, wird folgendes Verfahren benutzt:
+
+%\begin{itemize}
+
+    %\item Ist $T$ ein atomarer Datentyp, so ist $W_{simd} = \frac{W_{reg}}{\texttt{sizeof}(T)}$.
+
+    %\item Ist $T$ ein zusammengesetzter Datentyp, so wende diese Verfahren rekursiv auf die
+    %Aggregatstypen $A_i$ an und setze $W_{simd}$ auf das größte Teilergebnis.
+
+%\end{itemize}
+
+%Im Falle eines Typen bestehend aus einem Double (acht Bytes) und einem Word (zwei Bytes) ergibt sich
+%im Falle von SSE (16 Byte-Register) eine SIMD-Breite von acht.
+
+%Das Speicherlayout in einem SIMD-Container der Größe $size$, ergibt sich nun wie folgt: Jedes
+%atomare Aggregat taucht $W_{simd}$-mal im Speicher auf. Dies wird $ceil(size/W_{simd})$-mal
+%wiederholt.  Ist $size$ nicht durch $W_{simd}$ teilbar, müssen am Ende Dummy-Werte hinzugefügt
+%werden. Ist die Anzahl zur Compilezeit nicht bekannt, kann die interne Größe auch einfauch pauschal
+%um $W_{simd}-1$ erhöht werden. 
+
+%Nun müssen noch die SIMD-Funktionen transformiert werden. Ausgehend vom Origimal haben alle
+%Variablen und Parameter in der SIMD-Version einen Vektor des Origimaltyps der Größe $W_{simd}$. In
+%der Registerzuteilung muss ggf. darauf geachtet werden, dass evt. mehr als ein SIMD-Register
+%benötigt wird.
 
 \end{document}
