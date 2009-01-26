@@ -26,7 +26,7 @@ Function::Function(std::string* id)
     , firstLiveness_(false)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
-    , spillSlots_(0)
+    , spillSlots_(-1)
 {}
 
 Function::~Function()

@@ -184,6 +184,7 @@ private:
         }
     };
 
+    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
 
     /** 
      * @brief Calculates the distance of \p reg from \p instrNode to its next use.
@@ -203,7 +204,7 @@ distance(bbNode, reg, instrNode) = |
      * 
      * @return The distance.  is used as "infinity".
      */
-    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
+    int distanceHere(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
     
     /** 
      * @brief This is a helper for \a distance. 
@@ -258,15 +259,6 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    /** 
-     * @brief 
-     *
-     * Inserts a Spill at the end of a basic block b wich holds this property: <br>
-     * b is first basic block which dominats \p bbNode where reg in is out_[b] 
-     * 
-     * @param reg 
-     * @param bbNode 
-     */
     void insertSpillIfNecessarry(Reg* reg, BBNode* bbNode);
 };
 

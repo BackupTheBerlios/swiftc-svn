@@ -71,18 +71,17 @@ void X64RegAlloc::process()
     if (!omitFramePointer_)
         rColors.erase(RBP);
 
-    rColors.erase(RCX);
-    rColors.erase(RSI);
-    rColors.erase(RDI);
-    rColors.erase(R8 );
-    rColors.erase(R9 );
-    rColors.erase(R10);
-    rColors.erase(R11);
-    rColors.erase(R12);
-    rColors.erase(R13);
-    rColors.erase(R14);
-    rColors.erase(R15);
-
+    //rColors.erase(RCX);
+    //rColors.erase(RSI);
+    //rColors.erase(RDI);
+    //rColors.erase(R8 );
+    //rColors.erase(R9 );
+    //rColors.erase(R10);
+    //rColors.erase(R11);
+    //rColors.erase(R12);
+    //rColors.erase(R13);
+    //rColors.erase(R14);
+    //rColors.erase(R15);
 
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
 
@@ -364,9 +363,9 @@ void X64RegAlloc::registerTargeting()
                 {
                     if (opType1 == me::InstrBase::CONST)
                     {
-                        swiftAssert( typeid(*ai->arg_[1].op_) == typeid(me::Const), 
+                        swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                                 "must be a Const here");
-                        me::Const* cst = (me::Const*) ai->arg_[1].op_;
+                        me::Const* cst = (me::Const*) ai->arg_[0].op_;
 
                         // create reg which will hold the constant, the assignment and insert
                         me::Reg* newReg = function_->newSSA(type);
@@ -374,7 +373,7 @@ void X64RegAlloc::registerTargeting()
                         cfg_->instrList_.insert( iter->prev(), newCopy );
 
                         // substitute operand with newReg
-                        instr->arg_[1].op_ = newReg;
+                        instr->arg_[0].op_ = newReg;
 
                         currentBB->value_->fixPointers();
                     }

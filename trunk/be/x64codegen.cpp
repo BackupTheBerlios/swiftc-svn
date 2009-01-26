@@ -60,7 +60,7 @@ void X64CodeGen::process()
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
     int localStackSize = (function_->spillSlots_ + 1) * 16;
-    ofs_ << "\tenter $0, $" << localStackSize << '\n';
+    ofs_ << "\tenter\t$0, $" << localStackSize << '\n';
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -114,11 +114,11 @@ void X64CodeGen::process()
         x64parse();
     }
 
-    //ofs_ << "\tleave\n";
-    //if (localStackSize == 0)
-        ofs_ << "\tret\n";
-    //else
-        //ofs_ << "\tret $" << localStackSize << '\n';
+    if (localStackSize != 0)
+        ofs_ << "\taddq\t$" << localStackSize << ", %rsp\n";
+
+    ofs_ << "\tleave\n";
+    ofs_ << "\tret\n";
 
     ofs_ << ".LFE" << counter << ":\n";
     ofs_ << "\t.size\t" << "swift_" << counter << ", .-" << "swift_" << counter << '\n';

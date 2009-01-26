@@ -65,7 +65,7 @@ using namespace be;
     types
 */
 
-%type <int_> bool_type int_type sint_no8_type uint_no8_type int8_type real_type int_or_bool_type
+%type <int_> bool_type int_type sint_no8_type uint_no8_type int8_type real_type int_or_bool_type any_type
 %type <assign_> add_or_mul cmp
 %type <reg_> any_reg
 
@@ -138,19 +138,15 @@ jump_instruction
     ;
 
 spill_reload
-    : int_spill_reload
+    : X64_SPILL any_type X64_REG_2
+    {
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+    }
+    | X64_RELOAD any_type X64_REG_2
+    {
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+    }
     ;
-
-int_spill_reload
-    : X64_SPILL int_or_bool_type X64_REG_2
-    {
-        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
-    }
-    | X64_RELOAD int_or_bool_type X64_REG_2
-    {
-        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
-    }
-
 
 assign_instruction
     : int_mov
@@ -687,6 +683,11 @@ int_type
 int_or_bool_type
     : int_type  { $$ = $1; }
     | bool_type { $$ = $1; }
+    ;
+
+any_type
+    : int_or_bool_type { $$ = $1; }
+    | real_type        { $$ = $1; }
     ;
 
 any_reg

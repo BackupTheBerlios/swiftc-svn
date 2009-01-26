@@ -253,7 +253,33 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
  * distance calculation via Belady
  */
 
-int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
+int Spiller::distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode)
+{
+    JumpInstr* ji = dynamic_cast<JumpInstr*>(instrNode->value_);
+    if (ji)
+    {
+        int min = infinity();
+
+        for (size_t i = 0; i < ji->numTargets_; ++i)
+        {
+            BBNode* target = ji->bbTargets_[i];
+            BBSet walked;
+            walked.insert(target);
+
+            int dist = distanceHere(target, reg, ji->instrTargets_[i], walked);
+            min = (dist < min) ? dist : min;
+        }
+
+        return min;
+    }
+    // else
+
+    BBSet walked;
+    walked.insert(bbNode);
+    return distanceHere( bbNode, reg, instrNode->next(), walked );
+}
+
+int Spiller::distanceHere(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked)
 {
     swiftAssert( reg->typeCheck(typeMask_), "wrong reg type" );
     InstrBase* instr = instrNode->value_;
@@ -298,7 +324,7 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
             else
             {
                 walked.insert(target);
-                results[i] = distance( target, reg, ji->instrTargets_[i], walked );
+                results[i] = distanceHere( target, reg, ji->instrTargets_[i], walked );
             }
         }
 
@@ -322,18 +348,22 @@ int Spiller::distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet w
         else
         {
             walked.insert(succ);
-            result = distance( succ, reg, instrNode->next(), walked );
+            result = distanceHere( succ, reg, instrNode->next(), walked );
         }
 
     }
     else 
     {
         // -> so we must have a "normal" successor instruction
-        result = distance( bbNode, reg, instrNode->next(), walked );
+        result = distanceHere( bbNode, reg, instrNode->next(), walked );
     }
 
-    // do not count a LabelInstr
-    int inc = (typeid(*instr) == typeid(LabelInstr)) ? 0 : 1;
+    // do not count a LabelInstr or a PhiInstr
+    int inc = 1;
+    
+    if (    typeid(*instr) == typeid(LabelInstr)
+         || typeid(*instr) == typeid(PhiInstr))
+        inc = 0;
 
     // add up the distance and do not calculate around
     result = (result == infinity()) ? infinity() : result + inc;
@@ -408,15 +438,16 @@ void Spiller::spill(BBNode* bbNode)
     RegSet& inB = in_.insert( std::make_pair(bbNode, RegSet()) ).first->second;
     DistanceBag currentlyInRegs;
 
-    BBSet walked;
-    walked.insert(bbNode);
-
     // put in all regs from passed and calculate the distance to its next use
     REGSET_EACH(iter, passed)
     {
-        // because inRegs doesn't contain regs of phi's arg, we can start with firstOrdinary_
+        /*
+         * because inRegs doesn't contain regs of phi's arg, 
+         * we can start with firstOrdinary_->prev() since distance starts with
+         * the next instruction
+         */
         currentlyInRegs.insert( RegAndDistance(*iter, 
-                    distance(bbNode, *iter, bb->firstOrdinary_, walked)) );
+                    distance(bbNode, *iter, bb->firstOrdinary_->prev())) );
     }
 
     /*
@@ -484,7 +515,8 @@ void Spiller::spill(BBNode* bbNode)
                 else
                     insertReload(bbNode, reg, lastInstrNode);
 
-                currentlyInRegs.insert( RegAndDistance(reg, 0) );
+                currentlyInRegs.insert( 
+                        RegAndDistance(reg, distance(bbNode, reg, iter)) );
 
                 // keep account of the number of needed reloads here
                 ++numReloads;
@@ -552,7 +584,7 @@ void Spiller::spill(BBNode* bbNode)
 
             // recalculate distance if we have reached the next use
             if (dist < 0)
-                dist = distance(bbNode, regIter->reg_, iter, walked);
+                dist = distance(bbNode, regIter->reg_, iter);
 
             newBag.insert( RegAndDistance(regIter->reg_, dist) );
         }
@@ -566,8 +598,11 @@ void Spiller::spill(BBNode* bbNode)
 
             if ( reg->typeCheck(typeMask_) )
             {
+                if ( !instr->liveOut_.contains(reg) )
+                    continue; // we don't need regs for pointless definitions
+
                 currentlyInRegs.insert( 
-                        RegAndDistance(reg, distance(bbNode, reg, iter, walked)) );
+                        RegAndDistance(reg, distance(bbNode, reg, iter)) );
             }
         }
     } // for each instr
@@ -824,23 +859,6 @@ void Spiller::insertSpillIfNecessarry(Reg* reg, BBNode* bbNode)
         appendTo = reg->def_.bbNode_->value_->firstOrdinary_->prev();
     }
     insertSpill(reg->def_.bbNode_, reg, appendTo);
-
-    /*
-     * check whether reg is already spilled in this block
-     */
-    //// -> no spill in this basic block, so insert one
-
-    //// find spill location
-    //InstrNode* appendTo;
-
-    //if (reg->def_.bbNode_ == bbNode)
-        //appendTo = reg->def_.instrNode_;
-    //else
-        //appendTo = bb->end_->prev();
-    
-    //// insert spill
-    //insertSpill(bbNode, reg, appendTo);
-    //bb->fixPointers();
 }
 
 } // namespace me

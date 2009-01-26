@@ -14,24 +14,30 @@
 
 \begin{document}
 
+\thispagestyle{empty}
+
 \maketitle
+\thispagestyle{empty}
 \newpage
+\thispagestyle{empty}
 \tableofcontents
+\thispagestyle{empty}
+    %\pagenumbering{Roman}
 \newpage
+    \newpage
+    \setcounter{page}{1}
 
 \section{Einleitung}
 
 In dieser Ausarbeitung wird zuerst vorgestellt, was eine SIMD-Architektur ist und wie man sie
-einsetzen kann, um schnellen Code zu schreiben. Dies wird dann am Beispiel der AMD64-Architektur (im
-folgenden nur noch X64 bezeichnet, da Intel eine ähnliche Architektur hat mit dem Name EM64t)
-verdeutlicht.
+einsetzen kann, um performanten Code zu schreiben. Dies wird dann am Beispiel X64-Architektur
+\footnote{Ursprünglich hieß die Architektur AMD64. Da Intel eine ähnliche Architektur mit dem Name
+EM64t eingeführt hat, wird diese Klasse von Prozessoren auch X64 oder X86\_64 genannt, um an den X86
+zu erinnern. Aber auch der Name AMD64 ist noch üblich.} verdeutlicht.
 
 Im Anschluss werden die gängigsten Techniken eingeführt, die Programmierer nutzen, um die
 Geschwindigkeitvorzüge einer SIMD-Architektur auch zu erhalten. Basierend auf den gesammelten
 Vor- und Nachteilen wird eine neue Technik vorgestellt.
-
-Zum Schluss wird der Swift-Compiler -- ein Hobby-Projekt des Autors -- präsentiert, der Grundlage
-für die Implementierung sein wird.
 
 \newpage
 
@@ -39,7 +45,7 @@ für die Implementierung sein wird.
 
 SIMD (Single Instruction Multiple Data) ist nach der Klassifikation von Flynn ein Rechenmodell, das
 mit einer einzelnen Anweisung mehrere Daten bearbeitet. Wenn ein Befehl beispielsweise zwei Tupel
-von Floats paarweise miteinder addiert und in ein Ergebnis-Tupel schreibt, ist dies eine
+von Floats paarweise miteinander addiert und in ein Ergebnis-Tupel schreibt, ist dies eine
 SIMD-Anweisung.
 
 Typischerweise besitzt ein SIMD-fähiger Prozessor gesonderte Register mit entsprechender Breite, die
@@ -153,9 +159,9 @@ lässt sich das Beispiel aber besser nachvollziehen. Einige Kopien können wegop
 und insgesamt würden weniger Register gebraucht werden.
 
 Als zusätzliche Hürde bleibt zu erwähnen, dass es bei den SSE-Befehlen zwei Arten von
-Speicherzugriffen gibt: aligned und unaligned. Weiß der Pogrammierer, dass der Speicher, aus dem
+Speicherzugriffen gibt: aligned und unaligned. Weiß der Programmierer, dass der Speicher, aus dem
 geladen werden soll, bei einer Adresse anfängt, die durch 16 teilbar ist, können schnellere aligned
-moves benutzt werden (\texttt{movaps}) gegenüber den langsameren unaligned moves (\texttt{movups}).
+Moves benutzt werden (\texttt{movaps}) gegenüber den langsameren unaligned Moves (\texttt{movups}).
 
 \newpage
 \section{SIMD-Programmierung}
@@ -177,7 +183,7 @@ for (size_t i = 0; i < SIZE; ++i)
 \end{verbatim}
 
 Es ist sofort ersichtlich, dass sich dieser Code leicht umformen lässt, so dass die
-\texttt{addps}-Andweisung (add packed singles) genutzt werden kann. Sind weiterhin die
+\texttt{addps}-Anweisung (add packed singles) genutzt werden kann. Sind weiterhin die
 Anfangsadressen von \texttt{a}, \texttt{b} und \texttt{c} aligned, können aligned Moves genutzt
 werden, um die Array-Inhalte in die Register zu laden. Man erreicht einen Speedup von vier. Ggf.
 müssen die Arrays etwas größer gemacht werden, damit beim Lesen des letzten Elementes keine
@@ -255,7 +261,7 @@ x0 y0 z0 d0  x1 y1 z1 d1  x2 y2 z2 d2  x3 y3 z3 d3 ... xn-1 yn-1 zn-1 dn-1
 
 Wenn der Programmierer nun dafür sorgt, dass die Anfangs-Adressen des Arrays aligned sind, können
 aligned Moves verwendet werden. Allerdings wird hier 25\% des allozierten Speichers verschwendet und
-nachwievor erreicht man höchstens einen Speedup von 3, da immer ein Element der vier Floats
+nach wie vor erreicht man höchstens einen Speedup von 3, da immer ein Element der vier Floats
 ignoriert wird. Diese Technik wurde z.B. in der Quake-Engine verwendet.
 
 Diese Speicherlayouts nennt man auch AoS (Array of Structures). Für das Kreuzprodukt wird man allerdings
@@ -279,8 +285,8 @@ Folgendes Speicherlayout ergibt sich:
 x0 x1 x2 x3 ... xn-1  y0 y1 y2 y3 ... yn-1  z0 z1 z2 z3 ... zn-1
 \end{verbatim}
 
-Sorgt der Programmierer wieder dafür, dass eine Instanz des Vec3Arrays aligned ist, lassen sich vier
-x-Werte, vier y-Werte und vier z-Werte parallel aus dem Speicherladen und parallel mit anderen
+Sorgt der Programmierer wieder dafür, dass eine Instanz des \texttt{Vec3Array}s aligned ist, lassen sich vier
+x-Werte, vier y-Werte und vier z-Werte parallel aus dem Speicher laden und parallel mit anderen
 entsprechenden Datenstrukturen verknüpfen. Alle vier Slots eines XMM-Register werden jetzt
 gebraucht, ohne dass ein Slot brach liegt. Wenn \texttt{SIZE} nicht durch vier teilbar ist, muss es
 auf den nächsten Faktor von vier erhöht werden, damit es gegen Ende der Schleife nicht zu
@@ -290,7 +296,7 @@ bei großen Arrays.
 Das Kreuzprodukt kann hier auch parallelisiert werden. Dies geschieht analog zur Vektoraddition.
 
 Von dem Overhead abgesehen, der ensteht AoS in SoA und umgekehrt zu konvertieren, hat auch diese
-Techniken einige Nachteile: Bei großen Arrays erhöt sich die Wahrscheinlichkeit von Cache-Misses, da
+Techniken einige Nachteile: Bei großen Arrays erhöht sich die Wahrscheinlichkeit von Cache-Misses, da
 die Werte, die aus dem Speicher geladen werden, immer weiter auseinander liegen, desto größer die
 Arrays werden. Bei wirklich großen Arrays spielen schließlich auch Effekte wie Paging eine Rolle,
 die die Performance drastisch senken.
@@ -325,7 +331,7 @@ Das optimierte Kreuzprodukt implementiert man ähnlich.
 \section{Aktuelle Programmierer-Techniken für SIMD-Code}
 
 Nach den Überlegungen aus dem letzten Absatz, gilt es nun die Entwicklunswerkzeuge so einzusetzen,
-dass der gewünschte Code erzeuget wird. Unter diesem Gesichtspunkt sind weitere Punkte
+dass der gewünschte Code erzeugt wird. Unter diesem Gesichtspunkt sind weitere Punkte
 wünschenswert:
 
 \begin{description}
@@ -333,9 +339,9 @@ wünschenswert:
     Operation sollte nicht für Spezialfälle (wie bei großen Arrays) neu programmiert werden, um
     einen Speedup zu erreichen.
 
-    \item[Portabilität] Der Code sollte portabel sein: Wenn sich der Programmierer schon die Mühe gemacht hat Code
-    für SIMD-Architekturen zu optimieren, sollte dieser Code auch optimiert auf anderen SIMD-fähigen
-    Prozessoren laufen.
+    \item[Portabilität] Der Code sollte portabel sein: Wenn sich der Programmierer schon die Mühe
+    gemacht hat, Code für SIMD-Architekturen zu optimieren, sollte dieser Code auch optimiert auf
+    anderen SIMD-fähigen Prozessoren laufen.
 
     \item[High-Level-Programmierung] Dem Programmierer sollte so viel Arbeit wie möglich abgenommen werden: Zum einen heißt
     dies, dass nötige Konvertierungen möglichst automatisch vom Compiler durchgeführt werden
@@ -353,15 +359,15 @@ Möglichkeiten:
 \begin{description}
 
     \item[Der Standalone-Assembler] Der Standalone-Assembler ist der klassische Assembler, der
-    Assembler-Code in Maschienencode übersetzt. Gute Assembler haben mächtige Marko-Funktionen, mit
-    denen man schon kleine Programmiersprachen auf Marko-Basis bauen kann. In diesem Szenario
+    Assembler-Code in Maschinencode übersetzt. Gute Assembler haben mächtige Makro-Funktionen, mit
+    denen man schon kleine Programmiersprachen auf Makro-Basis bauen kann. In diesem Szenario
     schreibt der Programmierer optimierte Unterprogramme, die dann schließlich in die Hochsprache
     eingebunden werden. Problematisch ist, dass besonders kleine Unterprogramme einen ziemlichen
-    großen Overhead beim Prozeduraufruf erzeugen können, was evt. wieder viel von der gewonnen
+    großen Overhead beim Prozeduraufruf erzeugen können, was evtl. wieder viel von der gewonnen
     Performance schluckt. Bei Unterprogrammen, die lange Schleifen durchführen, ist dies zu
     vernachlässigen.
 
-    \item[Der Inline-Assembler] Sprachen wie C oder C++ unterstüzen das direkte Einbinden von
+    \item[Der Inline-Assembler] Sprachen wie C oder C++ unterstützten das direkte Einbinden von
     Assembler-Code.  Der Overhead des Prozeduraufrufs verschwindet hier. Da der Compiler allerdings
     nicht sicher sein kann, welche Register gebraucht werden, kann vor und nach dem
     Inline-Assembler-Code ggf. ein gewisser Overhead enstehen. Die erweiterte
@@ -373,21 +379,21 @@ Möglichkeiten:
     Assembler-Befehle in der Hochsprache kapseln. Der Programmierer kann hier die Registerzuteilung
     dem Compiler überlassen und es ensteht kein weiter Overhead bei der Benutzung dieser speziellen
     Funktionen. Diese Variante ist in der Regel die performanteste.  Intrinsic-Code, der für SSE
-    geschrieben wurde, lässt sich sogar sowohl für X86 als auch für X64 kompilieren, was sogar ein
+    geschrieben wurde, lässt sich sogar sowohl für X86 als auch für X64 kompilieren, was sogar einen
     kleinen Grad an Portabilität zulässt.
 
 \end{description}
 
 Die generellen Vor- und Nachteile von Assembler sind bekannt und sollen an dieser Stelle nicht noch
 einmal wiederholt werden. Zu beobachten ist allerdings, dass alle drei wünschenswerte Kriterien
-nicht erfüllt werden. Die Speicherausrichtung ist auch hier noch ein weiteres Problem. Die Aussagen
-über die Speicherausrichtung im nächsten Abschnitt gelten auch hier.
+nicht erfüllt werden. Die Speicherausrichtung ist hier noch ein weiteres Problem. Die Aussagen über
+die Speicherausrichtung im nächsten Abschnitt gelten auch hier.
 
 \subsection{Der Auto-Vektorisierer}
 
 Ein Auto-Vektorisierer ist eine Optimierung, die in modernen Compilern eingesetzt wird, um
-automatisch SIMD-Code zu generieren (vektorisieren). Der Intel-Compiler (\texttt{icc}) und der GNU-
-Compiler (\texttt{gcc}) unterstüzen dies zum Beispiel. 
+automatisch SIMD-Code zu generieren (vektorisieren). Der Intel-Compiler (\texttt{icc}) und der
+GNU-Compiler (\texttt{gcc}) unterstützen dies zum Beispiel. 
 
 Es ist allerdings zum Teil sehr schwer den Compiler auch zu überreden, eine Schleife entsprechend zu
 transformieren. Prinzipiell funktioniert das nur bei Schleifen über Arrays mit atomaren Datentypen.
@@ -395,16 +401,16 @@ Es gibt zusätzliche Compiler-Flags, um das Optimieren kritischer Schleifen zu d
 Typischerweise endet das in einem Trial-And-Error-Ansatz des Programmierers, die Schleife so lange
 umzuformulieren, bis der Compiler die Schleife in einer Form vorliegen hat, die er dann
 vektorisieren kann. Weiter müssen die Speicherbereiche in der Regel mit \texttt{restrict}, ein
-Qualifizierer aus dem C99-Standard, qualifiziert sein, der garantiert, dass sich die Speichbereiche
-nicht überlappen.
+Qualifizierer aus dem C99-Standard, qualifiziert sein, der garantiert, dass sich die
+Speicherbereiche nicht überlappen.
 
 Insbesondere die Speicherausrichtung ist ein großes Problem. Es gibt Compiler spezifische
 Erweiterungen, um Datentypen eine Ausrichtung zu geben. Die Ausrichtung ist bei dynamisch
-angefordertem Speicher allerdings nicht mehr garantiert. \texttt{posix\_memalign}, andere Compiler
-spezifische Erweiterungen oder Pointer-Tricks können Abhilfe schaffen. In C++ kann man \texttt{new},
-\texttt{delete}, Array-\texttt{new} und Array-\texttt{delete} entsprechend überladen, um die
-Handhabung zu vereinfachen. Selbst wenn diese Vorkehrungen getroffen sind, sind teilweise noch
-Tricks nötig, damit der Compiler wirklich aligend Moves nutzt.
+angefordertem Speicher allerdings nicht mehr garantiert. Abhilfe schaffen in dieser Beziehung:
+\texttt{posix\_memalign}, andere Compiler spezifische Erweiterungen oder Pointer-Tricks. In C++ kann
+man \texttt{new}, \texttt{delete}, Array-\texttt{new} und Array-\texttt{delete} entsprechend
+überladen, um die Handhabung zu vereinfachen. Selbst wenn diese Vorkehrungen getroffen sind, sind
+teilweise noch Tricks nötig, damit der Compiler wirklich aligend Moves nutzt.
 
 Wie man sieht, ist der Auto-Vektorisierer zwar eine nützliche Optimierung, auf die man sich aber in wirklich
 kritischen Code-Teilen nicht verlassen kann: Im Zweifelsfall, muss der Programmierer doch zurück auf 
@@ -419,8 +425,8 @@ Programmierer wieder auf andere Techniken angewiesen.
 Programmiersprachen wie OpenCL, GLSL und andere Shadersprachen haben eingebaute SIMD-Datentypen.
 Viele C- und C++-Compiler haben solche Typen als Erweiterung. Die Typen sind gewöhnlich Vektoren von
 atomaren Datentypen der Größe 2, 4, 8 oder 16. Alle gängigen Rechenoperationen sind verfügbar und
-werden parallel elementweise ausgeführt. Die Übersetzung in SIMD-Maschinenbefehle ist sehr leicht.
-Dem Programmierer wird allerdings eine Menge Arbeitet zu gemutet, da er alle Optimierungen selbst
+werden elementweise ausgeführt. Die Übersetzung in SIMD-Maschinenbefehle ist sehr leicht.  Dem
+Programmierer wird allerdings eine Menge Arbeitet zu gemutet, da er alle Optimierungen selbst
 schreiben muss. Da die Größe der Vektoren fest gesetzt werden, kann dies -- je nach Zielmaschine --
 nicht optimal sein: Ein Vektor von vier Floats ist für SSE-fähige Prozessoren vorteilhaft. Wenn aber
 nur 3DNow zur Verfügung steht, müssen die vier Floats immer je in zwei MMX-Register geladen werden,
@@ -449,7 +455,7 @@ Oder ein atomarer Datentyp wird als Operand für alle Operationen verwendet:
 \end{eqnarray*}
 
 Dass sich dies einfach vektorisieren lässt, liegt auf der Hand. Verzweigungen müssen allerdings
-manuell eliminiert werden. Dieses Verfahren erfüllt zwar alle wünschenswerten Kritieren, aber bei
+manuell eliminiert werden. Dieses Verfahren erfüllt zwar alle wünschenswerten Kriterien, aber bei
 Datenstrukturen, die über Arrays von atomaren Datentypen hinausgehen, muss auch hier der
 Programmierer andere Techniken verwenden.
 
@@ -460,6 +466,12 @@ nicht für jedes erdenkliche Problem optimierte Bibliotheken finden. Schließlic
 Bibliotheken implementiert werden, so dass dies eigentlich nur als eine Verschleierung der
 eigentlichen Problematik angesehen werden kann.
 
+\subsection{Zusammenfassung}
+
+Es wurde gezeigt, dass es keine Programmiertechnik gibt, die alle drei wünschenswerten Kriterien
+erfüllt und dabei mit komplexeren Datenstrukturen umgehen kann. Eine neue Technik, die diese
+Anforderungen erfüllt, ist also wünschenswert.
+
 \newpage
 \section{Sprachgestützte SIMD-Code-Generierung}
 
@@ -467,7 +479,16 @@ Ausgehend von der Technik aktueller Sprachunterstützung, wird eine neue Technik
 elegant lösen kann. Die Philosophie hierbei ist, dass mit ein wenig Aufwand des Programmierers, bestimmte
 Sprachkonstrukte verwendet werden können, die automatisch die gewünschten Resultate erzeugen.
 
-Neben typischen Sprachelementen wie Structs und Arrays gibt es einen SIMD-Container:
+Neben typischen Sprachelementen wie Structs und Arrays muss es einen \emph{SIMD-Container} geben.
+Dieser SIMD-Container erzeugt automatisch das Speicherlayout eines AoSoA. Routinen zur
+Konvertierung von einem SIMD-Container zu einem Array und umgekehrt müssen auch bereit gestellt
+werden.
+
+Wenn nun bestimmte Operationen auf gewissen Typen laufen, sollte es einem Compiler möglich sein,
+eine zweite Version dieser Operation zu erzeugen, die auch mit SIMD-Containern umgehen kann.
+
+Der folgende \texttt{swift}-Code zeigt, wie so etwas aussehen kann:
+
 
 \begin{verbatim}
 class Vec3
@@ -518,15 +539,30 @@ class Foo
 
         simd[3, 20]: v1.foo() # Fehler: keine SIMD-Version deklariert
 
-        foobar = v1.toArray() # Konvertiertung simd{Vec3} -> array{Vec3}
-        v2 = foobar.toSimd()  # Konvertiertung array{Vec3} -> simd{Vec3}
+        foobar = v1.toArray() # Konvertierung simd{Vec3} -> array{Vec3}
+        v2 = foobar.toSimd()  # Konvertierung array{Vec3} -> simd{Vec3}
    end
 end
 \end{verbatim}
 
-Ein SIMD-Container liefert automatisch das Speicherlayout eines AoSoA. Weiter erzeugt der Compiler
-automatisch eine zweite Version des +-Operators und der \texttt{cross}-Routine, die Parameter in
-eimen SIMD-Kontext erwarten.
+Der Compiler erzeugt hier automatisch eine zweite Version des +-Operators und der
+\texttt{cross}-Routine, die Parameter in einem SIMD-Kontext erwarten.
+
+Dieser Code erfüllt nun alle Anforderungen. Die folgenden Abschnitten behandeln, welche
+Voraussetzungen erfüllt werden müssen, damit eine Transformation einer Routine möglich ist und wie
+dies bewerkstelligt wird.
+
+Da SIMD-Container atomarer Datentypen und Arrays atomarer Datentypen das gleiche Speicherlayout
+haben, werden diese Typen für allen nachfolgenden Betrachtungen als identisch behandelt.
+
+\subsection{Programmiermodell von SIMD-Anweisungen}
+
+Aufgrund der angestrebten Parallelität ändert sich das Programmiermodell. Solange Funktionen
+keine Seiteneffekte haben wie zum Beispiel I/O-Operationen, ist das Resultat identisch mit
+einer linearen Ausführung. Wenn Seiteneffekte auftreten, muss der Programmierer mit einigen
+ungewohnten Ausführreihenfolgen rechnen. 
+
+\subsection{Voraussetzungen einer SIMD-Transformation}
 
 Für die Aggregatstypen eines Typen, der SIMD-Methoden nutzt und/oder innerhalb eines
 SIMD-Containers verwendet wird, gelten folgende Einschränkungen:
@@ -539,15 +575,15 @@ SIMD-Containers verwendet wird, gelten folgende Einschränkungen:
     \item Der betrachtete Aggregatstyp darf kein Zeiger sein.
 
     \item \texttt{sizeof(T)} muss für alle verwendeten atomaren Aggregatstypen \texttt{T} gleich
-    sein.
+    sein oder der Typ ist ein Boolean. 
 
 \end{itemize}
 
 Diese Typen, die diese Eigenschaft erfüllen, werden im folgendem \emph{homogen} genannt. Die einheitliche
 Größe der atomaren Typen heißt \emph{SIMD-Breite}.
 
-Für die Parameter- bzw Rückgabetypen und die Typen aller lokalen Variablen einer SIMD-Methode des
-Typen \texttt{T}, gelten folgende Einschränkungen:
+Für die Parameter- bzw Rückgabetypen und die Typen aller lokalen Variablen einer SIMD-Methode zu
+einem Typen \texttt{T} gelten folgende Einschränkungen:
 
 \begin{itemize}
 
@@ -556,49 +592,77 @@ Typen \texttt{T}, gelten folgende Einschränkungen:
 
     \item Der betrachtete darf kein Zeiger sein.
 
-    \item Ist der Typ \texttt{U} atomar, so muss \texttt{sizeof(U)} identisch sein, mit der
-    SIMD-Breite von \texttt{T} sein.
+    \item Ist der betrachtete Typ \texttt{U} atomar, so muss \texttt{sizeof(U)} identisch sein mit
+    der SIMD-Breite von \texttt{T}, oder \texttt{U} ist ein Boolean.
 
 \end{itemize}
 
-Insbesondere erfüllt \texttt{T} immer diese Eigenschaften.
+Insbesondere erfüllt \texttt{T} immer diese Eigenschaften. Diese Einschränkungen gelten auch für
+alle Parameter- und Rückgabetypen von Funktionen, die innerhalb der Methode benutzt werden. Außerdem
+müssen solche benutzten Funktionen ebenfalls als \texttt{simd} deklariert sein.
+
+Eine \emph{SIMD-Anweisung} besteht aus einem Präfix mit Indices, die angeben, auf welche Elemente
+der beteiligten SIMD-Container sich die Operation bezieht.
 
 Bei einer SIMD-Anweisung muss jeder Eingabetyp entweder mit dem entsprechendem Parametertyp in der
-entsprechenden Methode übereinstimmen, oder es ist ein SIMD-Containers des Typs. Weiter muss wenigstens
-ein Eingabe- oder Ausgabetyp ein SIMD-Container sein.
-
-Die Code-Transformationen in den nächsten Abschnitten gehen von einer Zwischendarstellung in
-SSA-Form (Static Single Assignment Form) aus. Eine gute Einführung findet sich beispielsweise in der
-Wikipedia: \texttt{http://en.wikipedia.org/wiki/Static\_single\_assignment\_form}
+entsprechenden Methode übereinstimmen, oder es ist ein SIMD-Containers des Typs. Weiter muss
+wenigstens ein Eingabe- oder Ausgabetyp ein SIMD-Container sein.
 
 \subsection{Lineare Programm-Transformationen}
 
-Solange das Programm keine Schleifen enthält, müssen lediglich die vorkommenden Variablen in
-SIMD-Variablen/Konstanten transformiert werden. Sind die Variablen \texttt{a} und \texttt{b} der
-Anweisung
-\begin{verbatim}
-    a = b + 10.0
-\end{verbatim}
-vom Typ Float, so werden die Typen in einen Vektor von Floats transformiert (4 Floats im Falle von
-SSE). Die Konstante wird in einen Konstanten Vektor transformiert, bei dem jedes Element die 
-Konstante $1.0$ hält. Die Addition verhält sich parallel. In der Notation wird im folgendem kein 
-Unterschied gemacht, da aus dem Zusammenhang klar ist, ob Skalare oder Vektoren gemeint sind.
+Solange das Programm keine Verzweigungen enthält, müssen lediglich die vorkommenden Variablen und
+Konstanten in SIMD-Variablen/Konstanten transformiert werden. Die $SIMD-Breite$ kann nun als bekannt
+und berechnet vorausgesetzt werden.
 
-Besondere Aufmerksam verdienen Anweisungen, die einen Boolean zurückgeben, wie Vergleiche.  In der
-vektorisierten Version wird stattdessen ein Vektor zurückgegeben, der die gleiche Größe hat, wie die
-Vergleichsoperanden. Der Vergleich wird elementweise durchgeführt. Ein Ergebnis von \texttt{TRUE},
-erzeugt in diesem Element, ein Bitmuster, das komplett gesetzt ist. Ein Ergebnis von \texttt{FALSE}
-erzeugt ein komplett gelöschtes Bitmuster.
+Eine \emph{SIMD-Variable} bzw. eine \emph{SIMD-Konstante} ist eine Variable oder Konstante eines
+\emph{SIMD-Typen}. Der SIMD-Typ eines Typen \texttt{T} wird wie folgt bestimmt:
+
+\begin{itemize}
+
+    \item Ist \texttt{T} ein Boolean, so ist der SIMD-Typ ein Vektor mit $SIMD-Breite$ vielen Feldern.
+    Ist ein Feld komplett gesetzt, wird es als \texttt{TRUE} interpretiert. Ist ein Feld komplett
+    gelöscht, wird es als \texttt{FALSE} interpretiert. Andere Bitmuster sind nicht zulässig.
+
+    \item Ist \texttt{T} ein anderer atomarer Typ, so ist der SIMD-Typ ein Vektor vom Typ \texttt{T} mit
+    $SIMD-Breite$ vielen Feldern.
+
+    \item Ist \texttt{T} kein atomarer Typ, so ist der SIMD-Typ ein SIMD-Container vom Typ
+    \texttt{T}. Parameter- und Rückgabetypen, haben keine bestimmte Größe, jedoch mindestens
+    $SIMD-Breite$ viele Elemente. Lokal verwendete Typen, werden in einen SIMD-Container der Größe
+    $SIMD-Breite$ transformiert. 
+
+\end{itemize}
+
+Konstanten werden einfach zur Compilezeit in jedes Element der entsprechenden SIMD-Konstante
+kopiert. Alle gängigen Rechenoperation für atomare Typen, sind auch für SIMD-Typen definiert
+und werden elementweise durchgeführt. In der Notation wird im folgendem kein Unterschied gemacht, 
+da aus dem Zusammenhang klar ist, ob atomare oder SIMD-Operationen gemeint sind.
+
+Die Anweisung $a = b + 10.0$ meint also -- wenn $a$ und $b$ Floats sind -- eine herkömmliche
+Float-Addition. Sind $a$ und $b$ hingegen SIMD-Variablen und ist $10.0$ eine SIMD-Konstante, so
+meint die Anweisung eine parallele Float-Addition der Form: $(a_1, a_2, \dots, a_n) = (b_1 + 10.0,
+b_2 + 10.0, \dots, b_n + 10.0)$. Dabei ist $n$ identisch der $SIMD-Breite$.
+
+Besondere Aufmerksam verdienen Anweisungen, die einen Boolean zurückgeben, wie Vergleiche. Da Booleans
+entsprechend transformiert werden, enthält nun jedes Element des Ergebnis in Form eines gesetzten
+oder gelöschten Bitfeldes wie oben definiert.
 
 \subsection{Transformation von Verzweigungen}
+
+Die Code-Transformationen in den nächsten Abschnitten gehen von einer Zwischendarstellung in
+SSA-Form (Static Single Assignment Form) aus. Eine gute Einführung findet sich beispielsweise in der
+Wikipedia: 
+
+\texttt{http://en.wikipedia.org/wiki/Static\_single\_assignment\_form}
 
 Solange der Kontrollfluss keine Schleifen (Zykel) enthält, lassen sich Verzweigungen 
 relativ einfach transformieren:
 
 \begin{itemize}
 
-    \item Finde Für jede $\Phi$-Funktion, die eine SIMD-Variable $s = \Phi(s_i, s_e)$ definiert, den
-    direkten Dominator $D$.  Das ist die Stelle, wo der Kontrollfluss sich aufteilt. 
+    \item Finde für jede $\Phi$-Funktion, die eine SIMD-Variable $s = \Phi(s_i, s_e)$ definiert, den
+    direkten Dominator $D$. Das ist die Stelle, wo der Kontrollfluss sich aufteilt. $s_i$ sei der
+    Name aus dem If-Block, $s_e$ der aus dem Else-Block.
 
     \item Stelle den Kontrollfluss so um, dass er wieder linear wird, indem erst der If-Block ausgeführt wird
     und anschließend der Else-Block. 
@@ -609,7 +673,7 @@ relativ einfach transformieren:
 
 \end{itemize}
 
-Selbst wenn Zykel enthalten sind, können If-Else-Blöcke auf diese Weise transformiert werden,
+Selbst wenn Zykel enthalten sind, können If-Else-Anweisungen auf diese Weise transformiert werden,
 solange ein If-Else-Block weder einen Zykel verursacht, noch einen Zykel aufbricht.
 
 Dieses Beispiel zeigt einen If-Else-Block:
@@ -639,12 +703,12 @@ a0 = ...
 b0 = ...
 c0 = ...
 ...
-mask =  a0 > 10 
-a1 = a0 + 5
-c1 = c0 + a1
-a2 = a0 * b0
-a3 = OR( AND(mask, a1), NAND(mask, a2) )
-c1 = OR( AND(mask, c1), NAND(mask, c0) )
+mask =  a0 > 10                          # Maske erzeugen, anstatt der If-Anweisung
+a1 = a0 + 5                              # der If-Block
+c1 = c0 + a1                             # der If-Block
+a2 = a0 * b0                             # der Else-Block
+a3 = OR( AND(mask, a1), NAND(mask, a2) ) # transformierte Phi-Funktion
+c1 = OR( AND(mask, c1), NAND(mask, c0) ) # transformierte Phi-Funktion
 ...
 ... = c1
 ... = a3
@@ -652,23 +716,55 @@ c1 = OR( AND(mask, c1), NAND(mask, c0) )
 
 \subsection{Transformation von Schleifen}
 
-Zuerst werden innerhalb von Schleifen alle If-Else-Anweisungen, die keine Abbruchbedingung für die
-Schleife darstellen, eliminiert. Danach werden Schleifen von innen nach außen transformiert:
+Zuerst werden innerhalb von Schleifen alle If-Else-Anweisungen, die keine Abbruchbedingung oder
+Fortsetzungsbedingung (\texttt{continue}-Anweisung) der Schleife darstellen, eliminiert. Die übrigen
+If-Else-Anweisungen werden klassifiziert: Entweder ist eine If-Else-Anweisung eine Abbruchbedingung,
+dann heißt diese Anweisung Abbruchverzweigung. Der Grundblock, der die Schleife weiter ausführt,
+heißt Schleifenblock. Der Grundblock, der den Sprung zum Schleifenausstieg enthält, heißt
+Abbruchblock. Oder eine If-Else-Anweisung ist eine Fortsetzungsbedingung. In diesem Fall heißt die
+Anweisung Fortsetzungsverzweigung. Der Grundblock, der hier Schleife weiter ausführt, heißt auch
+Schleifenblock. Der Grundblock, der den Sprung zum Schleifenkopf enthält, heißt Fortsetzungsblock.
+Eine Abbruchverzweigung, die die Schleife dominiert in dem Block $D$, gehört ebenfalls mit zur
+Schleife. Da die Schleife nur noch Abbruchverzweigungen und Fortsetzungsverzweigungen beinhaltet,
+dominiert jede If-Else-Anweisunge die unteren.
 
-%\begin{itemize}
+Folgender Algorithmus, transformiert nun eine Schleife:
 
-    %\item Transformiere alle Abbruchbedingungen so um, dass sie erste greifen, wenn sie für alle
-    %Elemente der SIMD-Variablen gelten. Eine maske, muss alle SIMD-Variablen, enstsprechend
-    %maskieren.
+\begin{itemize}
 
-    %\item Wird die Schleife verlassen, müssen alle Blöcke, die Abbruchbedingungen darstellen
-    %durchlaufen werden, und entsprechend maskiert werden.
+    \item Schreibe jede If-Else-Anweisung so um, dass sie im True-Fall zum Schleifenblock führt.
 
-    %\item Da ggf. mehrer Definitionen der Masken-Variablen auftreten könne, muss danach eine
-    %SSA-Wiederherstellung durchgeführt werden. $\Phi$-Funktionen für die Masken-Variablen werden
-    %von diesem Standard-Algorithmus ebenfalls eingeführt.
+    \item Füge in $D$ für jede Abbruchverzweigung $A_i$ eine Anweisung $mask_{Ai} = true$ ein.
 
-%\end{itemize}
+    \item Füge in $D$ für jede Fortsetzungsverzweigung $F_i$ eine Anweisung $mask_{Fi} = true$ ein.
+
+    \item Maskiere alle Operationen innerhalb der Schleife mit allen $mask_{Xi}$ der dominierenden
+    If-Else-Anweisungen $X_i$.
+
+    \item Änder den Kontrollfluss so, dass alle Fortsetzungsblöcke der Fortsetzungsverzweigungen
+    $F_i$ am Schleifenende nacheinander ausgeführt werden und maskiere in diesen Blöcken alle
+    Operationen mit $not(mask_{Fi})$ und den anderen dominierenden Masken. Dann wird erst der Sprung zum
+    Schleifenkopf durchgeführt.
+
+    \item Änder den Kontrollfluss so, dass alle Abbruchblöcke der Abbruchverzweigungen
+    $A_i$ bei Terminierung der Schleife nacheinander ausgeführt werden und maskiere in diesen Blöcken alle
+    Operationen mit $not(mask_{Ai})$ und den anderen dominierenden Masken. Dann wird erst der Sprung zum
+    Block nach der Schleife durchgeführt.
+
+    \item Schreibe jede Fortsetzungsverzweigung $F_i$ um in die Anweisung $mask_{Fi} = AND(mask_{Fi}, if-Expr)$.
+
+    \item Schreibe jede Abbruchverzweigung $A_i$ um in die Befehlsfolge
+    \begin{eqnarray*}
+        mask_{Ai} & = & AND(mask_{Ai}, if-Expr) \\
+        if\ mask_{Ai} & = & (false, \dots, false) \dots
+    \end{eqnarray*}
+
+    \item Führe eine SSA-Wiederherstellung durch.
+
+\end{itemize}
+
+Im Falle von fehlenden Blöcken und trivialen Blöcken, die nur einen Sprung enthalten, lässt sich das Schema etwas
+optimieren.
 
 Diese Schleife
 
@@ -688,17 +784,17 @@ L3:
     ...
 \end{verbatim}
 
-wird dann enstsprechend in diesen Ablauf transformiert:
+wird dann entsprechend in diesen Ablauf transformiert:
 
 \begin{verbatim}
 L1:
     a0 = ...
     b0 = ...
-    mask0 = (true, true, ..., true)         # mask initialiseren
+    mask0 = (true, true, ..., true)         # mask initialisieren
 L2:
     a1 = phi(a0, a3)                        # ersetze a2 bzw. b2 mit neuer Definition, 
     b1 = phi(b0, b3)                        # bei der mask verwendet wurde.
-    mask1 = phi(mask0, mask1)               # phi-funktion für mask
+    mask1 = phi(mask0, mask1)               # phi-Funktion für mask
     a2 = a1 + 1
     b2 = b1 * a1
     a3 = AND(mask, a2)                      # mask anwenden
