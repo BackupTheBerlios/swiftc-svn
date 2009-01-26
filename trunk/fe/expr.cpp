@@ -254,9 +254,9 @@ bool Id::analyze()
     {
         me::Reg* reg;
 #ifdef SWIFT_DEBUG
-        reg = me::functab->newVar( var->type_->baseType_->toType(), var->varNr_, id_ );
+        reg = me::functab->newVar( var->type_->baseType_->toMeType(), var->varNr_, id_ );
 #else // SWIFT_DEBUG
-        reg = me::functab->newVar( var->type_->baseType_->toType(), var->varNr_ );
+        reg = me::functab->newVar( var->type_->baseType_->toMeType(), var->varNr_ );
 #endif // SWIFT_DEBUG
         place_ = reg;
 
@@ -330,9 +330,9 @@ void UnExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr(), &str );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
 #endif // SWIFT_DEBUG
 
     place_ = reg;
@@ -443,9 +443,9 @@ void BinExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr(), &str );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toType(), symtab->newVarNr() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
 #endif // SWIFT_DEBUG
     place_ = reg;
 
@@ -543,9 +543,11 @@ bool MemberAccess::analyze()
 
     Type* type = expr_->type_;
 
-    if (type->baseType_->builtin_)
+    Class* _class = symtab->lookupClass(type->baseType_->id_);
+
+    if ( !_class->hasMemberVar(id_) )
     {
-        errorf( line_, "class '%s' doesn't have member named %s", 
+        errorf( line_, "class '%s' does not have a member named %s", 
                 type->baseType_->id_->c_str(), id_->c_str() );
         return false;
     }

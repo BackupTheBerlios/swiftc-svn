@@ -49,11 +49,12 @@ BaseType* BaseType::clone() const
     return new BaseType( new std::string(*id_), builtin_ );
 }
 
-me::Op::Type BaseType::toType() const
+me::Op::Type BaseType::toMeType() const
 {
-    swiftAssert(typeMap_->find(*id_) != typeMap_->end(), 
-            "must be found here");
-    return typeMap_->find(*id_)->second;
+    if (builtin_)
+        return typeMap_->find(*id_)->second;
+    else
+        return me::Op::R_PTR;
 }
 
 bool BaseType::isBuiltin() const

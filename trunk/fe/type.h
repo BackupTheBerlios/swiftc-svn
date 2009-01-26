@@ -26,7 +26,7 @@ struct BaseType : public Node
      * further methods
      */
     BaseType* clone() const;
-    me::Op::Type toType() const;
+    me::Op::Type toMeType() const;
 
     /**
      * Checks whether this is a builtin type.

@@ -61,7 +61,8 @@ public:
             | me::Op::R_INT8  | me::Op::R_INT16  | me::Op::R_INT32  | me::Op::R_INT64 
             | me::Op::R_UINT8 | me::Op::R_UINT16 | me::Op::R_UINT32 | me::Op::R_UINT64
             | me::Op::R_SAT8  | me::Op::R_SAT16
-            | me::Op::R_USAT8 | me::Op::R_USAT16,
+            | me::Op::R_USAT8 | me::Op::R_USAT16
+            | me::Op::R_PTR,
 
         F_TYPE_MASK
             = me::Op::R_REAL32| me::Op::R_REAL64

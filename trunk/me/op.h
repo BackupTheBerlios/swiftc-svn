@@ -57,8 +57,11 @@ struct Op
         R_REAL32    = 1 << 13,
         R_REAL64    = 1 << 14,
 
+        // pointer
+        R_PTR       = 1 << 15,
+
         // Use this to do something special by hand
-        R_SPECIAL   = 1 << 15
+        R_SPECIAL   = 1 << 16
     };
 
     Type type_;

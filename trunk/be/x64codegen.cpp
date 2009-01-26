@@ -513,6 +513,8 @@ int x64lex()
 
                 case me::Op::R_REAL32: return X64_REAL32;
                 case me::Op::R_REAL64: return X64_REAL64;
+
+                case me::Op::R_PTR:    return X64_PTR;
             }
         }
         case OP1:

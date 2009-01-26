@@ -1,8 +1,12 @@
 class Test
-    routine int i, uint ui, inout real r1 = test(real r)
+    int foo
+
+    writer test(int i, uint ui) -> inout real r1
         i = r * 6.0
         ui = r * 8.0
         r1 += 5.0
+        
+        .foo = i
     end
 
     routine int main(array{string} args)
@@ -19,6 +23,13 @@ class Test
 
         real r1 = args[3].to()
         i, ui, r1 = test(r2)
+
+        a, b = t.setValue(r)
+
+        bool b = t:getB()
+
+        a:toArray()
+        a:toSimd()
 
         return 0
     end

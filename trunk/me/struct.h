@@ -12,10 +12,13 @@ struct Struct
     static int nameCounter_;
 
     int nr_;
+    int size_;
 
     struct Member
     {
         int nr_;
+        int size_;
+        int offset_;
 
         union
         {

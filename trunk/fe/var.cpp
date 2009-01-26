@@ -63,9 +63,9 @@ bool Param::check(const Param* param1, const Param* param2)
 bool Param::analyze() const
 {
 #ifdef SWIFT_DEBUG
-    me::functab->newVar( type_->baseType_->toType(), varNr_, id_ );
+    me::functab->newVar( type_->baseType_->toMeType(), varNr_, id_ );
 #else // SWIFT_DEBUG
-    me::functab->newVar( type_->baseType_->toType(), varNr_ );
+    me::functab->newVar( type_->baseType_->toMeType(), varNr_ );
 #endif // SWIFT_DEBUG
 
     return type_->validate();

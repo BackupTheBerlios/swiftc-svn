@@ -8,7 +8,7 @@ class Test
         j = 7
 
         Test test
-        z.foo = 7 
+        test.foo = 5
     end
 
     create ()
