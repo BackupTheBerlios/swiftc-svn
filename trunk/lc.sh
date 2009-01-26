@@ -1,7 +1,15 @@
 #!/bin/bash
 make clean
+cd fe/builtin/
+./cleantypes.sh
+cd ../..
 rm CMakeFiles -rf
-rm contrib/*.asm
-rm test/*.asm
+rm contrib/*.swift.*
+rm test/*.swfit.*
 rm doc/*
+rm calls mem_leaks tags
+rm cmake_install.cmake
+rm CMakeCache.txt
+rm CMakeFiles -rf
+
 sloccount .

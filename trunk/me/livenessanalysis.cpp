@@ -6,7 +6,7 @@ namespace me {
     
 //------------------------------------------------------------------------------
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
 
 #include <sstream>
 
@@ -56,7 +56,7 @@ struct IGraph : public Graph<IVar>
 
 typedef Graph<IVar>::Node VarNode;
 
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
 //------------------------------------------------------------------------------
 
@@ -66,19 +66,19 @@ typedef Graph<IVar>::Node VarNode;
 
 LivenessAnalysis::LivenessAnalysis(Function* function)
     : CodePass(function)
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
     , ig_( new IGraph(*function->id_) )
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 {}
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
 
 LivenessAnalysis::~LivenessAnalysis()
 {
     delete ig_;
 }
 
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
 /*
  * methods
@@ -107,7 +107,7 @@ void LivenessAnalysis::process()
         }
     }
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
     /*
      * create nodes for the inteference graph
      */
@@ -118,7 +118,7 @@ void LivenessAnalysis::process()
         VarNode* varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
     }
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
     /*
      * start here
@@ -186,9 +186,9 @@ void LivenessAnalysis::process()
     }
 #endif
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
     ig_->dumpDot( ig_->name() );
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
     function_->firstLiveness_ = true;
 }
@@ -222,7 +222,7 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
     {
         if ( instr->res_[i].reg_ != var )
         {
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
             Reg* res = instr->res_[i].reg_;
 
             // add (v, w) to interference graph if it does not already exist
@@ -231,7 +231,7 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
             {
                 var->varNode_->link(res->varNode_);
             }
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
         }
         else
             varInLhs = true;

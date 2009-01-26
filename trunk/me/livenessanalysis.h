@@ -18,9 +18,9 @@ private:
     /// Knows during the liveness analysis which basic blocks have already been visted.
     BBSet walked_;
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
     IGraph* ig_;
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
 public:
 
@@ -29,9 +29,9 @@ public:
      */
 
     LivenessAnalysis(Function* function);
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_IG
     ~LivenessAnalysis();
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_IG
 
     /*
      * methods
