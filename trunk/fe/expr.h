@@ -225,25 +225,58 @@ struct ExprList : public Node
 
 //------------------------------------------------------------------------------
 
-// TODO
-struct FunctionCall : public Expr
+struct MemberAccess : public Expr
 {
-    std::string*    id_;
-    ExprList*       exprList_;
+    Expr* expr_;
+    std::string* id_;
 
-    FunctionCall(std::string* id, ExprList* exprList, int line = NO_LINE)
-        : Expr(line)
-        , id_(id)
-        , exprList_(exprList)
-    {}
-    ~FunctionCall()
-    {
-        delete exprList_;
-    }
+    /*
+     * constructor and destructor
+     */
 
-    bool analyze();
+    MemberAccess(Expr* expr_, std::string* id, int line = NO_LINE);
+    ~MemberAccess();
+
+    /*
+     * further methods
+     */
+
+    virtual bool analyze();
     virtual void genSSA();
 };
+
+//------------------------------------------------------------------------------
+
+struct FunctionCall : public Expr
+{
+    Expr*           expr_;
+    std::string*    id_;
+    ExprList*       exprList_;
+    char            kind_;
+
+    /*
+     * constructor and destructor
+     */
+
+    FunctionCall(
+            Expr* expr, 
+            std::string* id, 
+            ExprList* exprList, 
+            char kind, 
+            int line = NO_LINE);
+
+    ~FunctionCall();
+
+    /*
+     * further methods
+     */
+
+    virtual bool analyze();
+    virtual void genSSA();
+};
+
+//------------------------------------------------------------------------------
+
 
 } // namespace swift
 

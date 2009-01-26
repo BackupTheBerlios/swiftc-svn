@@ -6,6 +6,8 @@
 
 #include "utils/assert.h"
 
+#include "me/struct.h"
+
 using namespace std;
 
 namespace me {
@@ -160,11 +162,26 @@ void Function::dumpDot(const string& baseFilename)
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructor and destructor
+ */
+
+FunctionTable::FunctionTable(const std::string& filename)
+    : filename_(filename)
+{}
+
 FunctionTable::~FunctionTable()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         delete iter->second;
+
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+        delete iter->second;
 }
+
+/*
+ * further methods
+ */
 
 Function* FunctionTable::insertFunction(string* id)
 {
@@ -263,6 +280,11 @@ void FunctionTable::dumpDot()
 InstrNode* FunctionTable::getLastLabelNode()
 {
     return current_->lastLabelNode_;
+}
+
+void FunctionTable::insertStruct(Struct* str)
+{
+    structs_[str->nr_] = str;
 }
 
 } // namespace me

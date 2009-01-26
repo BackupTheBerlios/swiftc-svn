@@ -509,7 +509,85 @@ bool ExprList::analyze()
     return result;
 }
 
+
 //------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
+    : Expr(line)
+    , expr_(expr)
+    , id_(id)
+{
+    std::cout << *id_ << std::endl;
+}
+
+MemberAccess::~MemberAccess()
+{
+    delete expr_;
+    delete id_;
+}
+
+/*
+ * further methods
+ */
+
+bool MemberAccess::analyze()
+{
+    bool result = expr_->analyze();
+
+    if (!result)
+        return false;
+
+    Type* type = expr_->type_;
+
+    if (type->baseType_->builtin_)
+    {
+        errorf( line_, "class '%s' doesn't have member named %s", 
+                type->baseType_->id_->c_str(), id_->c_str() );
+        return false;
+    }
+
+    // check whether there is an id_ in current context
+    //Var* var = symtab->lookupVar(id);
+    //
+    return true;
+}
+
+void MemberAccess::genSSA()
+{
+    return;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+FunctionCall::FunctionCall(
+        Expr* expr, 
+        std::string* id, 
+        ExprList* exprList, 
+        char kind,
+        int line /*= NO_LINE*/)
+    : Expr(line)
+    , expr_(expr)
+    , id_(id)
+    , exprList_(exprList)
+    , kind_(kind)
+{}
+
+FunctionCall::~FunctionCall()
+{
+    delete exprList_;
+}
+
+/*
+ * further methods
+ */
 
 bool FunctionCall::analyze()
 {

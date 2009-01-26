@@ -151,7 +151,7 @@ using namespace swift;
 %type <method_>     method
 %type <memberVar_>  member_var
 
-%type <expr_>       expr mul_expr add_expr postfix_expr un_expr primary_expr
+%type <expr_>       expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <exprList_>   expr_list expr_list_not_empty
 
 %type <statement_>  statement_list statement
@@ -373,13 +373,17 @@ statement
 */
 
 expr
+    : rel_expr              { $$ = $1; }
+    | expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
+    | expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
+    ;
+
+rel_expr
     : add_expr              { $$ = $1; }
     | expr '<' add_expr     { $$ = new BinExpr('<', $1, $3, currentLine); }
     | expr '>' add_expr     { $$ = new BinExpr('>', $1, $3, currentLine); }
     | expr LE_OP add_expr   { $$ = new BinExpr(LE_OP, $1, $3, currentLine); }
     | expr GE_OP add_expr   { $$ = new BinExpr(GE_OP, $1, $3, currentLine); }
-    | expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
-    | expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
     ;
 
 add_expr
@@ -405,9 +409,13 @@ un_expr
 
 postfix_expr
     : primary_expr                          { $$ = $1; }
-    | postfix_expr '.' ID                   /* member access*/
-    | postfix_expr '.' ID '(' expr_list ')' /* method call */
-    | ID '(' expr_list ')'                  { $$ = new FunctionCall($1, $3, currentLine); }
+    | postfix_expr '.' ID                   { $$ = new MemberAccess($1, $3, currentLine); }
+    | '.' ID                                { $$ = new MemberAccess( 0, $2, currentLine); }
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, '.', currentLine); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, ':', currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, '.', currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, ':', currentLine); }
+    | ID '(' expr_list ')'                  { $$ = new FunctionCall( 0, $1, $3,   0, currentLine); }
     ;
 
 primary_expr
@@ -456,7 +464,7 @@ base_type
 
 pointer
     : /**/
-    | '^' pointer   { ++pointercount; }
+    | '^' pointer { ++pointercount; }
     ;
 
 %%

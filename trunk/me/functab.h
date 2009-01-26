@@ -18,7 +18,9 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+// forward declarations
 struct Function;
+struct Struct;
 
 /**
  * Function has in, inout and out going parameters and, of course, an identifier.
@@ -140,12 +142,22 @@ struct FunctionTable
     FunctionMap functions_;
     Function*   current_;
 
-    FunctionTable(const std::string& filename)
-        : filename_(filename)
-    {}
+    typedef std::map<int, Struct*> StructMap;
+    StructMap structs_;
+
+    /*
+     * constructor and destructor
+     */
+
+    FunctionTable(const std::string& filename);
     ~FunctionTable();
 
+    /*
+     * further methods
+     */
+
     Function* insertFunction(std::string* id);
+
 
 #ifdef SWIFT_DEBUG
 
@@ -213,6 +225,8 @@ struct FunctionTable
     void dumpDot();
 
     void genCode();
+
+    void insertStruct(Struct* str);
 };
 
 typedef FunctionTable FuncTab;

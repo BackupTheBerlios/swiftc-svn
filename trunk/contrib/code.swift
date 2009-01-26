@@ -6,6 +6,9 @@ class Test
         int z
         z = 5 + 4 * j
         j = 7
+
+        Test test
+        z.foo = 7 
     end
 
     create ()

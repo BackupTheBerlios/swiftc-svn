@@ -95,6 +95,7 @@ ADD_EXECUTABLE (swift
     me/op.cpp
     me/spiller.cpp
     me/ssa.cpp
+    me/struct.cpp
 
     be/x64.cpp
     be/x64codegen.cpp
