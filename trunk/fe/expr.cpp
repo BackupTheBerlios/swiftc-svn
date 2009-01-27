@@ -7,6 +7,7 @@
 
 #include "utils/assert.h"
 
+#include "fe/class.h"
 #include "fe/error.h"
 #include "fe/method.h"
 #include "fe/type.h"
@@ -22,7 +23,7 @@
  *     - typeQualifier_
  *     - baseType_
  *     - pointerCount_
- * - every expr must decide whether it can be considered as an lvalue_
+ * - every expr must decide whether it can be considered as an lvalue
  * 
  * - return true if everything is ok
  * - return false otherwise
@@ -38,13 +39,16 @@ namespace swift {
 
 Expr::Expr(int line)
     : Node(line)
-    , lvalue_(false)
+    , needAsLValue_(false)
     , type_(0)
 {}
 
 Expr::~Expr()
 {
     delete type_;
+
+    if (parseerror)
+        delete place_;
 }
 
 //------------------------------------------------------------------------------
@@ -77,7 +81,11 @@ me::Op::Type Literal::toType() const
 
 bool Literal::analyze()
 {
-    lvalue_ = false;
+    if (needAsLValue_)
+    {
+        errorf(line_, "lvalue required as left operand of assignment");
+        return false;
+    }
 
     switch (kind_)
     {
@@ -205,7 +213,6 @@ std::string Literal::toString() const
                 oss << ".q";
             else
                 oss << "q"; // FIXME
-                std::cout << "fjkdlfjkdjfdl" << fmod(real64_, 1.0) << std::endl;
             break;
 
         default:
@@ -238,7 +245,6 @@ Id::~Id()
 
 bool Id::analyze()
 {
-    lvalue_ = true;
     Var* var = symtab->lookupVar(id_);
 
     if (var == 0)
@@ -261,7 +267,6 @@ bool Id::analyze()
         place_ = reg;
 
         var->varNr_ = reg->varNr_;
-        //symtab->insertLocalByVarNr(local);
     }
 
     return true;
@@ -292,7 +297,11 @@ UnExpr::~UnExpr()
 
 bool UnExpr::analyze()
 {
-    lvalue_ = false;
+    if (needAsLValue_)
+    {
+        errorf(line_, "lvalue required as left operand of assignment");
+        return false;
+    }
 
     // return false when syntax is wrong
     if ( !op_->analyze() )
@@ -399,7 +408,11 @@ std::string BinExpr::getOpString() const
 
 bool BinExpr::analyze()
 {
-    lvalue_ = false;
+    if (needAsLValue_)
+    {
+        errorf(line_, "lvalue required as left operand of assignment");
+        return false;
+    }
 
     // return false when syntax is wrong
     if ( !op1_->analyze() | !op2_->analyze() ) // analyze both ops in all cases
@@ -520,9 +533,7 @@ MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
     , expr_(expr)
     , id_(id)
-{
-    std::cout << *id_ << std::endl;
-}
+{}
 
 MemberAccess::~MemberAccess()
 {
@@ -542,25 +553,37 @@ bool MemberAccess::analyze()
         return false;
 
     Type* type = expr_->type_;
-
     Class* _class = symtab->lookupClass(type->baseType_->id_);
+    Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
-    if ( !_class->hasMemberVar(id_) )
+    if ( iter == _class->memberVars_.end() )
     {
         errorf( line_, "class '%s' does not have a member named %s", 
                 type->baseType_->id_->c_str(), id_->c_str() );
         return false;
     }
+    // else
 
-    // check whether there is an id_ in current context
-    //Var* var = symtab->lookupVar(id);
-    //
+    MemberVar* member = iter->second;
+    type_ = member->type_->clone();
+
+#ifdef SWIFT_DEBUG
+    std::string str = "tmp";
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
+#else // SWIFT_DEBUG
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
+#endif // SWIFT_DEBUG
+
+    place_ = reg;
+
+    genSSA();
+
     return true;
 }
 
 void MemberAccess::genSSA()
 {
-    return;
+
 }
 
 //------------------------------------------------------------------------------

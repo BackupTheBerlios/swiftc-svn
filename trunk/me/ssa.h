@@ -457,6 +457,26 @@ struct Reload : public InstrBase
 
 //------------------------------------------------------------------------------
 
+struct Load : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    Load(Reg* result, Reg* arg);
+
+    /*
+     * further methods
+     */
+
+    Reg* resReg();
+    Reg* opReg();
+
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
 struct SetParams : public InstrBase
 {
     /*

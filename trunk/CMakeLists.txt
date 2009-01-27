@@ -30,10 +30,11 @@ ELSE (BUILD_RELEASE)
     )
 ENDIF (BUILD_RELEASE)
 
-# call flex for the front-end
+# call flex for the front-end and patch the output file to get rid of the warning
 ADD_CUSTOM_COMMAND (
     OUTPUT  fe/lex.yy.cpp
-    COMMAND flex -P swift -o fe/lex.yy.cpp fe/lexer.l
+    COMMAND flex -P swift -o fe/lex.yy.cpp fe/lexer.l && sed 's/^[ \\t]*int n\;/\\t\\tsize_t n\;/' <fe/lex.yy.cpp >tmp && mv tmp fe/lex.yy.cpp
+
     DEPENDS fe/lexer.l
 )
 
@@ -55,6 +56,8 @@ ELSE (BUILD_RELEASE)
 ENDIF (BUILD_RELEASE)
 
 #-------------------------------------------------------------------------------
+
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 # sources
 ADD_EXECUTABLE (swift

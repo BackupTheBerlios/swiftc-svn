@@ -53,7 +53,7 @@ using namespace be;
 %token X64_INT16  X64_INT32  X64_INT64   X64_SAT8  X64_SAT16
 %token X64_UINT8 X64_UINT16 X64_UINT32 X64_UINT64 X64_USAT8 X64_USAT16 
 %token X64_REAL32 X64_REAL64
-%token X64_PTR
+%token X64_PTR X64_STACK
 
 /* operands */
 %token <undef_> X64_UNDEF

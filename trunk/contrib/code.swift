@@ -1,13 +1,13 @@
 # Swift Language test file
 class Test
-    Foo foo
+    int foo
 
     routine test(int i, int j, real uu) -> real re, int rs, inout int bs
         int z
         z = 5 + 4 * j
         j = 7
 
-        Test test
+        Test test = 5.0
         test.foo = 5
     end
 

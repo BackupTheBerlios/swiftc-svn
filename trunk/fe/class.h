@@ -52,8 +52,6 @@ struct Class : public Definition
     /// Is called when a defaul constructor must be created artifically i.e. hasCreate_ == false
     void createDefaultConstructor();
     virtual bool analyze();
-
-    bool hasMemberVar(std::string* id) const;
 };
 
 //------------------------------------------------------------------------------

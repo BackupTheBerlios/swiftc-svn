@@ -54,7 +54,9 @@ me::Op::Type BaseType::toMeType() const
     if (builtin_)
         return typeMap_->find(*id_)->second;
     else
-        return me::Op::R_PTR;
+        return me::Op::R_STACK;
+
+    // TODO ptr support
 }
 
 bool BaseType::isBuiltin() const

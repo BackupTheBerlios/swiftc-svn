@@ -32,6 +32,7 @@ using namespace swift;
 void readBuiltinTypes();
 void initTypeMaps();
 int start(int argc, char** argv);
+void cleanUpME();
 
 //------------------------------------------------------------------------------
 
@@ -108,6 +109,8 @@ int start(int argc, char** argv)
      * Thus a complete SymbolTable and type consistency is ensured after this pass.
      */
     bool analyzeResult = syntaxtree->analyze();
+    if (!analyzeResult)
+        parseerror = true;
 
     /*
      * clean up front-end
@@ -120,9 +123,9 @@ int start(int argc, char** argv)
 
     fclose(file);
 
-    if (analyzeResult == false)
+    if (!analyzeResult)
     {
-        std::cerr << "error" << std::endl;
+        cleanUpME();
         return EXIT_FAILURE; // abort on error
     }
 
@@ -137,10 +140,6 @@ int start(int argc, char** argv)
      * place phi-functions in SSA form and update vars
      */
     me::functab->buildUpME();
-
-    me::functab->dumpSSA();
-    me::functab->dumpDot();
-    return 0;
 
     /*
      * build up back-end and generate assembly code
@@ -182,6 +181,13 @@ int start(int argc, char** argv)
     // finish
     ofs.close();
 
+    cleanUpME();
+
+    return 0;
+}
+
+void cleanUpME()
+{
     /*
      * clean up middle-end
      */
@@ -192,8 +198,6 @@ int start(int argc, char** argv)
      * clean up back-end
      */
     delete me::arch;
-
-    return 0;
 }
 
 void readBuiltinTypes()

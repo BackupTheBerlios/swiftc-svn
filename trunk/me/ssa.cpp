@@ -665,6 +665,47 @@ std::string Reload::toString() const
 
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Load::Load(Reg* result, Reg* arg)
+    : InstrBase(1, 1)
+{
+    swiftAssert( arg->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
+            "arg must be R_PTR or R_STACK");
+    res_[0].reg_ = result;
+    arg_[0].op_  = arg;
+}
+
+/*
+ * further methods
+ */
+
+Reg* Load::resReg()
+{
+    return res_[0].reg_;
+}
+
+Reg* Load::opReg()
+{
+    swiftAssert( typeid(*arg_[0].op_) == typeid(Reg),
+            "must be a node to a Reg" );
+    return (Reg*) arg_[0].op_;
+}
+
+std::string Load::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].reg_->toString() << "\t= Load(" << arg_[0].op_->toString() << ")";
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
 /*
  * constructor
  */

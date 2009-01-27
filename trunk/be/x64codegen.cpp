@@ -393,7 +393,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
  * lexer to parser interface
  */
 
-void x64error(char *s)
+void x64error(const char *s)
 {
     printf( "%s: could not parse '%s'\n", s, currentInstrNode->value_->toString().c_str() );
 }
@@ -515,6 +515,7 @@ int x64lex()
                 case me::Op::R_REAL64: return X64_REAL64;
 
                 case me::Op::R_PTR:    return X64_PTR;
+                case me::Op::R_STACK:  return X64_STACK;
             }
         }
         case OP1:

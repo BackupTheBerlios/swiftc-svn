@@ -68,15 +68,15 @@ struct Assignment
      * further methods
      */
 
-    bool analyze();
+    bool analyze(bool exprResult);
 };
 
-bool Assignment::analyze()
+bool Assignment::analyze(bool exprResult)
 {
-    bool result = true;
+    bool result = exprResult;
     result &= exprList_->analyze();
 
-    if (result == false)
+    if (!result)
         return false;
 
     // put the exprList_ in a more comfortable List
@@ -160,7 +160,7 @@ bool Declaration::analyze()
     if (exprList_)
     {
         Assignment assignment(type_, exprList_, line_);
-        result &= assignment.analyze();
+        result &= assignment.analyze(result);
     }
 
     if (!result)
@@ -211,10 +211,11 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
+    expr_->needAsLValue_ = true;
     bool result = expr_->analyze();
 
     Assignment assignment(expr_->type_, exprList_, line_);
-    result &= assignment.analyze();
+    result &= assignment.analyze(result);
 
     if (result)
     {

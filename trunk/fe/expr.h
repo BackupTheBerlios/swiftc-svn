@@ -20,7 +20,7 @@ struct Expr;
  */
 struct Expr : public Node
 {
-    bool    lvalue_;
+    bool    needAsLValue_;
     Type*   type_;
 
     /// This me::Op knows where the result is stored.

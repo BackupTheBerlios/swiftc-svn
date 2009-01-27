@@ -57,11 +57,12 @@ struct Op
         R_REAL32    = 1 << 13,
         R_REAL64    = 1 << 14,
 
-        // pointer
-        R_PTR       = 1 << 15,
+        // pointers
+        R_PTR       = 1 << 15, ///< A pointer to an arbitrary location.
+        R_STACK     = 1 << 16, ///< A pointer to a known location on the stack.
 
         // Use this to do something special by hand
-        R_SPECIAL   = 1 << 16
+        R_SPECIAL   = 1 << 17
     };
 
     Type type_;

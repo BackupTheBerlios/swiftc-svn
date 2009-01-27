@@ -126,17 +126,6 @@ bool Class::analyze()
     return result;
 }
 
-bool Class::hasMemberVar(std::string* id) const
-{
-    MemberVarMap::const_iterator iter = memberVars_.find(id);
-
-    if ( iter == memberVars_.end() )
-        return false;
-    // else
-
-    return true;
-}
-
 //------------------------------------------------------------------------------
 
 /*

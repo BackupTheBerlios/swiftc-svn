@@ -63,7 +63,7 @@ std::string* operatorToString(int _operator)
 
 } // namespace swift
 
-void swifterror(char *s);
+void swifterror(const char *s);
 
 using namespace swift;
 
@@ -473,7 +473,7 @@ pointer
     FIXME better syntax error handling
 */
 
-void swifterror(char *s)
+void swifterror(const char *s)
 {
     errorf(currentLine, s);
     parseerror = true;
