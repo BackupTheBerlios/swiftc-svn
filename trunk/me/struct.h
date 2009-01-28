@@ -2,6 +2,7 @@
 #define ME_STRUCT_H
 
 #include <map>
+#include <stack>
 
 #include "me/op.h"
 

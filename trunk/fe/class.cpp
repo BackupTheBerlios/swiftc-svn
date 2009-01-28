@@ -23,7 +23,11 @@ namespace swift {
 Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Definition(id, parent, line)
     , hasCreate_(false)
-{}
+{
+    // create appropriate middle-end struct
+    me::Struct* str = me::functab->newStruct();
+    me::functab->enterStruct(str);
+}
 
 Class::~Class()
 {
@@ -151,7 +155,11 @@ ClassMember::~ClassMember()
 MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : ClassMember(id, parent, line)
     , type_(type)
-{}
+{
+    if ( type_->isBuiltin() )
+        me::functab->appendMember( (*BaseType::typeMap_)[*type_->baseType_->id_] );
+
+}
 
 MemberVar::~MemberVar()
 {

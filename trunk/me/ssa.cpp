@@ -298,6 +298,7 @@ PhiInstr::PhiInstr(Reg* result, size_t numRhs)
     // init result
     res_[0].reg_ = result;
     res_[0].oldVarNr_ = result->varNr_;
+    res_[0].constraint_ = NO_CONSTRAINT;
 
     // fill everthing with zero -- needed for some debugging
     memset(sourceBBs_, 0, sizeof(BBNode*) * numRhs);
@@ -371,9 +372,10 @@ AssignInstr::AssignInstr(int kind, Reg* result, Op* op1, Op* op2 /*= 0*/)
 {
     res_[0].reg_ = result;
     res_[0].oldVarNr_= result->varNr_;
-
+    res_[0].constraint_= NO_CONSTRAINT;
 
     arg_[0].op_ = op1;
+    arg_[0].constraint_ = NO_CONSTRAINT;
 
     if (op2)
         arg_[1].op_ = op2;
@@ -618,10 +620,14 @@ std::string BranchInstr::toString() const
 Spill::Spill(Reg* result, Reg* arg)
     : InstrBase(1, 1)
 {
-    swiftAssert( !arg->isMem(), "arg must not be a memory var" );
     swiftAssert( result->isMem(), "result must be a memory var" );
     res_[0].reg_ = result;
+    res_[0].oldVarNr_ = result->varNr_;
+    res_[0].constraint_ = NO_CONSTRAINT;
+
+    swiftAssert( !arg->isMem(), "arg must not be a memory var" );
     arg_[0].op_  = arg;
+    arg_[0].constraint_  = NO_CONSTRAINT;
 }
 
 /*
@@ -645,10 +651,14 @@ std::string Spill::toString() const
 Reload::Reload(Reg* result, Reg* arg)
     : InstrBase(1, 1)
 {
-    swiftAssert( arg->isMem(), "arg must be a memory var" );
     swiftAssert( !result->isMem(), "result must not be a memory var" );
     res_[0].reg_ = result;
+    res_[0].oldVarNr_ = result->varNr_;
+    res_[0].constraint_ = NO_CONSTRAINT;
+
+    swiftAssert( arg->isMem(), "arg must be a memory var" );
     arg_[0].op_ = arg;
+    arg_[0].constraint_  = NO_CONSTRAINT;
 }
 
 /*
@@ -665,6 +675,48 @@ std::string Reload::toString() const
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructor
+ */
+
+Store::Store(Reg* result, Reg* arg)
+    : InstrBase(1, 1)
+{
+    swiftAssert( result->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
+            "arg must be R_PTR or R_STACK");
+
+    res_[0].reg_ = result;
+    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0].oldVarNr_ = result->varNr_;
+
+    arg_[0].op_ = arg;
+    arg_[0].constraint_ = NO_CONSTRAINT;
+}
+
+/*
+ * further methods
+ */
+
+Reg* Store::resReg()
+{
+    return res_[0].reg_;
+}
+
+Reg* Store::opReg()
+{
+    swiftAssert( typeid(*arg_[0].op_) == typeid(Reg),
+            "must be a node to a Reg" );
+    return (Reg*) arg_[0].op_;
+}
+
+std::string Store::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].reg_->toString() << "\t= Store(" << arg_[0].op_->toString() << ")";
+
+    return oss.str();
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -676,8 +728,13 @@ Load::Load(Reg* result, Reg* arg)
 {
     swiftAssert( arg->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
             "arg must be R_PTR or R_STACK");
+
     res_[0].reg_ = result;
-    arg_[0].op_  = arg;
+    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0].oldVarNr_ = result->varNr_;
+
+    arg_[0].op_ = arg;
+    arg_[0].constraint_ = NO_CONSTRAINT;
 }
 
 /*

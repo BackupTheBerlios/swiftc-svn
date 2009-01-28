@@ -28,8 +28,8 @@ struct Struct;
 struct Function
 {
     std::string* id_;
-    int regCounter_;
-    size_t indexCounter_;
+    int regCounter_; ///< Counter which gives new reg in SSA form number. Size is increasing.
+    int varCounter_; ///< Counter which gives new var numbers. Size is decreasing.
     CFG  cfg_;
 
     /// Indicates whether a LivenessAnalysis CodePass has already been performed.
@@ -39,8 +39,6 @@ struct Function
     bool firstDefUse_;
 
     InstrNode* lastLabelNode_;
-
-
     InstrList instrList_;
 
     RegMap in_;
@@ -48,11 +46,11 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
-
     typedef std::map<Reg*, int> Reg2Color;
     Reg2Color reg2Color_;
 
     int spillSlots_;
+
 
     /*
      * constructor and destructor
@@ -81,19 +79,17 @@ struct Function
      * This will be transforemd to SSA form later on.
      *
      * @param type The type of the Reg.
-     * @param varNr The varNr of the var; must be positive.
      * @param id The name of the original var.
      */
-    Reg* newVar(Op::Type type, int varNr, std::string* id);
+    Reg* newVar(Op::Type type, std::string* id);
 
     /**
      * @brief This method creates a new var in a memory location.
      *
      * @param type The type of the Reg.
-     * @param varNr The varNr of the var; must be positive.
      * @param id The name of the original var.
      */
-    Reg* newMem(Op::Type type, int varNr, std::string* id = 0);
+    Reg* newMemSSA(Op::Type type, std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
@@ -110,17 +106,15 @@ struct Function
      * This will be transforemd to SSA form later on.
      *
      * @param type the type of the Reg.
-     * @param varNr the varNr of the var; must be positive.
      */
-    Reg* newVar(Op::Type type, int varNr);
+    Reg* newVar(Op::Type type);
 
     /**
      * @brief This method creates a new var in a memory location.
      *
      * @param type The type of the Reg.
-     * @param varNr The varNr of the var; must be positive.
      */
-    Reg* newMem(Op::Type type, int varNr);
+    Reg* newMemSSA(Op::Type type);
 
 #endif // SWIFT_DEBUG
 
@@ -140,7 +134,10 @@ struct FunctionTable
 
     typedef std::map<std::string*, Function*, StringPtrCmp> FunctionMap;
     FunctionMap functions_;
-    Function*   current_;
+    Function*   currentFunction_;
+    
+    typedef std::stack<Struct*> StructStack;
+    StructStack structStack_;
 
     typedef std::map<int, Struct*> StructMap;
     StructMap structs_;
@@ -172,19 +169,17 @@ struct FunctionTable
      * @brief This method creates a new var Reg.
      *
      * @param type the type of the Reg
-     * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
      */
-    Reg* newVar(Op::Type type, int varNr, std::string* id);
+    Reg* newVar(Op::Type type, std::string* id);
 
     /**
      * @brief This method creates a new memory variable.
      *
      * @param type the type of the Reg
-     * @param varNr the varNr of the var; must be positive.
      * @param id the name of the original var
      */
-    Reg* newMem(Op::Type type, int varNr, std::string* id = 0);
+    Reg* newMemSSA(Op::Type type, std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
@@ -199,21 +194,19 @@ struct FunctionTable
      * @brief This method creates a new var Reg.
      * 
      * @param type the type of the Reg
-     * @param varNr the varNr of the var; must be positive.
      */
-    Reg* newVar(Op::Type type, int varNr);
+    Reg* newVar(Op::Type type);
 
     /**
      * @brief This method creates a new memory variable.
      *
      * @param type the type of the Reg
-     * @param varNr the varNr of the var; must be positive.
      */
-    Reg* newMem(Op::Type type, int varNr);
+    Reg* newMemSSA(Op::Type type);
 
 #endif // SWIFT_DEBUG
 
-    Reg* lookupReg(int varNr);
+    Reg* lookupReg(int id);
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode* node);
@@ -226,7 +219,17 @@ struct FunctionTable
 
     void genCode();
 
-    void insertStruct(Struct* str);
+    /*
+     * struct handling
+     */
+
+    Struct* newStruct();
+    void enterStruct(Struct* str);
+    void leaveStruct();
+    Struct* currentStruct();
+
+    void appendMember(Op::Type type);
+    void appendMember(Struct* str);
 };
 
 typedef FunctionTable FuncTab;

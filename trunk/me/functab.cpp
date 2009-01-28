@@ -23,7 +23,7 @@ FuncTab* functab = 0;
 Function::Function(std::string* id)
     : id_(id)
     , regCounter_(0)
-    , indexCounter_(0)
+    , varCounter_(-1) // >= 0 is reserved for vars already in SSA form
     , cfg_(this)
     , firstLiveness_(false)
     , firstDefUse_(false)
@@ -72,18 +72,16 @@ Reg* Function::newSSA(Op::Type type, std::string* id /*= 0*/)
     return reg;
 }
 
-Reg* Function::newVar(Op::Type type, int varNr, std::string* id)
+Reg* Function::newVar(Op::Type type, std::string* id)
 {
-    swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = new Reg(type, varNr, id);
+    Reg* reg = new Reg(type, varCounter_--, id);
     insert(reg);
 
     return reg;
 }
 
-Reg* Function::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
+Reg* Function::newMemSSA(Op::Type type, std::string* id /*= 0*/)
 {
-    swiftAssert(varNr < 0, "varNr must be less than zero");
     Reg* reg = new Reg(type, regCounter_++, id);
     reg->isMem_ = true;
     insert(reg);
@@ -101,18 +99,16 @@ Reg* Function::newSSA(Op::Type type)
     return reg;
 }
 
-Reg* Function::newVar(Op::Type type, int varNr)
+Reg* Function::newVar(Op::Type type)
 {
-    swiftAssert(varNr < 0, "varNr must be less than zero");
-    Reg* reg = new Reg(type, varNr);
+    Reg* reg = new Reg(type, varCounter_--);
     insert(reg);
 
     return reg;
 }
 
-Reg* Function::newMem(Op::Type type, int varNr)
+Reg* Function::newMemSSA(Op::Type type)
 {
-    swiftAssert(varNr < 0, "varNr must be less than zero");
     Reg* reg = new Reg(type, regCounter_++);
     reg->isMem_ = true;
     insert(reg);
@@ -185,53 +181,53 @@ FunctionTable::~FunctionTable()
 
 Function* FunctionTable::insertFunction(string* id)
 {
-    current_ = new Function(id);
-    functions_.insert( make_pair(id, current_) );
+    currentFunction_ = new Function(id);
+    functions_.insert( make_pair(id, currentFunction_) );
 
-    return current_;
+    return currentFunction_;
 }
 
 #ifdef SWIFT_DEBUG
 
 Reg* FunctionTable::newSSA(Op::Type type, std::string* id /*= 0*/)
 {
-    return current_->newSSA(type, id);
+    return currentFunction_->newSSA(type, id);
 }
 
-Reg* FunctionTable::newVar(Op::Type type, int varNr, std::string* id)
+Reg* FunctionTable::newVar(Op::Type type, std::string* id)
 {
-    return current_->newVar(type, varNr, id);
+    return currentFunction_->newVar(type, id);
 }
 
-Reg* FunctionTable::newMem(Op::Type type, int varNr, std::string* id /*= 0*/)
+Reg* FunctionTable::newMemSSA(Op::Type type, std::string* id /*= 0*/)
 {
-    return current_->newMem(type, varNr, id);
+    return currentFunction_->newMemSSA(type, id);
 }
 
 #else // SWIFT_DEBUG
 
 Reg* FunctionTable::newSSA(Op::Type type)
 {
-    return current_->newSSA(type);
+    return currentFunction_->newSSA(type);
 }
 
-Reg* FunctionTable::newVar(Op::Type type, int varNr)
+Reg* FunctionTable::newVar(Op::Type type)
 {
-    return current_->newVar(type, varNr);
+    return currentFunction_->newVar(type);
 }
 
-Reg* FunctionTable::newMem(Op::Type type, int varNr)
+Reg* FunctionTable::newMemSSA(Op::Type type)
 {
-    return current_->newMem(type, varNr);
+    return currentFunction_->newMemSSA(type);
 }
 
 #endif // SWIFT_DEBUG
 
-Reg* FunctionTable::lookupReg(int varNr)
+Reg* FunctionTable::lookupReg(int id)
 {
-    RegMap::iterator regIter = current_->vars_.find(varNr);
+    RegMap::iterator regIter = currentFunction_->vars_.find(id);
 
-    if ( regIter == current_->vars_.end() )
+    if ( regIter == currentFunction_->vars_.end() )
         return 0;
     else
         return regIter->second;
@@ -239,12 +235,12 @@ Reg* FunctionTable::lookupReg(int varNr)
 
 void FunctionTable::appendInstr(InstrBase* instr)
 {
-    current_->instrList_.append(instr);
+    currentFunction_->instrList_.append(instr);
 }
 
 void FunctionTable::appendInstrNode(InstrNode* node)
 {
-    current_->instrList_.append(node);
+    currentFunction_->instrList_.append(node);
 }
 
 void FunctionTable::buildUpME()
@@ -279,12 +275,44 @@ void FunctionTable::dumpDot()
 
 InstrNode* FunctionTable::getLastLabelNode()
 {
-    return current_->lastLabelNode_;
+    return currentFunction_->lastLabelNode_;
 }
 
-void FunctionTable::insertStruct(Struct* str)
+/*
+ * struct handling
+ */
+
+void FunctionTable::enterStruct(Struct* str)
 {
+    structStack_.push(str);
+}
+
+void FunctionTable::leaveStruct()
+{
+    structStack_.pop();
+}
+
+Struct* FunctionTable::currentStruct()
+{
+    return structStack_.top();
+}
+
+Struct* FunctionTable::newStruct()
+{
+    Struct* str = new Struct();
     structs_[str->nr_] = str;
+
+    return str;
+}
+
+void FunctionTable::appendMember(Op::Type type)
+{
+    structStack_.top()->append(type);
+}
+
+void FunctionTable::appendMember(Struct* str)
+{
+    structStack_.top()->append(str);
 }
 
 } // namespace me

@@ -183,7 +183,7 @@ int start(int argc, char** argv)
 
     cleanUpME();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void cleanUpME()

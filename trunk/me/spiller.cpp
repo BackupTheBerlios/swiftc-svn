@@ -171,7 +171,7 @@ Reg* Spiller::insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
     BasicBlock* bb = bbNode->value_;
 
     // create a new memory location
-    Reg* mem = function_->newMem(reg->type_, spillCounter_--);
+    Reg* mem = function_->newMemSSA(reg->type_);
     SpillMap::iterator iter = spillMap_.find(reg);
 
     Spill* spill = new Spill(mem, reg);

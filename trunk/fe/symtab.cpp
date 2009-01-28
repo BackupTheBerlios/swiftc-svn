@@ -29,7 +29,6 @@ SymTab* symtab = 0;
  */
 
 SymbolTable::SymbolTable()
-    : varCounter_(-1) // >= 0 is reserved for vars already in SSA form
 {
     reset();
 }
@@ -298,15 +297,15 @@ Scope* SymbolTable::currentScope()
     return s;
 }
 
-int SymbolTable::newVarNr()
-{
-    return varCounter_--;
-}
-
 Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /*= NO_LINE*/)
 {
-    // create Local
-    Local* local = new Local(type->clone(), id, newVarNr(), line);
+#ifdef SWIFT_DEBUG
+    me::Reg* reg = me::functab->newVar( type->baseType_->toMeType(), id );
+#else // SWIFT_DEBUG
+    me::Reg* reg = me::functab->newVar( type->baseType_->toMeType());
+#endif // SWIFT_DEBUG
+
+    Local* local = new Local(type->clone(), reg, id, line);
     symtab->insert(local);
 
     return local;

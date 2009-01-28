@@ -477,6 +477,26 @@ struct Load : public InstrBase
 
 //------------------------------------------------------------------------------
 
+struct Store : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    Store(Reg* result, Reg* arg);
+
+    /*
+     * further methods
+     */
+
+    Reg* resReg();
+    Reg* opReg();
+
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
 struct SetParams : public InstrBase
 {
     /*

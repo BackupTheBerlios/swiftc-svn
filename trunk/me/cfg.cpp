@@ -585,6 +585,7 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
                 Reg* reg = function_->newSSA(instr->res_[i].reg_->type_);
 #endif // SWIFT_DEBUG
 
+                // TODO make var numbers local to function
                 swiftAssert(size_t(-instr->res_[i].oldVarNr_) < names.size(), "index out of bounds");
                 names[ -instr->res_[i].oldVarNr_ ].push(reg);
                 instr->res_[i].reg_ = reg;
@@ -655,7 +656,6 @@ void CFG::constructSSAForm()
 BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
 {
     BBList work;
-    // TODO not quite 100% sure whether this is right: BBSet result(bbs);
     BBSet result;
 
     BBSET_EACH(iter, bbs)

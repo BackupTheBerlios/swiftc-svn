@@ -36,7 +36,7 @@ bool Sig::analyze() const
     bool result = true;
 
     PARAMS_CONST_EACH(iter, params_)
-        result &= iter->value_->analyze();
+        result &= iter->value_->validateAndCreateReg();
 
     return result;
 }

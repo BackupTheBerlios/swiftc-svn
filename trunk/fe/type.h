@@ -19,7 +19,6 @@ struct BaseType : public Node
      */
 
     BaseType(std::string* id, int line = NO_LINE);
-    BaseType(std::string* id, bool builtin);
     ~BaseType();
 
     /*

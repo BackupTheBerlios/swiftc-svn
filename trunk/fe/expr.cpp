@@ -252,22 +252,10 @@ bool Id::analyze()
         errorf(line_, "'%s' was not declared in this scope", id_->c_str());
         return false;
     }
-    else
-        type_ = var->type_->clone();
+    // else
 
-    place_ = me::functab->lookupReg(var->varNr_);
-    if (place_ == 0)
-    {
-        me::Reg* reg;
-#ifdef SWIFT_DEBUG
-        reg = me::functab->newVar( var->type_->baseType_->toMeType(), var->varNr_, id_ );
-#else // SWIFT_DEBUG
-        reg = me::functab->newVar( var->type_->baseType_->toMeType(), var->varNr_ );
-#endif // SWIFT_DEBUG
-        place_ = reg;
-
-        var->varNr_ = reg->varNr_;
-    }
+    type_ = var->type_->clone();
+    place_ = var->reg_;
 
     return true;
 }
@@ -339,9 +327,9 @@ void UnExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
 
     place_ = reg;
@@ -456,9 +444,9 @@ void BinExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), );
 #endif // SWIFT_DEBUG
     place_ = reg;
 
@@ -552,8 +540,10 @@ bool MemberAccess::analyze()
     if (!result)
         return false;
 
+    // get type and member var
     Type* type = expr_->type_;
     Class* _class = symtab->lookupClass(type->baseType_->id_);
+    swiftAssert(_class, "must be found");
     Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
     if ( iter == _class->memberVars_.end() )
@@ -569,9 +559,9 @@ bool MemberAccess::analyze()
 
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr(), &str );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), symtab->newVarNr() );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), );
 #endif // SWIFT_DEBUG
 
     place_ = reg;
@@ -583,7 +573,13 @@ bool MemberAccess::analyze()
 
 void MemberAccess::genSSA()
 {
+    swiftAssert( typeid(*expr_) == typeid(Id), "TODO" );
+    swiftAssert( typeid(*place_) == typeid(me::Reg), "TODO" );
+    Var* var = symtab->lookupVar( ((Id*) expr_)->id_ );
+    me::Reg* reg = var->reg_;
 
+    if (!needAsLValue_)
+        me::functab->appendInstr( new me::Load((me::Reg*) place_, reg) );
 }
 
 //------------------------------------------------------------------------------

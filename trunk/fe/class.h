@@ -8,6 +8,8 @@
 
 #include "fe/module.h"
 
+#include "me/struct.h"
+
 namespace swift {
 
 // forward declarations
@@ -31,6 +33,8 @@ struct Class : public Definition
 
     MethodMap methods_; ///< Methods defined in this class.
     MemberVarMap memberVars_; ///< MemberVars defined in this class.
+
+    me::Struct* meStruct_;
 
     /**
      * Knows whether the given class defines a constructor,

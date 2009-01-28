@@ -13,6 +13,8 @@
 #include "fe/type.h"
 #include "fe/var.h"
 
+#include "me/functab.h"
+
 namespace swift {
 
 int pointercount = -1;
@@ -193,29 +195,9 @@ class_definition
             $<class_>$->classMember_= $5;
             if ( !$<class_>$->hasCreate_ )
                 $<class_>$->createDefaultConstructor();
-        }
-    | CLASS ID EOL
-        {
-            $<class_>$ = new Class($2, symtab->module_, currentLine);
-            symtab->insert($<class_>$);
-        }
-        '{' template_list '}' class_body END EOL
-        {
-            $$ = $<class_>4;
-            $<class_>$->classMember_= $8;
 
-            if ( !$<class_>$->hasCreate_ )
-                $<class_>$->createDefaultConstructor();
+            me::functab->leaveStruct();
         }
-    ;
-
-template_list
-    : template_parameter
-    | template_list ',' template_parameter
-    ;
-
-template_parameter
-    : type { delete $1; }
     ;
 
 class_body
@@ -305,7 +287,7 @@ parameter_list
     ;
 
 parameter
-    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, symtab->newVarNr(), currentLine) ); }
+    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -319,8 +301,8 @@ return_type_list
     ;
 
 return_type
-    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, symtab->newVarNr(), currentLine) ); }
-    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, symtab->newVarNr(), currentLine) ); }
+    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, currentLine) ); }
+    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, currentLine) ); }
     ;
 
 /*

@@ -41,8 +41,6 @@ struct SymbolTable
 
     ScopeStack scopeStack_; ///< Top of stack knows the current Scope.
 
-    int varCounter_; ///< Counter which gives new var numbers.
-
     enum
     {
         NO_LINE = -1

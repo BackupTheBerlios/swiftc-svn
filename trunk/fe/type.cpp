@@ -28,12 +28,6 @@ BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
 
-BaseType::BaseType(std::string* id, bool builtin)
-    : Node(-1)
-    , id_(id)
-    , builtin_(builtin)
-{}
-
 BaseType::~BaseType()
 {
     if (id_)

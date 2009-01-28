@@ -169,18 +169,19 @@ bool Declaration::analyze()
     // everything ok. so insert the local
     local_ = symtab->createNewLocal(type_, id_, line_);
 
-#ifdef SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toMeType(), local_->varNr_, local_->id_ );
-#else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( local_->type_->baseType_->toMeType(), local_->varNr_ );
-#endif // SWIFT_DEBUG
-
-    if (exprList_)
+    if ( !type_->isBuiltin() )
     {
-        if ( type_->isBuiltin() )
-            me::functab->appendInstr( new me::AssignInstr('=', reg, exprList_->expr_->place_) );
+        if (!exprList_)
+            me::functab->appendInstr( new me::AssignInstr('=', local_->reg_, 
+                        new me::Undef(local_->reg_->type_)) );
         else
             swiftAssert(false, "TODO");
+    }
+    else
+    {
+        if (exprList_)
+            me::functab->appendInstr( new me::AssignInstr('=', local_->reg_,
+                        exprList_->expr_->place_) );
     }
 
     return true;
