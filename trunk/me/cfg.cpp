@@ -585,7 +585,6 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
                 Reg* reg = function_->newSSA(instr->res_[i].reg_->type_);
 #endif // SWIFT_DEBUG
 
-                // TODO make var numbers local to function
                 swiftAssert(size_t(-instr->res_[i].oldVarNr_) < names.size(), "index out of bounds");
                 names[ -instr->res_[i].oldVarNr_ ].push(reg);
                 instr->res_[i].reg_ = reg;

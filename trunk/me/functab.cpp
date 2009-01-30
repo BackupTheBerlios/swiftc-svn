@@ -282,9 +282,9 @@ InstrNode* FunctionTable::getLastLabelNode()
  * struct handling
  */
 
-void FunctionTable::enterStruct(Struct* str)
+void FunctionTable::enterStruct(Struct* _struct)
 {
-    structStack_.push(str);
+    structStack_.push(_struct);
 }
 
 void FunctionTable::leaveStruct()
@@ -297,22 +297,46 @@ Struct* FunctionTable::currentStruct()
     return structStack_.top();
 }
 
+#ifdef SWIFT_DEBUG
+
+Struct* FunctionTable::newStruct(const std::string& id)
+{
+    Struct* _struct = new Struct(id);
+    structs_[_struct->nr_] = _struct;
+
+    return _struct;
+}
+
+Member* FunctionTable::appendMember(Op::Type type, const std::string& id)
+{
+    return structStack_.top()->append(type,id);
+}
+
+Member* FunctionTable::appendMember(Struct* _struct, const std::string& id)
+{
+    return structStack_.top()->append(_struct, id);
+}
+
+#else // SWIFT_DEBUG
+
 Struct* FunctionTable::newStruct()
 {
-    Struct* str = new Struct();
-    structs_[str->nr_] = str;
+    Struct* _struct = new Struct();
+    structs_[_struct->nr_] = _struct;
 
     return str;
 }
 
-void FunctionTable::appendMember(Op::Type type)
+Member* FunctionTable::appendMember(Op::Type type)
 {
-    structStack_.top()->append(type);
+    return structStack_.top()->append(type);
 }
 
-void FunctionTable::appendMember(Struct* str)
+Member* FunctionTable::appendMember(Struct* _struct)
 {
-    structStack_.top()->append(str);
+    return structStack_.top()->append(_struct);
 }
+
+#endif // SWIFT_DEBUG
 
 } // namespace me

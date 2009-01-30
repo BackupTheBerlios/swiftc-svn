@@ -10,6 +10,9 @@
 
 namespace me {
 
+struct Struct;
+struct Member;
+
 //------------------------------------------------------------------------------
 
 #define INSTRLIST_EACH(iter, instrList) \
@@ -459,11 +462,14 @@ struct Reload : public InstrBase
 
 struct Load : public InstrBase
 {
+    Struct* struct_;
+    Member* member_;
+
     /*
      * constructor
      */
 
-    Load(Reg* result, Reg* arg);
+    Load(Reg* result, Reg* arg, Struct* _struct, Member* member);
 
     /*
      * further methods

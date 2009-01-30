@@ -14,6 +14,8 @@ struct BaseType : public Node
     std::string* id_;
     bool builtin_;
 
+    me::Struct* struct_;
+
     /*
      * constructors and destructor
      */

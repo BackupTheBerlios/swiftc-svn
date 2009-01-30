@@ -11,6 +11,7 @@
 
 #include "me/functab.h"
 #include "me/op.h"
+#include "me/struct.h"
 
 namespace me {
 
@@ -723,11 +724,14 @@ std::string Store::toString() const
  * constructor
  */
 
-Load::Load(Reg* result, Reg* arg)
+Load::Load(Reg* result, Reg* arg, Struct* _struct, Member* member)
     : InstrBase(1, 1)
+    , struct_(_struct)
+    , member_(member)
 {
     swiftAssert( arg->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
             "arg must be R_PTR or R_STACK");
+    swiftAssert(member->parent_ == _struct, "member does not belong to parent");
 
     res_[0].reg_ = result;
     res_[0].constraint_ = NO_CONSTRAINT;
@@ -756,7 +760,13 @@ Reg* Load::opReg()
 std::string Load::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= Load(" << arg_[0].op_->toString() << ")";
+    oss << res_[0].reg_->toString() << "\t= Load(" << arg_[0].op_->toString() << ", ";
+
+#ifdef SWIFT_DEBUG
+    oss << struct_->id_ << ", " << member_->id_ << ')';
+#else // SWIFT_DEBUG
+    oss << struct_->nr_ << ", " << member_->nr_ << ')';
+#endif // SWIFT_DEBUG
 
     return oss.str();
 }

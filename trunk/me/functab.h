@@ -21,6 +21,7 @@ namespace me {
 // forward declarations
 struct Function;
 struct Struct;
+struct Member;
 
 /**
  * Function has in, inout and out going parameters and, of course, an identifier.
@@ -223,13 +224,20 @@ struct FunctionTable
      * struct handling
      */
 
-    Struct* newStruct();
-    void enterStruct(Struct* str);
+    void enterStruct(Struct* _struct);
     void leaveStruct();
     Struct* currentStruct();
 
-    void appendMember(Op::Type type);
-    void appendMember(Struct* str);
+#ifdef SWIFT_DEBUG
+    Struct* newStruct(const std::string& id);
+    Member* appendMember(Op::Type type, const std::string& id);
+    Member* appendMember(Struct* _struct, const std::string& id);
+#else // SWIFT_DEBUG
+    Struct* newStruct();
+    Member* appendMember(Op::Type type);
+    Member* appendMember(Struct* _struct);
+#endif // SWIFT_DEBUG
+
 };
 
 typedef FunctionTable FuncTab;

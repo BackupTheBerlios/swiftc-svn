@@ -446,7 +446,7 @@ void BinExpr::genSSA()
     std::string str = "tmp";
     me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
     place_ = reg;
 
@@ -561,25 +561,26 @@ bool MemberAccess::analyze()
     std::string str = "tmp";
     me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), );
+    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
 
     place_ = reg;
 
-    genSSA();
+    swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), "TODO" );
+    me::Struct* meStruct = _class->meStruct_;
+    me::Member* meMember = member->meMember_;
+
+    if (!needAsLValue_)
+    {
+        me::functab->appendInstr( 
+                new me::Load(reg, (me::Reg*) expr_->place_, meStruct, meMember) );
+    }
 
     return true;
 }
 
 void MemberAccess::genSSA()
 {
-    swiftAssert( typeid(*expr_) == typeid(Id), "TODO" );
-    swiftAssert( typeid(*place_) == typeid(me::Reg), "TODO" );
-    Var* var = symtab->lookupVar( ((Id*) expr_)->id_ );
-    me::Reg* reg = var->reg_;
-
-    if (!needAsLValue_)
-        me::functab->appendInstr( new me::Load((me::Reg*) place_, reg) );
 }
 
 //------------------------------------------------------------------------------

@@ -8,34 +8,51 @@
 
 namespace me {
 
+struct Struct;
+
+struct Member
+{
+    Struct* parent_;
+    int nr_;
+    int size_;
+    int offset_;
+
+    union
+    {
+        Op::Type type_;
+        Struct* struct_;
+    };
+
+    bool simpleType_;
+
+#ifdef SWIFT_DEBUG
+    std::string id_;
+#endif // SWIFT_DEBUG
+
+    /*
+    * constructors and destructor
+    */
+
+#ifdef SWIFT_DEBUG
+    Member(Struct* parent, Struct* _struct, const std::string& id);
+    Member(Struct* parent, Op::Type type, const std::string& id);
+#else // SWIFT_DEBUG
+    Member(Struct* parent, Struct* _struct);
+    Member(Struct* parent, Op::Type type);
+#endif // SWIFT_DEBUG
+};
+
 struct Struct
 {
     static int nameCounter_;
 
     int nr_;
+    int memberNameCounter_;
     int size_;
 
-    struct Member
-    {
-        int nr_;
-        int size_;
-        int offset_;
-
-        union
-        {
-            Op::Type type_;
-            Struct* struct_;
-        };
-
-        bool simpleType_;
-
-        /*
-         * constructors and destructor
-         */
-
-        Member(Struct* str);
-        Member(Op::Type type);
-    };
+#ifdef SWIFT_DEBUG
+    std::string id_;
+#endif // SWIFT_DEBUG
 
     typedef std::map<int, Member*> MemberMap;
     MemberMap members_;
@@ -44,15 +61,27 @@ struct Struct
      * constructor and destructor
      */
 
+#ifdef SWIFT_DEBUG
+    Struct(const std::string& id);
+#else // SWIFT_DEBUG
     Struct();
+#endif // SWIFT_DEBUG
+
     ~Struct();
 
     /*
      * further methods
      */
 
-    void append(Op::Type type);
-    void append(Struct* str);
+#ifdef SWIFT_DEBUG
+    Member* append(Op::Type type, const std::string& id);
+    Member* append(Struct* _struct, const std::string& id);
+#else // SWIFT_DEBUG
+    Member* append(Op::Type type);
+    Member* append(Struct* _struct);
+#endif // SWIFT_DEBUG
+
+    Member* lookup(int nr);
 };
 
 } // namespace me

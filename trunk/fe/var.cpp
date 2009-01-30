@@ -7,8 +7,8 @@
 namespace swift {
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Var::Var(Type* type, me::Reg* reg, std::string* id, int line /*= NO_LINE*/)
     : Symbol(id, 0, line) // Vars (Params or Locals) never have parents
@@ -24,8 +24,8 @@ Var::~Var()
 //------------------------------------------------------------------------------
 
 /*
-    constructor
-*/
+ * constructor
+ */
 
 Local::Local(Type* type, me::Reg* reg, std::string* id, int line /*= NO_LINE*/)
     : Var(type, reg, id, line)
@@ -34,8 +34,8 @@ Local::Local(Type* type, me::Reg* reg, std::string* id, int line /*= NO_LINE*/)
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ * constructor and destructor
+ */
 
 Param::Param(Kind kind, Type* type, std::string* id, int line /*= NO_LINE*/)
     : Var(type, 0, id, line)
@@ -43,8 +43,8 @@ Param::Param(Kind kind, Type* type, std::string* id, int line /*= NO_LINE*/)
 {}
 
 /*
-    further methods
-*/
+ * further methods
+ */
 
 bool Param::check(const Param* param1, const Param* param2)
 {
@@ -65,7 +65,7 @@ bool Param::validateAndCreateReg()
 #ifdef SWIFT_DEBUG
     reg_ =  me::functab->newVar( type_->baseType_->toMeType(), id_ );
 #else // SWIFT_DEBUG
-    reg_ = me::functab->newVar( type_->baseType_->toMeType(), );
+    reg_ = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
 
     return type_->validate();

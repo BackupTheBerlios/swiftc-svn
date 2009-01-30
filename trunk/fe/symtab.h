@@ -133,9 +133,6 @@ struct SymbolTable
     /// Returns the current Scope.
     Scope* currentScope();
 
-    /// Returns a new int which can be used as VarNr.
-    int newVarNr();
-
     /**
      * Creates a new Local with Type \p type, \p id and an optional \p line
      * number.

@@ -53,7 +53,10 @@ struct Class : public Definition
      * further methods
      */
 
-    /// Is called when a defaul constructor must be created artifically i.e. hasCreate_ == false
+    /**
+     * Is called when a defaul constructor must be created artifically i.e.
+     * hasCreate_ == false
+     */
     void createDefaultConstructor();
     virtual bool analyze();
 };
@@ -89,6 +92,7 @@ struct ClassMember : public Symbol
 struct MemberVar : public ClassMember
 {
     Type* type_;
+    me::Member* meMember_;
 
     /*
      * constructor and destructor
