@@ -6,7 +6,7 @@ cd ../..
 rm CMakeFiles -rf
 pwd
 rm contrib/*.swift.*
-rm 'test/*.swfit.*'
+rm test/*.swift.*
 rm doc/*
 rm calls mem_leaks tags
 rm cmake_install.cmake

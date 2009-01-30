@@ -245,6 +245,9 @@ void FunctionTable::appendInstrNode(InstrNode* node)
 
 void FunctionTable::buildUpME()
 {
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+        iter->second->analyze();
+
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         CFG& cfg = iter->second->cfg_;

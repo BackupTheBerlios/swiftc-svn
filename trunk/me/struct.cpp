@@ -1,4 +1,6 @@
-#include "struct.h"
+#include "me/struct.h"
+
+#include "me/arch.h"
 
 namespace me {
 
@@ -57,7 +59,7 @@ Member::Member(Struct* parent, Op::Type type)
 Struct::Struct(const std::string& id)
     : nr_(nameCounter_++)
     , memberNameCounter_(0)
-    , size_(0)
+    , size_(NOT_ANALYZED)
     , id_(id)
 {}
 
@@ -66,7 +68,7 @@ Struct::Struct(const std::string& id)
 Struct::Struct()
     : nr_(nameCounter_++)
     , memberNameCounter_(0)
-    , size_(0)
+    , size_(NOT_ANALYZED)
 {}
 
 #endif // SWIFT_DEBUG
@@ -127,6 +129,68 @@ Member* Struct::lookup(int nr)
         return 0;
     else
         return iter->second;
+}
+
+void Struct::analyze()
+{
+    if (size_ != NOT_ANALYZED)
+        return; // has already been analyzed
+
+    // for each member
+    for (MemberMap::iterator iter = members_.begin(); iter != members_.end(); ++iter)
+    {
+        Member* member = iter->second;
+
+        if ( member->simpleType_ )
+        {
+            switch (member->type_)
+            {
+                case me::Op::R_BOOL: 
+                case me::Op::R_INT8:
+                case me::Op::R_UINT8:
+                case me::Op::R_SAT8:
+                case me::Op::R_USAT8:
+                    member->size_ = 1;
+                    break;
+
+                case me::Op::R_INT16:
+                case me::Op::R_UINT16:
+                case me::Op::R_SAT16:
+                case me::Op::R_USAT16:
+                    member->size_ = 2;
+                    break;
+
+                case me::Op::R_INT32:
+                case me::Op::R_UINT32:
+                case me::Op::R_REAL32:
+                    member->size_ = 4;
+                    break;
+
+                case me::Op::R_INT64:
+                case me::Op::R_UINT64:
+                case me::Op::R_REAL64:
+                    member->size_ = 8;
+                    break;
+
+                case me::Op::R_PTR:
+                    member->size_ = arch->getPtrSize();
+                    break;
+
+                case me::Op::R_STACK:
+                case me::Op::R_SPECIAL:
+                    swiftAssert(false, "illegal switch-case-value");
+                    break;
+            }
+        }
+        else
+        {
+            member->struct_->analyze();
+            member->size_ = member->struct_->size_;
+        }
+
+        member->offset_ = size_;
+        size_ += member->size_;
+    }
 }
 
 } // namespace me

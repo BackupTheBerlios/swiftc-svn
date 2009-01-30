@@ -485,11 +485,13 @@ struct Load : public InstrBase
 
 struct Store : public InstrBase
 {
+    Struct* struct_;
+    Member* member_;
     /*
      * constructor
      */
 
-    Store(Reg* result, Reg* arg);
+    Store(Reg* result, Reg* arg, Struct* _struct, Member* member);
 
     /*
      * further methods

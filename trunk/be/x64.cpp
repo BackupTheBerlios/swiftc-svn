@@ -27,6 +27,11 @@ me::Op::Type X64::getPreferedIndex() const
     return me::Op::R_UINT64;
 }
 
+int X64::getPtrSize() const
+{
+    return 8;
+}
+
 void X64::regAlloc(me::Function* function) 
 {
     X64RegAlloc(function).process();

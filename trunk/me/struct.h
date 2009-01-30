@@ -50,6 +50,11 @@ struct Struct
     int memberNameCounter_;
     int size_;
 
+    enum
+    {
+        NOT_ANALYZED = -1
+    };
+
 #ifdef SWIFT_DEBUG
     std::string id_;
 #endif // SWIFT_DEBUG
@@ -82,6 +87,8 @@ struct Struct
 #endif // SWIFT_DEBUG
 
     Member* lookup(int nr);
+
+    void analyze();
 };
 
 } // namespace me

@@ -680,8 +680,10 @@ std::string Reload::toString() const
  * constructor
  */
 
-Store::Store(Reg* result, Reg* arg)
+Store::Store(Reg* result, Reg* arg, Struct* _struct, Member* member)
     : InstrBase(1, 1)
+    , struct_(_struct)
+    , member_(member)
 {
     swiftAssert( result->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
             "arg must be R_PTR or R_STACK");
@@ -713,7 +715,13 @@ Reg* Store::opReg()
 std::string Store::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= Store(" << arg_[0].op_->toString() << ")";
+    oss << res_[0].reg_->toString() << "\t= Store(" << arg_[0].op_->toString() << ", ";
+
+#ifdef SWIFT_DEBUG
+    oss << struct_->id_ << ", " << member_->id_ << ')';
+#else // SWIFT_DEBUG
+    oss << struct_->nr_ << ", " << member_->nr_ << ')';
+#endif // SWIFT_DEBUG
 
     return oss.str();
 }
