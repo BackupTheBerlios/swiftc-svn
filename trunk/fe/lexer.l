@@ -1,3 +1,22 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
 %{
 
 #include <string>
@@ -144,7 +163,7 @@ nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Litera
 {ID} { keyLine = currentLine; swiftlval.id_ = new std::string(yytext); return ID; }
 
 
-#.*$ { /* end of line commment */ }
+#[^\n].* { /* end of line commment */ }
 
 [ \t]   { /* skip whitespaces */ }
 
@@ -157,7 +176,8 @@ nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Litera
 .       { printf("%i: error: invalid input character '%c'\n", currentLine, yytext[0]); }
 
 
-<EOL_STATE>[ \t]   { /* skip whitespaces */ }
+<EOL_STATE>[ \t]    { /* skip whitespaces */ }
+<EOL_STATE>#[^\n].* { /* end of line commment */ }
 <EOL_STATE>\n       { ++currentLine; /* count line number */ }
 <EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
 
