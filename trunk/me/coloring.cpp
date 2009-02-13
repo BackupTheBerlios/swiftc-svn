@@ -98,7 +98,7 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
         Reg* reg = *iter;
 
         // do not color memory locations or regs with wrong types
-        if ( !reg->isMem() )
+        if ( !reg->isSpilled() )
             continue;
 
         int color = reg->color_;
@@ -127,7 +127,7 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
             Reg* reg = dynamic_cast<Reg*>(instr->arg_[i].op_);
 
             // only memory regs are considered here
-            if ( !reg || !reg->isMem() )
+            if ( !reg || !reg->isSpilled() )
                 continue;
 
             if ( InstrBase::isLastUse(iter, reg) )
@@ -159,7 +159,7 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
             Reg* reg = instr->res_[i].reg_;
 
             // only memory regs are considered here
-            if ( !reg->isMem() )
+            if ( !reg->isSpilled() )
                 continue;
 
             reg->color_ = getFreeMemColor(colors);

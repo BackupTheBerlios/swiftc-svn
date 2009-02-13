@@ -24,10 +24,19 @@
 
 #include "me/op.h"
 
+/*
+ * forward declarations
+ */
+
+namespace me {
+    struct Struct;
+    struct Member;
+}
+
 namespace swift {
 
-// forward declarations
 struct Expr;
+struct Var;
 
 //------------------------------------------------------------------------------
 
@@ -39,7 +48,7 @@ struct Expr;
  */
 struct Expr : public Node
 {
-    bool    needAsLValue_;
+    bool    neededAsLValue_;
     Type*   type_;
 
     /// This me::Op knows where the result is stored.
@@ -126,6 +135,7 @@ struct Literal : public Expr
 struct Id : public Expr
 {
     std::string* id_;
+    Var* var_;
 
     /*
      * constructor and destructor
@@ -248,6 +258,8 @@ struct MemberAccess : public Expr
 {
     Expr* expr_;
     std::string* id_;
+    me::Struct* meStruct_;
+    me::Member* meMember_;
 
     /*
      * constructor and destructor

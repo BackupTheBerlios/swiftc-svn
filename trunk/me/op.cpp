@@ -114,13 +114,21 @@ std::string Undef::toString() const {
 
 #ifdef SWIFT_DEBUG
 
-Reg::Reg(Type type, int varNr, std::string* id /*= 0*/)
+Reg::Reg(Type type, int varNr, const std::string* id /*= 0*/)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
-    , isMem_(false)
+    , isSpilled_(false)
     , id_( id ? *id : "")
 {}
+
+Reg* Reg::clone() const
+{
+    // TODO make use of it
+    Reg* reg = new Reg(type_, varNr_, &id_);
+    reg->isSpilled_ = isSpilled_;
+    return reg;
+}
 
 #else // SWIFT_DEBUG
 
@@ -128,8 +136,16 @@ Reg::Reg(Type type, int varNr)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
-    , isMem_(false)
+    , isSpilled_(false)
 {}
+
+Reg* Reg::clone() const
+{
+    // TODO make use of it
+    Reg* reg = new Reg(type_, varNr_);
+    :cc
+    return reg;
+}
 
 #endif // SWIFT_DEBUG
 
@@ -149,21 +165,21 @@ size_t Reg::var2Index() const
     return size_t(-varNr_);
 }
 
-bool Reg::isMem() const
+bool Reg::isSpilled() const
 {
-    return isMem_;
+    return isSpilled_;
 }
 
 bool Reg::colorReg(int typeMask) const
 {
-    return ( !isMem() && typeCheck(typeMask) );
+    return ( !isSpilled() && typeCheck(typeMask) );
 }
 
 std::string Reg::toString() const
 {
     std::ostringstream oss;
 
-    if ( isMem() )
+    if ( isSpilled() )
         oss << "@";
 
     if ( !isSSA() )
@@ -190,7 +206,7 @@ std::string Reg::toString() const
         oss << number2String( varNr_);
     }
 
-    if ( isMem() )
+    if ( isSpilled() )
         oss << " (" << color_ << ')';
     else if ( color_ >= 0 )
         oss << " (" << me::arch->reg2String(this) << ')';

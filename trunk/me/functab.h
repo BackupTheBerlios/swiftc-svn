@@ -42,6 +42,8 @@ struct Function;
 struct Struct;
 struct Member;
 
+//------------------------------------------------------------------------------
+
 /**
  * Function has in, inout and out going parameters and, of course, an identifier.
  */
@@ -148,6 +150,8 @@ struct Function
     void dumpDot(const std::string& baseFilename);
 };
 
+//------------------------------------------------------------------------------
+
 struct FunctionTable
 {
     std::string filename_;
@@ -248,13 +252,17 @@ struct FunctionTable
     Struct* currentStruct();
 
 #ifdef SWIFT_DEBUG
+
     Struct* newStruct(const std::string& id);
     Member* appendMember(Op::Type type, const std::string& id);
     Member* appendMember(Struct* _struct, const std::string& id);
+
 #else // SWIFT_DEBUG
+
     Struct* newStruct();
     Member* appendMember(Op::Type type);
-    Member* appendMember(Struct* _struct);
+    //Member* appendMember(Struct* _struct);
+
 #endif // SWIFT_DEBUG
 
 };

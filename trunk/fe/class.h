@@ -27,11 +27,17 @@
 
 #include "fe/module.h"
 
-#include "me/struct.h"
+/*
+ * forward declarations
+ */
+
+namespace me {
+    struct Member;
+    struct Struct;
+}
 
 namespace swift {
 
-// forward declarations
 struct ClassMember;
 struct Method;
 struct Type;

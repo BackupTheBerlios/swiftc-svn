@@ -17,11 +17,15 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "module.h"
+#include "fe/module.h"
 
 #include <iostream>
+#include <typeinfo>
 
 #include "fe/class.h"
+#include "fe/type.h"
+
+#include "me/functab.h"
 
 namespace swift {
 
@@ -47,6 +51,36 @@ Module::~Module()
 bool Module::analyze()
 {
     bool result = true;
+
+    // for each class
+    for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
+    {
+        if ( typeid(*iter->value_) == typeid(Class) )
+        {
+            Class* _class = (Class*) iter->value_;
+            me::functab->enterStruct(_class->meStruct_);
+            
+            // for each MemberVar
+            for (ClassMember* iter = _class->classMember_; iter != 0; iter = iter->next_)
+            {
+                if ( typeid(*iter) != typeid(MemberVar) )
+                    continue;
+
+                MemberVar* mv = (MemberVar*) iter;
+
+#ifdef SWIFT_DEBUG
+                mv->meMember_ = me::functab->appendMember( 
+                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_], *id_);
+#else // SWIFT_DEBUG
+                mv->meMember_ = me::functab->appendMember( 
+                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_] );
+#endif // SWIFT_DEBUG
+
+            } // for each MemberVar
+
+            me::functab->leaveStruct();
+        } // if type == Class
+    } // for each class
 
     // for each definition
     for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())

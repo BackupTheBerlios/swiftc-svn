@@ -30,6 +30,7 @@
 
 #include "me/functab.h"
 #include "me/op.h"
+#include "me/offset.h"
 #include "me/struct.h"
 
 namespace me {
@@ -640,12 +641,12 @@ std::string BranchInstr::toString() const
 Spill::Spill(Reg* result, Reg* arg)
     : InstrBase(1, 1)
 {
-    swiftAssert( result->isMem(), "result must be a memory var" );
+    swiftAssert( result->isSpilled(), "result must be a memory var" );
     res_[0].reg_ = result;
     res_[0].oldVarNr_ = result->varNr_;
     res_[0].constraint_ = NO_CONSTRAINT;
 
-    swiftAssert( !arg->isMem(), "arg must not be a memory var" );
+    swiftAssert( !arg->isSpilled(), "arg must not be a memory var" );
     arg_[0].op_  = arg;
     arg_[0].constraint_  = NO_CONSTRAINT;
 }
@@ -671,12 +672,12 @@ std::string Spill::toString() const
 Reload::Reload(Reg* result, Reg* arg)
     : InstrBase(1, 1)
 {
-    swiftAssert( !result->isMem(), "result must not be a memory var" );
+    swiftAssert( !result->isSpilled(), "result must not be a memory var" );
     res_[0].reg_ = result;
     res_[0].oldVarNr_ = result->varNr_;
     res_[0].constraint_ = NO_CONSTRAINT;
 
-    swiftAssert( arg->isMem(), "arg must be a memory var" );
+    swiftAssert( arg->isSpilled(), "arg must be a memory var" );
     arg_[0].op_ = arg;
     arg_[0].constraint_  = NO_CONSTRAINT;
 }
@@ -688,7 +689,8 @@ Reload::Reload(Reg* result, Reg* arg)
 std::string Reload::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= reload(" << arg_[0].op_->toString() << ")";
+    oss << res_[0].reg_->toString() << "\t= reload(" 
+        << arg_[0].op_->toString() << ")";
 
     return oss.str();
 }
@@ -696,104 +698,103 @@ std::string Reload::toString() const
 //------------------------------------------------------------------------------
 
 /*
- * constructor
+ * constructor and destructor
  */
 
-Store::Store(Reg* result, Reg* arg, Struct* _struct, Member* member)
+Load::Load(Reg* result, Reg* location, Offset* offset)
     : InstrBase(1, 1)
-    , struct_(_struct)
-    , member_(member)
+    , offset_(offset)
 {
-    swiftAssert( result->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
-            "arg must be R_PTR or R_STACK");
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+            "must be an R_PTR");
 
     res_[0].reg_ = result;
     res_[0].constraint_ = NO_CONSTRAINT;
     res_[0].oldVarNr_ = result->varNr_;
 
-    arg_[0].op_ = arg;
+    arg_[0].op_ = location;
     arg_[0].constraint_ = NO_CONSTRAINT;
+}
+
+Load::~Load()
+{
+    delete offset_;
 }
 
 /*
  * further methods
  */
-
-Reg* Store::resReg()
-{
-    return res_[0].reg_;
-}
-
-Reg* Store::opReg()
-{
-    swiftAssert( typeid(*arg_[0].op_) == typeid(Reg),
-            "must be a node to a Reg" );
-    return (Reg*) arg_[0].op_;
-}
-
-std::string Store::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= Store(" << arg_[0].op_->toString() << ", ";
-
-#ifdef SWIFT_DEBUG
-    oss << struct_->id_ << ", " << member_->id_ << ')';
-#else // SWIFT_DEBUG
-    oss << struct_->nr_ << ", " << member_->nr_ << ')';
-#endif // SWIFT_DEBUG
-
-    return oss.str();
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor
- */
-
-Load::Load(Reg* result, Reg* arg, Struct* _struct, Member* member)
-    : InstrBase(1, 1)
-    , struct_(_struct)
-    , member_(member)
-{
-    swiftAssert( arg->type_ == Op::R_PTR || arg->type_ == Op::R_STACK,
-            "arg must be R_PTR or R_STACK");
-    swiftAssert(member->parent_ == _struct, "member does not belong to parent");
-
-    res_[0].reg_ = result;
-    res_[0].constraint_ = NO_CONSTRAINT;
-    res_[0].oldVarNr_ = result->varNr_;
-
-    arg_[0].op_ = arg;
-    arg_[0].constraint_ = NO_CONSTRAINT;
-}
-
-/*
- * further methods
- */
-
-Reg* Load::resReg()
-{
-    return res_[0].reg_;
-}
-
-Reg* Load::opReg()
-{
-    swiftAssert( typeid(*arg_[0].op_) == typeid(Reg),
-            "must be a node to a Reg" );
-    return (Reg*) arg_[0].op_;
-}
 
 std::string Load::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= Load(" << arg_[0].op_->toString() << ", ";
+    oss << res_[0].reg_->toString() << "\t= Load(" 
+        << arg_[0].op_->toString() << ", "
+        << offset_->toString() << ')';
 
-#ifdef SWIFT_DEBUG
-    oss << struct_->id_ << ", " << member_->id_ << ')';
-#else // SWIFT_DEBUG
-    oss << struct_->nr_ << ", " << member_->nr_ << ')';
-#endif // SWIFT_DEBUG
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+Store::Store(Reg* location, Op* arg, Offset* offset)
+    : InstrBase( 
+            (location->type_ == Op::R_STACK) ? 1 : 1, 
+            (location->type_ == Op::R_STACK) ? 1 : 2 )
+    , offset_(offset)
+{
+    arg_[0].op_ = arg;
+    arg_[0].constraint_ = NO_CONSTRAINT;
+
+    if (location->type_ == Op::R_STACK)
+    {
+        // -> store to a location on the stack
+        res_[0].reg_ = location;
+        res_[0].constraint_ = NO_CONSTRAINT;
+        res_[0].oldVarNr_ = location->varNr_;
+    }
+    else
+    {
+        // -> store to an arbitrary location in memory
+        swiftAssert(location->type_ == Op::R_PTR, "must be an R_PTR");
+        arg_[1].op_ = location;
+        arg_[1].constraint_ = NO_CONSTRAINT;
+    }
+}
+
+Store::~Store()
+{
+    delete offset_;
+}
+
+
+/*
+ * further methods
+ */
+
+std::string Store::toString() const
+{
+    std::ostringstream oss;
+
+    if ( res_.empty() )
+    {
+        // -> store to an arbitrary location in memory
+        oss << "\t\tStore("
+            << arg_[0].op_->toString() << ", "
+            << arg_[1].op_->toString();
+    }
+    else
+    {
+        // -> store to a location on the stack
+        oss << res_[0].reg_->toString() << "\t= Store(" 
+            << arg_[0]. op_->toString();
+    }
+
+    oss << ", (" << offset_->toString() << ')';
 
     return oss.str();
 }

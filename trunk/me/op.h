@@ -78,7 +78,13 @@ struct Op
 
         // pointers
         R_PTR       = 1 << 15, ///< A pointer to an arbitrary location.
-        R_STACK     = 1 << 16, ///< A pointer to a known location on the stack.
+
+        /** 
+         * @brief A variable on the local stack frame. 
+         *
+         * This is not a spilled local. See \a Memory for details.
+         */
+        R_STACK     = 1 << 16, 
 
         // Use this to do something special by hand
         R_SPECIAL   = 1 << 17
@@ -183,14 +189,38 @@ struct Reg : public Op
 {
     enum
     {
-        NOT_COLORED_YET = -1,
+        /// Reg has not been colored so far.
+        NOT_COLORED_YET    = -1, 
+
+        /**
+         * @brief This is an at compile known location on the stack. 
+         *
+         * \a Reg::type_ must be Op::Type::R_MEM
+         */
+        STACK_LOCATION     = -2, 
+
+        /**
+         * @brief This is an arbitrary location in memory.
+         *
+         * This may be an location on the heap, one on the stack or in the
+         * data segment.
+         *
+         * \a Reg::type_ must be Op::Type::R_MEM
+         */
+        ARBITRARY_LOCATION = -3
     };
 
     /**
+     * @brief Name of this \a Reg in the current \a Function.
+     *
      * varNr_ >= 0 a variable which is already defined only once <br>
      * varNr_  < 0 a variable which must be converted to SSA form <br>
      *
      * When in SSA-Form all varNr_ < 0 will be replaced by names > 0
+     *
+     * This is only important when invoking \a Cfg::constructSSAForm. If you
+     * use \a Cfg::reconstructSSAForm \a varNr_ doesn't matter. There you
+     * have to manually take care of proper \a DefUse chains.
      */
     int varNr_;
 
@@ -201,7 +231,8 @@ struct Reg : public Op
      */
     int color_;
 
-    bool isMem_;
+    /// Is this currently in a spilled memory loaction?
+    bool isSpilled_;
 
     DefUse def_;      ///< knows where the var is defined
     DefUseList uses_; ///< knows all uses of this var
@@ -216,10 +247,12 @@ struct Reg : public Op
      */
 
 #ifdef SWIFT_DEBUG
-    Reg(Type type, int varNr, std::string* id = 0);
+    Reg(Type type, int varNr, const std::string* id = 0);
 #else // SWIFT_DEBUG
     Reg(Type type, int varNr);
 #endif // SWIFT_DEBUG
+
+    Reg* clone() const;
 
     /*
      * further methods
@@ -240,7 +273,7 @@ struct Reg : public Op
      *
      * @return Is this Reg a memory location?
      */
-    bool isMem() const;
+    bool isSpilled() const;
 
     bool colorReg(int typeMask) const;
 

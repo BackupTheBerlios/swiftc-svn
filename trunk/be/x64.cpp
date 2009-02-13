@@ -51,6 +51,11 @@ int X64::getPtrSize() const
     return 8;
 }
 
+int X64::alignOf(int size) const
+{
+    return size;
+}
+
 void X64::regAlloc(me::Function* function) 
 {
     X64RegAlloc(function).process();

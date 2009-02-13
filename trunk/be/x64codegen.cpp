@@ -70,14 +70,15 @@ void X64CodeGen::process()
 {
     static int counter = 1;
 
-    ofs_ << "\t.p2align 4,,15\n";
-    ofs_ << ".globl swift_" << counter << '\n';
-    ofs_ << "\t.type\tswift_" << counter << ", @function\n";
-    ofs_ << "swift_" << counter << ":\n";
-    ofs_ << ".LFB" << counter << ":\n";
+    ofs_ << "\t.p2align 4,,15\n"
+         << ".globl swift_" << counter << '\n'
+         << "\t.type\tswift_" << counter << ", @function\n"
+         << "swift_" << counter << ":\n"
+         << ".LFB" << counter << ":\n";
 
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
+
     int localStackSize = (function_->spillSlots_ + 1) * 16;
     ofs_ << "\tenter\t$0, $" << localStackSize << '\n';
 
@@ -111,6 +112,16 @@ void X64CodeGen::process()
             {
                 genPhiInstr( currentNode, currentNode->succ_.first()->value_ );
                 phisInserted = true;
+            }
+        }
+        else if ( typeid(*instr) == typeid(me::AssignInstr) )
+        {
+            me::AssignInstr* ai = (me::AssignInstr*) instr;
+
+            if (ai->kind_ == '=')
+            {
+                if ( typeid(*ai->arg_[0].op_) == typeid(me::Undef) )
+                    continue; // ignore defition of undefined vars
             }
         }
         else if ( typeid(*instr) == typeid(me::PhiInstr) )
@@ -253,7 +264,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         me::Reg* srcReg = ((me::Reg*) phi->arg_[phiIndex].op_);
         me::Reg* dstReg = phi->result();
 
-        if ( dstReg->isMem() )
+        if ( dstReg->isSpilled() )
             continue; // TODO
 
         // is this a pointless definition? (should be optimized away)
@@ -514,14 +525,14 @@ int x64lex()
             switch (type)
             {
                 case me::Op::R_SPECIAL:
-                case me::Op::R_BOOL:  return X64_BOOL;
+                case me::Op::R_BOOL:   return X64_BOOL;
 
-                case me::Op::R_INT8:  return X64_INT8;
-                case me::Op::R_INT16: return X64_INT16;
-                case me::Op::R_INT32: return X64_INT32;
-                case me::Op::R_INT64: return X64_INT64;
-                case me::Op::R_SAT8:  return X64_SAT8;
-                case me::Op::R_SAT16: return X64_SAT16;
+                case me::Op::R_INT8:   return X64_INT8;
+                case me::Op::R_INT16:  return X64_INT16;
+                case me::Op::R_INT32:  return X64_INT32;
+                case me::Op::R_INT64:  return X64_INT64;
+                case me::Op::R_SAT8:   return X64_SAT8;
+                case me::Op::R_SAT16:  return X64_SAT16;
 
                 case me::Op::R_UINT8:  return X64_UINT8;
                 case me::Op::R_UINT16: return X64_UINT16;
@@ -563,7 +574,7 @@ int x64lex()
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
 
-                if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->isMem() )
+                if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->isSpilled() )
                     return X64_REG_2;
 
                 if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->color_ == reg->color_ )

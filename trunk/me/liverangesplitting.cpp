@@ -99,8 +99,8 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
         Reg* newReg = function_->newSSA(reg->type_);
 #endif // SWIFT_DEBUG
 
-        if ( reg->isMem() )
-            newReg->isMem_ = true;
+        if ( reg->isSpilled() )
+            newReg->isSpilled_ = true;
 
         // create phi instruction
         swiftAssert( bbNode->pred_.size() == 1, "must have exactly one predecessor" );

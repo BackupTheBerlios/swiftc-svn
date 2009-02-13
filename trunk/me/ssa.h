@@ -30,7 +30,8 @@
 namespace me {
 
 struct Struct;
-struct Member;
+struct Memory;
+struct Offset;
 
 //------------------------------------------------------------------------------
 
@@ -479,45 +480,86 @@ struct Reload : public InstrBase
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Load from a stack location or an arbitrary memory location.
+ *
+ * A Load actually has two versions: <br>
+ * - reg = Load(stack_var, offset) <br>
+ * - reg = Load(ptr, offset) <br>
+ * The former variant fetches an item from the stack. 
+ * The latter one fetches an item from an arbitrary memory location. <br>
+ * Note that the offset is not a real argument it is just a member of this
+ * class although the notation might imply that.
+ */
 struct Load : public InstrBase
 {
-    Struct* struct_;
-    Member* member_;
+    Offset* offset_;
 
     /*
-     * constructor
+     * constructor and destructor
      */
 
-    Load(Reg* result, Reg* arg, Struct* _struct, Member* member);
+    /** 
+     * @brief Loads the the content of \p mem via \p ptr with an at 
+     * compile time known \p offset into \p result.
+     * 
+     * @param result A proper pseudo-register. Is an lvalue.
+     *
+     * @param location The memory location to load from. Must be either of 
+     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      This is an rvalue.
+     *
+     * @param offset The offset to the base pointer / stack location.
+     */
+    Load(Reg* result, Reg* location, Offset* offset);
+    ~Load();
 
     /*
      * further methods
      */
-
-    Reg* resReg();
-    Reg* opReg();
 
     std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Store into a stack location or an arbitrary memory location.
+ *
+ * A Store actually has two versions: <br>
+ * - stack_var = Store(arg, offset) <br>
+ * -             Store(arg, ptr, offset) <br>
+ * The former variant stores an item to the stack. 
+ * The latter one stores an item to an arbitrary memory location. <br>
+ * Note that the offset is not a real argument it is just a member of this
+ * class although the notation might imply that.
+ */
 struct Store : public InstrBase
 {
-    Struct* struct_;
-    Member* member_;
+    Offset* offset_;
+
     /*
-     * constructor
+     * constructor and destructor
      */
 
-    Store(Reg* result, Reg* arg, Struct* _struct, Member* member);
+    /** 
+     * @brief Loads the the content of \p mem via \p ptr with an at 
+     * compile time known \p offset into \p result.
+     * 
+     * @param location The memory location to store to. Must be either of 
+     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      In the former case this is an lvalue in the latter one an rvalue.
+     *
+     * @param arg The rvalue to be stored.
+     *
+     * @param offset The offset to the base pointer / stack location.
+     */
+    Store(Reg* location, Op* arg, Offset* offset);
+    ~Store();
 
     /*
      * further methods
      */
-
-    Reg* resReg();
-    Reg* opReg();
 
     std::string toString() const;
 };

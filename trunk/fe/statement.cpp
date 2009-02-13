@@ -31,7 +31,9 @@
 #include "fe/var.h"
 
 #include "me/functab.h"
+#include "me/offset.h"
 #include "me/ssa.h"
+#include "me/struct.h"
 
 namespace swift {
 
@@ -231,7 +233,7 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
-    expr_->needAsLValue_ = true;
+    expr_->neededAsLValue_ = true;
     bool result = expr_->analyze();
 
     Assignment assignment(expr_->type_, exprList_, line_);
@@ -250,13 +252,25 @@ bool AssignStatement::analyze()
 
 void AssignStatement::genSSA()
 {
-    if ( expr_->type_->isBuiltin() )
+    swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), 
+            "expr_->place must be a me::Reg*" );
+
+    if ( typeid(*expr_) == typeid(MemberAccess))
     {
-        swiftAssert( dynamic_cast<me::Reg*>(expr_->place_), "expr_->place must be a me::Reg*");
-        me::functab->appendInstr( new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+        MemberAccess* ma = (MemberAccess*) expr_;
+
+        me::StructOffset* so = new me::StructOffset(ma->meStruct_, ma->meMember_);
+        me::Store* store = new me::Store( 
+                (me::Reg*) ma->place_,              // memory variable
+                (me::Reg*) exprList_->expr_->place_,// argument 
+                so);                                // offset 
+        me::functab->appendInstr(store);
     }
     else
-        swiftAssert(false, "TODO");
+    {
+        me::functab->appendInstr( 
+                new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+    }
 }
 
 //------------------------------------------------------------------------------

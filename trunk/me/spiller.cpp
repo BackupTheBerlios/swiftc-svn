@@ -227,7 +227,7 @@ void Spiller::insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo)
     swiftAssert( spillMap_.find(reg) != spillMap_.end(), "must be in the spillMap_" )
 
     Reg* mem = spillMap_[reg];
-    swiftAssert( mem->isMem(), "must be a memory reg" );
+    swiftAssert( mem->isSpilled(), "must be a memory reg" );
 
     // create new result
 #ifdef SWIFT_DEBUG
@@ -707,7 +707,7 @@ void Spiller::combine(BBNode* bbNode)
             swiftAssert( typeid(*phi->arg_[i].op_) == typeid(Reg),
                     "must be a Reg here" );
             Reg* phiArg = (Reg*) phi->arg_[i].op_;
-            swiftAssert( !phiArg->isMem(), "must not be a memory location" );
+            swiftAssert( !phiArg->isSpilled(), "must not be a memory location" );
 
             if ( phiSpill && preOut.contains(phiArg) )
             {
@@ -740,7 +740,7 @@ void Spiller::combine(BBNode* bbNode)
         if (phiSpill)
         {
             // convert phi result to a memory location
-            phiRes->isMem_ = true;
+            phiRes->isSpilled_ = true;
 
             // add to spills_
             RegDefUse* rdu = new RegDefUse();

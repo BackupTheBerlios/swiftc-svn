@@ -64,7 +64,7 @@ std::string suffix(int type)
 
 std::string reg2str(me::Reg* reg)
 {
-    if ( reg->isMem() )
+    if ( reg->isSpilled() )
     {
         std::ostringstream oss;
         oss << (reg->color_ + 1) * 16 << "(%rbp)";

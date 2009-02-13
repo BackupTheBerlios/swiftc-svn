@@ -62,6 +62,7 @@ public:
     virtual Op::Type getPreferedReal() const = 0;
     virtual Op::Type getPreferedIndex() const = 0;
     virtual int getPtrSize() const = 0;
+    virtual int alignOf(int size) const = 0;
 
     virtual void regAlloc(Function* function) = 0;
     virtual void dumpConstants(std::ofstream& ofs) = 0;

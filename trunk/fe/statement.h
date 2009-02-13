@@ -118,7 +118,7 @@ struct Declaration : public Statement
 /**
  * @brief This is an ordinary assignment. 
  *
- * In contrast to other languages assignments in Swift are no expresions 
+ * In contrast to other languages assignments in Swift are not expresions 
  * but statements.
  */
 struct AssignStatement : public Statement

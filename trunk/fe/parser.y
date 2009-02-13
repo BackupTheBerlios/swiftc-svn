@@ -207,6 +207,11 @@ class_definition
         {
             $<class_>$ = new Class($2, symtab->module_, currentLine);
             symtab->insert($<class_>$);
+#ifdef SWIFT_DEBUG
+            $<class_>$->meStruct_ = me::functab->newStruct(*$2);
+#else // SWIFT_DEBUG
+            $<class_>$->meStruct_ = me::functab->newStruct();
+#endif // SWIFT_DEBUG
         }
         class_body END EOL
         {
@@ -214,8 +219,6 @@ class_definition
             $<class_>$->classMember_= $5;
             if ( !$<class_>$->hasCreate_ )
                 $<class_>$->createDefaultConstructor();
-
-            me::functab->leaveStruct();
         }
     ;
 

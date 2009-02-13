@@ -113,6 +113,7 @@ ADD_EXECUTABLE (swift
     me/livenessanalysis.cpp
     me/liverangesplitting.cpp
     me/op.cpp
+    me/offset.cpp
     me/spiller.cpp
     me/ssa.cpp
     me/struct.cpp

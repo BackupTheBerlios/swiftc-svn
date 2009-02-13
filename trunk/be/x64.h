@@ -32,7 +32,9 @@ public:
     virtual me::Op::Type getPreferedUInt() const;
     virtual me::Op::Type getPreferedReal() const;
     virtual me::Op::Type getPreferedIndex() const;
+
     virtual int getPtrSize() const;
+    virtual int alignOf(int size) const;
 
     virtual void regAlloc(me::Function* function);
     virtual void dumpConstants(std::ofstream& ofs);

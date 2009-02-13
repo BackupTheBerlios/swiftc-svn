@@ -102,7 +102,7 @@ Reg* Function::newVar(Op::Type type, std::string* id)
 Reg* Function::newMemSSA(Op::Type type, std::string* id /*= 0*/)
 {
     Reg* reg = new Reg(type, regCounter_++, id);
-    reg->isMem_ = true;
+    reg->isSpilled_ = true;
     insert(reg);
 
     return reg;
@@ -129,7 +129,7 @@ Reg* Function::newVar(Op::Type type)
 Reg* Function::newMemSSA(Op::Type type)
 {
     Reg* reg = new Reg(type, regCounter_++);
-    reg->isMem_ = true;
+    reg->isSpilled_ = true;
     insert(reg);
 
     return reg;
@@ -264,8 +264,8 @@ void FunctionTable::appendInstrNode(InstrNode* node)
 
 void FunctionTable::buildUpME()
 {
-    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-        iter->second->analyze();
+    //for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+        //iter->second->analyze();
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
@@ -334,10 +334,10 @@ Member* FunctionTable::appendMember(Op::Type type, const std::string& id)
     return structStack_.top()->append(type,id);
 }
 
-Member* FunctionTable::appendMember(Struct* _struct, const std::string& id)
-{
-    return structStack_.top()->append(_struct, id);
-}
+//Member* FunctionTable::appendMember(Struct* _struct, const std::string& id)
+//{
+    //return structStack_.top()->append(_struct, id);
+//}
 
 #else // SWIFT_DEBUG
 

@@ -914,8 +914,8 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             Reg* newReg = function_->newSSA(reg->type_);
 #endif // SWIFT_DEBUG
 
-            if ( rdu->defs_.first()->value_.reg_->isMem() )
-                newReg->isMem_ = true;
+            if ( rdu->defs_.first()->value_.reg_->isSpilled() )
+                newReg->isSpilled_ = true;
 
             // create phi instruction
             PhiInstr* phi = new PhiInstr( newReg, bbNode->pred_.size() );

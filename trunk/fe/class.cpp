@@ -42,16 +42,7 @@ namespace swift {
 Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : Definition(id, parent, line)
     , hasCreate_(false)
-{
-    // create appropriate middle-end struct
-#ifdef SWIFT_DEBUG
-    meStruct_ = me::functab->newStruct(*id);
-#else // SWIFT_DEBUG
-    meStruct_ = me::functab->newStruct();
-#endif // SWIFT_DEBUG
-
-    me::functab->enterStruct(meStruct_);
-}
+{}
 
 Class::~Class()
 {
@@ -83,11 +74,8 @@ void Class::createDefaultConstructor()
 bool Class::analyze()
 {
     const std::string& id = *id_;
-    if (   id ==  "int" || id ==  "int8" || id ==  "int16" || id ==  "int32" || id ==  "int64"
-        || id == "uint" || id == "uint8" || id == "uint16" || id == "uint32" || id == "uint64"
-        || id == "sat8" || id == "sat16" || id ==  "usat8" || id == "usat16"
-        || id == "real" || id == "real32"|| id ==  "real64"
-        || id == "bool")
+
+    if ( BaseType::typeMap_->find(id) != BaseType::typeMap_->end() )
     {
         // skip builtin types.
         return true;
@@ -179,15 +167,7 @@ ClassMember::~ClassMember()
 MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : ClassMember(id, parent, line)
     , type_(type)
-{
-#ifdef SWIFT_DEBUG
-    meMember_ = me::functab->appendMember( 
-            (*BaseType::typeMap_)[*type_->baseType_->id_], *id_);
-#else // SWIFT_DEBUG
-    meMember_ = me::functab->appendMember( 
-            (*BaseType::typeMap_)[*type_->baseType_->id_] );
-#endif // SWIFT_DEBUG
-}
+{}
 
 MemberVar::~MemberVar()
 {

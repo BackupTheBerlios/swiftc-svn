@@ -35,7 +35,9 @@
 
 #include "me/functab.h"
 #include "me/op.h"
+#include "me/offset.h"
 #include "me/ssa.h"
+#include "me/struct.h"
 
 /*
  * - every expr has to set its type, containing of
@@ -58,7 +60,7 @@ namespace swift {
 
 Expr::Expr(int line)
     : Node(line)
-    , needAsLValue_(false)
+    , neededAsLValue_(false)
     , type_(0)
 {}
 
@@ -100,7 +102,7 @@ me::Op::Type Literal::toType() const
 
 bool Literal::analyze()
 {
-    if (needAsLValue_)
+    if (neededAsLValue_)
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -264,17 +266,17 @@ Id::~Id()
 
 bool Id::analyze()
 {
-    Var* var = symtab->lookupVar(id_);
+    var_ = symtab->lookupVar(id_);
 
-    if (var == 0)
+    if (var_ == 0)
     {
         errorf(line_, "'%s' was not declared in this scope", id_->c_str());
         return false;
     }
     // else
 
-    type_ = var->type_->clone();
-    place_ = var->reg_;
+    type_  = var_->type_->clone();
+    place_ = var_->reg_;
 
     return true;
 }
@@ -304,7 +306,7 @@ UnExpr::~UnExpr()
 
 bool UnExpr::analyze()
 {
-    if (needAsLValue_)
+    if (neededAsLValue_)
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -415,7 +417,7 @@ std::string BinExpr::getOpString() const
 
 bool BinExpr::analyze()
 {
-    if (needAsLValue_)
+    if (neededAsLValue_)
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -576,23 +578,36 @@ bool MemberAccess::analyze()
     MemberVar* member = iter->second;
     type_ = member->type_->clone();
 
+    me::Reg* reg;
+
+    if (neededAsLValue_)
+    {
+        if ( typeid(*expr_) == typeid(Id) )
+            reg = ((Id*) expr_)->var_->reg_;
+        else
+            swiftAssert(false, "TODO");
+    }
+    else
+    {
 #ifdef SWIFT_DEBUG
-    std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
+        std::string str = "tmp";
+        reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
+        reg = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
+    }
 
     place_ = reg;
 
     swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), "TODO" );
-    me::Struct* meStruct = _class->meStruct_;
-    me::Member* meMember = member->meMember_;
+    meStruct_ = _class->meStruct_;
+    meMember_ = member->meMember_;
 
-    if (!needAsLValue_)
+    if (!neededAsLValue_)
     {
-        me::functab->appendInstr( 
-                new me::Load(reg, (me::Reg*) expr_->place_, meStruct, meMember) );
+        me::StructOffset* so = new me::StructOffset(meStruct_, meMember_);
+        me::Load* load = new me::Load( reg, (me::Reg*) expr_->place_, so );
+        me::functab->appendInstr(load); 
     }
 
     return true;
