@@ -503,12 +503,17 @@ int x64lex()
                 x64lval.reload_ = reload;
                 return X64_RELOAD;
             }
-            else if ( instrTypeId == typeid(me::PhiInstr) )
+            else if ( instrTypeId == typeid(me::Load) )
             {
-                swiftAssert(false, "unreachable code");
+                // TODO
+            }
+            else if ( instrTypeId == typeid(me::Store) )
+            {
+                // TODO
             }
             else
             {
+                swiftAssert( instrTypeId == typeid(me::PhiInstr), "unreachable code" );
                 swiftAssert( instrTypeId == typeid(me::NOP), "must be a NOP" );
                 location = END;
                 return X64_NOP;

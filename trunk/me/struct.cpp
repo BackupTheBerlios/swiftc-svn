@@ -251,23 +251,17 @@ Member* Struct::lookup(int nr)
 
 void Struct::analyze()
 {
-    std::cout << id_ << std::endl;
-
     size_ = 0;
 
     // for each member
     for (size_t i = 0; i < members_.size(); ++i)
     {
         Member* member = members_[i];
-        std::cout << "\t" << member->id_ << std::endl;
 
         if ( !member->alreadyAnalyzed() )
             member->analyze();
 
         member->offset_ = calcAlignedOffset(size_, member->size_);
-
-        std::cout << "\t" << member->id_ << " size: " << member->size_ << " offset: " << member->offset_ << std::endl;
-
         size_ += member->offset_ + member->size_;
     }
 }
