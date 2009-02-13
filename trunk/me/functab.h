@@ -252,18 +252,12 @@ struct FunctionTable
     Struct* currentStruct();
 
 #ifdef SWIFT_DEBUG
-
     Struct* newStruct(const std::string& id);
-    Member* appendMember(Op::Type type, const std::string& id);
-    Member* appendMember(Struct* _struct, const std::string& id);
-
 #else // SWIFT_DEBUG
-
     Struct* newStruct();
-    Member* appendMember(Op::Type type);
-    //Member* appendMember(Struct* _struct);
-
 #endif // SWIFT_DEBUG
+
+    void appendMember(Member* member);
 
 };
 

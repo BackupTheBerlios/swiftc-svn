@@ -264,8 +264,8 @@ void FunctionTable::appendInstrNode(InstrNode* node)
 
 void FunctionTable::buildUpME()
 {
-    //for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-        //iter->second->analyze();
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+        iter->second->analyze();
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
@@ -329,16 +329,6 @@ Struct* FunctionTable::newStruct(const std::string& id)
     return _struct;
 }
 
-Member* FunctionTable::appendMember(Op::Type type, const std::string& id)
-{
-    return structStack_.top()->append(type,id);
-}
-
-//Member* FunctionTable::appendMember(Struct* _struct, const std::string& id)
-//{
-    //return structStack_.top()->append(_struct, id);
-//}
-
 #else // SWIFT_DEBUG
 
 Struct* FunctionTable::newStruct()
@@ -349,16 +339,11 @@ Struct* FunctionTable::newStruct()
     return str;
 }
 
-Member* FunctionTable::appendMember(Op::Type type)
-{
-    return structStack_.top()->append(type);
-}
-
-Member* FunctionTable::appendMember(Struct* _struct)
-{
-    return structStack_.top()->append(_struct);
-}
-
 #endif // SWIFT_DEBUG
+
+void FunctionTable::appendMember(Member* member)
+{
+    structStack_.top()->append(member);
+}
 
 } // namespace me

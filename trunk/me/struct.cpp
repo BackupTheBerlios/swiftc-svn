@@ -19,9 +19,17 @@
 
 #include "me/struct.h"
 
+#include <iostream>
 #include <typeinfo>
 
 #include "me/arch.h"
+
+/*
+ * TODO Cyclic dependencies between structs are not recognized yet. 
+ * This results in an endless recursion.
+ *
+ * TODO empty structs are not handled correctly
+ */
 
 /*
  * globals
@@ -81,15 +89,16 @@ int type2size(me::Op::Type type)
  */
 int calcAlignedOffset(int offset, int size)
 {
-    int newOffset = offset + size;
+    swiftAssert(size != 0, "size is zero");
+    int result = offset;
     int align = me::arch->alignOf(size);
-    int mod = newOffset % align;
+    int mod = result % align;
 
     // do we have to adjust the offset due to alignment?
-    if (mod)
-        newOffset += align - mod;
+    if (mod != 0)
+        result += align - mod;
 
-    return newOffset;
+    return result;
 }
 
 } // namespace
@@ -99,14 +108,14 @@ int calcAlignedOffset(int offset, int size)
 namespace me {
 
 /*
- * constructor and destructor
+ * constructor 
  */
 
 #ifdef SWIFT_DEBUG
 
 Member::Member(const std::string& id)
     : nr_(namecounter++)
-    , size_(0)
+    , size_(NOT_ANALYZED)
     , offset_(0)
     , id_(id)
 {}
@@ -115,11 +124,20 @@ Member::Member(const std::string& id)
 
 Member::Member()
     : nr_(namecounter++)
-    , size_(0)
+    , size_(NOT_ANALYZED)
     , offset_(0)
 {}
 
 #endif // SWIFT_DEBUG
+
+/*
+ * further methods
+ */
+
+bool Member::alreadyAnalyzed() const
+{
+    return size_ != NOT_ANALYZED;
+}
 
 //------------------------------------------------------------------------------
 
@@ -129,14 +147,14 @@ Member::Member()
 
 #ifdef SWIFT_DEBUG
 
-SimpleType::SimpleType(Op::Type type, const std::string& id)
+AtomicMember::AtomicMember(Op::Type type, const std::string& id)
     : Member(id)
     , type_(type)
 {}
 
 #else // SWIFT_DEBUG
 
-SimpleType::SimpleType(Op::Type type)
+AtomicMember::AtomicMember(Op::Type type)
     , type_(type)
 {}
 
@@ -146,15 +164,16 @@ SimpleType::SimpleType(Op::Type type)
  * further methods
  */
 
-void SimpleType::analyze()
+void AtomicMember::analyze()
 {
+    size_ = type2size(type_);
 }
 
 //------------------------------------------------------------------------------
 
 #ifdef SWIFT_DEBUG
 
-FixedSizeArray::FixedSizeArray(Member* type, size_t num, const std::string& id)
+ArrayMember::ArrayMember(Op::Type type, size_t num, const std::string& id)
     : Member(id)
     , type_(type)
     , num_(num)
@@ -162,8 +181,8 @@ FixedSizeArray::FixedSizeArray(Member* type, size_t num, const std::string& id)
 
 #else // SWIFT_DEBUG
 
-FixedSizeArray::FixedSizeArray(Member* type, size_t num);
-    , type_(type)
+ArrayMember::ArrayMember(Op::Type type, size_t num);
+    : type_(type)
     , num_(num)
 {}
 
@@ -173,9 +192,10 @@ FixedSizeArray::FixedSizeArray(Member* type, size_t num);
  * further methods
  */
 
-//void FixedSizeArray::analyze()
-//{
-//}
+void ArrayMember::analyze()
+{
+    size_ = type2size(type_) * num_;
+}
     
 //------------------------------------------------------------------------------
 
@@ -197,7 +217,8 @@ Struct::Struct()
 #endif // SWIFT_DEBUG
 
 Struct::~Struct()
-{
+{ 
+    // Delete all members which ar not Structs. Those will be deleted be me::functab
     for (size_t i = 0; i < members_.size(); ++i)
     {
         if ( typeid(*members_[i]) != typeid(Struct) )
@@ -209,45 +230,14 @@ Struct::~Struct()
  * further methods
  */
 
-#ifdef SWIFT_DEBUG
-
-Member* Struct::append(Op::Type type, const std::string& id)
+void Struct::append(Member* member)
 {
-    Member* member = new SimpleType(type, id);
-    memberMap_[member->nr_] = member;
+    swiftAssert( memberMap_.find(member->nr_) == memberMap_.end(),
+            "already inserted" );
+
     members_.push_back(member);
-
-    return member;
-}
-
-//Member* Struct::append(Struct* _struct, const std::string& id)
-//{
-    //Member* member = new Member(this, _struct, id);
-    //members_[member->nr_] = member;
-
-    //return member;
-//}
-
-#else // SWIFT_DEBUG
-
-Member* Struct::append(Op::Type type)
-{
-    Member* member = new SimpleType(this, type);
     memberMap_[member->nr_] = member;
-    members_.push_back(member);
-
-    return member;
 }
-
-/*Member* Struct::append(Struct* _struct)*/
-//{
-    //Member* member = new Member(this, _struct);
-    //members_[member->nr_] = member;
-
-    //return member;
-/*}*/
-
-#endif // SWIFT_DEBUG
 
 Member* Struct::lookup(int nr)
 {
@@ -259,11 +249,27 @@ Member* Struct::lookup(int nr)
         return iter->second;
 }
 
-//void Struct::analyze()
-//{
-    //if (size_ != NOT_ANALYZED)
-        //return; // has already been analyzed
+void Struct::analyze()
+{
+    std::cout << id_ << std::endl;
 
-//}
+    size_ = 0;
+
+    // for each member
+    for (size_t i = 0; i < members_.size(); ++i)
+    {
+        Member* member = members_[i];
+        std::cout << "\t" << member->id_ << std::endl;
+
+        if ( !member->alreadyAnalyzed() )
+            member->analyze();
+
+        member->offset_ = calcAlignedOffset(size_, member->size_);
+
+        std::cout << "\t" << member->id_ << " size: " << member->size_ << " offset: " << member->offset_ << std::endl;
+
+        size_ += member->offset_ + member->size_;
+    }
+}
 
 } // namespace me

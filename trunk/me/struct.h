@@ -32,34 +32,39 @@ struct Struct;
 
 /**
  * @brief With Member you can build a complex layout of data types, 
- * which all have an at compile time known offset to the base pointer.
+ * which all have an at compile time known offset to the base.
  *
- * Member instances are types for locations in member. This is a different thing
+ * Member instances are types for locations in memory. This is a different thing
  * than spilled locals of type \a me::Op::Type: 
  * The middle-end assumes that there are infinit registers available. Spilling
  * is only a product of the fact, they are limited in reality.
  *
  * \a Member is the base class for all more complex data types. It is assumed
  * that in a first pass all \a Struct objects are registered as types. In a
- * second pass all member can be added. 
+ * second pass all members can be added. 
  *
- * Each Member is given a unique 'name': \a nr_. However this name is only
- * needed when it is used within a Struct.
- * 
+ * Each \a Member instance has a unique \a nr_ which can be used for lookups.
+ *
  * Each \a Member class must implement \a analyze. This must be invoked on all
  * root data types. \a size_ and \a offset_ will be calculated there.
- *
- * \a parent_ points to the parent Struct type. \a size_ and \a offset_ are 
- * calculated relative to that. If it does not belong to a parent Struct
- * or this is a root Struct set it to 0.
  *
  * For better debugging you can use the \a id_ member.
  */
 struct Member
 {
-    int nr_;        ///< Global name.
-    int size_;      ///< Size in bytes of this \a Member.
-    int offset_;    ///< Offest in bytes relative to its \a parent_.
+    enum 
+    {
+        NOT_ANALYZED = -1
+    };
+
+    /// A Unique global name.
+    int nr_;
+
+    /// Size in bytes of this \a Member or \a NOT_ANALYZED if not yet analyzed.
+    int size_; 
+
+    ///< Offset in bytes of this \a Member relative to its direct root \a Struct.
+    int offset_;
 
 #ifdef SWIFT_DEBUG
     std::string id_;///< Use this for additional debugging information.
@@ -81,7 +86,9 @@ struct Member
      * further methods
      */
 
-    //virtual void analyze() = 0;
+    virtual void analyze() = 0;
+
+    bool alreadyAnalyzed() const;
 };
 
 //------------------------------------------------------------------------------
@@ -91,7 +98,7 @@ struct Member
  *
  * This means one of \a me::Op::Type.
  */
-struct SimpleType : public Member
+struct AtomicMember : public Member
 {
     Op::Type type_;
 
@@ -100,9 +107,9 @@ struct SimpleType : public Member
      */
 
 #ifdef SWIFT_DEBUG
-    SimpleType(Op::Type type, const std::string& id);
+    AtomicMember(Op::Type type, const std::string& id);
 #else // SWIFT_DEBUG
-    SimpleType(Op::Type type);
+    AtomicMember(Op::Type type);
 #endif // SWIFT_DEBUG
 
     /*
@@ -119,9 +126,9 @@ struct SimpleType : public Member
  *
  * The number of elemets \a size_ is fix and must be known at compile time.
  */
-struct FixedSizeArray : public Member
+struct ArrayMember : public Member
 {
-    Member* type_;
+    Op::Type type_;
     const size_t num_;
 
     /*
@@ -129,10 +136,16 @@ struct FixedSizeArray : public Member
      */
 
 #ifdef SWIFT_DEBUG
-    FixedSizeArray(Member* type, size_t num, const std::string& id);
+    ArrayMember(Op::Type type, size_t num, const std::string& id);
 #else // SWIFT_DEBUG
-    FixedSizeArray(Member* type, size_t num);
+    ArrayMember(Op::Type type, size_t num);
 #endif // SWIFT_DEBUG
+
+    /*
+     * further methods
+     */
+
+    virtual void analyze();
 };
 
 //------------------------------------------------------------------------------
@@ -150,7 +163,7 @@ struct Struct : public Member
     /// All members in chronological order.
     Members members_;
 
-    /// All members sorted by global number.
+    /// All members sorted by global name number.
     typedef std::map<int, Member*> MemberMap;
     MemberMap memberMap_;
 
@@ -170,17 +183,9 @@ struct Struct : public Member
      * further methods
      */
 
-#ifdef SWIFT_DEBUG
-    Member* append(Op::Type type, const std::string& id);
-    //Member* append(Struct* _struct, const std::string& id);
-#else // SWIFT_DEBUG
-    Member* append(Op::Type type);
-    //Member* append(Struct* _struct);
-#endif // SWIFT_DEBUG
-
+    void append(Member* member);
     Member* lookup(int nr);
-
-    //void analyze();
+    virtual void analyze();
 };
 
 } // namespace me

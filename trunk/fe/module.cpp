@@ -26,6 +26,7 @@
 #include "fe/type.h"
 
 #include "me/functab.h"
+#include "me/struct.h"
 
 namespace swift {
 
@@ -69,11 +70,13 @@ bool Module::analyze()
                 MemberVar* mv = (MemberVar*) iter;
 
 #ifdef SWIFT_DEBUG
-                mv->meMember_ = me::functab->appendMember( 
-                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_], *id_);
+                mv->meMember_ = new me::AtomicMember(
+                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_], *mv->id_ );
+                me::functab->appendMember(mv->meMember_);
 #else // SWIFT_DEBUG
-                mv->meMember_ = me::functab->appendMember( 
+                mv->meMember_ = new me::AtomicMember(
                         (*BaseType::typeMap_)[*mv->type_->baseType_->id_] );
+                me::functab->appendMember(mv->meMember_);
 #endif // SWIFT_DEBUG
 
             } // for each MemberVar
