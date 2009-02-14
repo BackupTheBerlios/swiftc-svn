@@ -139,7 +139,7 @@ const Sig::Params::Node* Sig::findFirstOut() const
     return findFirstOut(dummy);
 }
 
-Param* Sig::findParam(std::string* id)
+Param* Sig::findParam(const std::string* id)
 {
     PARAMS_EACH(iter, params_)
     {
@@ -194,9 +194,9 @@ Scope::~Scope()
     further methods
 */
 
-Local* Scope::lookupLocal(std::string* id)
+Local* Scope::lookupLocal(const std::string* id)
 {
-    LocalMap::iterator iter = locals_.find(id);
+    LocalMap::const_iterator iter = locals_.find(id);
     if ( iter != locals_.end() )
         return iter->second;
     else

@@ -42,10 +42,10 @@ struct Definition;
 struct Module : public Symbol
 {
     typedef List<Definition*> DefinitionList;
-    typedef std::map<std::string*, Class*, StringPtrCmp> ClassMap;
+    typedef std::map<const std::string*, Class*, StringPtrCmp> ClassMap;
 
     DefinitionList definitions_; ///< Linked List of Definition objects.
-    ClassMap classes_; ///< Each Module knows all its classes, sorted by the identifier.
+    ClassMap classes_; ///< Each Module knows all its classes, sorted by its identifier.
 
     /*
      * constructor and destructor

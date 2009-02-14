@@ -136,6 +136,16 @@ void X64CodeGen::process()
             // TODO
             continue;
         }
+        else if ( typeid(*instr) == typeid(me::Load) )
+        {
+            // TODO
+            continue;
+        }
+        else if ( typeid(*instr) == typeid(me::Store) )
+        {
+            // TODO
+            continue;
+        }
 
         // update globals for x64lex
         currentInstrNode = iter;

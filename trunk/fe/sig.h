@@ -99,7 +99,7 @@ struct Sig
      *
      * @return The Param or 0 if it was not found.
      */
-    Param* findParam(std::string* id);
+    Param* findParam(const std::string* id);
 
 
     std::string toString() const;
@@ -120,7 +120,7 @@ struct Sig
 struct Scope
 {
     typedef List<Scope*> ScopeList;
-    typedef std::map<std::string*, Local*, StringPtrCmp> LocalMap;
+    typedef std::map<const std::string*, Local*, StringPtrCmp> LocalMap;
 
     Scope* parent_;         ///< 0 if root.
     ScopeList childScopes_; ///< List of child scopes.
@@ -138,7 +138,7 @@ struct Scope
 */
 
     /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
-    Local* lookupLocal(std::string* id);
+    Local* lookupLocal(const std::string* id);
 };
 
 } // namespace swift

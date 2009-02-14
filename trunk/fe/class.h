@@ -50,9 +50,8 @@ struct Type;
  */
 struct Class : public Definition
 {
-    typedef std::multimap<std::string*, Method*, StringPtrCmp> MethodMap;
-    typedef MethodMap::iterator MethodIter;
-    typedef std::map<std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
+    typedef std::multimap<const std::string*, Method*, StringPtrCmp> MethodMap;
+    typedef std::map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
     ClassMember* classMember_; ///< Linked list of class members.
 
@@ -131,6 +130,8 @@ struct MemberVar : public ClassMember
      */
 
     virtual bool analyze();
+
+    bool registerMeMember();
 };
 
 } // namespace swift

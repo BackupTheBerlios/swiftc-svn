@@ -200,7 +200,7 @@ void ArrayMember::analyze()
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
+ * constructor
  */
 
 #ifdef SWIFT_DEBUG
@@ -215,16 +215,6 @@ Struct::Struct()
 {}
 
 #endif // SWIFT_DEBUG
-
-Struct::~Struct()
-{ 
-    // Delete all members which ar not Structs. Those will be deleted be me::functab
-    for (size_t i = 0; i < members_.size(); ++i)
-    {
-        if ( typeid(*members_[i]) != typeid(Struct) )
-            delete members_[i];
-    }
-}
 
 /*
  * further methods

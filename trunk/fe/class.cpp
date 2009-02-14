@@ -31,6 +31,8 @@
 #include "fe/type.h"
 
 #include "me/functab.h"
+#include "me/offset.h"
+#include "me/struct.h"
 #include "me/ssa.h"
 
 namespace swift {
@@ -180,7 +182,44 @@ MemberVar::~MemberVar()
 
 bool MemberVar::analyze()
 {
-    // TODO
+    // registerMeMember is actually the analyze which has been invoked prior
+    return true;
+}
+
+bool MemberVar::registerMeMember()
+{
+    const std::string* typeId = type_->baseType_->id_;
+
+    if (!type_->validate())
+    {
+        errorf(line_, "there is no class %s defined here", typeId->c_str());
+        return false;
+    }
+
+    // check whether the member is a builtin type
+    BaseType::TypeMap::iterator iter = 
+        (*BaseType::typeMap_).find(*typeId);
+
+    if ( iter != (*BaseType::typeMap_).end() )
+    {
+        // -> it is a builtin type
+
+#ifdef SWIFT_DEBUG
+        meMember_ = new me::AtomicMember(iter->second, *id_);
+#else // SWIFT_DEBUG
+        meMember_ = new me::AtomicMember(iter->second);
+#endif // SWIFT_DEBUG
+    }
+    else
+    {
+        // ATM this must be a class
+        Class* _class = symtab->lookupClass(typeId);
+        swiftAssert(_class, "must be found here");
+        meMember_ = _class->meStruct_;
+    }
+
+    // append member to current me::Struct in all cases
+    me::functab->appendMember(meMember_);
 
     return true;
 }

@@ -233,7 +233,7 @@ Scope* SymbolTable::createAndEnterNewScope()
  * lookup methods
  */
 
-Var* SymbolTable::lookupVar(string* id)
+Var* SymbolTable::lookupVar(const string* id)
 {
     // is it a local?
     Local* local = currentScope()->lookupLocal(id);
@@ -244,10 +244,10 @@ Var* SymbolTable::lookupVar(string* id)
     return sig_->findParam(id); // will return 0, if not found
 }
 
-Class* SymbolTable::lookupClass(string* id)
+Class* SymbolTable::lookupClass(const string* id)
 {
     // currently only one module - the default module - is supported.
-    std::map<std::string*, Class*, StringPtrCmp>::iterator iter = rootModule_->classes_.find(id);
+    Module::ClassMap::const_iterator iter = rootModule_->classes_.find(id);
     if ( iter != rootModule_->classes_.end() )
         return iter->second;
 
@@ -255,10 +255,10 @@ Class* SymbolTable::lookupClass(string* id)
     return 0;
 }
 
-Method* SymbolTable::lookupMethod(std::string* classId,
-                                  std::string* methodId,
+Method* SymbolTable::lookupMethod(const std::string* classId,
+                                  const std::string* methodId,
                                   int methodQualifier,
-                                  Sig& sig,
+                                  const Sig& sig,
                                   int line,
                                   SigCheckingStyle sigCheckingStyle)
 {
@@ -266,7 +266,7 @@ Method* SymbolTable::lookupMethod(std::string* classId,
     Class* _class = symtab->lookupClass(classId);
 
     // lookup method
-    Class::MethodIter iter = _class->methods_.find(methodId);
+    Class::MethodMap::const_iterator iter = _class->methods_.find(methodId);
     if (iter == _class->methods_.end())
     {
         errorf(line, "there is no method %s defined in class %s",
@@ -276,7 +276,7 @@ Method* SymbolTable::lookupMethod(std::string* classId,
     }
 
     // get iterator to the first method, which has not methodId as identifier
-    Class::MethodIter last = _class->methods_.upper_bound(methodId);
+    Class::MethodMap::const_iterator last = _class->methods_.upper_bound(methodId);
 
     // current method in loop below
     Method* method = 0;

@@ -119,14 +119,14 @@ struct SymbolTable
      *
      * @return The Var or 0 if not found.
      */
-    Var* lookupVar(std::string* id);
+    Var* lookupVar(const std::string* id);
 
     /**
      * Lookups a Class by name.
      *
      * @return The Var or 0 if not found.
      */
-    Class* lookupClass(std::string* id);
+    Class* lookupClass(const std::string* id);
 
     /**
      * Looks up a method.
@@ -138,10 +138,10 @@ struct SymbolTable
      * @param line The line number of the method call.
      * @param sigCheckingStyle Which params exactly should be checked?
      */
-    Method* lookupMethod(std::string* classId,
-                         std::string* methodId,
+    Method* lookupMethod(const std::string* classId,
+                         const std::string* methodId,
                          int methodQualifier,
-                         Sig& sig,
+                         const Sig& sig,
                          int line,
                          SigCheckingStyle sigCheckingStyle);
 

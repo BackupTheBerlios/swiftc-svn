@@ -187,10 +187,23 @@ FunctionTable::FunctionTable(const std::string& filename)
 
 FunctionTable::~FunctionTable()
 {
-    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+    // first destroy all ordinary Struct Members
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+    {
+        Struct* _struct = iter->second;
+        for (size_t i = 0; i < _struct->members_.size(); ++i)
+        {
+            if ( typeid(*_struct->members_[i]) != typeid(Struct) )
+                delete _struct->members_[i];
+        }
+    }
+
+    // now delete all structs
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
         delete iter->second;
 
-    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+    // finally delete all functions
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         delete iter->second;
 }
 

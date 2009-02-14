@@ -109,9 +109,9 @@ bool Assignment::analyze(bool exprResult)
     Class* _class = symtab->lookupClass(type_->baseType_->id_);
 
     std::string createStr("create");
-    Class::MethodIter iter = _class->methods_.find(&createStr);
+    Class::MethodMap::const_iterator iter = _class->methods_.find(&createStr);
     swiftAssert( iter != _class->methods_.end(), "TODO");
-    Class::MethodIter last = _class->methods_.upper_bound(&createStr);
+    Class::MethodMap::const_iterator last = _class->methods_.upper_bound(&createStr);
 
     for (; iter != last; ++iter)
     {

@@ -168,7 +168,7 @@ struct Struct : public Member
     MemberMap memberMap_;
 
     /*
-     * constructor and destructor
+     * constructor
      */
 
 #ifdef SWIFT_DEBUG
@@ -176,8 +176,6 @@ struct Struct : public Member
 #else // SWIFT_DEBUG
     Struct();
 #endif // SWIFT_DEBUG
-
-    ~Struct();
 
     /*
      * further methods

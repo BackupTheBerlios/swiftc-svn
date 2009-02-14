@@ -53,6 +53,10 @@ bool Module::analyze()
 {
     bool result = true;
 
+    /*
+     * analyze data structures first
+     */
+
     // for each class
     for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
     {
@@ -67,23 +71,17 @@ bool Module::analyze()
                 if ( typeid(*iter) != typeid(MemberVar) )
                     continue;
 
-                MemberVar* mv = (MemberVar*) iter;
-
-#ifdef SWIFT_DEBUG
-                mv->meMember_ = new me::AtomicMember(
-                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_], *mv->id_ );
-                me::functab->appendMember(mv->meMember_);
-#else // SWIFT_DEBUG
-                mv->meMember_ = new me::AtomicMember(
-                        (*BaseType::typeMap_)[*mv->type_->baseType_->id_] );
-                me::functab->appendMember(mv->meMember_);
-#endif // SWIFT_DEBUG
+                result &= ((MemberVar*) iter)->registerMeMember();
 
             } // for each MemberVar
 
             me::functab->leaveStruct();
         } // if type == Class
     } // for each class
+
+    /*
+     * now the rest
+     */
 
     // for each definition
     for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
