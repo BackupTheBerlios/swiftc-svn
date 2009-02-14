@@ -155,7 +155,7 @@ AtomicMember::AtomicMember(Op::Type type, const std::string& id)
 #else // SWIFT_DEBUG
 
 AtomicMember::AtomicMember(Op::Type type)
-    , type_(type)
+    : type_(type)
 {}
 
 #endif // SWIFT_DEBUG
@@ -181,7 +181,7 @@ ArrayMember::ArrayMember(Op::Type type, size_t num, const std::string& id)
 
 #else // SWIFT_DEBUG
 
-ArrayMember::ArrayMember(Op::Type type, size_t num);
+ArrayMember::ArrayMember(Op::Type type, size_t num)
     : type_(type)
     , num_(num)
 {}

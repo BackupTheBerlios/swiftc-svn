@@ -380,7 +380,7 @@ Struct* FunctionTable::newStruct()
     Struct* _struct = new Struct();
     structs_[_struct->nr_] = _struct;
 
-    return str;
+    return _struct;
 }
 
 #endif // SWIFT_DEBUG

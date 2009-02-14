@@ -143,7 +143,7 @@ Reg* Reg::clone() const
 {
     // TODO make use of it
     Reg* reg = new Reg(type_, varNr_);
-    :cc
+    reg->isSpilled_ = isSpilled_;
     return reg;
 }
 
