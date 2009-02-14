@@ -19,7 +19,7 @@
 
 #include "me/struct.h"
 
-#include <iostream>
+#include <sstream>
 #include <typeinfo>
 
 #include "me/arch.h"
@@ -252,8 +252,31 @@ void Struct::analyze()
             member->analyze();
 
         member->offset_ = calcAlignedOffset(size_, member->size_);
-        size_ += member->offset_ + member->size_;
+        size_ = member->offset_ + member->size_;
     }
 }
+
+#ifdef SWIFT_DEBUG
+
+std::string Struct::toString() const
+{
+    std::ostringstream oss;
+
+    oss << "STRUCT " << id_ << '\n'
+        << "size: " << size_ << '\n';
+
+    // for each member
+    for (size_t i = 0; i < members_.size(); ++i)
+    {
+        Member* member = members_[i];
+        oss << '\t' << member->id_ << '\n';
+        oss << "\t\tsize: " << member->size_ << '\n';
+        oss << "\t\toffset: " << member->offset_ << '\n';
+    }
+
+    return oss.str();
+}
+
+#endif // SWIFT_DEBUG
 
 } // namespace me

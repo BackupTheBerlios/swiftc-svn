@@ -311,6 +311,9 @@ void FunctionTable::buildUpME()
     for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
         iter->second->analyze();
 
+    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
+        std::cout << iter->second->toString() << std::endl;
+
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         CFG& cfg = iter->second->cfg_;

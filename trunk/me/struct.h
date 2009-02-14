@@ -184,6 +184,10 @@ struct Struct : public Member
     void append(Member* member);
     Member* lookup(int nr);
     virtual void analyze();
+
+#ifdef SWIFT_DEBUG
+    std::string toString() const;
+#endif // SWIFT_DEBUG
 };
 
 } // namespace me
