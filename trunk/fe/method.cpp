@@ -180,7 +180,7 @@ bool Method::analyze()
             if (returnValues)
                 returnValues->res_.push_back( me::Res(reg, reg->varNr_, me::NO_CONSTRAINT) );
             else
-                returnValues = new me::AssignInstr( '=', reg, new me::Undef(reg->type_) );
+                returnValues = new me::AssignInstr( '=', reg, me::functab->newUndef(reg->type_) );
         }
         else
         {

@@ -72,6 +72,7 @@ struct Expr : public Node
      */
     virtual bool analyze() = 0;
     virtual void genSSA() = 0;
+
 };
 
 //------------------------------------------------------------------------------
@@ -121,6 +122,7 @@ struct Literal : public Expr
     me::Op::Type toType() const;
     virtual bool analyze();
     virtual void genSSA();
+
     std::string toString() const;
 
     typedef std::map<int, me::Op::Type> TypeMap;

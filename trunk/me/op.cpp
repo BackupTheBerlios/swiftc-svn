@@ -40,15 +40,15 @@ bool Op::typeCheck(int typeMask) const
 /*
  * constructor and destructor
  */
-    Const::Const(Type type)
+Const::Const(Type type)
     : Op(type)
 {
     value_.uint64_ = 0; // clear all bits
 }
 
-Const::~Const() {
-}
-
+/*
+ * further methods
+ */
 
 std::string Const::toString() const
 {

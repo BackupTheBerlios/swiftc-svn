@@ -68,6 +68,12 @@ struct Function
     RegMap out_;
     RegMap vars_;
 
+    typedef std::vector<Const*> Consts;
+    Consts consts_;
+
+    typedef std::vector<Undef*> Undefs;
+    Undefs undefs_;
+
     typedef std::map<Reg*, int> Reg2Color;
     Reg2Color reg2Color_;
 
@@ -139,6 +145,9 @@ struct Function
     Reg* newMemSSA(Op::Type type);
 
 #endif // SWIFT_DEBUG
+
+    Const* newConst(Op::Type type);
+    Undef* newUndef(Op::Type type);
 
     inline void insert(Reg* reg);
 
@@ -229,6 +238,9 @@ struct FunctionTable
     Reg* newMemSSA(Op::Type type);
 
 #endif // SWIFT_DEBUG
+
+    Const* newConst(Op::Type type);
+    Undef* newUndef(Op::Type type);
 
     Reg* lookupReg(int id);
 

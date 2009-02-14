@@ -169,7 +169,6 @@ struct Const : public Op
      */
 
     Const(Type type);
-    virtual ~Const();
 
     /*
      * further methods

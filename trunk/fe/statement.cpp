@@ -194,7 +194,7 @@ bool Declaration::analyze()
     {
         if (!exprList_)
             me::functab->appendInstr( new me::AssignInstr('=', local_->reg_, 
-                        new me::Undef(local_->reg_->type_)) );
+                        me::functab->newUndef(local_->reg_->type_)) );
         else
             swiftAssert(false, "TODO");
     }
@@ -242,7 +242,6 @@ bool AssignStatement::analyze()
     if (result)
     {
         genSSA();
-
         return true;
     }
     // else

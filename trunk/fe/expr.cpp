@@ -62,14 +62,12 @@ Expr::Expr(int line)
     : Node(line)
     , neededAsLValue_(false)
     , type_(0)
+    , place_(0)
 {}
 
 Expr::~Expr()
 {
     delete type_;
-
-    if (parseerror)
-        delete place_;
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +148,7 @@ bool Literal::analyze()
 void Literal::genSSA()
 {
     // create appropriate Reg
-    me::Const* literal = new me::Const( toType() );
+    me::Const* literal = me::functab->newConst( toType() );
     place_ = literal;
 
     switch (kind_)
@@ -177,7 +175,7 @@ void Literal::genSSA()
         case L_REAL32:  literal->value_.real32_    = real32_;  break;
         case L_REAL64:  literal->value_.real64_    = real64_;  break;
 
-        case L_TRUE: // like L_FALSE
+        case L_TRUE:
         case L_FALSE:   literal->value_.bool_      = bool_;    break;
 
         case L_NIL:     literal->value_.ptr_       = ptr_;     break;
@@ -314,7 +312,9 @@ bool UnExpr::analyze()
 
     // return false when syntax is wrong
     if ( !op_->analyze() )
+    {
         return false;
+    }
 
     type_ = op_->type_->clone();
 
@@ -425,7 +425,9 @@ bool BinExpr::analyze()
 
     // return false when syntax is wrong
     if ( !op1_->analyze() | !op2_->analyze() ) // analyze both ops in all cases
+    {
         return false;
+    }
 
     if ( (op1_->type_->pointerCount_ >= 1 || op2_->type_->pointerCount_ >= 1) )
     {
@@ -448,6 +450,7 @@ bool BinExpr::analyze()
             c_, op1_->type_->toString().c_str(),
             op2_->type_->toString().c_str(),
             op1_->type_->toString().c_str() );
+
         return false;
     }
     // else
@@ -531,7 +534,6 @@ bool ExprList::analyze()
     return result;
 }
 
-
 //------------------------------------------------------------------------------
 
 /*
@@ -563,14 +565,16 @@ bool MemberAccess::analyze()
 
     // get type and member var
     Type* type = expr_->type_;
-    Class* _class = symtab->lookupClass(type->baseType_->id_);
+    const std::string* typeId = type->baseType_->id_;
+    Class* _class = symtab->lookupClass(typeId);
     swiftAssert(_class, "must be found");
     Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
     if ( iter == _class->memberVars_.end() )
     {
         errorf( line_, "class '%s' does not have a member named %s", 
-                type->baseType_->id_->c_str(), id_->c_str() );
+                typeId->c_str(), id_->c_str() );
+
         return false;
     }
     // else

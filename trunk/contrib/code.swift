@@ -7,7 +7,7 @@ class Test
         z = 5 + 4 * j
         j = 7
 
-        Test test = 5.0
+        Test test
         test.foo = 5
     end
 

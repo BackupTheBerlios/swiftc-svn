@@ -191,10 +191,7 @@ bool MemberVar::registerMeMember()
     const std::string* typeId = type_->baseType_->id_;
 
     if (!type_->validate())
-    {
-        errorf(line_, "there is no class %s defined here", typeId->c_str());
         return false;
-    }
 
     // check whether the member is a builtin type
     BaseType::TypeMap::iterator iter = 

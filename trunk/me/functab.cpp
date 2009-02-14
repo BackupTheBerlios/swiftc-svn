@@ -66,6 +66,11 @@ Function::~Function()
     for (RegMap::iterator iter = vars_ .begin(); iter != vars_ .end(); ++iter)
         delete iter->second;
 
+    for (size_t i = 0; i < consts_.size(); ++i)
+        delete consts_[i];
+    for (size_t i = 0; i < undefs_.size(); ++i)
+        delete undefs_[i];
+
     delete id_;
 }
 
@@ -136,6 +141,22 @@ Reg* Function::newMemSSA(Op::Type type)
 }
 
 #endif // SWIFT_DEBUG
+
+Const* Function::newConst(Op::Type type)
+{
+    Const* _const = new Const(type);
+    consts_.push_back(_const);
+
+    return _const;
+}
+
+Undef* Function::newUndef(Op::Type type)
+{
+    Undef* undef = new Undef(type);
+    undefs_.push_back(undef);
+
+    return undef;
+}
 
 /*
  * dump methods
@@ -254,6 +275,16 @@ Reg* FunctionTable::newMemSSA(Op::Type type)
 }
 
 #endif // SWIFT_DEBUG
+
+Const* FunctionTable::newConst(Op::Type type)
+{
+    return currentFunction_->newConst(type);
+}
+
+Undef* FunctionTable::newUndef(Op::Type type)
+{
+    return currentFunction_->newUndef(type);
+}
 
 Reg* FunctionTable::lookupReg(int id)
 {
