@@ -37,7 +37,6 @@
 namespace swift {
 
 int pointercount = -1;
-bool parseerror  = false;
 
 std::string* operatorToString(int _operator)
 {
@@ -480,5 +479,4 @@ pointer
 void swifterror(const char *s)
 {
     errorf(currentLine, s);
-    parseerror = true;
 }

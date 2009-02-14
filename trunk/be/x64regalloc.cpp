@@ -444,7 +444,7 @@ void X64RegAlloc::registerTargeting()
                         // define a new Reg which is initialized with undef
                         me::Reg* dummy = function_->newSSA(type);
                         cfg_->instrList_.insert( iter->prev(), 
-                            new me::AssignInstr('=', dummy, new me::Undef(type)) );
+                            new me::AssignInstr('=', dummy, function_->newUndef(type)) );
 
                         // avoid that RDX is spilled here
                         ai->arg_.push_back( me::Arg(dummy, RDX) );

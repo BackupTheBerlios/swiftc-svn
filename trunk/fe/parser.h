@@ -43,8 +43,6 @@ struct Expr;
 
 //------------------------------------------------------------------------------
 
-extern bool parseerror;
-
 std::string* operatorToString(int _operator);
 
 } // namespace swift

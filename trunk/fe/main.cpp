@@ -117,8 +117,6 @@ int start(int argc, char** argv)
      * in the SymbolTable.
      */
     swiftparse(); // call generated parser which on its part calls swiftlex
-    if ( parseerror )
-        return EXIT_FAILURE; // abort on a parse error
 
     /*
      * Check types of all expressions, fill all gaps in the symtab and
@@ -126,9 +124,8 @@ int start(int argc, char** argv)
      * 
      * Thus a complete SymbolTable and type consistency is ensured after this pass.
      */
+
     bool analyzeResult = syntaxtree->analyze();
-    if (!analyzeResult)
-        parseerror = true;
 
     /*
      * clean up front-end

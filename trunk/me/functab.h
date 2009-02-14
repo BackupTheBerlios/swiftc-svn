@@ -50,8 +50,19 @@ struct Member;
 struct Function
 {
     std::string* id_;
-    int regCounter_; ///< Counter which gives new reg in SSA form number. Size is increasing.
-    int varCounter_; ///< Counter which gives new var numbers. Size is decreasing.
+
+    /**
+     * Counter which gives new reg in SSA form number. 
+     * Size is increasing.
+     */
+    int regCounter_; 
+
+    /**
+     * Counter which gives new var numbers. 
+     * Size is decreasing.
+     */
+    int varCounter_; 
+
     CFG  cfg_;
 
     /// Indicates whether a LivenessAnalysis CodePass has already been performed.
@@ -69,9 +80,17 @@ struct Function
     RegMap vars_;
 
     typedef std::vector<Const*> Consts;
+    /** 
+     * Here are all \a Const collected for a clean tidy up. 
+     * This data structure does not have another purpose.
+     */
     Consts consts_;
 
     typedef std::vector<Undef*> Undefs;
+    /** 
+     * Here are all \a Undef collected for a clean tidy up. 
+     * This data structure does not have another purpose.
+     */
     Undefs undefs_;
 
     typedef std::map<Reg*, int> Reg2Color;
