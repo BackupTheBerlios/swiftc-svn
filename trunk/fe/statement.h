@@ -92,12 +92,12 @@ struct ExprStatement : public Statement
  */
 struct Declaration : public Statement
 {
-    Type*           type_;
-    std::string*    id_;
-    ExprList*       exprList_;
+    Type* type_;
+    std::string* id_;
+    ExprList* exprList_;
 
     /// Since this class created the Local it is responsible to delete it again.
-    Local*          local_;
+    Local* local_;
 
     /*
      * constructor and destructor

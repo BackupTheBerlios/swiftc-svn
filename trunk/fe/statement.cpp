@@ -184,11 +184,11 @@ bool Declaration::analyze()
         result &= assignment.analyze(result);
     }
 
-    if (!result)
-        return false;
-
     // everything ok. so insert the local
     local_ = symtab->createNewLocal(type_, id_, line_);
+
+    if (!result)
+        return false;
 
     if ( !type_->isBuiltin() )
     {
