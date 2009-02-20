@@ -246,6 +246,9 @@ bool AssignStatement::analyze()
     }
     // else
 
+    if (typeid(*expr_) == typeid(MemberAccess) )
+        delete ((MemberAccess*) expr_)->rootStructOffset_;
+
     return false;
 }
 
@@ -261,7 +264,7 @@ void AssignStatement::genSSA()
         me::Store* store = new me::Store( 
                 (me::Reg*) ma->place_,              // memory variable
                 (me::Reg*) exprList_->expr_->place_,// argument 
-                ma->structOffset_);                 // offset 
+                ma->rootStructOffset_);             // offset 
         me::functab->appendInstr(store);
     }
     else

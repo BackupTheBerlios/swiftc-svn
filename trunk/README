@@ -2,22 +2,22 @@ Swift is a compiler for a programming language with the same name.
 Current backend is for amd64 Linux systems.
 However you can compile and run swift on other archs as well.
 
-//------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 All files are published under the GPL-3. See the LICENSE-file in this directory
 for details. If you a really intressted in my code and you need another license,
 please contact me. Perhaps I'll change it even to a BSD-style license.
 
-//------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 REQUIREMENTS
 - bison
 - flex
 - cmake
-- yasm (to assemble the output file)
+- gas (to assemble the output file)
 - gcc
 
-//------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 INSTALLING
 
@@ -36,6 +36,8 @@ $ su
 $ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepart/syntax/.
 
 The last command depends on your Linux distro and/or KDE verions, of course.
+
+In Vim you can get highlighting with the syntax file provided in contrib/swift.vim
 
 If you want to use the memory leak finder copy or symlink utils/leakfinder to
 /usr/bin or another location in your path:
