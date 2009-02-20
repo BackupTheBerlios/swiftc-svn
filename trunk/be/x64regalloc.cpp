@@ -602,6 +602,10 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
             }
             break;
 
+        case me::Op::R_STACK:
+            oss << "rbp/" << color;
+            break;
+
         default:
             swiftAssert( false, "unreachable code" );
     } // switch (type)

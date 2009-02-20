@@ -116,6 +116,7 @@ ADD_EXECUTABLE (swift
     me/offset.cpp
     me/spiller.cpp
     me/ssa.cpp
+    me/stackcoloring.cpp
     me/struct.cpp
 
     be/x64.cpp

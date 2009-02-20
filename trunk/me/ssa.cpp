@@ -732,9 +732,7 @@ std::string Load::toString() const
  */
 
 Store::Store(Reg* location, Op* arg, Offset* offset)
-    : InstrBase( 
-            (location->type_ == Op::R_STACK) ? 1 : 1, 
-            (location->type_ == Op::R_STACK) ? 1 : 2 )
+    : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
     , offset_(offset)
 {
     arg_[0].op_ = arg;
@@ -747,13 +745,13 @@ Store::Store(Reg* location, Op* arg, Offset* offset)
         res_[0].constraint_ = NO_CONSTRAINT;
         res_[0].oldVarNr_ = location->varNr_;
     }
-    else
-    {
-        // -> store to an arbitrary location in memory
-        swiftAssert(location->type_ == Op::R_PTR, "must be an R_PTR");
-        arg_[1].op_ = location;
-        arg_[1].constraint_ = NO_CONSTRAINT;
-    }
+
+    // -> store to an arbitrary location in memory
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+            "must be an R_PTR");
+
+    arg_[1].op_ = location;
+    arg_[1].constraint_ = NO_CONSTRAINT;
 }
 
 Store::~Store()
@@ -781,7 +779,8 @@ std::string Store::toString() const
     {
         // -> store to a location on the stack
         oss << res_[0].reg_->toString() << "\t= Store(" 
-            << arg_[0]. op_->toString();
+            << arg_[0]. op_->toString() << ", "
+            << arg_[1]. op_->toString();
     }
 
     oss << ", (" << offset_->toString() << ')';
