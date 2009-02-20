@@ -523,7 +523,6 @@ int x64lex()
             }
             else
             {
-                swiftAssert( instrTypeId == typeid(me::PhiInstr), "unreachable code" );
                 swiftAssert( instrTypeId == typeid(me::NOP), "must be a NOP" );
                 location = END;
                 return X64_NOP;

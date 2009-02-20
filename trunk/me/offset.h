@@ -22,7 +22,8 @@ struct Offset
      * constructor and destructor
      */
 
-    virtual ~Offset() {}
+    Offset();
+    virtual ~Offset();
 
     /*
      * further methods
@@ -85,17 +86,10 @@ struct CTArrayOffset : public CTOffset
  */
 struct StructOffset : public CTOffset
 {
-    /// The \a chain_ is relative to this root \a Struct.
-    Struct* root_;
-
+    Struct* struct_;
     Member* member_;
 
-
-    //typedef std::vector<Member*> Chain;
-    ///// Chain of \a Offset instances to access the desired element.
-    //Chain chain_;
-
-    StructOffset(Struct* root, Member* member);
+    StructOffset(Struct* _struct, Member* member);
 
     virtual int getOffset() const;
     virtual std::string toString() const;

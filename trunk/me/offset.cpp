@@ -8,8 +8,20 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
-StructOffset::StructOffset(Struct* root, Member* member)
-    : root_(root)
+Offset::Offset()
+    : next_(0)
+{}
+
+Offset::~Offset()
+{
+    if (next_)
+        delete next_;
+}
+
+//------------------------------------------------------------------------------
+
+StructOffset::StructOffset(Struct* _struct, Member* member)
+    : struct_(_struct) 
     , member_(member)
 {}
 
@@ -24,9 +36,9 @@ std::string StructOffset::toString() const
     oss << '(';
 
 #ifdef SWIFT_DEBUG
-    oss << root_->id_ << ", " << member_->id_ << ", " << getOffset();
+    oss << struct_->id_ << ", " << member_->id_ << ", " << getOffset();
 #else // SWIFT_DEBUG
-    oss << root_->nr_ << ", " << getOffset();
+    oss << struct_->nr_ << ", " << getOffset();
 #endif // SWIFT_DEBUG
 
     oss << ')';

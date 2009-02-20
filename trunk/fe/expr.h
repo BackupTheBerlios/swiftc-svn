@@ -30,6 +30,7 @@
 
 namespace me {
     struct Struct;
+    struct StructOffset;
     struct Member;
 }
 
@@ -260,8 +261,11 @@ struct MemberAccess : public Expr
 {
     Expr* expr_;
     std::string* id_;
-    me::Struct* meStruct_;
-    me::Member* meMember_;
+    bool right_;
+    me::StructOffset* structOffset_;
+    me::StructOffset* rootStructOffset_;
+    me::Reg* memPlace_;
+
 
     /*
      * constructor and destructor

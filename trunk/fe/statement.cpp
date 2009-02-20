@@ -258,11 +258,10 @@ void AssignStatement::genSSA()
     {
         MemberAccess* ma = (MemberAccess*) expr_;
 
-        me::StructOffset* so = new me::StructOffset(ma->meStruct_, ma->meMember_);
         me::Store* store = new me::Store( 
                 (me::Reg*) ma->place_,              // memory variable
                 (me::Reg*) exprList_->expr_->place_,// argument 
-                so);                                // offset 
+                ma->structOffset_);                 // offset 
         me::functab->appendInstr(store);
     }
     else

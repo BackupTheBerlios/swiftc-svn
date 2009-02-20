@@ -544,6 +544,7 @@ MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
     , expr_(expr)
     , id_(id)
+    , right_(true)
 {}
 
 MemberAccess::~MemberAccess()
@@ -558,10 +559,35 @@ MemberAccess::~MemberAccess()
 
 bool MemberAccess::analyze()
 {
-    bool result = expr_->analyze();
+    MemberAccess* ma = dynamic_cast<MemberAccess*>(expr_);
 
-    if (!result)
+    if (ma)
+        ma->right_ = false;
+
+    /*
+     * The accesses are traversed from right to left to this point and from
+     * left to right beyond this point.
+     */
+    if ( !expr_->analyze() )
         return false;
+
+    // pass-through places
+    if (!ma)
+    {
+        swiftAssert(expr_->place_->type_ == me::Op::R_STACK, "must be a stack location")
+        swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), "must be a Reg" )
+        memPlace_ = (me::Reg*) expr_->place_;
+    }
+    else
+        memPlace_ = ma->memPlace_; // pass-through
+
+    place_ = expr_->place_;
+
+    /*
+     * In a chain of member accesses there are two special accesses:
+     * - the left most one -> ma = 0
+     * - the right most one -> right = true
+     */
 
     // get type and member var
     Type* type = expr_->type_;
@@ -577,48 +603,41 @@ bool MemberAccess::analyze()
 
         return false;
     }
-    // else
 
     MemberVar* member = iter->second;
     type_ = member->type_->clone();
 
-    me::Reg* reg;
+    structOffset_ = new me::StructOffset(_class->meStruct_, member->meMember_);
 
-    if (neededAsLValue_)
+    if (ma)
     {
-        if ( typeid(*expr_) == typeid(Id) )
-            reg = ((Id*) expr_)->var_->reg_;
-        else
-            swiftAssert(false, "TODO");
+        ma->structOffset_->next_ = structOffset_;
+        rootStructOffset_ = ma->rootStructOffset_;
     }
     else
+        rootStructOffset_ = structOffset_;
+
+    if (!neededAsLValue_ && right_)
     {
+        // create new place for the right most access
 #ifdef SWIFT_DEBUG
         std::string str = "tmp";
-        reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
+        place_ = me::functab->newVar( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-        reg = me::functab->newVar( type_->baseType_->toMeType() );
+        place_ = me::functab->newVar( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
     }
 
-    place_ = reg;
-
-    swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), "TODO" );
-    meStruct_ = _class->meStruct_;
-    meMember_ = member->meMember_;
-
-    if (!neededAsLValue_)
-    {
-        me::StructOffset* so = new me::StructOffset(meStruct_, meMember_);
-        me::Load* load = new me::Load( reg, (me::Reg*) expr_->place_, so );
-        me::functab->appendInstr(load); 
-    }
+    if ( right_ && !neededAsLValue_ )
+        genSSA();
 
     return true;
 }
 
 void MemberAccess::genSSA()
 {
+    me::Load* load = new me::Load( (me::Reg*) place_, memPlace_, rootStructOffset_ );
+    me::functab->appendInstr(load); 
 }
 
 //------------------------------------------------------------------------------
