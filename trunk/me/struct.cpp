@@ -78,29 +78,6 @@ int type2size(me::Op::Type type)
     return 0;
 }
 
-/** 
- * @brief Calulates the aligned offset of a \a Member based on its unaligned
- * \p offset, \a Arch::alignOf and its \p size.
- * 
- * @param offset The unaligned offset.
- * @param size The size of the \a Member item.
- * 
- * @return The aligned offset.
- */
-int calcAlignedOffset(int offset, int size)
-{
-    swiftAssert(size != 0, "size is zero");
-    int result = offset;
-    int align = me::arch->alignOf(size);
-    int mod = result % align;
-
-    // do we have to adjust the offset due to alignment?
-    if (mod != 0)
-        result += align - mod;
-
-    return result;
-}
-
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -251,7 +228,7 @@ void Struct::analyze()
         if ( !member->alreadyAnalyzed() )
             member->analyze();
 
-        member->offset_ = calcAlignedOffset(size_, member->size_);
+        member->offset_ = arch->calcAlignedOffset(size_, member->size_);
         size_ = member->offset_ + member->size_;
     }
 }

@@ -32,6 +32,7 @@
 #include "me/cfg.h" 
 #include "me/op.h"
 #include "me/ssa.h"
+#include "me/stacklayout.h"
 
 namespace me {
 
@@ -52,10 +53,10 @@ struct Function
     std::string* id_;
 
     /**
-     * Counter which gives new reg in SSA form number. 
+     * Counter which gives new vars in SSA form a number. 
      * Size is increasing.
      */
-    int regCounter_; 
+    int ssaCounter_; 
 
     /**
      * Counter which gives new var numbers. 
@@ -74,10 +75,10 @@ struct Function
     InstrNode* lastLabelNode_;
     InstrList instrList_;
 
-    RegMap in_;
-    RegMap inout_;
-    RegMap out_;
-    RegMap vars_;
+    VarMap in_;
+    VarMap inout_;
+    VarMap out_;
+    VarMap vars_;
 
     typedef std::vector<Const*> Consts;
     /** 
@@ -93,17 +94,16 @@ struct Function
      */
     Undefs undefs_;
 
-    typedef std::map<Reg*, int> Reg2Color;
-    Reg2Color reg2Color_;
+    typedef std::map<Var*, int> Var2Color;
+    Var2Color var2Color_;
 
-    int spillSlots_;
-
+    StackLayout stackLayout_;
 
     /*
      * constructor and destructor
      */
 
-    Function(std::string* id);
+    Function(std::string* id, size_t stackPlaces);
     ~Function();
 
     /*
@@ -112,63 +112,28 @@ struct Function
 
 #ifdef SWIFT_DEBUG
 
-    /**
-     * @brief This method creates a new temp Reg.
-     * This is a var which is guaranteed to be defined only once.
-     *
-     * @param type The type of the Reg.
-     * @param id The name of the original var.
-     */
-    Reg* newSSA(Op::Type type, std::string* id = 0);
-
-    /**
-     * @brief This method creates a new var Reg.
-     * This will be transforemd to SSA form later on.
-     *
-     * @param type The type of the Reg.
-     * @param id The name of the original var.
-     */
-    Reg* newVar(Op::Type type, std::string* id);
-
-    /**
-     * @brief This method creates a new var in a memory location.
-     *
-     * @param type The type of the Reg.
-     * @param id The name of the original var.
-     */
-    Reg* newMemSSA(Op::Type type, std::string* id = 0);
+    Reg*    newReg(Op::Type type, const std::string* id = 0);
+    Reg*    newSSAReg(Op::Type type, const std::string* id = 0);
+    Reg*    newSpilledSSAReg(Op::Type type, const std::string* id = 0);
+    MemVar* newMemVar(Member* memory, const std::string* id = 0);
+    MemVar* newSSAMemVar(Member* memory, const std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
-    /**
-     * @brief This method creates a new temp Reg.
-     * This is a var which is guaranteed to be defined only once.
-     *
-     * @param type The type of the Reg.
-     */
-    Reg* newSSA(Op::Type type);
-
-    /**
-     * @brief This method creates a new var Reg.
-     * This will be transforemd to SSA form later on.
-     *
-     * @param type the type of the Reg.
-     */
-    Reg* newVar(Op::Type type);
-
-    /**
-     * @brief This method creates a new var in a memory location.
-     *
-     * @param type The type of the Reg.
-     */
-    Reg* newMemSSA(Op::Type type);
+    Reg*    newSSAReg(Op::Type type);
+    Reg*    newReg(Op::Type type);
+    Reg*    newSpilledSSAReg(Op::Type type);
+    MemVar* newMemVar(Member* memory);
+    MemVar* newSSAMemVar(Member* memory);
 
 #endif // SWIFT_DEBUG
+
+    Var* cloneNewSSA(Var* var);
 
     Const* newConst(Op::Type type);
     Undef* newUndef(Op::Type type);
 
-    inline void insert(Reg* reg);
+    inline void insert(Var* var);
 
     /*
      * dump methods
@@ -207,61 +172,31 @@ struct FunctionTable
 
     Function* insertFunction(std::string* id);
 
-
 #ifdef SWIFT_DEBUG
 
-    /**
-     * @brief This method creates a new Reg which is only defined once.
-     *
-     * @param type the type of the Reg
-     */
-    Reg* newSSA(Op::Type type, std::string* id = 0);
-
-    /**
-     * @brief This method creates a new var Reg.
-     *
-     * @param type the type of the Reg
-     * @param id the name of the original var
-     */
-    Reg* newVar(Op::Type type, std::string* id);
-
-    /**
-     * @brief This method creates a new memory variable.
-     *
-     * @param type the type of the Reg
-     * @param id the name of the original var
-     */
-    Reg* newMemSSA(Op::Type type, std::string* id = 0);
+    Reg*    newReg(Op::Type type, const std::string* id = 0);
+    Reg*    newSSAReg(Op::Type type, const std::string* id = 0);
+    Reg*    newSpilledSSAReg(Op::Type type, const std::string* id = 0);
+    MemVar* newMemVar(Member* memory, const std::string* id = 0);
+    MemVar* newSSAMemVar(Member* memory, const std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
-    /**
-     * @brief This method creates a new temp Reg.
-     *
-     * @param type the type of the Reg
-     */
-    Reg* newSSA(Op::Type type);
-
-    /**
-     * @brief This method creates a new var Reg.
-     * 
-     * @param type the type of the Reg
-     */
-    Reg* newVar(Op::Type type);
-
-    /**
-     * @brief This method creates a new memory variable.
-     *
-     * @param type the type of the Reg
-     */
-    Reg* newMemSSA(Op::Type type);
+    Reg*    newReg(Op::Type type);
+    Reg*    newSSAReg(Op::Type type);
+    Reg*    newSpilledSSAReg(Op::Type type);
+    MemVar* newMemVar(Member* memory);
+    MemVar* newSSAMemVar(Member* memory);
 
 #endif // SWIFT_DEBUG
+    
+
+    Var* cloneNewSSA(Var* var);
 
     Const* newConst(Op::Type type);
     Undef* newUndef(Op::Type type);
 
-    Reg* lookupReg(int id);
+    Var* lookupVar(int id);
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode* node);

@@ -55,7 +55,7 @@ bool Sig::analyze() const
     bool result = true;
 
     PARAMS_CONST_EACH(iter, params_)
-        result &= iter->value_->validateAndCreateReg();
+        result &= iter->value_->validateAndCreateVar();
 
     return result;
 }

@@ -172,24 +172,24 @@ bool Method::analyze()
     {
         const Param* param = iter->value_;
 
-        me::Reg* reg = param->reg_;
-        swiftAssert(reg, "must be found here");
+        me::Var* var = param->meVar_;
+        swiftAssert(var, "must be found here");
 
         if (param->kind_ == Param::RES)
         {
             if (returnValues)
-                returnValues->res_.push_back( me::Res(reg, reg->varNr_, me::NO_CONSTRAINT) );
+                returnValues->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
             else
-                returnValues = new me::AssignInstr( '=', reg, me::functab->newUndef(reg->type_) );
+                returnValues = new me::AssignInstr( '=', var, me::functab->newUndef(var->type_) );
         }
         else
         {
             if (setParams)
-                setParams->res_.push_back( me::Res(reg, reg->varNr_, me::NO_CONSTRAINT) );
+                setParams->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
             else
             {
                 setParams = new me::SetParams(0);
-                setParams->res_.push_back( me::Res(reg, reg->varNr_, me::NO_CONSTRAINT) );
+                setParams->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
             }
         }
     }
@@ -219,8 +219,8 @@ bool Method::analyze()
         {
             const Param* param = iter->value_;
 
-            me::Reg* reg = param->reg_;
-            setResults->arg_.push_back( me::Arg(reg, me::NO_CONSTRAINT) );
+            me::Var* var = param->meVar_;
+            setResults->arg_.push_back( me::Arg(var, me::NO_CONSTRAINT) );
         }
 
         me::functab->appendInstr(setResults);

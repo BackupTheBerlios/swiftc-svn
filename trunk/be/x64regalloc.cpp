@@ -31,6 +31,8 @@
 #include "me/liverangesplitting.h"
 #include "me/spiller.h"
 
+#include "be/x64.h"
+
 namespace be {
 
 /*
@@ -154,8 +156,9 @@ void X64RegAlloc::process()
     // XMM registers
     me::Coloring(function_, F_TYPE_MASK, fColors).process(); 
 
-    // color memory locations / spill slots
-    me::Coloring(function_).process();
+    // color spill slots
+    me::Coloring(function_, X64::R).process();
+    me::Coloring(function_, X64::XMM).process();
 }
 
 void X64RegAlloc::registerTargeting()
@@ -185,11 +188,11 @@ void X64RegAlloc::registerTargeting()
 
             me::InstrNode* preNode = iter->prev();
 
-            if ( typeid(*bi->getOp()) == typeid(me::Reg) )
+            if ( dynamic_cast<me::Var*>(bi->getOp()) )
             {
-                me::Reg* reg = (me::Reg*) bi->getOp();
+                me::Var* var = (me::Var*) bi->getOp();
 
-                if (reg->def_.instrNode_ == preNode)
+                if (var->def_.instrNode_ == preNode)
                 {
                     // is it even an AssignInstr?
                     if ( typeid(*preNode->value_) == typeid(me::AssignInstr) )
@@ -205,10 +208,10 @@ void X64RegAlloc::registerTargeting()
                                 continue;
 
                             // check whether this is the only use
-                            if (reg->uses_.size() == 1)
+                            if (var->uses_.size() == 1)
                             {
-                                // do not color this reg
-                                reg->type_ = me::Op::R_SPECIAL;
+                                // do not color this var
+                                var->type_ = me::Op::R_SPECIAL;
                             }
 
                             me::Op::Type type = ai->arg_[0].op_->type_;
@@ -246,8 +249,8 @@ void X64RegAlloc::registerTargeting()
                         } // if comparison
                     } // if AssignInstr
                     continue;
-                } // if reg defined in previous instruction
-            } // if bi->getOP() is a Reg
+                } // if var defined in previous instruction
+            } // if bi->getOP() is a Var
             else 
             {
                 swiftAssert( typeid(*bi->getOp()) == typeid(me::Const),
@@ -268,7 +271,7 @@ void X64RegAlloc::registerTargeting()
 
             for (size_t i = 0; i < sp->res_.size(); ++i)
             {
-                me::Op::Type type = sp->res_[i].reg_->type_;
+                me::Op::Type type = sp->res_[i].var_->type_;
 
                 switch (type)
                 {
@@ -344,7 +347,7 @@ void X64RegAlloc::registerTargeting()
             swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
                     "one or two args must be here" );
 
-            me::Op::Type type = ai->res_[0].reg_->type_;
+            me::Op::Type type = ai->res_[0].var_->type_;
 
             if (       ai->kind_ == me::AssignInstr::EQ
                     || ai->kind_ == me::AssignInstr::NE
@@ -378,7 +381,7 @@ void X64RegAlloc::registerTargeting()
                 me::InstrBase::OpType opType1 = ai->getOpType(0);
                 me::InstrBase::OpType opType2 = ai->getOpType(1);
 
-                if (opType2 == me::InstrBase::REG_DEAD)
+                if (opType2 == me::InstrBase::VAR_DEAD)
                 {
                     if (opType1 == me::InstrBase::CONST)
                     {
@@ -386,25 +389,25 @@ void X64RegAlloc::registerTargeting()
                                 "must be a Const here");
                         me::Const* cst = (me::Const*) ai->arg_[0].op_;
 
-                        // create reg which will hold the constant, the assignment and insert
-                        me::Reg* newReg = function_->newSSA(type);
-                        me::AssignInstr* newCopy = new me::AssignInstr('=', newReg, cst);
+                        // create var which will hold the constant, the assignment and insert
+                        me::Var* newVar = function_->newSSAReg(type);
+                        me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
                         cfg_->instrList_.insert( iter->prev(), newCopy );
 
-                        // substitute operand with newReg
-                        instr->arg_[0].op_ = newReg;
+                        // substitute operand with newVar
+                        instr->arg_[0].op_ = newVar;
 
                         currentBB->value_->fixPointers();
                     }
-                    else if (opType1 == me::InstrBase::REG)
+                    else if (opType1 == me::InstrBase::VAR)
                     {
                         // insert artificial use for all critical cases
-                        me::Reg* reg = (me::Reg*) ai->arg_[1].op_;
-                        cfg_->instrList_.insert( iter, new me::NOP(reg) );
+                        me::Var* var = (me::Var*) ai->arg_[1].op_;
+                        cfg_->instrList_.insert( iter, new me::NOP(var) );
 
                         currentBB->value_->fixPointers();
                     }
-                } // if op2 REG_DEAD
+                } // if op2 VAR_DEAD
             } // if div
 
             /*
@@ -435,14 +438,14 @@ void X64RegAlloc::registerTargeting()
                 if (type != me::Op::R_INT8 && type != me::Op::R_UINT8)
                 {
                     // RDX is destroyed in all cases
-                    ai->res_.push_back( me::Res(function_->newSSA(type), 0, RDX) );
+                    ai->res_.push_back( me::Res(function_->newSSAReg(type), 0, RDX) );
 
                     if (ai->kind_ == '/')
                     {
                         // no input reg may be RDX
 
-                        // define a new Reg which is initialized with undef
-                        me::Reg* dummy = function_->newSSA(type);
+                        // define a new Var which is initialized with undef
+                        me::Var* dummy = function_->newSSAReg(type);
                         cfg_->instrList_.insert( iter->prev(), 
                             new me::AssignInstr('=', dummy, function_->newUndef(type)) );
 
@@ -600,10 +603,6 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
                 default:
                     swiftAssert( false, "unreachable code" );
             }
-            break;
-
-        case me::Op::R_STACK:
-            oss << "rbp/" << color;
             break;
 
         default:

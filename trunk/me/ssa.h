@@ -21,6 +21,7 @@
 #define ME_SSA_H
 
 #include <fstream>
+#include <typeinfo>
 
 #include "utils/graph.h"
 #include "utils/list.h"
@@ -50,13 +51,13 @@ enum
 
 struct Res
 {
-    Reg* reg_;
+    Var* var_;
     int  oldVarNr_;   ///< Left hand side old varNrs.
     int  constraint_;
 
     Res() {}
-    Res(Reg* reg, int oldVarNr, int constraint)
-        : reg_(reg)
+    Res(Var* var, int oldVarNr, int constraint)
+        : var_(var)
         , oldVarNr_(oldVarNr)
         , constraint_(constraint)
     {}
@@ -89,8 +90,8 @@ struct InstrBase
     LHS res_;
     RHS arg_;
     
-    RegSet liveIn_; /// regs that are live-in  at this instruction.
-    RegSet liveOut_;/// regs that are live-out at this instruction.
+    VarSet liveIn_; /// vars that are live-in  at this instruction.
+    VarSet liveOut_;/// vars that are live-out at this instruction.
 
     bool constrained_;
 
@@ -106,35 +107,35 @@ struct InstrBase
      */
 
      /** 
-      * @brief Finds out whether \p reg is used in this instruction. 
+      * @brief Finds out whether \p var is used in this instruction. 
       *
-      * I.e. this reg occurs on the right hand side.
+      * I.e. this var occurs on the right hand side.
       * 
-      * @param reg The Reg which is looked for.
+      * @param var The Var which is looked for.
       * 
       * @return True - if this is used here, false otherwise. 
       */
-     bool isRegUsed(Reg* reg);
+     bool isVarUsed(Var* var);
  
     /** 
-     * @brief Finds out whether \p reg is defined in this instruction. 
+     * @brief Finds out whether \p var is defined in this instruction. 
      *
-     * I.e. this reg occurs on the left hand side.
+     * I.e. this var occurs on the left hand side.
      * 
-     * @param reg The Reg which is looked for.
+     * @param var The Var which is looked for.
      * 
      * @return True - if this is defined here, false otherwise. 
      */
-    bool isRegDefined(Reg* reg);
+    bool isVarDefined(Var* var);
 
     /** 
-     * @brief Finds occurance of \p reg.
+     * @brief Finds occurance of \p var.
      * 
-     * @param reg The definition to be searched.
+     * @param var The definition to be searched.
      * 
-     * @return If found \p reg is return, 0 otherwise.
+     * @return If found \p var is return, 0 otherwise.
      */
-    Reg* findResult(Reg* reg);
+    Var* findResult(Var* var);
 
     /** 
      * @brief Finds \em first occurance of \p op.
@@ -151,13 +152,13 @@ struct InstrBase
 
     void unconstrainIfPossible();
 
-    bool livesThrough(me::Reg* reg) const;
+    bool livesThrough(Var* var) const;
 
     enum OpType
     {
         CONST, 
-        REG,
-        REG_DEAD
+        VAR,
+        VAR_DEAD
     };
     
     OpType getOpType(size_t i) const;
@@ -168,9 +169,9 @@ struct InstrBase
      *
      * @param instrNode The instruction which should be tested. \p instr must have
      *      a predecessor and must contain a BaseAssignInstr.
-     * @param var The Reg which should be tested.
+     * @param var The Var which should be tested.
      */
-    static bool isLastUse(InstrNode* instrNode, Reg* var);
+    static bool isLastUse(InstrNode* instrNode, Var* var);
 
     virtual std::string toString() const = 0;
 
@@ -212,15 +213,15 @@ struct PhiInstr : public InstrBase
      * constructor and destructor
      */
 
-    PhiInstr(Reg* result, size_t numRhs);
+    PhiInstr(Var* result, size_t numRhs);
     ~PhiInstr();
 
     /*
      * getters
      */
 
-    Reg* result();
-    const Reg* result() const;
+    Var* result();
+    const Var* result() const;
 
     int oldResultNr() const;
 
@@ -296,17 +297,14 @@ struct AssignInstr : public InstrBase
      * constructor
      */
 
-    AssignInstr(int kind, Reg* result, Op* op1, Op* op2 = 0);
+    AssignInstr(int kind, Var* result, Op* op1, Op* op2 = 0);
 
     /*
      * further methods
      */
 
-    Reg* resReg()
-    {
-        swiftAssert( !res_.empty(), "must not be empty" );
-        return res_[0].reg_;
-    }
+    Var* resVar();
+    Reg* resReg();
 
     bool isArithmetic() const;
     bool isComparison() const;
@@ -329,9 +327,9 @@ struct NOP : public InstrBase
      */
 
     /** 
-     * @brief Constructor with on Reg arg as use.
+     * @brief Constructor with on Var arg as use.
      * 
-     * @param op The Reg which should be used here. 
+     * @param op The Var which should be used here. 
      */
     NOP(Op* op);
 
@@ -440,17 +438,14 @@ struct Spill : public InstrBase
      * constructor
      */
 
-    Spill(Reg* result, Reg* arg);
+    Spill(Var* result, Var* arg);
 
     /*
      * further methods
      */
 
-    Reg* resReg()
-    {
-        swiftAssert( !res_.empty(), "must not be empty" );
-        return res_[0].reg_;
-    }
+    Var* resVar();
+    Reg* resReg();
 
     std::string toString() const;
 };
@@ -463,17 +458,14 @@ struct Reload : public InstrBase
      * constructor
      */
 
-    Reload(Reg* result, Reg* arg);
+    Reload(Var* result, Var* arg);
 
     /*
      * further methods
      */
 
-    Reg* resReg()
-    {
-        swiftAssert( !res_.empty(), "must not be empty" );
-        return res_[0].reg_;
-    }
+    Var* resVar();
+    Reg* resReg();
 
     std::string toString() const;
 };
@@ -484,8 +476,8 @@ struct Reload : public InstrBase
  * @brief Load from a stack location or an arbitrary memory location.
  *
  * A Load actually has two versions: <br>
- * - reg = Load(stack_var, offset) <br>
- * - reg = Load(ptr, offset) <br>
+ * - var = Load(stack_var, offset) <br>
+ * - var = Load(ptr, offset) <br>
  * The former variant fetches an item from the stack. 
  * The latter one fetches an item from an arbitrary memory location. <br>
  * Note that the offset is not a real argument it is just a member of this
@@ -503,7 +495,7 @@ struct Load : public InstrBase
      * @brief Loads the the content of \p mem via \p ptr with an at 
      * compile time known \p offset into \p result.
      * 
-     * @param result A proper pseudo-register. Is an lvalue.
+     * @param result A proper pseudo-varister. Is an lvalue.
      *
      * @param location The memory location to load from. Must be either of 
      *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
@@ -511,7 +503,7 @@ struct Load : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    Load(Reg* result, Reg* location, Offset* offset);
+    Load(Var* result, Var* location, Offset* offset);
     ~Load();
 
     /*
@@ -554,7 +546,7 @@ struct Store : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    Store(Reg* location, Op* arg, Offset* offset);
+    Store(Var* location, Op* arg, Offset* offset);
     ~Store();
 
     /*

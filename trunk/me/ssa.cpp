@@ -62,9 +62,9 @@ std::string res2str(const InstrBase::LHS& res)
     std::ostringstream oss;
 
     for (size_t i = 0; i < res.size() - 1; ++i)
-        oss << res[i].reg_->toString() << ", ";
+        oss << res[i].var_->toString() << ", ";
 
-    oss << res[ res.size() - 1 ].reg_->toString();
+    oss << res[ res.size() - 1 ].var_->toString();
 
     return oss.str();
 }
@@ -95,12 +95,12 @@ InstrBase::~InstrBase()
  * further methods
  */
 
-bool InstrBase::isRegUsed(Reg* reg) 
+bool InstrBase::isVarUsed(Var* var) 
 {
     // for each var on the arg
     for (size_t i = 0; i < arg_.size(); ++i) 
     {
-        if (arg_[i].op_ == reg)
+        if (arg_[i].op_ == var)
             return true;
     }
 
@@ -108,12 +108,12 @@ bool InstrBase::isRegUsed(Reg* reg)
     return false;
 }
 
-bool InstrBase::isRegDefined(Reg* reg) 
+bool InstrBase::isVarDefined(Var* var) 
 {
     // for each var on the res
     for (size_t i = 0; i < res_.size(); ++i) 
     {
-        if (res_[i].reg_ == reg)
+        if (res_[i].var_ == var)
             return true;
     }
 
@@ -123,15 +123,15 @@ bool InstrBase::isRegDefined(Reg* reg)
 
 struct ResFinder
 {
-    Reg* reg_;
+    Var* var_;
 
-    ResFinder(Reg* reg)
-        : reg_(reg)
+    ResFinder(Var* var)
+        : var_(var)
     {}
 
     bool operator () (const Res& res)
     {
-        return reg_ == res.reg_;
+        return var_ == res.var_;
     }
 };
 
@@ -149,14 +149,14 @@ struct ArgFinder
     }
 };
 
-Reg* InstrBase::findResult(Reg* reg)
+Var* InstrBase::findResult(Var* var)
 {
-    LHS::const_iterator iter = std::find_if( res_.begin(), res_.end(), ResFinder(reg) );
+    LHS::const_iterator iter = std::find_if( res_.begin(), res_.end(), ResFinder(var) );
 
     if ( iter == res_.end() )
         return false;
 
-    return iter->reg_;
+    return iter->var_;
 }
 
 Op* InstrBase::findArg(Op* op)
@@ -197,9 +197,9 @@ void InstrBase::unconstrainIfPossible()
     constrained_ = false;
 }
 
-bool InstrBase::livesThrough(Reg* reg) const
+bool InstrBase::livesThrough(Var* var) const
 {
-    return liveIn_.contains(reg) && liveOut_.contains(reg);
+    return liveIn_.contains(var) && liveOut_.contains(var);
 }
 
 InstrBase::OpType InstrBase::getOpType(size_t i) const
@@ -207,16 +207,16 @@ InstrBase::OpType InstrBase::getOpType(size_t i) const
     if ( typeid(*arg_[i].op_) == typeid(Const) )
         return CONST;
 
-    swiftAssert( typeid(*arg_[i].op_) == typeid(Reg), "must be a Reg" );
-    Reg* reg = (Reg*) arg_[i].op_;
+    swiftAssert( dynamic_cast<Var*>(arg_[i].op_), "must be a Var" );
+    Var* var = (Var*) arg_[i].op_;
 
-    if ( !liveOut_.contains(reg) )
-        return REG_DEAD;
+    if ( !liveOut_.contains(var) )
+        return VAR_DEAD;
     else
-        return REG;
+        return VAR;
 }
 
-bool InstrBase::isLastUse(InstrNode* instrNode, Reg* var)
+bool InstrBase::isLastUse(InstrNode* instrNode, Var* var)
 {
     InstrBase* instr = instrNode->value_;
 
@@ -231,13 +231,13 @@ std::string InstrBase::livenessString() const
     // print live in infos
     oss << "\tlive IN:" << std::endl;
 
-    REGSET_EACH(iter, liveIn_)
+    VARSET_EACH(iter, liveIn_)
         oss << "\t\t" << (*iter)->toString() << std::endl;
 
     // print live out infos
     oss << "\tlive OUT:" << std::endl;
 
-    REGSET_EACH(iter, liveOut_)
+    VARSET_EACH(iter, liveOut_)
         oss << "\t\t" << (*iter)->toString() << std::endl;
 
     return oss.str();
@@ -302,12 +302,12 @@ std::string NOP::toString() const
  * constructor and destructor
  */
 
-PhiInstr::PhiInstr(Reg* result, size_t numRhs)
+PhiInstr::PhiInstr(Var* result, size_t numRhs)
     : InstrBase(1, numRhs) // phi functions always have one result
     , sourceBBs_( new BBNode*[numRhs] )
 {
     // init result
-    res_[0].reg_ = result;
+    res_[0].var_ = result;
     res_[0].oldVarNr_ = result->varNr_;
     res_[0].constraint_ = NO_CONSTRAINT;
 
@@ -324,14 +324,14 @@ PhiInstr::~PhiInstr()
  * getters
  */
 
-Reg* PhiInstr::result()
+Var* PhiInstr::result()
 {
-    return res_[0].reg_;
+    return res_[0].var_;
 }
 
-const Reg* PhiInstr::result() const
+const Var* PhiInstr::result() const
 {
-    return res_[0].reg_;
+    return res_[0].var_;
 }
 
 int PhiInstr::oldResultNr() const
@@ -376,12 +376,12 @@ std::string PhiInstr::toString() const
  * constructor
  */
 
-AssignInstr::AssignInstr(int kind, Reg* result, Op* op1, Op* op2 /*= 0*/)
+AssignInstr::AssignInstr(int kind, Var* result, Op* op1, Op* op2 /*= 0*/)
     // an AssignInstr always have exactly one result and one or two args
     : InstrBase(1, op2 ? 2 : 1) 
     , kind_(kind)
 {
-    res_[0].reg_ = result;
+    res_[0].var_ = result;
     res_[0].oldVarNr_= result->varNr_;
     res_[0].constraint_= NO_CONSTRAINT;
 
@@ -441,6 +441,18 @@ std::string AssignInstr::getOpString() const
     return opString;
 }
 
+Var* AssignInstr::resVar()
+{
+    swiftAssert( !res_.empty(), "must not be empty" );
+    return res_[0].var_;
+}
+
+Reg* AssignInstr::resReg()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+    return (Reg*) res_[0].var_;
+}
+
 bool AssignInstr::isComparison() const
 {
     return (kind_ == EQ  || kind_ == NE  || 
@@ -458,10 +470,10 @@ std::string AssignInstr::toString() const
 {
     std::string opString = getOpString();
     std::ostringstream oss;
-    oss << res_[0].reg_->toString();
+    oss << res_[0].var_->toString();
 
     for (size_t i = 1; i < res_.size(); ++i)
-        oss << ", " << res_[i].reg_->toString();
+        oss << ", " << res_[i].var_->toString();
 
     oss << '\t';
 
@@ -562,7 +574,7 @@ BranchInstr::BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel
     : JumpInstr(0, 1, 2) // always no results, one arg, two targets
     , cc_(CC_NOT_SET)
 {
-    swiftAssert(boolOp->type_ == Reg::R_BOOL, "this is not a boolean pseudo reg");
+    swiftAssert(boolOp->type_ == Var::R_BOOL, "this is not a boolean pseudo var");
     arg_[0].op_ = boolOp;
 
     instrTargets_[0] = trueLabel;
@@ -628,11 +640,11 @@ std::string BranchInstr::toString() const
  * constructor
  */
 
-Spill::Spill(Reg* result, Reg* arg)
+Spill::Spill(Var* result, Var* arg)
     : InstrBase(1, 1)
 {
     swiftAssert( result->isSpilled(), "result must be a memory var" );
-    res_[0].reg_ = result;
+    res_[0].var_ = result;
     res_[0].oldVarNr_ = result->varNr_;
     res_[0].constraint_ = NO_CONSTRAINT;
 
@@ -648,9 +660,21 @@ Spill::Spill(Reg* result, Reg* arg)
 std::string Spill::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= spill(" << arg_[0].op_->toString() << ")";
+    oss << res_[0].var_->toString() << "\t= spill(" << arg_[0].op_->toString() << ")";
 
     return oss.str();
+}
+
+Var* Spill::resVar()
+{
+    swiftAssert( !res_.empty(), "must not be empty" );
+    return res_[0].var_;
+}
+
+Reg* Spill::resReg()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+    return (Reg*) res_[0].var_;
 }
 
 //------------------------------------------------------------------------------
@@ -659,11 +683,11 @@ std::string Spill::toString() const
  * constructor
  */
 
-Reload::Reload(Reg* result, Reg* arg)
+Reload::Reload(Var* result, Var* arg)
     : InstrBase(1, 1)
 {
     swiftAssert( !result->isSpilled(), "result must not be a memory var" );
-    res_[0].reg_ = result;
+    res_[0].var_ = result;
     res_[0].oldVarNr_ = result->varNr_;
     res_[0].constraint_ = NO_CONSTRAINT;
 
@@ -676,10 +700,23 @@ Reload::Reload(Reg* result, Reg* arg)
  * further methods
  */
 
+Var* Reload::resVar()
+{
+    swiftAssert( !res_.empty(), "must not be empty" );
+    return res_[0].var_;
+}
+
+Reg* Reload::resReg()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+    return (Reg*) res_[0].var_;
+}
+
+
 std::string Reload::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= reload(" 
+    oss << res_[0].var_->toString() << "\t= reload(" 
         << arg_[0].op_->toString() << ")";
 
     return oss.str();
@@ -691,14 +728,14 @@ std::string Reload::toString() const
  * constructor and destructor
  */
 
-Load::Load(Reg* result, Reg* location, Offset* offset)
+Load::Load(Var* result, Var* location, Offset* offset)
     : InstrBase(1, 1)
     , offset_(offset)
 {
     swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
             "must be an R_PTR");
 
-    res_[0].reg_ = result;
+    res_[0].var_ = result;
     res_[0].constraint_ = NO_CONSTRAINT;
     res_[0].oldVarNr_ = result->varNr_;
 
@@ -718,7 +755,7 @@ Load::~Load()
 std::string Load::toString() const
 {
     std::ostringstream oss;
-    oss << res_[0].reg_->toString() << "\t= Load(" 
+    oss << res_[0].var_->toString() << "\t= Load(" 
         << arg_[0].op_->toString() << ", "
         << offset_->toString() << ')';
 
@@ -731,7 +768,7 @@ std::string Load::toString() const
  * constructor and destructor
  */
 
-Store::Store(Reg* location, Op* arg, Offset* offset)
+Store::Store(Var* location, Op* arg, Offset* offset)
     : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
     , offset_(offset)
 {
@@ -741,7 +778,7 @@ Store::Store(Reg* location, Op* arg, Offset* offset)
     if (location->type_ == Op::R_STACK)
     {
         // -> store to a location on the stack
-        res_[0].reg_ = location;
+        res_[0].var_ = location;
         res_[0].constraint_ = NO_CONSTRAINT;
         res_[0].oldVarNr_ = location->varNr_;
     }
@@ -778,7 +815,7 @@ std::string Store::toString() const
     else
     {
         // -> store to a location on the stack
-        oss << res_[0].reg_->toString() << "\t= Store(" 
+        oss << res_[0].var_->toString() << "\t= Store(" 
             << arg_[0]. op_->toString() << ", "
             << arg_[1]. op_->toString();
     }

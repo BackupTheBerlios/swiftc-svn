@@ -25,6 +25,7 @@
 
 #include "utils/assert.h"
 
+#include "me/arch.h"
 #include "me/struct.h"
 
 using namespace std;
@@ -39,15 +40,15 @@ FuncTab* functab = 0;
  * constructor and destructor
  */
 
-Function::Function(std::string* id)
+Function::Function(std::string* id, size_t stackPlaces)
     : id_(id)
-    , regCounter_(0)
+    , ssaCounter_(0)
     , varCounter_(-1) // >= 0 is reserved for vars already in SSA form
     , cfg_(this)
     , firstLiveness_(false)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
-    , spillSlots_(-1)
+    , stackLayout_(stackPlaces)
 {}
 
 Function::~Function()
@@ -56,14 +57,14 @@ Function::~Function()
     for (InstrNode* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
         delete iter->value_;
 
-    // delete all pseudo regs
-    for (RegMap::iterator iter = in_   .begin(); iter != in_   .end(); ++iter)
+    // delete all pseudo vars
+    for (VarMap::iterator iter = in_   .begin(); iter != in_   .end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = inout_.begin(); iter != inout_.end(); ++iter)
+    for (VarMap::iterator iter = inout_.begin(); iter != inout_.end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = out_  .begin(); iter != out_  .end(); ++iter)
+    for (VarMap::iterator iter = out_  .begin(); iter != out_  .end(); ++iter)
         delete iter->second;
-    for (RegMap::iterator iter = vars_ .begin(); iter != vars_ .end(); ++iter)
+    for (VarMap::iterator iter = vars_ .begin(); iter != vars_ .end(); ++iter)
         delete iter->second;
 
     for (size_t i = 0; i < consts_.size(); ++i)
@@ -78,25 +79,17 @@ Function::~Function()
  * further methods
  */
 
-inline void Function::insert(Reg* reg)
+inline void Function::insert(Var* var)
 {
-    pair<RegMap::iterator, bool> p
-        = vars_.insert( make_pair(reg->varNr_, reg) );
+    pair<VarMap::iterator, bool> p
+        = vars_.insert( make_pair(var->varNr_, var) );
 
-    swiftAssert(p.second, "there is already a reg with this varNr in the map");
+    swiftAssert(p.second, "there is already a var with this varNr in the map");
 }
 
 #ifdef SWIFT_DEBUG
 
-Reg* Function::newSSA(Op::Type type, std::string* id /*= 0*/)
-{
-    Reg* reg = new Reg(type, regCounter_++, id);
-    insert(reg);
-
-    return reg;
-}
-
-Reg* Function::newVar(Op::Type type, std::string* id)
+Reg* Function::newReg(Op::Type type, const std::string* id /*= 0*/)
 {
     Reg* reg = new Reg(type, varCounter_--, id);
     insert(reg);
@@ -104,43 +97,50 @@ Reg* Function::newVar(Op::Type type, std::string* id)
     return reg;
 }
 
-Reg* Function::newMemSSA(Op::Type type, std::string* id /*= 0*/)
+Reg* Function::newSSAReg(Op::Type type, const std::string* id /*= 0*/)
 {
-    Reg* reg = new Reg(type, regCounter_++, id);
+    Reg* reg = new Reg(type, ssaCounter_++, id);
+    insert(reg);
+
+    return reg;
+}
+
+Reg* Function::newSpilledSSAReg(Op::Type type, const std::string* id /*= 0*/)
+{
+    Reg* reg = new Reg(type, ssaCounter_++, id);
     reg->isSpilled_ = true;
     insert(reg);
 
     return reg;
+}
+
+MemVar* Function::newMemVar(Member* memory, const std::string* id /*= 0*/)
+{
+    MemVar* var = new MemVar(memory, varCounter_--, id);
+    insert(var);
+
+    return var;
+}
+
+MemVar* Function::newSSAMemVar(Member* memory, const std::string* id /*= 0*/)
+{
+    MemVar* var = new MemVar(memory, ssaCounter_++, id);
+    insert(var);
+
+    return var;
 }
 
 #else // SWIFT_DEBUG
 
-Reg* Function::newSSA(Op::Type type)
-{
-    Reg* reg = new Reg(type, regCounter_++);
-    insert(reg);
-
-    return reg;
-}
-
-Reg* Function::newVar(Op::Type type)
-{
-    Reg* reg = new Reg(type, varCounter_--);
-    insert(reg);
-
-    return reg;
-}
-
-Reg* Function::newMemSSA(Op::Type type)
-{
-    Reg* reg = new Reg(type, regCounter_++);
-    reg->isSpilled_ = true;
-    insert(reg);
-
-    return reg;
-}
-
 #endif // SWIFT_DEBUG
+
+Var* Function::cloneNewSSA(Var* var)
+{
+    Var* newVar = var->clone(ssaCounter_++);
+    insert(newVar);
+
+    return newVar;
+}
 
 Const* Function::newConst(Op::Type type)
 {
@@ -234,7 +234,7 @@ FunctionTable::~FunctionTable()
 
 Function* FunctionTable::insertFunction(string* id)
 {
-    currentFunction_ = new Function(id);
+    currentFunction_ = new Function( id, me::arch->getNumStackPlaces() );
     functions_.insert( make_pair(id, currentFunction_) );
 
     return currentFunction_;
@@ -242,39 +242,40 @@ Function* FunctionTable::insertFunction(string* id)
 
 #ifdef SWIFT_DEBUG
 
-Reg* FunctionTable::newSSA(Op::Type type, std::string* id /*= 0*/)
+Reg* FunctionTable::newReg(Op::Type type, const std::string* id /*= 0*/)
 {
-    return currentFunction_->newSSA(type, id);
+    return currentFunction_->newReg(type, id);
 }
 
-Reg* FunctionTable::newVar(Op::Type type, std::string* id)
+Reg* FunctionTable::newSSAReg(Op::Type type, const std::string* id /*= 0*/)
 {
-    return currentFunction_->newVar(type, id);
+    return currentFunction_->newSSAReg(type, id);
 }
 
-Reg* FunctionTable::newMemSSA(Op::Type type, std::string* id /*= 0*/)
+Reg* FunctionTable::newSpilledSSAReg(Op::Type type, const std::string* id /*= 0*/)
 {
-    return currentFunction_->newMemSSA(type, id);
+    return currentFunction_->newSpilledSSAReg(type, id);
+}
+
+MemVar* FunctionTable::newMemVar(Member* memory, const std::string* id /*= 0*/)
+{
+    return currentFunction_->newMemVar(memory, id);
+}
+
+MemVar* FunctionTable::newSSAMemVar(Member* memory, const std::string* id /*= 0*/)
+{
+    return currentFunction_->newSSAMemVar(memory, id);
 }
 
 #else // SWIFT_DEBUG
 
-Reg* FunctionTable::newSSA(Op::Type type)
-{
-    return currentFunction_->newSSA(type);
-}
-
-Reg* FunctionTable::newVar(Op::Type type)
-{
-    return currentFunction_->newVar(type);
-}
-
-Reg* FunctionTable::newMemSSA(Op::Type type)
-{
-    return currentFunction_->newMemSSA(type);
-}
 
 #endif // SWIFT_DEBUG
+
+Var* FunctionTable::cloneNewSSA(Var* var)
+{
+    return currentFunction_->cloneNewSSA(var);
+}
 
 Const* FunctionTable::newConst(Op::Type type)
 {
@@ -286,14 +287,14 @@ Undef* FunctionTable::newUndef(Op::Type type)
     return currentFunction_->newUndef(type);
 }
 
-Reg* FunctionTable::lookupReg(int id)
+Var* FunctionTable::lookupVar(int id)
 {
-    RegMap::iterator regIter = currentFunction_->vars_.find(id);
+    VarMap::iterator varIter = currentFunction_->vars_.find(id);
 
-    if ( regIter == currentFunction_->vars_.end() )
+    if ( varIter == currentFunction_->vars_.end() )
         return 0;
     else
-        return regIter->second;
+        return varIter->second;
 }
 
 void FunctionTable::appendInstr(InstrBase* instr)

@@ -193,15 +193,15 @@ bool Declaration::analyze()
     if ( !type_->isBuiltin() )
     {
         if (!exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->reg_, 
-                        me::functab->newUndef(local_->reg_->type_)) );
+            me::functab->appendInstr( new me::AssignInstr('=', local_->meVar_, 
+                        me::functab->newUndef(local_->meVar_->type_)) );
         else
             swiftAssert(false, "TODO");
     }
     else
     {
         if (exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->reg_,
+            me::functab->appendInstr( new me::AssignInstr('=', local_->meVar_,
                         exprList_->expr_->place_) );
     }
 
@@ -254,7 +254,7 @@ bool AssignStatement::analyze()
 
 void AssignStatement::genSSA()
 {
-    swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), 
+    swiftAssert( dynamic_cast<me::Var*>(expr_->place_),
             "expr_->place must be a me::Reg*" );
 
     if ( typeid(*expr_) == typeid(MemberAccess))
@@ -262,8 +262,8 @@ void AssignStatement::genSSA()
         MemberAccess* ma = (MemberAccess*) expr_;
 
         me::Store* store = new me::Store( 
-                (me::Reg*) ma->place_,              // memory variable
-                (me::Reg*) exprList_->expr_->place_,// argument 
+                (me::Var*) ma->place_,              // memory variable
+                (me::Var*) exprList_->expr_->place_,// argument 
                 ma->rootStructOffset_);             // offset 
         me::functab->appendInstr(store);
     }

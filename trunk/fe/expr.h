@@ -32,6 +32,8 @@ namespace me {
     struct Struct;
     struct StructOffset;
     struct Member;
+    struct MemVar;
+    struct Var;
 }
 
 namespace swift {
@@ -264,7 +266,7 @@ struct MemberAccess : public Expr
     bool right_;
     me::StructOffset* structOffset_;
     me::StructOffset* rootStructOffset_;
-    me::Reg* memPlace_;
+    me::MemVar* memPlace_;
 
 
     /*

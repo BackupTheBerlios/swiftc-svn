@@ -27,7 +27,7 @@
 #include "me/functab.h"
 
 namespace me {
-    struct Reg;
+    struct Var;
 }
 
 namespace swift {
@@ -45,7 +45,7 @@ struct Var : public Symbol
 {
     Type* type_;
 
-    me::Reg* reg_;
+    me::Var* meVar_;
 
     enum
     {
@@ -56,7 +56,7 @@ struct Var : public Symbol
      * constructor and destructor
      */
 
-    Var(Type* type, me::Reg* reg, std::string* id, int line = NO_LINE);
+    Var(Type* type, me::Var* var, std::string* id, int line = NO_LINE);
     virtual ~Var();
 };
 
@@ -72,7 +72,7 @@ struct Local : public Var
      * constructor
      */
 
-    Local(Type* type, me::Reg* reg, std::string* id, int line = NO_LINE);
+    Local(Type* type, me::Var* var, std::string* id, int line = NO_LINE);
 };
 
 //------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ struct Param : public Var
     static bool check(const Param* param1, const Param* param2);
 
     /// Check whether this Param has a correct Type.
-    bool validateAndCreateReg(); 
+    bool validateAndCreateVar(); 
 };
 
 } // namespace swift

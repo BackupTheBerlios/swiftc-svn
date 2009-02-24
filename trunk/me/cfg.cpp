@@ -170,14 +170,14 @@ void CFG::calcCFG()
         // for each var on the left hand side
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            me::Reg* reg = instr->res_[i].reg_;
+            me::Var* var = instr->res_[i].var_;
 
-            if ( !reg->isSSA() )
+            if ( !var->isSSA() )
             {
                 swiftAssert(currentBB, "currentBB must have been found here");
 
-                int varNr = reg->varNr_;
-                currentBB->value_->vars_[varNr] = reg;
+                int varNr = var->varNr_;
+                currentBB->value_->vars_[varNr] = var;
 
                 if ( firstOccurance_.find(varNr) == firstOccurance_.end() )
                     firstOccurance_[varNr] = currentBB;
@@ -472,12 +472,12 @@ void CFG::placePhiFunctions()
     int iterCount = 0;
 
     // for each var not in SSA form, i.e. varNr_ > 0
-    RegMap::iterator bound = function_->vars_.lower_bound(0); // 0 itself is not in the map
-    for (RegMap::iterator iter = function_->vars_.begin(); iter != bound; ++iter)
+    VarMap::iterator bound = function_->vars_.lower_bound(0); // 0 itself is not in the map
+    for (VarMap::iterator iter = function_->vars_.begin(); iter != bound; ++iter)
     {
         ++iterCount;
 
-        Reg* var = iter->second;
+        Var* var = iter->second;
         swiftAssert( !var->isSSA(), "var is already in SSA form" );
 
         BBList work;
@@ -545,9 +545,9 @@ void CFG::placePhiFunctions()
 
 void CFG::renameVars()
 {
-    RegMap& vars = function_->vars_;
+    VarMap& vars = function_->vars_;
 
-    std::vector< std::stack<Reg*> > names;
+    std::vector< std::stack<Var*> > names;
     // since index 0 is reserved for constants the stack-array's size must be increased by one
     names.resize( -vars.begin()->first + 1 );
 
@@ -563,14 +563,14 @@ void CFG::renameVars()
         postOrder_[i]->value_->vars_.clear();
 
     // for each vars, no temps
-    for (RegMap::iterator iter = vars.begin(); iter->first < 0 && iter != vars.end(); ++iter)
+    for (VarMap::iterator iter = vars.begin(); iter->first < 0 && iter != vars.end(); ++iter)
     {
         delete iter->second;
         vars.erase(iter);
     }
 }
 
-void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
+void CFG::rename(BBNode* bb, std::vector< std::stack<Var*> >& names)
 {
     // for each instruction in bb except the leading LabelInstr
     for (InstrNode* iter = bb->value_->firstPhi_; iter != bb->value_->end_; iter = iter->next())
@@ -583,12 +583,12 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
             // replace vars on the right hand side
             for (size_t i = 0; i < instr->arg_.size(); ++i)
             {
-                me::Reg* reg = dynamic_cast<me::Reg*>( instr->arg_[i].op_ );
+                me::Var* var = dynamic_cast<me::Var*>( instr->arg_[i].op_ );
 
-                if ( reg && !reg->isSSA() )
+                if ( var && !var->isSSA() )
                 {
-                    swiftAssert( !names[ reg->var2Index() ].empty(), "stack is empty here");
-                    instr->arg_[i].op_ = names[ reg->var2Index() ].top();
+                    swiftAssert( !names[ var->var2Index() ].empty(), "stack is empty here");
+                    instr->arg_[i].op_ = names[ var->var2Index() ].top();
                 }
             }
         }
@@ -596,17 +596,13 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Reg*> >& names)
         // replace var on the left hand side in all cases
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            if ( !instr->res_[i].reg_->isSSA() )
+            if ( !instr->res_[i].var_->isSSA() )
             {
-#ifdef SWIFT_DEBUG
-                Reg* reg = function_->newSSA(instr->res_[i].reg_->type_, &instr->res_[i].reg_->id_);
-#else // SWIFT_DEBUG
-                Reg* reg = function_->newSSA(instr->res_[i].reg_->type_);
-#endif // SWIFT_DEBUG
+                Var* var = function_->cloneNewSSA(instr->res_[i].var_);
 
                 swiftAssert(size_t(-instr->res_[i].oldVarNr_) < names.size(), "index out of bounds");
-                names[ -instr->res_[i].oldVarNr_ ].push(reg);
-                instr->res_[i].reg_ = reg;
+                names[ -instr->res_[i].oldVarNr_ ].push(var);
+                instr->res_[i].var_ = var;
             }
         }
     } // for each instruction
@@ -809,20 +805,20 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
  * SSA reconstruction and rewiring
  */
 
-void CFG::reconstructSSAForm(RegDefUse* rdu)
+void CFG::reconstructSSAForm(VarDefUse* vdu)
 {
     BBSet defBBs;
 
     /*
      * calculate iterated dominance frontier for all defining basic blocks
      */
-    DEFUSELIST_EACH(iter, rdu->defs_)
+    DEFUSELIST_EACH(iter, vdu->defs_)
         defBBs.insert(iter->value_.bbNode_);
 
     BBSet iDF = calcIteratedDomFrontier(defBBs);
 
     // for each use
-    DEFUSELIST_EACH(iter, rdu->uses_)
+    DEFUSELIST_EACH(iter, vdu->uses_)
     {
         DefUse& du = iter->value_;
         BBNode* bbNode = du.bbNode_;
@@ -836,22 +832,21 @@ void CFG::reconstructSSAForm(RegDefUse* rdu)
         // for each arg for which instr->arg_[i] in defs
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
+            Var* useVar = (Var*) dynamic_cast<Var*>(instr->arg_[i].op_);
+            if (!useVar) 
                 continue;
 
-            Reg* useReg = (Reg*) instr->arg_[i].op_;
-
-            DEFUSELIST_EACH(iter, rdu->defs_)
+            DEFUSELIST_EACH(iter, vdu->defs_)
             {
-                Reg* defReg = iter->value_.reg_;
+                Var* defVar = iter->value_.var_;
 
                 // substitute arg with proper definition
-                if (useReg == defReg)
+                if (useVar == defVar)
                 {
 #ifdef SWIFT_DEBUG
                     found = true;
 #endif // SWIFT_DEBUG
-                    instr->arg_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+                    instr->arg_[i].op_ = findDef(i, instrNode, bbNode, vdu, iDF);
                 }
             } // for each def
         } // for each arg of use
@@ -859,7 +854,7 @@ void CFG::reconstructSSAForm(RegDefUse* rdu)
     } // for each use
 }
 
-Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF)
+Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu, BBSet& iDF)
 {
     if ( typeid(*instrNode->value_) == typeid(PhiInstr) )
     {
@@ -877,20 +872,20 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
         {
             InstrBase* instr = instrNode->value_; 
 
-            // defines instr one of rdu?
+            // defines instr one of vdu?
             for (size_t i = 0; i < instr->res_.size(); ++i)
             {
-                if ( typeid(*instr->res_[i].reg_) != typeid(Reg) )
+                Var* instrVar = dynamic_cast<Var*>(instr->res_[i].var_);
+
+                if (!instrVar)
                     continue;
 
-                Reg* instrReg = (Reg*) instr->res_[i].reg_;
-
-                DEFUSELIST_EACH(iter, rdu->defs_)
+                DEFUSELIST_EACH(iter, vdu->defs_)
                 {
-                    Reg* defReg = iter->value_.reg_;
+                    Var* defVar = iter->value_.var_;
 
-                    if (instrReg == defReg)
-                        return instrReg; // yes -> return the defined reg
+                    if (instrVar == defVar)
+                        return instrVar; // yes -> return the defined var
                 }
             }
 
@@ -905,20 +900,13 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             // -> place phi function
             swiftAssert(bbNode->pred_.size() > 1, 
                     "current basic block must have more than 1 predecessors");
-            Reg* reg = rdu->defs_.first()->value_.reg_;
+            Var* var = vdu->defs_.first()->value_.var_;
 
             // create new result
-#ifdef SWIFT_DEBUG
-            Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-            Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
-
-            if ( rdu->defs_.first()->value_.reg_->isSpilled() )
-                newReg->isSpilled_ = true;
+            Var* newVar = function_->cloneNewSSA(var);
 
             // create phi instruction
-            PhiInstr* phi = new PhiInstr( newReg, bbNode->pred_.size() );
+            PhiInstr* phi = new PhiInstr( newVar, bbNode->pred_.size() );
 
             // init sourceBBs
             size_t counter = 0;
@@ -932,11 +920,11 @@ Reg* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu
             bb->firstPhi_ = instrNode;
 
             // register new definition
-            rdu->defs_.append( DefUse(newReg, instrNode, bbNode) );
+            vdu->defs_.append( DefUse(newVar, instrNode, bbNode) );
 
             for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
-                phi->arg_[i].op_ = findDef(i, instrNode, bbNode, rdu, iDF);
+                phi->arg_[i].op_ = findDef(i, instrNode, bbNode, vdu, iDF);
             }
 
             return phi->result();

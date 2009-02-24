@@ -35,6 +35,16 @@ bool Op::typeCheck(int typeMask) const
     return type_ & typeMask;
 }
 
+Reg* Op::colorReg(int /*typeMask*/)
+{
+    return 0;
+}
+
+Reg* Op::isSpilled()
+{
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -114,38 +124,20 @@ std::string Undef::toString() const {
 
 #ifdef SWIFT_DEBUG
 
-Reg::Reg(Type type, int varNr, const std::string* id /*= 0*/)
+Var::Var(Type type, int varNr, const std::string* id /*= 0*/)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
-    , isSpilled_(false)
     , id_( id ? *id : "")
 {}
 
-Reg* Reg::clone() const
-{
-    // TODO make use of it
-    Reg* reg = new Reg(type_, varNr_, &id_);
-    reg->isSpilled_ = isSpilled_;
-    return reg;
-}
-
 #else // SWIFT_DEBUG
 
-Reg::Reg(Type type, int varNr)
+Var::Var(Type type, int varNr)
     : Op(type)
     , varNr_(varNr)
     , color_(NOT_COLORED_YET)
-    , isSpilled_(false)
 {}
-
-Reg* Reg::clone() const
-{
-    // TODO make use of it
-    Reg* reg = new Reg(type_, varNr_);
-    reg->isSpilled_ = isSpilled_;
-    return reg;
-}
 
 #endif // SWIFT_DEBUG
 
@@ -153,34 +145,21 @@ Reg* Reg::clone() const
  * further methods
  */
 
-bool Reg::isSSA() const
+bool Var::isSSA() const
 {
     return varNr_ >= 0;
 }
 
-size_t Reg::var2Index() const
+size_t Var::var2Index() const
 {
     swiftAssert(varNr_ < 0, "this is not a var");
 
     return size_t(-varNr_);
 }
 
-bool Reg::isSpilled() const
-{
-    return isSpilled_;
-}
-
-bool Reg::colorReg(int typeMask) const
-{
-    return ( !isSpilled() && typeCheck(typeMask) );
-}
-
-std::string Reg::toString() const
+std::string Var::toString() const
 {
     std::ostringstream oss;
-
-    if ( isSpilled() )
-        oss << "@";
 
     if ( !isSSA() )
     {
@@ -206,12 +185,108 @@ std::string Reg::toString() const
         oss << number2String( varNr_);
     }
 
-    if ( isSpilled() )
+    return oss.str();
+}
+
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+#ifdef SWIFT_DEBUG
+
+Reg::Reg(Type type, int varNr, const std::string* id /*= 0*/)
+    : Var(type, varNr, id)
+    , isSpilled_(false)
+{
+    swiftAssert(type_ != R_STACK, "Use a StackVar for this type");
+}
+
+Reg* Reg::clone(int varNr) const
+{
+    Reg* reg = new Reg(type_, varNr, &id_);
+    reg->isSpilled_ = isSpilled_;
+    return reg;
+}
+
+#else // SWIFT_DEBUG
+
+Reg::Reg(Type type, int varNr)
+    : Var(type, varNr)
+    , isSpilled_(false)
+{}
+
+Reg* Reg::clone(int varNr) const
+{
+    Reg* reg = new Reg(type_, varNr);
+    return reg;
+}
+
+#endif // SWIFT_DEBUG
+
+/*
+ * further methods
+ */
+
+Reg* Reg::isSpilled()
+{
+    return isSpilled_ ? this : 0;
+}
+
+Reg* Reg::colorReg(int typeMask)
+{
+    return ( !isSpilled() && typeCheck(typeMask) ) ? this : 0;
+}
+
+std::string Reg::toString() const
+{
+    std::ostringstream oss;
+    
+    if ( isSpilled_ )
+        oss << '@';
+
+    oss << Var::toString();
+
+    if ( isSpilled_ )
         oss << " (" << color_ << ')';
     else if ( color_ >= 0 )
         oss << " (" << me::arch->reg2String(this) << ')';
 
     return oss.str();
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+#ifdef SWIFT_DEBUG
+
+MemVar::MemVar(Member* memory, int varNr, const std::string* id /*= 0*/)
+    : Var(R_STACK, varNr, id)
+    , memory_(memory)
+{}
+
+MemVar* MemVar::clone(int varNr) const
+{
+    return new MemVar(memory_, varNr, &id_);
+}
+
+#else // SWIFT_DEBUG
+
+MemVar::MemVar(Member* memory, int varNr)
+    : Var(R_STACK, varNr)
+    , memory_(memory)
+{}
+
+MemVar* MemVar::clone(int varNr) const
+{
+    return new MemVar(memory_, varNr);
+}
+
+#endif // SWIFT_DEBUG
 
 } // namespace me

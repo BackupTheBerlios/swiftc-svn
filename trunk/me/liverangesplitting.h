@@ -29,7 +29,7 @@ class LiveRangeSplitting : public CodePass
 {
 private:
 
-    RDUMap phis_;
+    VDUMap phis_;
 
 public:
 

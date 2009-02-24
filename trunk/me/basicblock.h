@@ -106,10 +106,10 @@ struct BasicBlock
     BBList domChildren_;
 
     /// Keep account of all vars which are not in SSA form and defined in this basic block.
-    RegMap vars_; // TODO kill this
-    /// Regs that live.
-    RegSet liveIn_;
-    RegSet liveOut_;
+    VarMap vars_; // TODO kill this
+    /// Vars that live.
+    VarSet liveIn_;
+    VarSet liveOut_;
 
     /*
      * constructors

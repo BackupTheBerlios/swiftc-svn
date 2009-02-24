@@ -27,7 +27,7 @@ StructOffset::StructOffset(Struct* _struct, Member* member)
 
 int StructOffset::getOffset() const
 {
-    return 99;
+    return next_ ? next_->getOffset() + member_->offset_ : member_->offset_;
 }
 
 std::string StructOffset::toString() const

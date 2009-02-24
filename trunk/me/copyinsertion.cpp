@@ -59,28 +59,25 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
         /*
          * check whether there is a constrained constant
          */
-        if ( typeid(*instr->arg_[i].op_) == typeid(Const) )
+        Const* cst = dynamic_cast<Const*>( instr->arg_[i].op_ );
+        if (cst)
         {
-            InstrBase* instr = instrNode->value_;
-            Const* cst = (Const*) instr->arg_[i].op_;
-
             // create new result
-            Reg* newReg = function_->newSSA(cst->type_);
+            Var* newVar = function_->newSSAReg(cst->type_);
 
             // create and insert copy
-            AssignInstr* newCopy = new AssignInstr('=', newReg, cst); 
+            AssignInstr* newCopy = new AssignInstr('=', newVar, cst); 
             cfg_->instrList_.insert( instrNode->prev(), newCopy );
 
             // substitute operand with newReg
-            instrNode->value_->arg_[i].op_ = newReg;
+            instrNode->value_->arg_[i].op_ = newVar;
 
             continue;
         }
 
-        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
+        Reg* reg = dynamic_cast<Reg*>( instr->arg_[i].op_ );
+        if (!reg)
             continue;
-
-        Reg* reg = (Reg*) instr->arg_[i].op_;
 
         bool sameArgWithDifferentConstraint = false;
 
@@ -92,10 +89,9 @@ void CopyInsertion::insertIfNecessary(InstrNode* instrNode)
             if ( instr->arg_[j].constraint_ == NO_CONSTRAINT )
                 continue;
 
-            if ( typeid(*instr->arg_[j].op_) != typeid(Reg) )
+            Reg* reg2 = dynamic_cast<Reg*>( instr->arg_[j].op_ );
+            if (!reg2)
                 continue;
-
-            Reg* reg2 = (Reg*) instr->arg_[j].op_;
 
             if (reg == reg2 && reg->color_ == reg2->color_)
             {
@@ -138,18 +134,14 @@ void CopyInsertion::insertCopy(size_t regIdx, InstrNode* instrNode)
     Reg* reg = (Reg*) instr->arg_[regIdx].op_;
 
     // create new result
-#ifdef SWIFT_DEBUG
-    Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-    Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
+    Var* newVar = function_->cloneNewSSA(reg);
 
     // create and insert copy
-    AssignInstr* newCopy = new AssignInstr('=', newReg, reg); 
+    AssignInstr* newCopy = new AssignInstr('=', newVar, reg); 
     cfg_->instrList_.insert( instrNode->prev(), newCopy );
 
     // substitute operand with newReg
-    instrNode->value_->arg_[regIdx].op_ = newReg;
+    instrNode->value_->arg_[regIdx].op_ = newVar;
 }
 
 } // namespace me

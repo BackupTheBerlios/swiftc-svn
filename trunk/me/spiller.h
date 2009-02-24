@@ -51,26 +51,26 @@ private:
      */
     int spillCounter_;
 
-    /// Reg -> Mem
-    typedef std::map<Reg*, Reg*> SpillMap;
+    /// Var -> Mem
+    typedef std::map<Var*, Var*> SpillMap;
 
     /// This set knows for each spilled var the first memory var. 
     SpillMap spillMap_;
 
-    /// BBNode -> RegSet
-    typedef std::map<BBNode*, RegSet> BB2RegSet;
+    /// BBNode -> VarSet
+    typedef std::map<BBNode*, VarSet> BB2VarSet;
 
     /** 
      * Find the set of registers of a corresponding basic block which is going
      * into that basic block in \em real registers.
      */
-    BB2RegSet in_;
+    BB2VarSet in_;
 
     /** 
      * Find the set of registers of a corresponding basic block which is going
      * out of that basic block in \em real registers.
      */
-    BB2RegSet out_;
+    BB2VarSet out_;
 
     /**
      * Contains for each reg inside: <br>
@@ -82,7 +82,7 @@ private:
      * reconstructSSAForm is first called with this Map so all args of the
      * reloads are rewired correclty.
      */
-    RDUMap spills_;
+    VDUMap spills_;
 
     /**
      * Contains for each reg inside: <br>
@@ -94,7 +94,7 @@ private:
      * reconstructSSAForm is called with this map second so all args of the
      * spills are rewired correclty.
      */
-    RDUMap reloads_;
+    VDUMap reloads_;
     
      struct Substitute
      {
@@ -143,52 +143,52 @@ private:
      */
 
     /** 
-     * @brief Inserts a newly created Spill instruction in \p bbNode of register
-     * \p reg after instruction \p appendto.
+     * @brief Inserts a newly created Spill instruction in \p bbNode of \p var
+     * after instruction \p appendto.
      * 
      * @param bbNode Basic block of the to be created spill.
-     * @param reg Register to be spilled.
+     * @param var Var to be spilled.
      * @param appendTo Append to which instruction?
      * 
      * @return The newly created memory pseudo register where \p reg is spilled
      * to.
      */
-    Reg* insertSpill(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
+    Var* insertSpill(BBNode* bbNode, Var* var, InstrNode* appendTo);
 
     /** 
      * @brief Inserts a newly created Reload instruction in \p bbNode 
-     * of register \p reg after instruction \p appendto.
+     * of \p var after instruction \p appendto.
      * 
      * @param bbNode Basic block of the to be created reload.
-     * @param reg Register to be reloaded.
+     * @param var Var to be reloaded.
      * @param appendTo Append to which instruction?
      */
-    void insertReload(BBNode* bbNode, Reg* reg, InstrNode* appendTo);
+    void insertReload(BBNode* bbNode, Var* var, InstrNode* appendTo);
 
     /*
      * distance calculation via Belady
      */
 
     /// Needed for sorting via the distance method.
-    struct RegAndDistance 
+    struct VarAndDistance 
     {
-        Reg* reg_;
+        Var* var_;
         int distance_;
 
         /*
          * constructors
          */
 
-        RegAndDistance() {}
+        VarAndDistance() {}
 
-        RegAndDistance(Reg* reg, int distance)
-            : reg_(reg)
+        VarAndDistance(Var* var, int distance)
+            : var_(var)
             , distance_(distance)
         {}
 
         /// copy constructor
-        RegAndDistance(const RegAndDistance& rd)
-            : reg_(rd.reg_)
+        VarAndDistance(const VarAndDistance& rd)
+            : var_(rd.var_)
             , distance_(rd.distance_)
         {}
 
@@ -197,33 +197,33 @@ private:
          */
 
         /// needed by std::sort
-        bool operator < (const RegAndDistance& r) const
+        bool operator < (const VarAndDistance& v) const
         {
-            return distance_ > r.distance_; // sort farest first
+            return distance_ > v.distance_; // sort farest first
         }
     };
 
-    int distance(BBNode* bbNode, Reg* reg, InstrNode* instrNode);
+    int distance(BBNode* bbNode, Var* var, InstrNode* instrNode);
 
     /** 
-     * @brief Calculates the distance of \p reg from \p instrNode to its next use.
+     * @brief Calculates the distance of \p var from \p instrNode to its next use.
      *
      * \p bbNode is the basic block of \p instrNode.
      *
      * This formula ist used:
 @verbatim
-                                   / 0, if reg is used at instrNode
-distance(bbNode, reg, instrNode) = |
-                                   \ distanceRec(bbNode, reg, instrNode), otherwise
+                                   / 0, if var is used at instrNode
+distance(bbNode, var, instrNode) = |
+                                   \ distanceRec(bbNode, var, instrNode), otherwise
 @endverbatim
      * 
      * @param bbNode The \a BasicBlock which holds the \p instrNode.
-     * @param reg The register which distance to its next use should be found.
+     * @param var The var which distance to its next use should be found.
      * @param instrNode The starting InstrNode of the search.
      * 
      * @return The distance.  is used as "infinity".
      */
-    int distanceHere(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
+    int distanceHere(BBNode* bbNode, Var* var, InstrNode* instrNode, BBSet walked);
     
     /** 
      * @brief This is a helper for \a distance. 
@@ -233,32 +233,32 @@ distance(bbNode, reg, instrNode) = |
      * This formula is used:
      * 
 @verbatim
-                                      / infinity, if reg is not live at instrNode
-distanceRec(bbNode, reg, instrNode) = |
-                                      | 1  +     min         distance(bbNode, reg, instrNode'), otherwise 
+                                      / infinity, if var is not live at instrNode
+distanceRec(bbNode, var, instrNode) = |
+                                      | 1  +     min         distance(bbNode, var, instrNode'), otherwise 
                                       \  instrNode' \in succ(instrNode)
 @endverbatim
      *
      * @param bbNode The \a BasicBlock which holds the \p instrNode.
-     * @param reg The register which distance to its next use should be found.
+     * @param var The var which distance to its next use should be found.
      * @param instrNode The starting InstrNode of the search.
      * 
      * @return 
      */
-    int distanceRec(BBNode* bbNode, Reg* reg, InstrNode* instrNode, BBSet walked);
+    int distanceRec(BBNode* bbNode, Var* var, InstrNode* instrNode, BBSet walked);
 
     /*
      * local spilling
      */
 
-    typedef std::multiset<RegAndDistance> DistanceBag;
+    typedef std::multiset<VarAndDistance> DistanceBag;
 
     void discardFarest(DistanceBag& ds);
 
 #ifndef SWIFT_DEBUG
     static // a type check is only made in the debug version 
 #endif // SWIFT_DEBUG
-    Reg* regFind(DistanceBag& ds, Reg* reg);
+    Var* varFind(DistanceBag& ds, Var* var);
 
     /** 
      * @brief Performs the spilling locally in one basic block.
@@ -278,7 +278,7 @@ distanceRec(bbNode, reg, instrNode) = |
      */
     void combine(BBNode* bbNode);
 
-    void insertSpillIfNecessarry(Reg* reg, BBNode* bbNode);
+    void insertSpillIfNecessarry(Var* var, BBNode* bbNode);
 };
 
 } // namespace me

@@ -33,7 +33,7 @@ LiveRangeSplitting::LiveRangeSplitting(Function* function)
 
 LiveRangeSplitting::~LiveRangeSplitting()
 {
-    RDUMAP_EACH(iter, phis_)
+    VDUMAP_EACH(iter, phis_)
         delete iter->second;
 }
 
@@ -68,7 +68,7 @@ void LiveRangeSplitting::process()
     cfg_->calcDomFrontier();
 
     // reconstruct SSA form for the newly inserted phi instructions
-    RDUMAP_EACH(iter, phis_)
+    VDUMAP_EACH(iter, phis_)
         cfg_->reconstructSSAForm(iter->second);
 }
 
@@ -88,27 +88,18 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
      * insert new phi instruction for each live-in var
      */
 
-    REGSET_EACH(iter, instr->liveIn_)
+    VARSET_EACH(iter, instr->liveIn_)
     {
-        Reg* reg = *iter;
-
-        // create new result
-#ifdef SWIFT_DEBUG
-        Reg* newReg = function_->newSSA(reg->type_, &reg->id_);
-#else // SWIFT_DEBUG
-        Reg* newReg = function_->newSSA(reg->type_);
-#endif // SWIFT_DEBUG
-
-        if ( reg->isSpilled() )
-            newReg->isSpilled_ = true;
+        Var* var = *iter;
+        Var* newVar = function_->cloneNewSSA(var);
 
         // create phi instruction
         swiftAssert( bbNode->pred_.size() == 1, "must have exactly one predecessor" );
-        PhiInstr* phi = new PhiInstr(newReg, 1);
+        PhiInstr* phi = new PhiInstr(newVar, 1);
 
         // init sourceBB and arg
         phi->sourceBBs_[0] = bbNode->pred_.first()->value_;
-        phi->arg_[0].op_ = reg;
+        phi->arg_[0].op_ = newVar;
 
         // insert instruction
         InstrNode* phiNode = cfg_->instrList_.insert(bb->begin_, phi); 
@@ -117,22 +108,22 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
          * keep track of def-use stuff
          */
 
-        RegDefUse* rdu;
+        VarDefUse* vdu;
 
         // do we already have def-use information for this reg?
-        RDUMap::iterator iter = phis_.find(reg);
+        VDUMap::iterator iter = phis_.find(var);
         if ( iter == phis_.end() )
         {
-            rdu = new RegDefUse(); 
-            rdu->defs_.append( DefUse(reg, reg->def_.instrNode_, reg->def_.bbNode_) ); // orignal definition
-            rdu->uses_ = reg->uses_; // orignal uses
-            phis_[reg] = rdu;
+            vdu = new VarDefUse(); 
+            vdu->defs_.append( DefUse(var, var->def_.instrNode_, var->def_.bbNode_) ); // orignal definition
+            vdu->uses_ = var->uses_; // orignal uses
+            phis_[var] = vdu;
         }
         else
-            rdu = iter->second;
+            vdu = iter->second;
 
-        rdu->defs_.append( DefUse(newReg, phiNode, bbNode) ); // newly created definition
-        rdu->uses_.append( DefUse(reg, phiNode, bbNode) ); // newly created use
+        vdu->defs_.append( DefUse(newVar, phiNode, bbNode) ); // newly created definition
+        vdu->uses_.append( DefUse(var, phiNode, bbNode) ); // newly created use
     }
 
     bb->fixPointers();

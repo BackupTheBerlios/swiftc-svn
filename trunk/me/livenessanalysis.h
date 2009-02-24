@@ -65,9 +65,9 @@ public:
 
 private:
 
-    void liveOutAtBlock(BBNode* bbNode,   Reg* var);
-    void liveInAtInstr (InstrNode* instrNode, Reg* var);
-    void liveOutAtInstr(InstrNode* instrNode, Reg* var);
+    void liveOutAtBlock(BBNode* bbNode, Var* var);
+    void liveInAtInstr (InstrNode* instrNode, Var* var);
+    void liveOutAtInstr(InstrNode* instrNode, Var* var);
 };
 
 } // namespace me

@@ -155,13 +155,13 @@ std::string BasicBlock::livenessString() const
     // print live in infos
     oss << "\tlive IN:" << std::endl;
 
-    REGSET_EACH(iter, liveIn_)
+    VARSET_EACH(iter, liveIn_)
         oss << "\t\t" << (*iter)->toString() << std::endl;
 
     // print live out infos
     oss << "\tlive OUT:" << std::endl;
 
-    REGSET_EACH(iter, liveOut_)
+    VARSET_EACH(iter, liveOut_)
         oss << "\t\t" << (*iter)->toString() << std::endl;
 
     return oss.str();

@@ -34,13 +34,14 @@ typedef Colors::ResultVec IntVec;
  * constructors
  */
 
-Coloring::Coloring(Function* function)
+Coloring::Coloring(Function* function, size_t stackPlace)
     : CodePass(function)
     , typeMask_(-1)         // not used in this case
     , reservoir_(Colors())  // use an empty set
+    , stackPlace_(stackPlace)
 {}
 
-Coloring::Coloring(Function* function, int typeMask, const Colors& reservoir)
+Coloring::Coloring(Function* function, int typeMask,const Colors& reservoir)
     : CodePass(function)
     , typeMask_(typeMask)
     , reservoir_(reservoir)
@@ -81,8 +82,8 @@ int Coloring::getFreeMemColor(Colors& colors)
 
     colors.insert(color);
 
-    // update the number of spill slots used
-    function_->spillSlots_ = std::max(function_->spillSlots_, color);
+    // update the spill slots used
+    function_->stackLayout_.insertColor(stackPlace_, color);
 
     return color;
 }
@@ -93,12 +94,10 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
     Colors colors; // colors already used go here
 
     // all vars in liveIn_ have already been colored
-    REGSET_EACH(iter, bb->liveIn_)
+    VARSET_EACH(iter, bb->liveIn_)
     {
-        Reg* reg = *iter;
-
-        // do not color memory locations or regs with wrong types
-        if ( !reg->isSpilled() )
+        Reg* reg = (*iter)->isSpilled();
+        if (!reg)
             continue;
 
         int color = reg->color_;
@@ -118,16 +117,14 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
          * In the debug version this set knows vars which were already
          * removed. This allows more precise assertions (see below).
          */
-        RegSet erased;
+        VarSet erased;
 #endif // SWIFT_DEBUG
 
         // for each var on the right hand side
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            Reg* reg = dynamic_cast<Reg*>(instr->arg_[i].op_);
-
-            // only memory regs are considered here
-            if ( !reg || !reg->isSpilled() )
+            Reg* reg = instr->arg_[i].op_->isSpilled();
+            if (!reg)
                 continue;
 
             if ( InstrBase::isLastUse(iter, reg) )
@@ -156,10 +153,8 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
         // for each var on the left hand side -> assign a color for result
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->res_[i].reg_;
-
-            // only memory regs are considered here
-            if ( !reg->isSpilled() )
+            Reg* reg = instr->res_[i].var_->isSpilled();
+            if (!reg)
                 continue;
 
             reg->color_ = getFreeMemColor(colors);
@@ -197,7 +192,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         swiftAssert( bb->liveIn_.empty(), 
                 "liveIn should be empty with a constrained instruction" );
 
-        RegSet alreadyColored;
+        VarSet alreadyColored;
         colorConstraintedInstr(constrainedInstrNode, alreadyColored);
 
         /*
@@ -208,12 +203,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
 
         for (size_t i = 0; i < constrainedInstr->arg_.size(); ++i)
         {
-            if ( typeid(*constrainedInstr->arg_[i].op_) != typeid(Reg) )
-                continue;
-
-            Reg* reg = (Reg*) constrainedInstr->arg_[i].op_;
-
-            if ( !reg->colorReg(typeMask_) )
+            Reg* reg = constrainedInstr->arg_[i].op_->colorReg(typeMask_);
+            if (!reg)
                 continue;
 
             occupied.insert(reg->color_);
@@ -224,9 +215,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
 
         for (size_t i = 0; i < constrainedInstr->res_.size(); ++i)
         {
-            Reg* reg = (Reg*) constrainedInstr->res_[i].reg_;
-
-            if ( !reg->colorReg(typeMask_) )
+            Reg* reg = constrainedInstr->res_[i].var_->colorReg(typeMask_);
+            if (!reg)
                 continue;
 
             occupied.insert(reg->color_);
@@ -240,9 +230,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
         {
             swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), "must be a PhiInstr" );
             PhiInstr* phi = (PhiInstr*) iter->value_;
-            Reg* phiRes = phi->result();
-
-            if ( !phiRes->colorReg(typeMask_) )
+            Reg* phiRes = phi->result()->colorReg(typeMask_);
+            if (!phiRes)
                 continue;
 
             if ( !alreadyColored.contains(phiRes) )
@@ -273,12 +262,10 @@ void Coloring::colorRecursive(BBNode* bbNode)
     else
     {
         // all vars in liveIn_ have already been colored
-        REGSET_EACH(iter, bb->liveIn_)
+        VARSET_EACH(iter, bb->liveIn_)
         {
-            Reg* reg = *iter;
-
-            // do not color memory locations or regs with wrong types
-            if ( !reg->colorReg(typeMask_) )
+            Reg* reg = (*iter)->colorReg(typeMask_);
+            if (!reg)
                 continue;
 
             int color = reg->color_;
@@ -304,16 +291,14 @@ void Coloring::colorRecursive(BBNode* bbNode)
          * In the debug version this set knows vars which were already
          * removed. This allows more precise assertions (see below).
          */
-        RegSet erased;
+        VarSet erased;
 #endif // SWIFT_DEBUG
 
         // for each var on the right hand side
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            Reg* reg = dynamic_cast<Reg*>(instr->arg_[i].op_);
-
-            // only color regs of proper type, which are not memory locations
-            if ( !reg || !reg->colorReg(typeMask_) )
+            Reg* reg = instr->arg_[i].op_->colorReg(typeMask_);
+            if (!reg)
                 continue;
 
             if ( InstrBase::isLastUse(iter, reg) )
@@ -346,10 +331,8 @@ void Coloring::colorRecursive(BBNode* bbNode)
         // for each var on the left hand side -> assign a color for result
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->res_[i].reg_;
-
-            // only color regs and regs of proper type
-            if ( !reg->colorReg(typeMask_) )
+            Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+            if (!reg)
                 continue;
 
             // try to use a color which has just been freed here
@@ -381,7 +364,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
     }
 }
 
-void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColored)
+void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColored)
 {
     InstrBase* instr = instrNode->value_;
     
@@ -391,13 +374,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
     // init liveThrough and dyingArgs
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
-            continue;
-
-        Reg* reg = (Reg*) instr->arg_[i].op_;
-
-        // do not color memory locations or regs with wrong types
-        if ( !reg->colorReg(typeMask_) )
+        Reg* reg = instr->arg_[i].op_->colorReg(typeMask_);
+        if (!reg)
             continue;
 
         alreadyColored.insert(reg);
@@ -414,10 +392,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
     RegSet unconstrainedDefs;
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = instr->res_[i].reg_;
-
-        // do not color memory locations or regs with wrong types
-        if ( !reg->colorReg(typeMask_) )
+        Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+        if (!reg)
             continue;
 
         unconstrainedDefs.insert(reg);
@@ -429,13 +405,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        if ( typeid(*instr->arg_[i].op_) != typeid(Reg) )
-            continue;
-
-        Reg* reg = (Reg*) instr->arg_[i].op_;
-
-        // do not color memory locations or regs with wrong types
-        if ( !reg->colorReg(typeMask_) )
+        Reg* reg = (Reg*) instr->arg_[i].op_->colorReg(typeMask_);
+        if (!reg)
             continue;
 
         int constraint = instr->arg_[i].constraint_;
@@ -462,10 +433,8 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColor
     // for each constrained result
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = (Reg*) instr->res_[i].reg_;
-
-        // do not color memory locations or regs with wrong types
-        if ( !reg->colorReg(typeMask_) )
+        Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+        if (!reg)
             continue;
 
         int constraint = instr->res_[i].constraint_;

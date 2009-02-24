@@ -26,6 +26,12 @@
 
 namespace swift {
 
+/*
+ * forward declarations
+ */
+
+struct Class;
+
 //------------------------------------------------------------------------------
 
 struct BaseType : public Node
@@ -52,6 +58,9 @@ struct BaseType : public Node
      * @return True if this is a builtin type, false otherwise
      */
     bool isBuiltin() const;
+
+    Class* lookupClass() const;
+    me::Var* createVar(std::string* id) const;
 
     typedef std::map<std::string, me::Op::Type> TypeMap;
     static TypeMap* typeMap_; 

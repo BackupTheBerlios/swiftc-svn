@@ -66,7 +66,7 @@ private:
      * @param var Current var. 
      * @param bb Current basic block.
      */
-    void calcUse(Reg* var, BBNode* bb);
+    void calcUse(Var* var, BBNode* bb);
 };
 
 } // namespace me

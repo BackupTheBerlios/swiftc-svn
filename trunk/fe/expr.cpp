@@ -147,7 +147,7 @@ bool Literal::analyze()
 
 void Literal::genSSA()
 {
-    // create appropriate Reg
+    // create appropriate Var
     me::Const* literal = me::functab->newConst( toType() );
     place_ = literal;
 
@@ -274,7 +274,7 @@ bool Id::analyze()
     // else
 
     type_  = var_->type_->clone();
-    place_ = var_->reg_;
+    place_ = var_->meVar_;
 
     return true;
 }
@@ -348,12 +348,12 @@ void UnExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
+    me::Var* var = me::functab->newReg( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
+    me::Var* var = me::functab->newReg( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
 
-    place_ = reg;
+    place_ = var;
 
     int kind;
 
@@ -370,7 +370,7 @@ void UnExpr::genSSA()
             kind = kind_;
     }
 
-    me::functab->appendInstr( new me::AssignInstr(kind, reg, op_->place_) );
+    me::functab->appendInstr( new me::AssignInstr(kind, var, op_->place_) );
 }
 
 //------------------------------------------------------------------------------
@@ -468,11 +468,11 @@ void BinExpr::genSSA()
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType(), &str );
+    me::Var* var = me::functab->newReg( type_->baseType_->toMeType(), &str );
 #else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type_->baseType_->toMeType() );
+    me::Var* var = me::functab->newReg( type_->baseType_->toMeType() );
 #endif // SWIFT_DEBUG
-    place_ = reg;
+    place_ = var;
 
     int kind;
 
@@ -495,7 +495,7 @@ void BinExpr::genSSA()
     }
 
     if ( op1_->type_->isBuiltin() )
-        me::functab->appendInstr( new me::AssignInstr(kind, reg, op1_->place_, op2_->place_) );
+        me::functab->appendInstr( new me::AssignInstr(kind, var, op1_->place_, op2_->place_) );
     else
         swiftAssert(false, "TODO");
 }
@@ -575,8 +575,7 @@ bool MemberAccess::analyze()
     if (!ma)
     {
         swiftAssert(expr_->place_->type_ == me::Op::R_STACK, "must be a stack location")
-        swiftAssert( typeid(*expr_->place_) == typeid(me::Reg), "must be a Reg" )
-        memPlace_ = (me::Reg*) expr_->place_;
+        memPlace_ = (me::MemVar*) expr_->place_;
     }
     else
         memPlace_ = ma->memPlace_; // pass-through
@@ -590,10 +589,8 @@ bool MemberAccess::analyze()
      */
 
     // get type and member var
-    Type* type = expr_->type_;
-    const std::string* typeId = type->baseType_->id_;
-    Class* _class = symtab->lookupClass(typeId);
-    swiftAssert(_class, "must be found");
+    const std::string* typeId = expr_->type_->baseType_->id_;
+    Class* _class = expr_->type_->baseType_->lookupClass();
     Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
     if ( iter == _class->memberVars_.end() )
@@ -622,9 +619,9 @@ bool MemberAccess::analyze()
         // create new place for the right most access
 #ifdef SWIFT_DEBUG
         std::string str = "tmp";
-        place_ = me::functab->newVar( type_->baseType_->toMeType(), &str );
+        place_ = me::functab->newMemVar( _class->meStruct_, &str );
 #else // SWIFT_DEBUG
-        place_ = me::functab->newVar( type_->baseType_->toMeType() );
+        place_ = me::functab->newMemVar( _class->meStruct_ );
 #endif // SWIFT_DEBUG
     }
 
@@ -636,7 +633,7 @@ bool MemberAccess::analyze()
 
 void MemberAccess::genSSA()
 {
-    me::Load* load = new me::Load( (me::Reg*) place_, memPlace_, rootStructOffset_ );
+    me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
     me::functab->appendInstr(load); 
 }
 

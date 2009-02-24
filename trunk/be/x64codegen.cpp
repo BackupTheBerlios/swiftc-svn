@@ -79,8 +79,10 @@ void X64CodeGen::process()
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
 
-    int localStackSize = (function_->spillSlots_ + 1) * 16;
-    ofs_ << "\tenter\t$0, $" << localStackSize << '\n';
+    // TODO
+    //int localStackSize = (function_->spillSlots_ + 1) * 16;
+    //ofs_ << "\tenter\t$0, $" << localStackSize << '\n';
+    ofs_ << "\tenter\t$0, $" << 128 << '\n';
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -154,8 +156,10 @@ void X64CodeGen::process()
         x64parse();
     }
 
-    if (localStackSize != 0)
-        ofs_ << "\taddq\t$" << localStackSize << ", %rsp\n";
+    //if (localStackSize != 0)
+        //ofs_ << "\taddq\t$" << localStackSize << ", %rsp\n";
+
+    ofs_ << "\taddq\t$" << 128 << ", %rsp\n"; // TODO
 
     ofs_ << "\tleave\n";
     ofs_ << "\tret\n";
@@ -270,9 +274,13 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                 "must be a PhiInstr here" );
         me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
 
+        // ignore phi functions of MemVars
+        if ( typeid(*phi->res_[0].var_) != typeid(me::Reg) )
+            continue;
+
         // get regs
-        me::Reg* srcReg = ((me::Reg*) phi->arg_[phiIndex].op_);
-        me::Reg* dstReg = phi->result();
+        me::Reg* srcReg = (me::Reg*) phi->arg_[phiIndex].op_;
+        me::Reg* dstReg = (me::Reg*) phi->res_[0].var_;
 
         if ( dstReg->isSpilled() )
             continue; // TODO
@@ -584,14 +592,16 @@ int x64lex()
             }
             else 
             {
-                swiftAssert( opTypeId == typeid(me::Reg), "must be a Reg" );
-                me::Reg* reg = (me::Reg*) op;
-                x64lval.reg_ = reg;
+                swiftAssert( dynamic_cast<me::Var*>(op), "must be a Var" );
+                me::Var* var = (me::Var*) op;
+                x64lval.reg_ = (me::Reg*) var;
 
-                if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->isSpilled() )
+                // TODO
+
+                if ( !currentInstr->res_.empty() && ((me::Reg*) currentInstr->res_[0].var_)->isSpilled() )
                     return X64_REG_2;
 
-                if ( !currentInstr->res_.empty() && currentInstr->res_[0].reg_->color_ == reg->color_ )
+                if ( !currentInstr->res_.empty() && currentInstr->res_[0].var_->color_ == var->color_ )
                     lastOp = X64_REG_1;
                 else
                     lastOp = X64_REG_2;
@@ -620,7 +630,7 @@ int x64lex()
             }
             else 
             {
-                swiftAssert( opTypeId == typeid(me::Reg), "must be a Reg here");
+                swiftAssert( dynamic_cast<me::Var*>(op), "must be a Reg here");
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
 
@@ -632,7 +642,7 @@ int x64lex()
                  * - op1 == const                           -> reg2
                  * else -> reg3
                  */
-                if ( currentInstr->res_[0].reg_->color_ == reg->color_ )
+                if ( currentInstr->res_[0].var_->color_ == reg->color_ )
                     lastOp = X64_REG_1;
                 else if ( lastOp == X64_REG_2 && ((me::Reg*) currentInstr->arg_[0].op_)->color_ == reg->color_ )
                     lastOp = X64_REG_2;

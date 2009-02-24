@@ -29,11 +29,14 @@
 
 #include "me/defuse.h"
 
-// forward declarations
-
-
 namespace me {
 
+/*
+ * forward declarations
+ */
+
+struct Reg;
+struct Member;
 struct Struct;
 struct InstrBase;
 
@@ -107,6 +110,17 @@ struct Op
 
     bool typeCheck(int typeMask) const;
 
+    virtual Reg* colorReg(int typeMask);
+
+    /** 
+     * @brief Checks whether this Reg is actually in a spilled memory location.
+     *
+     * If the type is not Reg or is not spilled 0 is return.
+     *
+     * @return \a this if it is a spilled Reg, 0 otherwise.
+     */
+    virtual Reg* isSpilled();
+
     virtual std::string toString() const = 0;
 };
 
@@ -179,36 +193,8 @@ struct Const : public Op
 
 //------------------------------------------------------------------------------
 
-/** 
- * @brief This is a pseudo register.
- *
- * Pseudo registers will be mapped to real registers during code generation.
- */
-struct Reg : public Op
+struct Var : public Op
 {
-    enum
-    {
-        /// Reg has not been colored so far.
-        NOT_COLORED_YET    = -1, 
-
-        /**
-         * @brief This is an at compile known location on the stack. 
-         *
-         * \a Reg::type_ must be Op::Type::R_MEM
-         */
-        STACK_LOCATION     = -2, 
-
-        /**
-         * @brief This is an arbitrary location in memory.
-         *
-         * This may be an location on the heap, one on the stack or in the
-         * data segment.
-         *
-         * \a Reg::type_ must be Op::Type::R_MEM
-         */
-        ARBITRARY_LOCATION = -3
-    };
-
     /**
      * @brief Name of this \a Reg in the current \a Function.
      *
@@ -225,33 +211,42 @@ struct Reg : public Op
 
     /**
      * The color after coloring: <br>
-     * \a NOT_COLORED_YET if it was not assigned already. <br>
-     * \a MEMORY_LOCATION if it is a memory location and thus needn't be colored
+     * \a NOT_COLORED_YET if a color has not already been assigned.
      */
     int color_;
 
-    /// Is this currently in a spilled memory loaction?
-    bool isSpilled_;
+    enum
+    {
+        /// Reg has not been colored so far.
+        NOT_COLORED_YET    = -1, 
+    };
 
     DefUse def_;      ///< knows where the var is defined
     DefUseList uses_; ///< knows all uses of this var
 
 #ifdef SWIFT_DEBUG
-    std::string id_;    ///< This stores the name of the orignal var in the debug version.
+    std::string id_;    ///< This stores the name of the original var in the debug version.
     VarNode* varNode_;  ///< This stores the graph node of the IG in the debug version.
 #endif // SWIFT_DEBUG
 
     /*
-     * constructor
+     * constructors
      */
 
 #ifdef SWIFT_DEBUG
-    Reg(Type type, int varNr, const std::string* id = 0);
+
+    Var(Type type, int varNr, const std::string* id = 0);
+    static Var* create(Type type, int varNr, const std::string* id = 0);
+
 #else // SWIFT_DEBUG
-    Reg(Type type, int varNr);
+
+    Var(Type type, int varNr);
+    static Var* create(Type type, int varNr);
+
 #endif // SWIFT_DEBUG
 
-    Reg* clone() const;
+    virtual Var* clone(int varNr) const = 0;
+
 
     /*
      * further methods
@@ -267,16 +262,63 @@ struct Reg : public Op
      */
     size_t var2Index() const;
 
-    /** 
-     * @brief Checks whether this Reg is actually a memory location.
-     *
-     * @return Is this Reg a memory location?
-     */
-    bool isSpilled() const;
-
-    bool colorReg(int typeMask) const;
-
     virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief This is a pseudo register.
+ *
+ * Pseudo registers will be mapped to real registers during code generation.
+ */
+struct Reg : public Var
+{
+    /// Is this currently in a spilled memory loaction?
+    bool isSpilled_;
+
+    /*
+     * constructor
+     */
+
+#ifdef SWIFT_DEBUG
+    Reg(Type type, int varNr, const std::string* id = 0);
+#else // SWIFT_DEBUG
+    Reg(Type type, int varNr);
+#endif // SWIFT_DEBUG
+
+    virtual Reg* clone(int varNr) const;
+
+    /*
+     * further methods
+     */
+
+    virtual Reg* colorReg(int typeMask);
+    virtual Reg* isSpilled();
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct MemVar : public Var
+{
+    Member* memory_;
+
+    /*
+     * constructor
+     */
+
+#ifdef SWIFT_DEBUG
+    MemVar(Member* memory, int varNr, const std::string* id = 0);
+#else // SWIFT_DEBUG
+    MemVar(Member* memory, int varNr);
+#endif // SWIFT_DEBUG
+
+    /*
+     * further methods
+     */
+
+    virtual MemVar* clone(int varNr) const;
 };
 
 //------------------------------------------------------------------------------
@@ -285,13 +327,17 @@ struct Reg : public Op
  * typedefs and defines for easy usage
  */
 
-/// Use this macro in order to easily visit all elements of a RegMap
-#define REGMAP_EACH(iter, regMap) \
-    for (me::RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
 
-/// Use this macro in order to easily visit all elements of a RegSet
 #define REGSET_EACH(iter, regSet) \
     for (me::RegSet::iterator (iter) = (regSet).begin(); (iter) != (regSet).end(); ++(iter))
+
+/// Use this macro in order to easily visit all elements of a VarMap
+#define VARMAP_EACH(iter, varMap) \
+    for (me::VarMap::iterator (iter) = (varMap).begin(); (iter) != (varMap).end(); ++(iter))
+
+/// Use this macro in order to easily visit all elements of a VarSet
+#define VARSET_EACH(iter, varSet) \
+    for (me::VarSet::iterator (iter) = (varSet).begin(); (iter) != (varSet).end(); ++(iter))
 
 } // namespace me
 

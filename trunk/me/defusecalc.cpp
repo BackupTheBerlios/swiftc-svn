@@ -42,9 +42,9 @@ void DefUseCalc::process()
      */
     if (function_->firstDefUse_)
     {
-        REGMAP_EACH(iter, function_->vars_)
+        VARMAP_EACH(iter, function_->vars_)
         {
-            Reg* var = iter->second;
+            Var* var = iter->second;
             var->uses_.clear();
         }
     }
@@ -59,7 +59,7 @@ void DefUseCalc::process()
     std::cout << "--- DEFUSE STUFF ---" << std::endl;
     REGMAP_EACH(iter, function_->vars_)
     {
-        Reg* var = iter->second;
+        Var* var = iter->second;
         std::cout << var->def_.instrNode_->value_->toString() << std::endl;
         USELIST_EACH(iter, var->uses_)
             std::cout << "\t" << iter->value_.instrNode_->value_->toString() << std::endl;
@@ -86,8 +86,8 @@ void DefUseCalc::calcDef()
             // for each var on the res
             for (size_t i = 0; i < instr->res_.size(); ++i)
             {
-                Reg* reg = instr->res_[i].reg_;
-                reg->def_.set(reg, iter, currentBB); // store def
+                Var* var = instr->res_[i].var_;
+                var->def_.set(var, iter, currentBB); // store def
             }
         }
     }
@@ -96,9 +96,9 @@ void DefUseCalc::calcDef()
 void DefUseCalc::calcUse()
 {
     // for each var
-    REGMAP_EACH(iter, function_->vars_)
+    VARMAP_EACH(iter, function_->vars_)
     {
-        Reg* var = iter->second;
+        Var* var = iter->second;
 
         /* 
          * start with the definition of the var and walk the dominator tree
@@ -122,9 +122,8 @@ void DefUseCalc::calcUse()
 
             for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
-                swiftAssert(typeid(*phi->arg_[i].op_) == typeid(Reg),
-                    "must be a Reg here");
-                Reg* var = (Reg*) phi->arg_[i].op_;
+                Var* var = dynamic_cast<Var*>( phi->arg_[i].op_ );
+                swiftAssert(var, "must be a Var here");
 
                 // put this as first use so liveness analysis will be a bit faster
                 var->uses_.prepend( DefUse(var, iter, bbNode) );
@@ -133,7 +132,7 @@ void DefUseCalc::calcUse()
     }
 }
 
-void DefUseCalc::calcUse(Reg* var, BBNode* bbNode)
+void DefUseCalc::calcUse(Var* var, BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
 
@@ -145,7 +144,7 @@ void DefUseCalc::calcUse(Reg* var, BBNode* bbNode)
     {
         InstrBase* instr = iter->value_;
 
-        if ( instr->isRegUsed(var) )
+        if ( instr->isVarUsed(var) )
         {
             var->uses_.append( DefUse(var, iter, bbNode) );
         }

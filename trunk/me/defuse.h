@@ -34,20 +34,20 @@ namespace me {
 struct DefUse
 {
     DefUse() {}
-    DefUse(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
-        : reg_(reg)
+    DefUse(Var* var, InstrNode* instrNode, BBNode* bbNode)
+        : var_(var)
         , instrNode_(instrNode)
         , bbNode_(bbNode)
     {}
 
-    void set(Reg* reg, InstrNode* instrNode, BBNode* bbNode)
+    void set(Var* var, InstrNode* instrNode, BBNode* bbNode)
     {
-        reg_        = reg;
+        var_        = var;
         instrNode_  = instrNode;
         bbNode_     = bbNode;
     }
 
-    Reg* reg_;              /// < The register which is referenced here.
+    Var* var_;              /// < The var which is referenced here.
     InstrNode* instrNode_;  ///< The instruction which is referenced here.
     BBNode* bbNode_;        ///< The basic block where \a instr_ can be found.
 };
@@ -61,7 +61,7 @@ typedef List<DefUse> DefUseList;
 
 //-------------------------------------------------------------------------------
 
-struct RegDefUse
+struct VarDefUse
 {
     DefUseList defs_;
     DefUseList uses_;
@@ -69,11 +69,11 @@ struct RegDefUse
 
 //------------------------------------------------------------------------------
 
-/// Keeps registers with their definitions und uses.
-typedef std::map<Reg*, RegDefUse*> RDUMap;
+/// Keeps vars with their definitions und uses.
+typedef std::map<Var*, VarDefUse*> VDUMap;
 
-#define RDUMAP_EACH(iter, rdus) \
-    for (RDUMap::iterator (iter) = (rdus).begin(); (iter) != (rdus).end(); ++(iter))
+#define VDUMAP_EACH(iter, vdus) \
+    for (VDUMap::iterator (iter) = (vdus).begin(); (iter) != (vdus).end(); ++(iter))
 
 //------------------------------------------------------------------------------
 

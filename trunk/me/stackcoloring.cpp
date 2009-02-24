@@ -60,13 +60,11 @@ void StackColoring::colorRecursive(BBNode* bbNode)
     {
         InstrBase* instr = iter->value_;
         swiftAssert( typeid(*instr) == typeid(PhiInstr), "must be a PhiInstr here" );
-        Reg* phiRes = instr->res_[0].reg_;
-
-        // only stack locations are considered here
-        if ( phiRes->type_ != Op::R_STACK )
+        MemVar* phiRes = dynamic_cast<MemVar*>( instr->res_[0].var_ );
+        if (!phiRes)
             continue;
 
-        int color = ((Reg*) instr->arg_[0].op_)->color_;
+        int color = ((MemVar*) instr->arg_[0].op_)->color_;
 
 #ifdef SWIFT_DEBUG
         // check in the debug version whether all phi-args have the same color
@@ -86,20 +84,24 @@ void StackColoring::colorRecursive(BBNode* bbNode)
         // for each var on the left hand side -> assign a color for result
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->res_[i].reg_;
+            Var* var = instr->res_[i].var_;
 
             // only stack locations are considered here
-            if ( reg->type_ != Op::R_STACK )
+            if ( var->type_ != Op::R_STACK )
                 continue;
 
             if ( typeid(*instr) == typeid(Store) )
             {
-                swiftAssert( typeid(*instr->arg_[1].op_) == typeid(Reg),
+                swiftAssert( typeid(*instr->arg_[1].op_) == typeid(MemVar),
                         "must be a Reg here" );
-                reg->color_ = ((Reg*) instr->arg_[1].op_)->color_;
+                var->color_ = ((MemVar*) instr->arg_[1].op_)->color_;
             }
             else
-                reg->color_ = colorCounter_++;
+            {
+                var->color_ = colorCounter_++;
+                // update the stackLayout_ 
+                //function_->stackLayout_.appendMem(
+            }
         }
     } // for each instruction
 

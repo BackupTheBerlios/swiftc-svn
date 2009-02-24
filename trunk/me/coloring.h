@@ -35,6 +35,7 @@ private:
 
     int typeMask_;
     const Colors reservoir_;
+    size_t stackPlace_;
 
 public:
 
@@ -43,7 +44,7 @@ public:
      */
 
     /// Use this one for coloring of memory locations.
-    Coloring(Function* function);
+    Coloring(Function* function, size_t stackPlace);
     Coloring(Function* function, int typeMask, const Colors& reservoir);
 
     /*
@@ -66,7 +67,7 @@ private:
      */
 
     void colorRecursive(BBNode* bbNode);
-    void colorConstraintedInstr(InstrNode* instrNode, RegSet& alreadyColored);
+    void colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColored);
 };
 
 } // namespace me

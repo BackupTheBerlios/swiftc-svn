@@ -56,6 +56,11 @@ int X64::alignOf(int size) const
     return size;
 }
 
+size_t X64::getNumStackPlaces() const
+{
+    return NUM_STACK_PLACES;
+}
+
 void X64::regAlloc(me::Function* function) 
 {
     X64RegAlloc(function).process();

@@ -36,6 +36,22 @@ Arch* arch = 0;
 
 //------------------------------------------------------------------------------
 
+int Arch::calcAlignedOffset(int offset, int size)
+{
+    swiftAssert(size != 0, "size is zero");
+    int result = offset;
+    int align = alignOf(size);
+    int mod = result % align;
+
+    // do we have to adjust the offset due to alignment?
+    if (mod != 0)
+        result += align - mod;
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
 RegAlloc::RegAlloc(Function* function)
     : CodePass(function)
 {}
@@ -53,7 +69,7 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
     int numLhs = 0;
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        if (instr->res_[i].reg_->typeCheck(typeMask) )
+        if (instr->res_[i].var_->typeCheck(typeMask) )
             ++numLhs;
     }
 
@@ -78,10 +94,10 @@ void RegAlloc::faithfulFix(InstrNode* instrNode, int typeMask, int numRegs)
     int numRegsAllowed = std::max(numLhs + numLiveThrough, numRhs);
 
     int diff = numRegsAllowed - numRegsNeeded;
-    RegVec dummies;
+    VarVec dummies;
     for (int i = 0; i < diff; ++i)
     {
-        Reg* dummy = function_->newSSA(Op::R_INT32);
+        Var* dummy = function_->newSSAReg(Op::R_INT32);
 
         // add dummy args
         instr->arg_.push_back( Arg(dummy, -1) );

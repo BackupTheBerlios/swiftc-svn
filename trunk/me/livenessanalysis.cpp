@@ -31,10 +31,10 @@ namespace me {
 
 struct IVar
 {
-    Reg* var_;
+    Var* var_;
 
     IVar() {}
-    IVar(Reg* var)
+    IVar(Var* var)
         : var_(var)
     {}
 
@@ -132,7 +132,7 @@ void LivenessAnalysis::process()
      */
     REGMAP_EACH(iter, function_->vars_)
     {
-        Reg* var = iter->second;
+        Var* var = iter->second;
 
         VarNode* varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
@@ -144,9 +144,9 @@ void LivenessAnalysis::process()
      */
 
     // for each var
-    REGMAP_EACH(iter, function_->vars_)
+    VARMAP_EACH(iter, function_->vars_)
     {
-        Reg* var = iter->second;
+        Var* var = iter->second;
 
         // for each use of var
         DEFUSELIST_EACH(iter, var->uses_)
@@ -212,7 +212,7 @@ void LivenessAnalysis::process()
     function_->firstLiveness_ = true;
 }
 
-void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)
+void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Var* var)
 {
     BasicBlock* bb = bbNode->value_;
 
@@ -227,7 +227,7 @@ void LivenessAnalysis::liveOutAtBlock(BBNode* bbNode, Reg* var)
     }
 }
 
-void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
+void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Var* var)
 {
     InstrBase* instr = instrNode->value_;
 
@@ -239,10 +239,10 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
 
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        if ( instr->res_[i].reg_ != var )
+        if ( instr->res_[i].var_ != var )
         {
 #ifdef SWIFT_USE_IG
-            Reg* res = instr->res_[i].reg_;
+            Var* res = instr->res_[i].var_;
 
             // add (v, w) to interference graph if it does not already exist
             if (   res->varNode_->succ_.find(var->varNode_) == res->varNode_->succ_.sentinel()
@@ -260,7 +260,7 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Reg* var)
         liveInAtInstr(instrNode, var);
 }
 
-void LivenessAnalysis::liveInAtInstr(InstrNode* instr, Reg* var)
+void LivenessAnalysis::liveInAtInstr(InstrNode* instr, Var* var)
 {
     // var is live-in at instr
     instr->value_->liveIn_.insert(var);

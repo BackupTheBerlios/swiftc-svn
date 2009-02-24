@@ -25,9 +25,12 @@
 
 #include "utils/assert.h"
 
+#include "fe/class.h"
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/symtab.h"
+
+#include "me/struct.h"
 
 namespace swift {
 
@@ -72,10 +75,44 @@ me::Op::Type BaseType::toMeType() const
     // TODO ptr support
 }
 
+Class* BaseType::lookupClass() const
+{
+    Class* _class = symtab->lookupClass(id_);
+    swiftAssert(_class, "must be found");
+    return _class;
+}
+
 bool BaseType::isBuiltin() const
 {
     return builtin_;
 }
+
+me::Var* BaseType::createVar(std::string* id) const
+{
+    me::Op::Type meType = toMeType();
+
+    me::Var* var;
+    if (meType == me::Op::R_STACK)
+    {
+        Class* _class = lookupClass();
+#ifdef SWIFT_DEBUG
+        var = me::functab->newMemVar(_class->meStruct_, id);
+#else // SWIFT_DEBUG
+        var = me::functab->newMemVar(_class->meStruct_);
+#endif // SWIFT_DEBUG
+    }
+    else
+    {
+#ifdef SWIFT_DEBUG
+        var = me::functab->newReg(meType, id);
+#else // SWIFT_DEBUG
+        var = me::functab->newReg(meType);
+#endif // SWIFT_DEBUG
+    }
+
+    return var;
+}
+
 
 //------------------------------------------------------------------------------
 

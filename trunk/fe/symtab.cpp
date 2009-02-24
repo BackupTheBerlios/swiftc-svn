@@ -318,13 +318,7 @@ Scope* SymbolTable::currentScope()
 
 Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /*= NO_LINE*/)
 {
-#ifdef SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type->baseType_->toMeType(), id );
-#else // SWIFT_DEBUG
-    me::Reg* reg = me::functab->newVar( type->baseType_->toMeType());
-#endif // SWIFT_DEBUG
-
-    Local* local = new Local(type->clone(), reg, id, line);
+    Local* local = new Local(type->clone(), type->baseType_->createVar(id), id, line);
     symtab->insert(local);
 
     return local;

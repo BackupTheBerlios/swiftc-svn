@@ -44,12 +44,13 @@ typedef InstrList::Node InstrNode;
 struct Op;
 struct Const;
 struct Var;
-struct Mem;
+struct MemVar;
 struct Reg;
-typedef List<Reg*> RegList;
-typedef std::map<int, Reg*> RegMap;
+typedef List<Var*> VarList;
+typedef std::map<int, Var*> VarMap;
+typedef Set<Var*> VarSet;
 typedef Set<Reg*> RegSet;
-typedef std::vector<Reg*> RegVec;
+typedef std::vector<Var*> VarVec;
 
 } // namespace me
 

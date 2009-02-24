@@ -31,7 +31,7 @@ namespace me {
 
 // forward declarations
 struct Function;
-struct RegDefUse;
+struct VarDefUse;
 
 //------------------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ struct CFG : public Graph<BasicBlock>
 
     void placePhiFunctions();
     void renameVars();
-    void rename(BBNode* bb, std::vector< std::stack<Reg*> >& names);
+    void rename(BBNode* bb, std::vector< std::stack<Var*> >& names);
 
     /*
      * SSA form construction
@@ -129,9 +129,9 @@ struct CFG : public Graph<BasicBlock>
      * SSA reconstruction and rewiring
      */
 
-    void reconstructSSAForm(RegDefUse* rdu);
+    void reconstructSSAForm(VarDefUse* rdu);
 
-    Reg* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, RegDefUse* rdu, BBSet& iDF);
+    Var* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, VarDefUse* rdu, BBSet& iDF);
 
     /*
      * dump methods

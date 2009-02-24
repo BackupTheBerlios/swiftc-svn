@@ -69,6 +69,18 @@ public:
     virtual void codeGen(Function* function, std::ofstream& ofs) = 0;
 
     virtual std::string reg2String(const Reg* reg) const = 0;
+
+    virtual size_t getNumStackPlaces() const = 0;
+    /** 
+     * @brief Calulates the aligned offset of a \a Member based on its unaligned
+     * \p offset, \a Arch::alignOf and its \p size.
+     * 
+     * @param offset The unaligned offset.
+     * @param size The size of the \a Member item.
+     * 
+     * @return The aligned offset.
+     */
+    int calcAlignedOffset(int offset, int size);
 };
 
 //------------------------------------------------------------------------------
