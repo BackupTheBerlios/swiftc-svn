@@ -132,6 +132,48 @@ MemVar* Function::newSSAMemVar(Member* memory, const std::string* id /*= 0*/)
 
 #else // SWIFT_DEBUG
 
+Reg* Function::newReg(Op::Type type)
+{
+    Reg* reg = new Reg(type, varCounter_--);
+    insert(reg);
+
+    return reg;
+}
+
+Reg* Function::newSSAReg(Op::Type type)
+{
+    Reg* reg = new Reg(type, ssaCounter_++);
+    insert(reg);
+
+    return reg;
+}
+
+Reg* Function::newSpilledSSAReg(Op::Type type)
+{
+    Reg* reg = new Reg(type, ssaCounter_++);
+    reg->isSpilled_ = true;
+    insert(reg);
+
+    return reg;
+}
+
+MemVar* Function::newMemVar(Member* memory)
+{
+    MemVar* var = new MemVar(memory, varCounter_--);
+    insert(var);
+
+    return var;
+}
+
+MemVar* Function::newSSAMemVar(Member* memory)
+{
+    MemVar* var = new MemVar(memory, ssaCounter_++);
+    insert(var);
+
+    return var;
+}
+
+
 #endif // SWIFT_DEBUG
 
 Var* Function::cloneNewSSA(Var* var)
@@ -269,6 +311,30 @@ MemVar* FunctionTable::newSSAMemVar(Member* memory, const std::string* id /*= 0*
 
 #else // SWIFT_DEBUG
 
+Reg* FunctionTable::newReg(Op::Type type)
+{
+    return currentFunction_->newReg(type);
+}
+
+Reg* FunctionTable::newSSAReg(Op::Type type)
+{
+    return currentFunction_->newSSAReg(type);
+}
+
+Reg* FunctionTable::newSpilledSSAReg(Op::Type type)
+{
+    return currentFunction_->newSpilledSSAReg(type);
+}
+
+MemVar* FunctionTable::newMemVar(Member* memory)
+{
+    return currentFunction_->newMemVar(memory);
+}
+
+MemVar* FunctionTable::newSSAMemVar(Member* memory)
+{
+    return currentFunction_->newSSAMemVar(memory);
+}
 
 #endif // SWIFT_DEBUG
 
