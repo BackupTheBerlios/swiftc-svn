@@ -30,10 +30,10 @@ public:
 
     enum
     {
-        MEM, 
-        R, 
-        XMM,
-        NUM_STACK_PLACES
+        R,                     ///< index 0 
+        XMM,                   ///< index 1
+        NUM_STACK_PLACES,      ///< 2 indices
+        MEM = NUM_STACK_PLACES ///< 2 -> memVar on the stack
     };
 
     virtual me::Op::Type getPreferedInt() const;
@@ -43,6 +43,8 @@ public:
 
     virtual int getPtrSize() const;
     virtual int alignOf(int size) const;
+    virtual int getStackAlignment() const;
+    virtual int calcStackOffset(me::StackLayout* sl, size_t place, int color) const;
 
     virtual void regAlloc(me::Function* function);
     virtual void dumpConstants(std::ofstream& ofs);

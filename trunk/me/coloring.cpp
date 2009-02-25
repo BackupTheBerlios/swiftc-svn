@@ -25,6 +25,7 @@
 #include "me/cfg.h"
 #include "me/functab.h"
 #include "me/op.h"
+#include "me/stacklayout.h"
 
 namespace me {
 
@@ -83,7 +84,7 @@ int Coloring::getFreeSpillSlotColor(Colors& colors)
     colors.insert(color);
 
     // update the spill slots used
-    function_->stackLayout_.insertColor(stackPlace_, color);
+    function_->stackLayout_->insertColor(stackPlace_, color);
 
     return color;
 }

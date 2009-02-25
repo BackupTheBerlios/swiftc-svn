@@ -27,6 +27,8 @@
 
 namespace me {
 
+class StackLayout;
+
 //------------------------------------------------------------------------------
 
 class RegAlloc : public CodePass
@@ -63,6 +65,7 @@ public:
     virtual Op::Type getPreferedIndex() const = 0;
     virtual int getPtrSize() const = 0;
     virtual int alignOf(int size) const = 0;
+    virtual int getStackAlignment() const = 0;
 
     virtual void regAlloc(Function* function) = 0;
     virtual void dumpConstants(std::ofstream& ofs) = 0;
@@ -71,6 +74,9 @@ public:
     virtual std::string reg2String(const Reg* reg) const = 0;
 
     virtual size_t getNumStackPlaces() const = 0;
+
+    virtual int calcStackOffset(StackLayout* sl, size_t place, int color) const = 0;
+
     /** 
      * @brief Calulates the aligned offset of a \a Member based on its unaligned
      * \p offset, \a Arch::alignOf and its \p size.
@@ -81,6 +87,8 @@ public:
      * @return The aligned offset.
      */
     int calcAlignedOffset(int offset, int size);
+
+    int calcAlignedStackOffset(int offset, int size);
 };
 
 //------------------------------------------------------------------------------

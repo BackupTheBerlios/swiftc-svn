@@ -27,6 +27,7 @@
 
 #include "me/arch.h"
 #include "me/struct.h"
+#include "me/stacklayout.h"
 
 using namespace std;
 
@@ -48,7 +49,7 @@ Function::Function(std::string* id, size_t stackPlaces)
     , firstLiveness_(false)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
-    , stackLayout_(stackPlaces)
+    , stackLayout_( new StackLayout(stackPlaces) )
 {}
 
 Function::~Function()
@@ -73,6 +74,7 @@ Function::~Function()
         delete undefs_[i];
 
     delete id_;
+    delete stackLayout_;
 }
 
 /*

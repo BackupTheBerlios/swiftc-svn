@@ -32,7 +32,6 @@
 #include "me/cfg.h" 
 #include "me/op.h"
 #include "me/ssa.h"
-#include "me/stacklayout.h"
 
 namespace me {
 
@@ -42,6 +41,7 @@ namespace me {
 struct Function;
 struct Struct;
 struct Member;
+struct StackLayout;
 
 //------------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ struct Function
     typedef std::map<Var*, int> Var2Color;
     Var2Color var2Color_;
 
-    StackLayout stackLayout_;
+    StackLayout* stackLayout_;
 
     /*
      * constructor and destructor

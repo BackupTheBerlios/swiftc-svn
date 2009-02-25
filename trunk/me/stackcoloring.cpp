@@ -25,6 +25,7 @@
 #include "me/cfg.h"
 #include "me/functab.h"
 #include "me/op.h"
+#include "me/stacklayout.h"
 
 namespace me {
 
@@ -101,7 +102,7 @@ void StackColoring::colorRecursive(BBNode* bbNode)
             else
             {
                 // update the stackLayout_ and fetch color
-                function_->stackLayout_.appendMem( (MemVar*) var );
+                function_->stackLayout_->appendMem( (MemVar*) var );
             }
         }
     } // for each instruction

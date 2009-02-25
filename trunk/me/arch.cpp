@@ -50,6 +50,20 @@ int Arch::calcAlignedOffset(int offset, int size)
     return result;
 }
 
+int Arch::calcAlignedStackOffset(int offset, int size)
+{
+    swiftAssert(size != 0, "size is zero");
+    int result = offset;
+    int align = std::max( alignOf(size), getStackAlignment() );
+    int mod = result % align;
+
+    // do we have to adjust the offset due to alignment?
+    if (mod != 0)
+        result += align - mod;
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 RegAlloc::RegAlloc(Function* function)

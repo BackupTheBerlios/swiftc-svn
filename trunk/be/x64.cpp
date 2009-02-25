@@ -20,6 +20,7 @@
 #include "be/x64.h"
 
 #include "me/constpool.h"
+#include "me/stacklayout.h"
 
 #include "be/x64codegen.h"
 #include "be/x64regalloc.h"
@@ -53,7 +54,29 @@ int X64::getPtrSize() const
 
 int X64::alignOf(int size) const
 {
-    return size;
+    return std::min(size, 16);
+}
+
+int X64::getStackAlignment() const
+{
+    return 8;
+}
+
+int X64::calcStackOffset(me::StackLayout* sl, size_t place, int color) const
+{
+    const int globalOffset = 0;
+    
+    if (place == MEM)
+        return sl->color2MemSlot_[color].offset_ + globalOffset;
+
+    int result = sl->memSlotsSize_ + globalOffset;
+
+    if (place == XMM)
+        result += sl->places_[R].color2Slot_.size() * 8;
+
+    result += sl->places_[place].color2Slot_[color] * 8;
+
+    return result;
 }
 
 size_t X64::getNumStackPlaces() const
