@@ -157,8 +157,8 @@ void X64RegAlloc::process()
     me::Coloring(function_, F_TYPE_MASK, fColors).process(); 
 
     // color spill slots
-    me::Coloring(function_, X64::R).process();
-    me::Coloring(function_, X64::XMM).process();
+    me::Coloring(function_, R_TYPE_MASK | F_TYPE_MASK, X64::QUADWORDS).process();
+    //me::Coloring(function_, V_TYPE_MASK, X64::OCTWORDS).process();
 }
 
 void X64RegAlloc::registerTargeting()
@@ -169,8 +169,10 @@ void X64RegAlloc::registerTargeting()
     {
         me::InstrBase* instr = iter->value_;
 
-        static int  intRegs[6] = {RDI, RSI, RDX, RCX, R8, R9};
-        static int realRegs[8] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+        static const size_t NUM_INT_REGS = 6;
+        static const size_t NUM_REAL_REGS = 8;
+        static int  intRegs[NUM_INT_REGS] = {RDI, RSI, RDX, RCX, R8, R9};
+        static int realRegs[NUM_REAL_REGS] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
         
         if ( typeid(*instr) == typeid(me::LabelInstr) )
         {

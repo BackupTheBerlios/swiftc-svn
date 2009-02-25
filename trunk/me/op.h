@@ -121,6 +121,8 @@ struct Op
      */
     virtual Reg* isSpilled();
 
+    virtual Reg* isSpilled(int typeMask);
+
     virtual std::string toString() const = 0;
 };
 
@@ -295,6 +297,7 @@ struct Reg : public Var
 
     virtual Reg* colorReg(int typeMask);
     virtual Reg* isSpilled();
+    virtual Reg* isSpilled(int typeMask);
     virtual std::string toString() const;
 };
 

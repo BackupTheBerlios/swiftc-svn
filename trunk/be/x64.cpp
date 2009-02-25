@@ -27,6 +27,10 @@
 
 namespace be {
 
+/*
+ * prefered types and pointer size
+ */
+
 me::Op::Type X64::getPreferedInt() const 
 {
     return me::Op::R_INT32;
@@ -52,14 +56,23 @@ int X64::getPtrSize() const
     return 8;
 }
 
+/*
+ * alignment and stack layout
+ */
+
 int X64::alignOf(int size) const
 {
-    return std::min(size, 16);
+    return std::min( nextPowerOfTwo(size), 16 );
 }
 
 int X64::getStackAlignment() const
 {
     return 8;
+}
+
+size_t X64::getNumStackPlaces() const
+{
+    return NUM_STACK_PLACES;
 }
 
 int X64::calcStackOffset(me::StackLayout* sl, size_t place, int color) const
@@ -71,18 +84,17 @@ int X64::calcStackOffset(me::StackLayout* sl, size_t place, int color) const
 
     int result = sl->memSlotsSize_ + globalOffset;
 
-    if (place == XMM)
-        result += sl->places_[R].color2Slot_.size() * 8;
+    //if (place == XMM)
+        //result += sl->places_[R].color2Slot_.size() * 8;
 
     result += sl->places_[place].color2Slot_[color] * 8;
 
     return result;
 }
 
-size_t X64::getNumStackPlaces() const
-{
-    return NUM_STACK_PLACES;
-}
+/*
+ * CodePass wrappers and the like
+ */
 
 void X64::regAlloc(me::Function* function) 
 {
@@ -128,6 +140,10 @@ void X64::codeGen(me::Function* function, std::ofstream& ofs)
 {
     X64CodeGen(function, ofs).process();
 }
+
+/*
+ * dump helper
+ */
 
 std::string X64::reg2String(const me::Reg* reg) const
 {

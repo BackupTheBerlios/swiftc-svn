@@ -12,8 +12,9 @@ struct MemVar;
 class StackLayout
 {
 public:
+
     /*
-     * constructor and destructor
+     * constructor
      */
 
     StackLayout(size_t numStackPlaces);
@@ -24,7 +25,7 @@ public:
 
     void insertColor(size_t place, int color);
 
-    void appendMem(MemVar* memVar);
+    void appendMemVar(MemVar* memVar);
 
     void arangeStackLayout();
 
@@ -46,7 +47,9 @@ public:
     struct Place
     {
         Color2Slot color2Slot_;
-        int counter_;
+        int counter_; ///< Counter used to give each item an unique color.
+        int itemSize_;///< The size of one item in bytes.
+        int offset_;  ///< The offset of these items on the stack.
     };
     
     typedef std::vector<Place> Places;

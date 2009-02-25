@@ -101,8 +101,8 @@ void StackColoring::colorRecursive(BBNode* bbNode)
             }
             else
             {
-                // update the stackLayout_ and fetch color
-                function_->stackLayout_->appendMem( (MemVar*) var );
+                // update stackLayout_ and fetch a color for var
+                function_->stackLayout_->appendMemVar( (MemVar*) var );
             }
         }
     } // for each instruction

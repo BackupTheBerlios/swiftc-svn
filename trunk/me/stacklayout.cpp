@@ -36,7 +36,7 @@ void StackLayout::insertColor(size_t place, int color)
     }
 }
 
-void StackLayout::appendMem(MemVar* memVar)
+void StackLayout::appendMemVar(MemVar* memVar)
 {
     int offset = arch->calcAlignedStackOffset(memSlotsSize_, memVar->memory_->size_);
     memSlotsSize_ = offset + memVar->memory_->size_;

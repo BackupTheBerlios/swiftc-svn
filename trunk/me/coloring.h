@@ -44,7 +44,7 @@ public:
      */
 
     /// Use this one for coloring of spill slots.
-    Coloring(Function* function, size_t stackPlace);
+    Coloring(Function* function, int typeMask, size_t stackPlace);
     Coloring(Function* function, int typeMask, const Colors& reservoir);
 
     /*

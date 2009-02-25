@@ -64,6 +64,15 @@ int Arch::calcAlignedStackOffset(int offset, int size)
     return result;
 }
 
+int Arch::nextPowerOfTwo(int n) 
+{
+    n--;
+    for (int i = 1; i < (int) sizeof(int)*8; i <<= 1)
+            n = n | n >> i;
+
+    return n + 1;
+}
+
 //------------------------------------------------------------------------------
 
 RegAlloc::RegAlloc(Function* function)

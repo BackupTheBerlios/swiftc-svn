@@ -35,14 +35,14 @@ typedef Colors::ResultVec IntVec;
  * constructors
  */
 
-Coloring::Coloring(Function* function, size_t stackPlace)
+Coloring::Coloring(Function* function, int typeMask, size_t stackPlace)
     : CodePass(function)
-    , typeMask_(-1)         // not used in this case
+    , typeMask_(typeMask)
     , reservoir_(Colors())  // use an empty set
     , stackPlace_(stackPlace)
 {}
 
-Coloring::Coloring(Function* function, int typeMask,const Colors& reservoir)
+Coloring::Coloring(Function* function, int typeMask, const Colors& reservoir)
     : CodePass(function)
     , typeMask_(typeMask)
     , reservoir_(reservoir)
@@ -89,6 +89,11 @@ int Coloring::getFreeSpillSlotColor(Colors& colors)
     return color;
 }
 
+/*
+ * This method is quite similar to Coloring::colorRecursive, but it is
+ * different enough that it could be considered as tough at best to merge them.
+ */
+
 void Coloring::colorRecursiveSpillSlots(BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
@@ -97,7 +102,7 @@ void Coloring::colorRecursiveSpillSlots(BBNode* bbNode)
     // all vars in liveIn_ have already been colored
     VARSET_EACH(iter, bb->liveIn_)
     {
-        Reg* reg = (*iter)->isSpilled();
+        Reg* reg = (*iter)->isSpilled(typeMask_);
         if (!reg)
             continue;
 
@@ -124,7 +129,7 @@ void Coloring::colorRecursiveSpillSlots(BBNode* bbNode)
         // for each var on the right hand side
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            Reg* reg = instr->arg_[i].op_->isSpilled();
+            Reg* reg = instr->arg_[i].op_->isSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -154,7 +159,7 @@ void Coloring::colorRecursiveSpillSlots(BBNode* bbNode)
         // for each var on the left hand side -> assign a color for result
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->res_[i].var_->isSpilled();
+            Reg* reg = instr->res_[i].var_->isSpilled(typeMask_);
             if (!reg)
                 continue;
 
