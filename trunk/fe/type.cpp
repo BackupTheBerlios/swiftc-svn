@@ -87,7 +87,7 @@ bool BaseType::isBuiltin() const
     return builtin_;
 }
 
-me::Var* BaseType::createVar(std::string* id) const
+me::Var* BaseType::createVar(std::string* id /*= 0*/) const
 {
     me::Op::Type meType = toMeType();
 

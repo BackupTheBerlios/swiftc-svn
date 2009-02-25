@@ -60,7 +60,7 @@ struct BaseType : public Node
     bool isBuiltin() const;
 
     Class* lookupClass() const;
-    me::Var* createVar(std::string* id) const;
+    me::Var* createVar(std::string* id = 0) const;
 
     typedef std::map<std::string, me::Op::Type> TypeMap;
     static TypeMap* typeMap_; 

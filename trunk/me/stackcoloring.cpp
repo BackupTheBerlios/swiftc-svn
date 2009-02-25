@@ -90,6 +90,8 @@ void StackColoring::colorRecursive(BBNode* bbNode)
             if ( var->type_ != Op::R_STACK )
                 continue;
 
+            swiftAssert( typeid(*var) == typeid(MemVar), "must be a MemVar here" );
+
             if ( typeid(*instr) == typeid(Store) )
             {
                 swiftAssert( typeid(*instr->arg_[1].op_) == typeid(MemVar),
@@ -98,9 +100,8 @@ void StackColoring::colorRecursive(BBNode* bbNode)
             }
             else
             {
-                var->color_ = colorCounter_++;
-                // update the stackLayout_ 
-                //function_->stackLayout_.appendMem(
+                // update the stackLayout_ and fetch color
+                function_->stackLayout_.appendMem( (MemVar*) var );
             }
         }
     } // for each instruction

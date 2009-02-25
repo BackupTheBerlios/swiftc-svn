@@ -43,7 +43,7 @@ public:
      * constructors
      */
 
-    /// Use this one for coloring of memory locations.
+    /// Use this one for coloring of spill slots.
     Coloring(Function* function, size_t stackPlace);
     Coloring(Function* function, int typeMask, const Colors& reservoir);
 
@@ -59,8 +59,8 @@ private:
      * memory location coloring
      */
 
-    void colorRecursiveMem(BBNode* bbNode);
-    int getFreeMemColor(Colors& colors);
+    void colorRecursiveSpillSlots(BBNode* bbNode);
+    int getFreeSpillSlotColor(Colors& colors);
 
     /*
      * register coloring

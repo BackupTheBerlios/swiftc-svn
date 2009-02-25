@@ -346,15 +346,8 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-#ifdef SWIFT_DEBUG
-    std::string str = "tmp";
-    me::Var* var = me::functab->newReg( type_->baseType_->toMeType(), &str );
-#else // SWIFT_DEBUG
-    me::Var* var = me::functab->newReg( type_->baseType_->toMeType() );
-#endif // SWIFT_DEBUG
-
+    me::Var* var = type_->baseType_->createVar();
     place_ = var;
-
     int kind;
 
     switch (kind_)
@@ -466,14 +459,8 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-#ifdef SWIFT_DEBUG
-    std::string str = "tmp";
-    me::Var* var = me::functab->newReg( type_->baseType_->toMeType(), &str );
-#else // SWIFT_DEBUG
-    me::Var* var = me::functab->newReg( type_->baseType_->toMeType() );
-#endif // SWIFT_DEBUG
+    me::Var* var = type_->baseType_->createVar();
     place_ = var;
-
     int kind;
 
     switch (kind_)
@@ -580,7 +567,7 @@ bool MemberAccess::analyze()
     else
         memPlace_ = ma->memPlace_; // pass-through
 
-    place_ = expr_->place_;
+    place_ = expr_->place_; // pass-through
 
     /*
      * In a chain of member accesses there are two special accesses:
@@ -614,16 +601,9 @@ bool MemberAccess::analyze()
     else
         rootStructOffset_ = structOffset_;
 
+    // create new place for the right most access if applicable
     if (!neededAsLValue_ && right_)
-    {
-        // create new place for the right most access
-#ifdef SWIFT_DEBUG
-        std::string str = "tmp";
-        place_ = me::functab->newMemVar( _class->meStruct_, &str );
-#else // SWIFT_DEBUG
-        place_ = me::functab->newMemVar( _class->meStruct_ );
-#endif // SWIFT_DEBUG
-    }
+        place_ = type_->baseType_->createVar();
 
     if ( right_ && !neededAsLValue_ )
         genSSA();

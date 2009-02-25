@@ -6,14 +6,16 @@
 
 namespace me {
 
+// forward declarations
+struct MemVar;
 
 class StackLayout
 {
 public:
 
-    typedef std::vector<int> MemSlot2Size;
+    typedef std::vector<MemVar*> Color2MemVar;
     /// Maps color to size.
-    MemSlot2Size memSlot2Size_;
+    Color2MemVar color2MemVar_;
 
     typedef std::map<int, int> Color2Slot;
     typedef std::vector<Color2Slot> Places;
@@ -35,7 +37,7 @@ public:
 
     void insertColor(size_t place, int color);
 
-    void appendMem(int size);
+    void appendMem(MemVar* memVar);
 };
 
 } // namespace me

@@ -59,16 +59,16 @@ void Coloring::process()
      */
 
     if ( reservoir_.empty() )
-        colorRecursiveMem(cfg_->entry_);
+        colorRecursiveSpillSlots(cfg_->entry_);
     else
         colorRecursive(cfg_->entry_);
 }
 
 /*
- * memory location coloring
+ * spill slot coloring
  */
 
-int Coloring::getFreeMemColor(Colors& colors)
+int Coloring::getFreeSpillSlotColor(Colors& colors)
 {
     int color = 0;
 
@@ -88,7 +88,7 @@ int Coloring::getFreeMemColor(Colors& colors)
     return color;
 }
 
-void Coloring::colorRecursiveMem(BBNode* bbNode)
+void Coloring::colorRecursiveSpillSlots(BBNode* bbNode)
 {
     BasicBlock* bb = bbNode->value_;
     Colors colors; // colors already used go here
@@ -157,7 +157,7 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
             if (!reg)
                 continue;
 
-            reg->color_ = getFreeMemColor(colors);
+            reg->color_ = getFreeSpillSlotColor(colors);
 
             // pointless definitions should be optimized away
             if ( !instr->liveOut_.contains(reg) )
@@ -169,7 +169,7 @@ void Coloring::colorRecursiveMem(BBNode* bbNode)
     BBLIST_EACH(bbIter, bb->domChildren_)
     {
         BBNode* domChild = bbIter->value_;
-        colorRecursiveMem(domChild);
+        colorRecursiveSpillSlots(domChild);
     }
 }
 

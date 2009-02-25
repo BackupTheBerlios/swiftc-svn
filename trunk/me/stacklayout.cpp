@@ -1,5 +1,7 @@
 #include "me/stacklayout.h"
 
+#include "me/op.h"
+
 namespace me {
 
 /*
@@ -7,7 +9,7 @@ namespace me {
  */
 
 StackLayout::StackLayout(size_t numStackPlaces)
-    : memSlot2Size_(0)
+    : color2MemVar_(0)
     , places_(numStackPlaces)
     , slotCounters_(numStackPlaces)
 {
@@ -32,9 +34,10 @@ void StackLayout::insertColor(size_t place, int color)
     }
 }
 
-void StackLayout::appendMem(int size)
+void StackLayout::appendMem(MemVar* memVar)
 {
-    memSlot2Size_.push_back(size);
+    color2MemVar_.push_back(memVar);
+    memVar->color_ = color2MemVar_.size() - 1;
 }
 
 } // namespace me
