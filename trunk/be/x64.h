@@ -51,6 +51,7 @@ public:
      */
 
     virtual int alignOf(int size) const;
+    virtual int getStackItemAlignment() const;
     virtual int getStackAlignment() const;
     virtual size_t getNumStackPlaces() const;
     virtual int calcStackOffset(me::StackLayout* sl, size_t place, int color) const;

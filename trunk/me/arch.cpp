@@ -38,30 +38,12 @@ Arch* arch = 0;
 
 int Arch::calcAlignedOffset(int offset, int size)
 {
-    swiftAssert(size != 0, "size is zero");
-    int result = offset;
-    int align = alignOf(size);
-    int mod = result % align;
-
-    // do we have to adjust the offset due to alignment?
-    if (mod != 0)
-        result += align - mod;
-
-    return result;
+    return align( offset, alignOf(size) );
 }
 
 int Arch::calcAlignedStackOffset(int offset, int size)
 {
-    swiftAssert(size != 0, "size is zero");
-    int result = offset;
-    int align = std::max( alignOf(size), getStackAlignment() );
-    int mod = result % align;
-
-    // do we have to adjust the offset due to alignment?
-    if (mod != 0)
-        result += align - mod;
-
-    return result;
+    return align(offset, std::max(alignOf(size), getStackItemAlignment()) );
 }
 
 int Arch::nextPowerOfTwo(int n) 
@@ -71,6 +53,17 @@ int Arch::nextPowerOfTwo(int n)
             n = n | n >> i;
 
     return n + 1;
+}
+
+int Arch::align(int n, int alignment)
+{
+    int result = n;
+    int mod = n % alignment;
+
+    if (mod != 0)
+        result += alignment - mod;
+
+    return result;
 }
 
 //------------------------------------------------------------------------------

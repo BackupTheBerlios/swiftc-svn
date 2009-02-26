@@ -24,6 +24,7 @@
 
 #include "me/cfg.h"
 #include "me/functab.h"
+#include "me/stacklayout.h"
 
 #include "be/x64parser.h"
 #include "be/x64codegenhelpers.h"
@@ -81,10 +82,7 @@ void X64CodeGen::process()
     //ofs_ << '\n';
     //ofs_ << *function_->id_ << ":\n";
 
-    // TODO
-    //int localStackSize = (function_->spillSlots_ + 1) * 16;
-    //ofs_ << "\tenter\t$0, $" << localStackSize << '\n';
-    ofs_ << "\tenter\t$0, $" << 128 << '\n';
+    ofs_ << "\tenter\t$0, $" << function_->stackLayout_->size_ << '\n';
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;

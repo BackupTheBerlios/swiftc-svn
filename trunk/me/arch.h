@@ -74,6 +74,7 @@ public:
      */
 
     virtual int alignOf(int size) const = 0;
+    virtual int getStackItemAlignment() const = 0;
     virtual int getStackAlignment() const = 0;
     virtual size_t getNumStackPlaces() const = 0;
     virtual int calcStackOffset(StackLayout* sl, size_t place, int color) const = 0;
@@ -112,6 +113,8 @@ public:
      * @return The next power of two.
      */
     static int nextPowerOfTwo(int n);
+
+    static int align(int n, int alignment);
 
     /*
      * CodePass wrappers and the like

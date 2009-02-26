@@ -1,5 +1,7 @@
 #include "me/stacklayout.h"
 
+#include <iostream>
+
 #include "me/arch.h"
 #include "me/op.h"
 #include "me/struct.h"
@@ -70,10 +72,19 @@ void StackLayout::arangeStackLayout()
 
     for (size_t i = 1; i < places_.size(); ++i)
     {
-        // newOffset = align( predecessor-offset, current-item-size )
+        // newOffset = align( pred-offset + pre-item-size * pre-num-items, current-item-size )
+        Place& pre = places_[i - 1];
         places_[i].offset_ = arch->calcAlignedStackOffset(
-                places_[i - 1].offset_, places_[i].itemSize_);
+                pre.offset_ + pre.itemSize_ * pre.color2Slot_.size(), 
+                places_[i].itemSize_);
     }
+
+    // calc the size of the stack frame
+    Place& lastPlace = *places_.rbegin();
+    size_ = lastPlace.offset_ + lastPlace.itemSize_ * lastPlace.color2Slot_.size();
+
+    // and align properly
+    size_ = Arch::align( size_, arch->getStackAlignment() );
 }
 
 } // namespace me

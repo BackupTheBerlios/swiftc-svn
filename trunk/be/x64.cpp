@@ -65,9 +65,14 @@ int X64::alignOf(int size) const
     return std::min( nextPowerOfTwo(size), 16 );
 }
 
-int X64::getStackAlignment() const
+int X64::getStackItemAlignment() const
 {
     return 8;
+}
+
+int X64::getStackAlignment() const
+{
+    return 16;
 }
 
 size_t X64::getNumStackPlaces() const

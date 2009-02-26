@@ -48,12 +48,14 @@ public:
     {
         Color2Slot color2Slot_;
         int counter_; ///< Counter used to give each item an unique color.
-        int itemSize_;///< The size of one item in bytes.
         int offset_;  ///< The offset of these items on the stack.
+        int itemSize_;///< The size of one item in bytes.
     };
     
     typedef std::vector<Place> Places;
     Places places_;
+
+    int size_;
 };
 
 } // namespace me
