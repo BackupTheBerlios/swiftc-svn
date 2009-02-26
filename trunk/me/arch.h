@@ -77,6 +77,7 @@ public:
     virtual int getStackAlignment() const = 0;
     virtual size_t getNumStackPlaces() const = 0;
     virtual int calcStackOffset(StackLayout* sl, size_t place, int color) const = 0;
+    virtual int getItemSize(size_t place) const = 0;
 
     /** 
      * @brief Calulates the aligned offset of a \a Member based on its unaligned

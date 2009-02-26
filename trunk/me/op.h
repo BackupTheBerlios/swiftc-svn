@@ -110,6 +110,8 @@ struct Op
 
     bool typeCheck(int typeMask) const;
 
+    virtual Reg* isReg(int typeMask);
+
     virtual Reg* colorReg(int typeMask);
 
     /** 
@@ -295,9 +297,10 @@ struct Reg : public Var
      * further methods
      */
 
-    virtual Reg* colorReg(int typeMask);
+    virtual Reg* isReg(int typeMask);
     virtual Reg* isSpilled();
     virtual Reg* isSpilled(int typeMask);
+    virtual Reg* colorReg(int typeMask);
     virtual std::string toString() const;
 };
 

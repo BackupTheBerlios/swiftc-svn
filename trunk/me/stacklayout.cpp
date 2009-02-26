@@ -49,8 +49,31 @@ void StackLayout::appendMemVar(MemVar* memVar)
 
 void StackLayout::arangeStackLayout()
 {
-    // TODO this is should be done in an arch independent way
+    // fill itemSize_ for each place
+    for (size_t i = 0; i < arch->getNumStackPlaces(); ++i)
+        places_[i].itemSize_ = arch->getItemSize(i);
 
+    /*
+     * calculate offset_ for each place
+     */
+
+    if ( color2MemSlot_.empty() )
+        places_[0].offset_ = 0;
+    else
+    {
+        // firstPlaceOffset = align( last-color2MemSlot_-offset, first-item-size )
+        places_[0].offset_ = arch->calcAlignedStackOffset(
+                color2MemSlot_.rbegin()->offset_, places_[0].itemSize_);
+    }
+
+    swiftAssert( !places_.empty(), "places_ must not be empty" );
+
+    for (size_t i = 1; i < places_.size(); ++i)
+    {
+        // newOffset = align( predecessor-offset, current-item-size )
+        places_[i].offset_ = arch->calcAlignedStackOffset(
+                places_[i - 1].offset_, places_[i].itemSize_);
+    }
 }
 
 } // namespace me

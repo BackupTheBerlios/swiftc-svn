@@ -22,11 +22,12 @@
 #include "be/x64codegenhelpers.h"
 
 #include "me/constpool.h"
+#include "me/stacklayout.h"
 
+#include "be/x64.h"
 #include "be/x64codegen.h"
 #include "be/x64parser.h"
 #include "be/x64regalloc.h"
-
 
 namespace be {
 
@@ -67,7 +68,9 @@ std::string reg2str(me::Reg* reg)
     if ( reg->isSpilled() )
     {
         std::ostringstream oss;
-        oss << (reg->color_ + 1) * 16 << "(%rbp)";
+        oss << (reg->color_ + 1) 
+            * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
+            + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rbp)";
         return oss.str();
     }
     else

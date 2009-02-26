@@ -54,6 +54,7 @@ public:
     virtual int getStackAlignment() const;
     virtual size_t getNumStackPlaces() const;
     virtual int calcStackOffset(me::StackLayout* sl, size_t place, int color) const;
+    virtual int getItemSize(size_t place) const;
 
     /*
      * CodePass wrappers and the like

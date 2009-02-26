@@ -450,7 +450,7 @@ void Spiller::spill(BBNode* bbNode)
 
     swiftAssert( in_.find(bbNode) == in_.end(), "already inserted" );
     VarSet& inB = in_.insert( std::make_pair(bbNode, VarSet()) ).first->second;
-    DistanceBag currentlyInVars;
+    DistanceBag currentlyInRegs;
 
     // put in all vars from passed and calculate the distance to its next use
     VARSET_EACH(iter, passed)
@@ -460,22 +460,22 @@ void Spiller::spill(BBNode* bbNode)
          * we can start with firstOrdinary_->prev() since distance starts with
          * the next instruction
          */
-        currentlyInVars.insert( VarAndDistance(*iter, 
+        currentlyInRegs.insert( VarAndDistance(*iter, 
                     distance(bbNode, *iter, bb->firstOrdinary_->prev())) );
     }
 
     /*
      * use the first numRegs_ registers if the set is too large
      */
-    discardFarest(currentlyInVars);
+    discardFarest(currentlyInRegs);
 
     // copy over to inVars
-    DISTANCEBAG_EACH(varIter, currentlyInVars)
+    DISTANCEBAG_EACH(varIter, currentlyInRegs)
         inVars.insert(varIter->var_);
 
     /*
-     * currentlyInVars holds all vars which are at the current point in vars. 
-     * Initially it is assumed that all vars in currentlyInVars can be kept in vars.
+     * currentlyInRegs holds all vars which are at the current point in vars. 
+     * Initially it is assumed that all vars in currentlyInRegs can be kept in vars.
      */
 
     // traverse all ordinary instructions in bb
@@ -496,25 +496,21 @@ void Spiller::spill(BBNode* bbNode)
         InstrNode* lastInstrNode = iter->prev_;
 
         /*
-         * check whether all vars on the arg are in vars 
+         * check whether all vars in arg are in regs 
          * and count necessary reloads
          */
         int numReloads = 0;
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            if (typeid(*instr->arg_[i].op_) != typeid(Var))
-                continue;
-
-            Var* var = (Var*) instr->arg_[i].op_;
-
-            if ( !var->typeCheck(typeMask_) )
+            Reg* var = instr->arg_[i].op_->isReg(typeMask_);
+            if (!var)
                 continue;
 
             /*
              * is this var currently not in a real register?
              */
 
-            if ( varFind(currentlyInVars, var) == 0 )
+            if ( varFind(currentlyInRegs, var) == 0 )
             {
                 /*
                  * insert reload instruction
@@ -529,7 +525,7 @@ void Spiller::spill(BBNode* bbNode)
                 else
                     insertReload(bbNode, var, lastInstrNode);
 
-                currentlyInVars.insert( 
+                currentlyInRegs.insert( 
                         VarAndDistance(var, distance(bbNode, var, iter)) );
 
                 // keep account of the number of needed reloads here
@@ -561,15 +557,15 @@ void Spiller::spill(BBNode* bbNode)
         }
 
         swiftAssert(size_t(numLhs) <= numRegs_, "not enough vars");
-        // numRemove -> number of vars which must be removed from currentlyInVars
-        int numRemove = std::max( numLhs + numReloads + int(currentlyInVars.size()) - int(numRegs_), 0 );
+        // numRemove -> number of vars which must be removed from currentlyInRegs
+        int numRemove = std::max( numLhs + numReloads + int(currentlyInRegs.size()) - int(numRegs_), 0 );
 
         /*
          * insert spills
          */
         for (int i = 0; i < numRemove; ++i)
         {
-            Var* toBeSpilled = currentlyInVars.begin()->var_;
+            Var* toBeSpilled = currentlyInRegs.begin()->var_;
 
             // manage inB and inVars
             VarSet::iterator varIter = inVars.find(toBeSpilled);
@@ -583,7 +579,7 @@ void Spiller::spill(BBNode* bbNode)
             }
 
             // remove first var
-            currentlyInVars.erase( currentlyInVars.begin() );
+            currentlyInRegs.erase( currentlyInRegs.begin() );
         }
 
         /*
@@ -591,7 +587,7 @@ void Spiller::spill(BBNode* bbNode)
          */
 
         DistanceBag newBag;
-        DISTANCEBAG_EACH(varIter, currentlyInVars)
+        DISTANCEBAG_EACH(varIter, currentlyInRegs)
         {
             int dist = varIter->distance_;
             subOne(dist);
@@ -603,9 +599,9 @@ void Spiller::spill(BBNode* bbNode)
             newBag.insert( VarAndDistance(varIter->var_, dist) );
         }
 
-        currentlyInVars = newBag;
+        currentlyInRegs = newBag;
 
-        // add results to currentlyInVars
+        // add results to currentlyInRegs
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
             Var* var = instr->res_[i].var_;
@@ -615,7 +611,7 @@ void Spiller::spill(BBNode* bbNode)
                 if ( !instr->liveOut_.contains(var) )
                     continue; // we don't need vars for pointless definitions
 
-                currentlyInVars.insert( 
+                currentlyInRegs.insert( 
                         VarAndDistance(var, distance(bbNode, var, iter)) );
             }
         }
@@ -627,7 +623,7 @@ void Spiller::spill(BBNode* bbNode)
     swiftAssert( out_.find(bbNode) == out_.end(), "already inserted" );
     VarSet& outB = out_.insert( std::make_pair(bbNode, VarSet()) ).first->second;
 
-    DISTANCEBAG_EACH(varIter, currentlyInVars)
+    DISTANCEBAG_EACH(varIter, currentlyInRegs)
         outB.insert(varIter->var_);
     /*
      * use this for debugging for inB and outB

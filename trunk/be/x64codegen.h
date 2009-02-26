@@ -28,6 +28,14 @@
 
 namespace be {
 
+/*
+ * forward declarations
+ */
+
+struct StackLayout;
+
+//------------------------------------------------------------------------------
+
 class X64CodeGen : public me::CodeGen
 {
 public:
@@ -48,6 +56,12 @@ public:
 };
 
 } // namespace be
+
+//------------------------------------------------------------------------------
+
+/*
+ * globals
+ */
 
 int x64lex();
 void x64error(const char* s);

@@ -46,6 +46,7 @@ enum Location
 me::InstrNode* currentInstrNode;
 Location location;
 std::ofstream* x64_ofs = 0;
+me::StackLayout* x64_stacklayout = 0;
 int lastOp;
 
 //------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ X64CodeGen::X64CodeGen(me::Function* function, std::ofstream& ofs)
     : CodeGen(function, ofs)
 {
     x64_ofs = &ofs;
+    x64_stacklayout = function_->stackLayout_;
 }
 
 /*

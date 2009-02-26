@@ -92,6 +92,17 @@ int X64::calcStackOffset(me::StackLayout* sl, size_t place, int color) const
     return result;
 }
 
+int X64::getItemSize(size_t place) const
+{
+    swiftAssert(place < NUM_STACK_PLACES, "index out of range");
+    if (place == QUADWORDS)
+        return 8;
+
+    // for OCTWORDS:
+    swiftAssert(place == OCTWORDS, "wrong index here");
+    return 16;
+}
+
 /*
  * CodePass wrappers and the like
  */

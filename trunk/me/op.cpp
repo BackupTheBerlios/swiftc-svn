@@ -35,6 +35,11 @@ bool Op::typeCheck(int typeMask) const
     return type_ & typeMask;
 }
 
+Reg* Op::isReg(int typeMask)
+{
+    return 0;
+}
+
 Reg* Op::colorReg(int /*typeMask*/)
 {
     return 0;
@@ -234,6 +239,11 @@ Reg* Reg::clone(int varNr) const
 /*
  * further methods
  */
+
+Reg* Reg::isReg(int typeMask)
+{
+    return typeCheck(typeMask) ? this : 0;
+}
 
 Reg* Reg::isSpilled()
 {

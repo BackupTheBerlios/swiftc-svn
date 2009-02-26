@@ -12,9 +12,9 @@ class Fibbonacci
 
         int pre = 0
         while n >= 2
-            int temp = result
+            int f = result
             result = result + pre
-            pre = temp
+            pre = f
 
             n = n - 1
         end

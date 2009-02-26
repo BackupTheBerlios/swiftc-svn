@@ -22,10 +22,9 @@
 
 #include <fstream>
 
-extern "C" int x64parse();
-extern std::ofstream* x64_ofs; 
-
 namespace me {
+
+struct StackLayout;
 
 // it is important to declare all union members of YYSTYPE here
 struct Op;
@@ -41,6 +40,10 @@ struct Spill;
 struct Reload;
 
 } // namespace be
+
+extern "C" int x64parse();
+extern std::ofstream* x64_ofs; 
+extern me::StackLayout* x64_stacklayout;
 
 // include auto generated parser header before tokens
 #include "x64parser.tab.hpp"
