@@ -510,6 +510,8 @@ struct Load : public InstrBase
      * further methods
      */
 
+    int getOffset() const;
+    Reg* resReg();
     std::string toString() const;
 };
 
@@ -519,8 +521,8 @@ struct Load : public InstrBase
  * @brief Store into a stack location or an arbitrary memory location.
  *
  * A Store actually has two versions: <br>
- * - stack_var = Store(arg, offset) <br>
- * -             Store(arg, ptr, offset) <br>
+ * - stack_var = Store(arg, stack_var, offset) <br>
+ * -             Store(arg,       ptr, offset) <br>
  * The former variant stores an item to the stack. 
  * The latter one stores an item to an arbitrary memory location. <br>
  * Note that the offset is not a real argument it is just a member of this
@@ -553,6 +555,8 @@ struct Store : public InstrBase
      * further methods
      */
 
+    int getOffset() const;
+    MemVar* resMemVar();
     std::string toString() const;
 };
 

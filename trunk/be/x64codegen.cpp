@@ -138,16 +138,6 @@ void X64CodeGen::process()
             // TODO
             continue;
         }
-        else if ( typeid(*instr) == typeid(me::Load) )
-        {
-            // TODO
-            continue;
-        }
-        else if ( typeid(*instr) == typeid(me::Store) )
-        {
-            // TODO
-            continue;
-        }
 
         // update globals for x64lex
         currentInstrNode = iter;
@@ -449,6 +439,7 @@ void x64error(const char *s)
 int x64lex()
 {
     me::InstrBase* currentInstr = currentInstrNode->value_;
+    //std::cout << currentInstr->toString() << std::endl;
 
     switch (location)
     {
@@ -523,11 +514,15 @@ int x64lex()
             }
             else if ( instrTypeId == typeid(me::Load) )
             {
-                // TODO
+                me::Load* load = (me::Load*) currentInstr;
+                x64lval.load_ = load;
+                return X64_LOAD;
             }
             else if ( instrTypeId == typeid(me::Store) )
             {
-                // TODO
+                me::Store* store = (me::Store*) currentInstr;
+                x64lval.store_ = store;
+                return X64_STORE;
             }
             else
             {
@@ -543,7 +538,13 @@ int x64lex()
 
             // set new location
             location = OP1;
-            me::Op::Type type =  currentInstr->arg_[0].op_->type_;
+
+            me::Op::Type type;
+            if ( typeid(*currentInstr) == typeid(me::Load) )
+                type = currentInstr->res_[0].var_->type_;
+            else
+                type = currentInstr->arg_[0].op_->type_;
+
             switch (type)
             {
                 case me::Op::R_SPECIAL:
@@ -590,18 +591,22 @@ int x64lex()
                 x64lval.const_ = (me::Const*) op;
                 lastOp = X64_CONST;
             }
+            else if ( opTypeId == typeid(me::MemVar) )
+            {
+                x64lval.memVar_ = (me::MemVar*) op;
+                lastOp = X64_MEM_VAR;
+                location = END; // HACK?
+            }
             else 
             {
-                swiftAssert( dynamic_cast<me::Var*>(op), "must be a Var" );
-                me::Var* var = (me::Var*) op;
-                x64lval.reg_ = (me::Reg*) var;
-
-                // TODO
+                swiftAssert( typeid(*op) == typeid(me::Reg), "must be a Reg" );
+                me::Reg* reg = (me::Reg*) op;
+                x64lval.reg_ = reg;
 
                 if ( !currentInstr->res_.empty() && ((me::Reg*) currentInstr->res_[0].var_)->isSpilled() )
                     return X64_REG_2;
 
-                if ( !currentInstr->res_.empty() && currentInstr->res_[0].var_->color_ == var->color_ )
+                if ( !currentInstr->res_.empty() && currentInstr->res_[0].var_->color_ == reg->color_ )
                     lastOp = X64_REG_1;
                 else
                     lastOp = X64_REG_2;
@@ -630,28 +635,38 @@ int x64lex()
             }
             else 
             {
-                swiftAssert( dynamic_cast<me::Var*>(op), "must be a Reg here");
-                me::Reg* reg = (me::Reg*) op;
-                x64lval.reg_ = reg;
-
-                /*
-                 * The following cases should be considered:
-                 * - res.color == op2.color                 -> reg1
-                 * - op1 == reg, op1.color == op2.color_    -> reg2
-                 * - op1 == reg1                            -> reg2
-                 * - op1 == const                           -> reg2
-                 * else -> reg3
-                 */
-                if ( currentInstr->res_[0].var_->color_ == reg->color_ )
-                    lastOp = X64_REG_1;
-                else if ( lastOp == X64_REG_2 && ((me::Reg*) currentInstr->arg_[0].op_)->color_ == reg->color_ )
-                    lastOp = X64_REG_2;
-                else if (lastOp == X64_REG_1)
-                    lastOp = X64_REG_2;
-                else if (lastOp == X64_CONST)
-                    lastOp = X64_REG_2;
+                if ( typeid(*currentInstr) == typeid(me::Store) )
+                {
+                    swiftAssert( typeid(*op) == typeid(me::MemVar), "must be a MemVar here");
+                    me::MemVar* memVar = (me::MemVar*) op;
+                    x64lval.memVar_ = memVar;
+                    lastOp = X64_MEM_VAR;
+                }
                 else
-                    return X64_REG_3;
+                {
+                    swiftAssert( typeid(*op) == typeid(me::Reg), "must be a Reg here");
+                    me::Reg* reg = (me::Reg*) op;
+                    x64lval.reg_ = reg;
+
+                    /*
+                    * The following cases should be considered:
+                    * - res.color == op2.color                 -> reg1
+                    * - op1 == reg, op1.color == op2.color_    -> reg2
+                    * - op1 == reg1                            -> reg2
+                    * - op1 == const                           -> reg2
+                    * else -> reg3
+                    */
+                    if ( currentInstr->res_[0].var_->color_ == reg->color_ )
+                        lastOp = X64_REG_1;
+                    else if ( lastOp == X64_REG_2 && ((me::Reg*) currentInstr->arg_[0].op_)->color_ == reg->color_ )
+                        lastOp = X64_REG_2;
+                    else if (lastOp == X64_REG_1)
+                        lastOp = X64_REG_2;
+                    else if (lastOp == X64_CONST)
+                        lastOp = X64_REG_2;
+                    else
+                        return X64_REG_3;
+                }
             }
             return lastOp;
         }

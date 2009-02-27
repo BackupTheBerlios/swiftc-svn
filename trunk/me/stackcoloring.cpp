@@ -65,16 +65,17 @@ void StackColoring::colorRecursive(BBNode* bbNode)
         if (!phiRes)
             continue;
 
-        int color = ((MemVar*) instr->arg_[0].op_)->color_;
+        // fetch an already assigned color
+        for (size_t i = 0; i < instr->arg_.size(); ++i)
+        {
+            int color = ((MemVar*) instr->arg_[i].op_)->color_;
 
-#ifdef SWIFT_DEBUG
-        // check in the debug version whether all phi-args have the same color
-        for (size_t i = 1; i < instr->arg_.size(); ++i)
-            swiftAssert( ((Reg*) instr->arg_[i].op_)->color_ == color,
-                    "colors not identical here" );
-#endif // SWIFT_DEBUG
-
-        phiRes->color_ = color;
+            if ( color != Var::NOT_COLORED_YET )
+            {
+                phiRes->color_ = color;
+                break;
+            }
+        }
     }
 
     // for each ordinary instruction in this bb

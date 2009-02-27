@@ -30,6 +30,7 @@ struct StackLayout;
 struct Op;
 struct Undef;
 struct Const;
+struct MemVar;
 struct Reg;
 
 struct LabelInstr;
@@ -38,6 +39,8 @@ struct BranchInstr;
 struct AssignInstr;
 struct Spill;
 struct Reload;
+struct Load;
+struct Store;
 
 } // namespace be
 

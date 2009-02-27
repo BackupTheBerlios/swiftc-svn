@@ -325,6 +325,7 @@ struct MemVar : public Var
      */
 
     virtual MemVar* clone(int varNr) const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

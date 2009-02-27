@@ -94,7 +94,7 @@ public:
     X64RegAlloc(me::Function* function);
 
     /*
-     * methods
+     * further methods
      */
 
     virtual void process();

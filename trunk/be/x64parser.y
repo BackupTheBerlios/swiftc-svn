@@ -42,6 +42,7 @@ using namespace be;
 
     me::Undef* undef_;
     me::Const* const_;
+    me::MemVar* memVar_;
     me::Reg*   reg_;
 
     me::LabelInstr*  label_;
@@ -50,6 +51,8 @@ using namespace be;
     me::AssignInstr* assign_;
     me::Spill*       spill_;
     me::Reload*      reload_;
+    me::Load*        load_;
+    me::Store*       store_;
 }
 
 /*
@@ -64,6 +67,8 @@ using namespace be;
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
 %token <spill_>  X64_SPILL
 %token <reload_> X64_RELOAD
+%token <load_>   X64_LOAD
+%token <store_>  X64_STORE
 %token X64_NOP
 
 /* types */
@@ -75,9 +80,10 @@ using namespace be;
 %token X64_PTR X64_STACK
 
 /* operands */
-%token <undef_> X64_UNDEF
-%token <const_> X64_CONST X64_CST_0 X64_CST_1
-%token <reg_>   X64_REG_1 X64_REG_2 X64_REG_3 X64_REG_M
+%token <undef_>  X64_UNDEF
+%token <const_>  X64_CONST X64_CST_0 X64_CST_1
+%token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3 
+%token <memVar_> X64_MEM_VAR
 
 %start instruction
 
@@ -97,6 +103,7 @@ instruction
     | jump_instruction
     | assign_instruction
     | spill_reload
+    | load_restore
     ;
 
 jump_instruction
@@ -165,6 +172,17 @@ spill_reload
     | X64_RELOAD any_type X64_REG_2
     {
         EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+    }
+    ;
+
+load_restore
+    : X64_LOAD any_type X64_MEM_VAR
+    { 
+        EMIT("mov" << suffix($2) << '\t' << memvar2str($3, $1->getOffset()) << ", " << reg2str($1->resReg())) 
+    }
+    | X64_STORE any_type any_reg X64_MEM_VAR
+    { 
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << memvar2str($4, $1->getOffset()))
     }
     ;
 

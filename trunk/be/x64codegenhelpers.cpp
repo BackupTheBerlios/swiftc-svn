@@ -68,13 +68,22 @@ std::string reg2str(me::Reg* reg)
     if ( reg->isSpilled() )
     {
         std::ostringstream oss;
-        oss << "-" << (reg->color_ + 1) 
+        oss << '-' << (reg->color_ + 1) 
             * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
             + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rbp)";
         return oss.str();
     }
     else
         return X64RegAlloc::reg2String(reg);
+}
+
+std::string memvar2str(me::MemVar* memVar, int offset)
+{
+    std::ostringstream oss;
+    oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 8) + offset
+        << "(%rbp)";
+
+    return oss.str();
 }
 
 std::string mcst2str(me::Const* cst)

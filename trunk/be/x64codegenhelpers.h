@@ -39,6 +39,7 @@ namespace be {
 std::string suffix(int);
 
 std::string reg2str(me::Reg* reg);
+std::string memvar2str(me::MemVar* memVar, int offset);
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string jcc(me::BranchInstr* bi, bool neg = false);

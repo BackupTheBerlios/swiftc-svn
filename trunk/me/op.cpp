@@ -309,4 +309,13 @@ MemVar* MemVar::clone(int varNr) const
 
 #endif // SWIFT_DEBUG
 
+std::string MemVar::toString() const
+{
+    std::ostringstream oss;
+    oss << Var::toString();
+    oss << " (" << color_ << ')';
+
+    return oss.str();
+}
+
 } // namespace me

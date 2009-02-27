@@ -752,6 +752,17 @@ Load::~Load()
  * further methods
  */
 
+int Load::getOffset() const
+{
+    return offset_->getOffset();
+}
+
+Reg* Load::resReg()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+    return (Reg*) res_[0].var_;
+}
+
 std::string Load::toString() const
 {
     std::ostringstream oss;
@@ -796,10 +807,20 @@ Store::~Store()
     delete offset_;
 }
 
-
 /*
  * further methods
  */
+
+int Store::getOffset() const
+{
+    return offset_->getOffset();
+}
+
+MemVar* Store::resMemVar()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(MemVar), "must be a MemVar" );
+    return (MemVar*) res_[0].var_;
+}
 
 std::string Store::toString() const
 {

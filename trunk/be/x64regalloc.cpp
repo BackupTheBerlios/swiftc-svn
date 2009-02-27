@@ -93,6 +93,8 @@ void X64RegAlloc::process()
     if (!omitFramePointer_)
         rColors.erase(RBP);
 
+    // use this to test better the spilling
+#if 0
     rColors.erase(RCX);
     rColors.erase(RSI);
     rColors.erase(RDI);
@@ -104,6 +106,7 @@ void X64RegAlloc::process()
     rColors.erase(R13);
     rColors.erase(R14);
     rColors.erase(R15);
+#endif
 
     me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
 
@@ -463,6 +466,26 @@ void X64RegAlloc::registerTargeting()
                 }
             }
         } // if AssignInstr
+        else if ( typeid(*instr) == typeid(me::Store) )
+        {
+            me::Store* store = (me::Store*) instr;
+            if ( typeid(*store->arg_[0].op_) != typeid(me::Reg) )
+            {
+                swiftAssert( typeid(*store->arg_[0].op_) == typeid(me::Const), 
+                        "must be a Const here");
+                me::Const* cst = (me::Const*) store->arg_[0].op_;
+
+                // create var which will hold the constant, the assignment and insert
+                me::Var* newVar = function_->newSSAReg(cst->type_);
+                me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
+                cfg_->instrList_.insert( iter->prev(), newCopy );
+
+                // substitute operand with newVar
+                instr->arg_[0].op_ = newVar;
+
+                currentBB->value_->fixPointers();
+            }
+        } // if Store
     } // for each instruction
 }
 
