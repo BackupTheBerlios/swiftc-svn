@@ -81,6 +81,9 @@ or  { return OR_OP; }
 xor { return XOR_OP; }
 not { return NOT_OP; }
 
+ccall  { return  C_CALL; }
+vccall { return VC_CALL; }
+
 inc { return INC_OP; }
 dec { return DEC_OP; }
 

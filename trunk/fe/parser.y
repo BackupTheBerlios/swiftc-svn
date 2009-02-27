@@ -145,6 +145,8 @@ using namespace swift;
 %token AND_OP OR_OP XOR_OP NOT_OP
 %token MOD_OP DIV_OP
 
+%token C_CALL VC_CALL
+
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
 
 // control flow
@@ -419,6 +421,8 @@ postfix_expr
     | '.' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, '.', currentLine); }
     | ':' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, ':', currentLine); }
     | ID '(' expr_list ')'                  { $$ = new FunctionCall( 0, $1, $3,   0, currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new FunctionCall( 0, $2, $4, 'c', currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new FunctionCall( 0, $2, $4, 'v', currentLine); }
     ;
 
 primary_expr

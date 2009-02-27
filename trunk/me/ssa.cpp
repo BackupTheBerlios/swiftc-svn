@@ -894,4 +894,11 @@ std::string SetResults::toString() const
     return oss.str();
 }
 
+//------------------------------------------------------------------------------
+
+CallInstr::CallInstr(size_t numRes, size_t numArgs, const std::string& symbol)
+    : InstrBase(numRes, numArgs)
+    , symbol_(symbol)
+{}
+
 } // namespace me

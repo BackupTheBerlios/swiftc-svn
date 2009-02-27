@@ -594,6 +594,36 @@ struct SetResults : public InstrBase
     std::string toString() const;
 };
 
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief This represents a \a Function call.
+ *
+ * It is assumed that all arguments are \em NOT changed in the function.
+ * If you want to model the change of a function's argument add another
+ * definition: <br>
+ * a, b, c = CallInstr(e, f, c) <br>
+ * In this example c is changed. c get a new name during SSA construction
+ * or an reconstructSSAForm pass.
+ */
+struct CallInstr : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    /**
+     * Creates a \a Function static call to a symbol.
+     * 
+     * @param numRes The number of results.
+     * @param numArgs  The number of arguments.
+     * @param symbol The symbol used for calling
+     */
+    CallInstr(size_t numRes, size_t numArgs, const std::string& symbol);
+
+    std::string symbol_;
+};
+
 } // namespace me
 
 #endif // ME_SSA_H
