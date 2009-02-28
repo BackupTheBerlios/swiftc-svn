@@ -636,6 +636,19 @@ FunctionCall::FunctionCall(
     , kind_(kind)
 {}
 
+FunctionCall::FunctionCall(
+        Type* type, 
+        std::string* id, 
+        ExprList* exprList, 
+        char kind,
+        int line /*= NO_LINE*/)
+    : Expr(line)
+    , type_(type)
+    , id_(id)
+    , exprList_(exprList)
+    , kind_(kind)
+{}
+
 FunctionCall::~FunctionCall()
 {
     delete exprList_;
@@ -647,7 +660,17 @@ FunctionCall::~FunctionCall()
 
 bool FunctionCall::analyze()
 {
-    std::cout << "not yet implemented" << std::endl;
+    bool result = true;
+
+    // if this is a function call of a C function or a C function with varargs
+    if (kind_ == 'c' || kind_ == 'v')
+    {
+        swiftAssert(expr_ == 0, "must be 0 here"); 
+        result = exprList_->analyze();
+
+        if (result)
+            genSSA();
+    }
 
     genSSA();
 
@@ -656,8 +679,23 @@ bool FunctionCall::analyze()
 
 void FunctionCall::genSSA()
 {
-    std::cout << "not yet implemented" << std::endl;
-//     place_ = new std::string("TODO");
+    size_t numRes = 0;
+
+    if (type_)
+    {
+        me::Var* var = type_->baseType_->createVar();
+        place_ = var;
+        numRes = 1;
+    }
+
+    typedef std::vector<Expr*> ExprVec;
+    ExprVec exprVec;
+
+    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
+        exprVec.push_back(iter->expr_);
+
+    me::CallInstr* call = new me::CallInstr( numRes, exprVec.size(), *id_ );
+    me::functab->appendInstr(call); 
 };
 
 } // namespace swift

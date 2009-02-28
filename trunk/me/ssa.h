@@ -622,6 +622,12 @@ struct CallInstr : public InstrBase
     CallInstr(size_t numRes, size_t numArgs, const std::string& symbol);
 
     std::string symbol_;
+
+    /*
+     * further methods
+     */
+
+    virtual std::string toString() const;
 };
 
 } // namespace me

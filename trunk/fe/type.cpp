@@ -153,6 +153,9 @@ std::string Type::toString() const
 
 bool Type::check(Type* t1, Type* t2)
 {
+    if (!t1 || !t2)
+        return false; // if either of these is or both are void they are not compatible
+
     if (t1->pointerCount_ != t2->pointerCount_)
         return false; // pointerCount_ does not match
 

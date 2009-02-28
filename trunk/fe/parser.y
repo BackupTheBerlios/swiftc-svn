@@ -418,11 +418,13 @@ postfix_expr
     | '.' ID                                { $$ = new MemberAccess( 0, $2, currentLine); }
     | postfix_expr '.' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, '.', currentLine); }
     | postfix_expr ':' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, ':', currentLine); }
-    | '.' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, '.', currentLine); }
-    | ':' ID '(' expr_list ')'              { $$ = new FunctionCall( 0, $2, $4, ':', currentLine); }
-    | ID '(' expr_list ')'                  { $$ = new FunctionCall( 0, $1, $3,   0, currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new FunctionCall( 0, $2, $4, 'c', currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new FunctionCall( 0, $2, $4, 'v', currentLine); }
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new FunctionCall($2, $3, $5, 'c', currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new FunctionCall($2, $3, $5, 'v', currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new FunctionCall((Type*) 0, $2, $4, 'c', currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new FunctionCall((Type*) 0, $2, $4, 'v', currentLine); }
+    | ID '(' expr_list ')'                  { $$ = new FunctionCall((Expr*) 0, $1, $3,   0, currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new FunctionCall((Expr*) 0, $2, $4, '.', currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new FunctionCall((Expr*) 0, $2, $4, ':', currentLine); }
     ;
 
 primary_expr

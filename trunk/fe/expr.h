@@ -288,7 +288,12 @@ struct MemberAccess : public Expr
 
 struct FunctionCall : public Expr
 {
-    Expr*           expr_;
+    union
+    {
+        Expr* expr_;
+        Type* type_;
+    };
+
     std::string*    id_;
     ExprList*       exprList_;
     char            kind_;
@@ -299,6 +304,13 @@ struct FunctionCall : public Expr
 
     FunctionCall(
             Expr* expr, 
+            std::string* id, 
+            ExprList* exprList, 
+            char kind, 
+            int line = NO_LINE);
+
+    FunctionCall(
+            Type* type, 
             std::string* id, 
             ExprList* exprList, 
             char kind, 

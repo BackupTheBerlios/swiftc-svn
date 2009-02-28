@@ -896,9 +896,22 @@ std::string SetResults::toString() const
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructor
+ */
+
 CallInstr::CallInstr(size_t numRes, size_t numArgs, const std::string& symbol)
     : InstrBase(numRes, numArgs)
     , symbol_(symbol)
 {}
+
+/*
+ * further methods
+ */
+
+std::string CallInstr::toString() const
+{
+    return "TODO";
+}
 
 } // namespace me
