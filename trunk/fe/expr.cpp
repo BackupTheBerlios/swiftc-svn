@@ -637,13 +637,13 @@ FunctionCall::FunctionCall(
 {}
 
 FunctionCall::FunctionCall(
-        Type* type, 
+        Type* returnType, 
         std::string* id, 
         ExprList* exprList, 
         char kind,
         int line /*= NO_LINE*/)
     : Expr(line)
-    , type_(type)
+    , returnType_(returnType)
     , id_(id)
     , exprList_(exprList)
     , kind_(kind)
@@ -652,6 +652,12 @@ FunctionCall::FunctionCall(
 FunctionCall::~FunctionCall()
 {
     delete exprList_;
+    delete id_;
+
+    if ( (kind_ == 'c' || kind_ == 'v') && returnType_ )
+        delete returnType_;
+    else if (expr_)
+        delete expr_;
 }
 
 /*
@@ -665,8 +671,14 @@ bool FunctionCall::analyze()
     // if this is a function call of a C function or a C function with varargs
     if (kind_ == 'c' || kind_ == 'v')
     {
-        swiftAssert(expr_ == 0, "must be 0 here"); 
         result = exprList_->analyze();
+
+        if (returnType_)
+        {
+            me::Var* var = returnType_->baseType_->createVar();
+            place_ = var;
+            type_ = returnType_->clone();
+        }
 
         if (result)
             genSSA();
@@ -680,13 +692,8 @@ bool FunctionCall::analyze()
 void FunctionCall::genSSA()
 {
     size_t numRes = 0;
-
-    if (type_)
-    {
-        me::Var* var = type_->baseType_->createVar();
-        place_ = var;
+    if (returnType_)
         numRes = 1;
-    }
 
     typedef std::vector<Expr*> ExprVec;
     ExprVec exprVec;
@@ -695,6 +702,13 @@ void FunctionCall::genSSA()
         exprVec.push_back(iter->expr_);
 
     me::CallInstr* call = new me::CallInstr( numRes, exprVec.size(), *id_ );
+
+    for (size_t i = 0; i < exprVec.size(); ++i)
+        call->arg_[i] = me::Arg( exprVec[i]->place_ );
+
+    for (size_t i = 0; i < numRes; ++i)
+        call->res_[i] = me::Res( (me::Var*) place_, ((me::Var*) place_)->varNr_ );
+
     me::functab->appendInstr(call); 
 };
 

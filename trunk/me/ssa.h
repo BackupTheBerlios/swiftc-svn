@@ -56,7 +56,7 @@ struct Res
     int  constraint_;
 
     Res() {}
-    Res(Var* var, int oldVarNr, int constraint)
+    Res(Var* var, int oldVarNr, int constraint = NO_CONSTRAINT)
         : var_(var)
         , oldVarNr_(oldVarNr)
         , constraint_(constraint)
@@ -71,7 +71,7 @@ struct Arg
     int constraint_;
 
     Arg() {}
-    Arg(Op* op, int constraint)
+    Arg(Op* op, int constraint = NO_CONSTRAINT)
         : op_(op)
         , constraint_(constraint)
     {}

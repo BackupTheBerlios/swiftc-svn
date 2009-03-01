@@ -139,7 +139,8 @@ bool Assignment::analyze(bool exprResult)
             return true;
     }
 
-    errorf(line_, "no constructor found for this class with the given arguments");
+    errorf( line_, "no constructor found for class % s with the given arguments", 
+            _class->id_->c_str() );
 
     return false;
 }

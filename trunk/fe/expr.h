@@ -291,7 +291,7 @@ struct FunctionCall : public Expr
     union
     {
         Expr* expr_;
-        Type* type_;
+        Type* returnType_;
     };
 
     std::string*    id_;
@@ -310,7 +310,7 @@ struct FunctionCall : public Expr
             int line = NO_LINE);
 
     FunctionCall(
-            Type* type, 
+            Type* returnType, 
             std::string* id, 
             ExprList* exprList, 
             char kind, 
