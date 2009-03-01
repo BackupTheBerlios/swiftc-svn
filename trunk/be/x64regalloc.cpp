@@ -37,6 +37,13 @@
 namespace be {
 
 /*
+ * statics
+ */
+
+int X64RegAlloc::intRegs[NUM_INT_REGS] = {RDI, RSI, RDX, RCX, R8, R9};
+int X64RegAlloc::realRegs[NUM_REAL_REGS] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+
+/*
  * constructor
  */
 
@@ -176,317 +183,313 @@ void X64RegAlloc::registerTargeting()
     {
         me::InstrBase* instr = iter->value_;
 
-        static const size_t NUM_INT_REGS = 6;
-        static const size_t NUM_REAL_REGS = 8;
-        static int  intRegs[NUM_INT_REGS] = {RDI, RSI, RDX, RCX, R8, R9};
-        static int realRegs[NUM_REAL_REGS] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
-        
         if ( typeid(*instr) == typeid(me::LabelInstr) )
-        {
             currentBB = cfg_->labelNode2BBNode_[iter];
-            continue;
-        }
         else if ( typeid(*instr) == typeid(me::BranchInstr) )
-        {
-            me::BranchInstr* bi = (me::BranchInstr*) instr;
-
-            /* 
-             * check whether the preceding instruction is the definition
-             * of bi->getOp()
-             */
-
-            me::InstrNode* preNode = iter->prev();
-
-            if ( dynamic_cast<me::Var*>(bi->getOp()) )
-            {
-                me::Var* var = (me::Var*) bi->getOp();
-
-                if (var->def_.instrNode_ == preNode)
-                {
-                    // is it even an AssignInstr?
-                    if ( typeid(*preNode->value_) == typeid(me::AssignInstr) )
-                    {
-                        me::AssignInstr* ai = (me::AssignInstr*) preNode->value_;
-
-                        if ( ai->isComparison() )
-                        {
-                            // do nothing when both are Consts,
-                            // this should be optimized away
-                            if ( typeid(*ai->arg_[0].op_) == typeid(me::Const)
-                                    && typeid(*ai->arg_[0].op_) == typeid(me::Const))
-                                continue;
-
-                            // check whether this is the only use
-                            if (var->uses_.size() == 1)
-                            {
-                                // do not color this var
-                                var->type_ = me::Op::R_SPECIAL;
-                            }
-
-                            me::Op::Type type = ai->arg_[0].op_->type_;
-
-                            if (       type == me::Op::R_INT8  || type == me::Op::R_INT16 
-                                    || type == me::Op::R_INT32 || type == me::Op::R_INT64
-                                    || type == me::Op::R_SAT8  || type == me::Op::R_SAT16)
-                            {
-                                switch (ai->kind_)
-                                {
-                                    case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
-                                    case me::AssignInstr::NE: bi->cc_ = C_NE; break;
-                                    case '<':                 bi->cc_ = C_L ; break;
-                                    case '>':                 bi->cc_ = C_G ; break;
-                                    case me::AssignInstr::LE: bi->cc_ = C_LE; break;
-                                    case me::AssignInstr::GE: bi->cc_ = C_GE; break;
-                                    default:
-                                        swiftAssert(false, "unreachable code");
-                                }
-                            }
-                            else
-                            {
-                                switch (ai->kind_)
-                                {
-                                    case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
-                                    case me::AssignInstr::NE: bi->cc_ = C_NE; break;
-                                    case '<':                 bi->cc_ = C_B ; break;
-                                    case '>':                 bi->cc_ = C_A ; break;
-                                    case me::AssignInstr::LE: bi->cc_ = C_BE; break;
-                                    case me::AssignInstr::GE: bi->cc_ = C_AE; break;
-                                    default:
-                                        swiftAssert(false, "unreachable code");
-                                }
-                            }
-                        } // if comparison
-                    } // if AssignInstr
-                    continue;
-                } // if var defined in previous instruction
-            } // if bi->getOP() is a Var
-            else 
-            {
-                swiftAssert( typeid(*bi->getOp()) == typeid(me::Const),
-                        "must be a me::Const here" );
-            }
-
-            continue;
-        }
+            targetBranchInstr(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::SetParams) )
-        {
-            me::SetParams* sp = (me::SetParams*) instr;
-
-            if ( !sp->res_.empty() )
-                sp->constrain();
-
-            int intCounter = 0;
-            int realCounter = 0;
-
-            for (size_t i = 0; i < sp->res_.size(); ++i)
-            {
-                me::Op::Type type = sp->res_[i].var_->type_;
-
-                switch (type)
-                {
-                    case me::Op::R_BOOL:
-                    case me::Op::R_INT8:
-                    case me::Op::R_INT16:
-                    case me::Op::R_INT32:
-                    case me::Op::R_INT64:
-                    case me::Op::R_SAT8:
-                    case me::Op::R_SAT16:
-                    case me::Op::R_UINT8:
-                    case me::Op::R_UINT16:
-                    case me::Op::R_UINT32:
-                    case me::Op::R_UINT64:
-                    case me::Op::R_USAT8:
-                    case me::Op::R_USAT16:
-                        sp->res_[i].constraint_ = intRegs[intCounter++];
-                        break;
-
-                    case me::Op::R_REAL32:
-                    case me::Op::R_REAL64:
-                        sp->res_[i].constraint_ = realRegs[realCounter++];
-                        break;
-
-                    default:
-                        swiftAssert( false, "unreachable code" );
-                }
-            }
-
-            continue;
-        }
+            targetSetParams(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::SetResults) )
-        {
-            me::SetResults* sr = (me::SetResults*) instr;
-            swiftAssert( !sr->arg_.empty(), "must not be empty" );
-            sr->constrain();
-
-            // TODO only one result supported
-            me::Op::Type type = sr->arg_[0].op_->type_;
-            switch (type)
-            {
-                case me::Op::R_BOOL:
-                case me::Op::R_INT8:
-                case me::Op::R_INT16:
-                case me::Op::R_INT32:
-                case me::Op::R_INT64:
-                case me::Op::R_SAT8:
-                case me::Op::R_SAT16:
-                case me::Op::R_UINT8:
-                case me::Op::R_UINT16:
-                case me::Op::R_UINT32:
-                case me::Op::R_UINT64:
-                case me::Op::R_USAT8:
-                case me::Op::R_USAT16:
-                    sr->arg_[0].constraint_ = RAX;
-                    break;
-
-                case me::Op::R_REAL32:
-                case me::Op::R_REAL64:
-                    sr->arg_[0].constraint_ = XMM0;
-                    break;
-
-                default:
-                    swiftAssert( false, "unreachable code" );
-            }
-
-            continue;
-        }
+            targetSetResults(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::AssignInstr) )
-        {
-            me::AssignInstr* ai = (me::AssignInstr*) instr;
-            swiftAssert( ai->res_.size() >= 1, "one or more results must be here" );
-            swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
-                    "one or two args must be here" );
-
-            me::Op::Type type = ai->res_[0].var_->type_;
-
-            if (       ai->kind_ == me::AssignInstr::EQ
-                    || ai->kind_ == me::AssignInstr::NE
-                    || ai->kind_ == me::AssignInstr::LE
-                    || ai->kind_ == me::AssignInstr::GE
-                    || ai->kind_ == '<'
-                    || ai->kind_ == '>')
-            {
-                // TODO
-                continue;
-            }
-
-            /*
-             * forbidden instructions:
-             * r1 =  c / r1     ( reg = c / reg_dead )
-             *      rewrite as:
-             *      tmp = c
-             *      a = tmp / b
-             *
-             * r1 = r2 / r1     ( reg = reg / reg_dead)
-             *      rewrite as:
-             *      a = b / c
-             *      NOP(c)
-             *      
-             */
-
-            if (ai->kind_ == '/')
-            {
-                swiftAssert( ai->arg_.size() == 2, "must have exactly two args" );
-            
-                me::InstrBase::OpType opType1 = ai->getOpType(0);
-                me::InstrBase::OpType opType2 = ai->getOpType(1);
-
-                if (opType2 == me::InstrBase::VAR_DEAD)
-                {
-                    if (opType1 == me::InstrBase::CONST)
-                    {
-                        swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
-                                "must be a Const here");
-                        me::Const* cst = (me::Const*) ai->arg_[0].op_;
-
-                        // create var which will hold the constant, the assignment and insert
-                        me::Var* newVar = function_->newSSAReg(type);
-                        me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
-                        cfg_->instrList_.insert( iter->prev(), newCopy );
-
-                        // substitute operand with newVar
-                        instr->arg_[0].op_ = newVar;
-
-                        currentBB->value_->fixPointers();
-                    }
-                    else if (opType1 == me::InstrBase::VAR)
-                    {
-                        // insert artificial use for all critical cases
-                        me::Var* var = (me::Var*) ai->arg_[1].op_;
-                        cfg_->instrList_.insert( iter, new me::NOP(var) );
-
-                        currentBB->value_->fixPointers();
-                    }
-                } // if op2 VAR_DEAD
-            } // if div
-
-            /*
-             * do register targeting on mul, div and idiv instructions
-             */
-
-            if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
-                continue;
-
-            if (ai->kind_ == '*' || ai->kind_ == '/')
-            {
-                if ( ai->kind_ == '*' && 
-                        (type == me::Op::R_INT8  || type == me::Op::R_INT16 || 
-                         type == me::Op::R_INT32 || type == me::Op::R_INT64) )
-                {
-                    // this is signed int = signed int * signed int
-                    continue; // -> everything's fine
-                }
-                
-                /*
-                 * constrain properly
-                 */
-                ai->constrain();
-                ai->arg_[0].constraint_ = RAX;
-                ai->res_[0].constraint_ = RAX;
-
-                // int8 and uint8 just go to ax/al/ah and not dl:al or something
-                if (type != me::Op::R_INT8 && type != me::Op::R_UINT8)
-                {
-                    // RDX is destroyed in all cases
-                    ai->res_.push_back( me::Res(function_->newSSAReg(type), 0, RDX) );
-
-                    if (ai->kind_ == '/')
-                    {
-                        // no input reg may be RDX
-
-                        // define a new Var which is initialized with undef
-                        me::Var* dummy = function_->newSSAReg(type);
-                        cfg_->instrList_.insert( iter->prev(), 
-                            new me::AssignInstr('=', dummy, function_->newUndef(type)) );
-
-                        // avoid that RDX is spilled here
-                        ai->arg_.push_back( me::Arg(dummy, RDX) );
-
-                        currentBB->value_->fixPointers();
-                    }
-                }
-            }
-        } // if AssignInstr
+            targetAssignInstr(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::Store) )
+            targetStore(iter, currentBB);
+    } // for each instruction
+}
+
+void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::AssignInstr* ai = (me::AssignInstr*) iter->value_;
+    swiftAssert( ai->res_.size() >= 1, "one or more results must be here" );
+    swiftAssert( ai->arg_.size() == 1 || ai->arg_.size() == 2,
+            "one or two args must be here" );
+
+    if ( ai->isComparison() )
+        return;
+
+    me::Op::Type type = ai->res_[0].var_->type_;
+
+    /*
+        * forbidden instructions:
+        * r1 =  c / r1     ( reg = c / reg_dead )
+        *      rewrite as:
+        *      tmp = c
+        *      a = tmp / b
+        *
+        * r1 = r2 / r1     ( reg = reg / reg_dead)
+        *      rewrite as:
+        *      a = b / c
+        *      NOP(c)
+        *      
+        */
+
+    if (ai->kind_ == '/')
+    {
+        swiftAssert( ai->arg_.size() == 2, "must have exactly two args" );
+    
+        me::InstrBase::OpType opType1 = ai->getOpType(0);
+        me::InstrBase::OpType opType2 = ai->getOpType(1);
+
+        if (opType2 == me::InstrBase::VAR_DEAD)
         {
-            me::Store* store = (me::Store*) instr;
-            if ( typeid(*store->arg_[0].op_) != typeid(me::Reg) )
+            if (opType1 == me::InstrBase::CONST)
             {
-                swiftAssert( typeid(*store->arg_[0].op_) == typeid(me::Const), 
+                swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                         "must be a Const here");
-                me::Const* cst = (me::Const*) store->arg_[0].op_;
+                me::Const* cst = (me::Const*) ai->arg_[0].op_;
 
                 // create var which will hold the constant, the assignment and insert
-                me::Var* newVar = function_->newSSAReg(cst->type_);
+                me::Var* newVar = function_->newSSAReg(type);
                 me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
                 cfg_->instrList_.insert( iter->prev(), newCopy );
 
                 // substitute operand with newVar
-                instr->arg_[0].op_ = newVar;
+                ai->arg_[0].op_ = newVar;
 
                 currentBB->value_->fixPointers();
             }
-        } // if Store
-    } // for each instruction
+            else if (opType1 == me::InstrBase::VAR)
+            {
+                // insert artificial use for all critical cases
+                me::Var* var = (me::Var*) ai->arg_[1].op_;
+                cfg_->instrList_.insert( iter, new me::NOP(var) );
+
+                currentBB->value_->fixPointers();
+            }
+        } // if op2 VAR_DEAD
+    } // if div
+
+    /*
+     * do register targeting on mul, div and idiv instructions
+     */
+
+    if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
+        return;
+
+    if (ai->kind_ == '*' || ai->kind_ == '/')
+    {
+        if ( ai->kind_ == '*' && 
+                (type == me::Op::R_INT8  || type == me::Op::R_INT16 || 
+                    type == me::Op::R_INT32 || type == me::Op::R_INT64) )
+        {
+            // this is signed int = signed int * signed int
+            return; // -> everything's fine
+        }
+        
+        /*
+         * constrain properly
+         */
+        ai->constrain();
+        ai->arg_[0].constraint_ = RAX;
+        ai->res_[0].constraint_ = RAX;
+
+        // int8 and uint8 just go to ax/al/ah and not dl:al or something
+        if (type != me::Op::R_INT8 && type != me::Op::R_UINT8)
+        {
+            // RDX is destroyed in all cases
+            ai->res_.push_back( me::Res(function_->newSSAReg(type), 0, RDX) );
+
+            if (ai->kind_ == '/')
+            {
+                // no input reg may be RDX
+
+                // define a new Var which is initialized with undef
+                me::Var* dummy = function_->newSSAReg(type);
+                cfg_->instrList_.insert( iter->prev(), 
+                    new me::AssignInstr('=', dummy, function_->newUndef(type)) );
+
+                // avoid that RDX is spilled here
+                ai->arg_.push_back( me::Arg(dummy, RDX) );
+
+                currentBB->value_->fixPointers();
+            }
+        }
+    }
+}
+
+void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::BranchInstr* bi = (me::BranchInstr*) iter->value_;
+
+    /* 
+     * check whether the preceding instruction is the definition
+     * of bi->getOp()
+     */
+
+    me::InstrNode* preNode = iter->prev();
+
+    if ( dynamic_cast<me::Var*>(bi->getOp()) )
+    {
+        me::Var* var = (me::Var*) bi->getOp();
+
+        if (var->def_.instrNode_ == preNode)
+        {
+            // is it even an AssignInstr?
+            if ( typeid(*preNode->value_) == typeid(me::AssignInstr) )
+            {
+                me::AssignInstr* ai = (me::AssignInstr*) preNode->value_;
+
+                if ( ai->isComparison() )
+                {
+                    // do nothing when both are Consts,
+                    // this should be optimized away
+                    if ( typeid(*ai->arg_[0].op_) == typeid(me::Const)
+                            && typeid(*ai->arg_[0].op_) == typeid(me::Const))
+                        return;
+
+                    // check whether this is the only use
+                    if (var->uses_.size() == 1)
+                    {
+                        // do not color this var
+                        var->type_ = me::Op::R_SPECIAL;
+                    }
+
+                    me::Op::Type type = ai->arg_[0].op_->type_;
+
+                    if (       type == me::Op::R_INT8  || type == me::Op::R_INT16 
+                            || type == me::Op::R_INT32 || type == me::Op::R_INT64
+                            || type == me::Op::R_SAT8  || type == me::Op::R_SAT16)
+                    {
+                        switch (ai->kind_)
+                        {
+                            case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
+                            case me::AssignInstr::NE: bi->cc_ = C_NE; break;
+                            case '<':                 bi->cc_ = C_L ; break;
+                            case '>':                 bi->cc_ = C_G ; break;
+                            case me::AssignInstr::LE: bi->cc_ = C_LE; break;
+                            case me::AssignInstr::GE: bi->cc_ = C_GE; break;
+                            default:
+                                swiftAssert(false, "unreachable code");
+                        }
+                    }
+                    else
+                    {
+                        switch (ai->kind_)
+                        {
+                            case me::AssignInstr::EQ: bi->cc_ = C_EQ; break;
+                            case me::AssignInstr::NE: bi->cc_ = C_NE; break;
+                            case '<':                 bi->cc_ = C_B ; break;
+                            case '>':                 bi->cc_ = C_A ; break;
+                            case me::AssignInstr::LE: bi->cc_ = C_BE; break;
+                            case me::AssignInstr::GE: bi->cc_ = C_AE; break;
+                            default:
+                                swiftAssert(false, "unreachable code");
+                        }
+                    }
+                } // if comparison
+            } // if AssignInstr
+
+            return ;
+        } // if var defined in previous instruction
+    } // if bi->getOP() is a Var
+    else 
+    {
+        swiftAssert( typeid(*bi->getOp()) == typeid(me::Const),
+                "must be a me::Const here" );
+    }
+}
+
+void X64RegAlloc::targetStore(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::Store* store = (me::Store*) iter->value_;
+
+    if ( typeid(*store->arg_[0].op_) != typeid(me::Reg) )
+    {
+        swiftAssert( typeid(*store->arg_[0].op_) == typeid(me::Const), 
+                "must be a Const here");
+        me::Const* cst = (me::Const*) store->arg_[0].op_;
+
+        // create var which will hold the constant, the assignment and insert
+        me::Var* newVar = function_->newSSAReg(cst->type_);
+        me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
+        cfg_->instrList_.insert( iter->prev(), newCopy );
+
+        // substitute operand with newVar
+        store->arg_[0].op_ = newVar;
+
+        currentBB->value_->fixPointers();
+    }
+}
+
+void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::SetParams* sp = (me::SetParams*) iter->value_;
+
+    if ( !sp->res_.empty() )
+        sp->constrain();
+
+    int intCounter = 0;
+    int realCounter = 0;
+
+    for (size_t i = 0; i < sp->res_.size(); ++i)
+    {
+        me::Op::Type type = sp->res_[i].var_->type_;
+
+        switch (type)
+        {
+            case me::Op::R_BOOL:
+            case me::Op::R_INT8:
+            case me::Op::R_INT16:
+            case me::Op::R_INT32:
+            case me::Op::R_INT64:
+            case me::Op::R_SAT8:
+            case me::Op::R_SAT16:
+            case me::Op::R_UINT8:
+            case me::Op::R_UINT16:
+            case me::Op::R_UINT32:
+            case me::Op::R_UINT64:
+            case me::Op::R_USAT8:
+            case me::Op::R_USAT16:
+                sp->res_[i].constraint_ = intRegs[intCounter++];
+                break;
+
+            case me::Op::R_REAL32:
+            case me::Op::R_REAL64:
+                sp->res_[i].constraint_ = realRegs[realCounter++];
+                break;
+
+            default:
+                swiftAssert( false, "unreachable code" );
+        }
+    }
+}
+
+void X64RegAlloc::targetSetResults(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::SetResults* sr = (me::SetResults*) iter->value_;
+
+    swiftAssert( !sr->arg_.empty(), "must not be empty" );
+    sr->constrain();
+
+    // TODO only one result supported
+    me::Op::Type type = sr->arg_[0].op_->type_;
+    switch (type)
+    {
+        case me::Op::R_BOOL:
+        case me::Op::R_INT8:
+        case me::Op::R_INT16:
+        case me::Op::R_INT32:
+        case me::Op::R_INT64:
+        case me::Op::R_SAT8:
+        case me::Op::R_SAT16:
+        case me::Op::R_UINT8:
+        case me::Op::R_UINT16:
+        case me::Op::R_UINT32:
+        case me::Op::R_UINT64:
+        case me::Op::R_USAT8:
+        case me::Op::R_USAT16:
+            sr->arg_[0].constraint_ = RAX;
+            break;
+
+        case me::Op::R_REAL32:
+        case me::Op::R_REAL64:
+            sr->arg_[0].constraint_ = XMM0;
+            break;
+
+        default:
+            swiftAssert( false, "unreachable code" );
+    }
 }
 
 std::string X64RegAlloc::reg2String(const me::Reg* reg)

@@ -87,6 +87,15 @@ public:
             = me::Op::R_REAL32| me::Op::R_REAL64
     };
 
+    enum
+    {
+        NUM_INT_REGS = 6,
+        NUM_REAL_REGS = 8
+    };
+
+    static int  intRegs[NUM_INT_REGS]; 
+    static int realRegs[NUM_REAL_REGS];
+
     /*
      * constructor
      */
@@ -100,6 +109,12 @@ public:
     virtual void process();
 
     void registerTargeting();
+
+    void targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetStore(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetSetParams(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetSetResults(me::InstrNode* iter, me::BBNode* currentBB);
 
     static std::string reg2String(const me::Reg* reg);
 };
