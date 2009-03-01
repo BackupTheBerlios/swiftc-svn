@@ -296,7 +296,12 @@ struct FunctionCall : public Expr
 
     std::string*    id_;
     ExprList*       exprList_;
-    char            kind_;
+
+    /**
+     * Is either 'c' for c_call, 'v' for vc_call, ':' for readers,
+     * '.' for writers or routines or '0' for global routines
+     */
+    char kind_;
 
     /*
      * constructor and destructor
