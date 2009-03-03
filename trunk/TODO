@@ -3,5 +3,4 @@
 - getters and setters + private use and better capsulation
 - better syntax handling
 - Param handling
-- memberVar handling
-- better constant concept for Operator kinds
+- make bool a int64 var

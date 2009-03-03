@@ -29,7 +29,6 @@
 #include "utils/stringhelper.h"
 
 #include "me/basicblock.h"
-#include "me/cfg.h" 
 #include "me/op.h"
 #include "me/ssa.h"
 
@@ -38,6 +37,7 @@ namespace me {
 //------------------------------------------------------------------------------
 
 // forward declarations
+struct CFG;
 struct Function;
 struct Struct;
 struct Member;
@@ -64,7 +64,7 @@ struct Function
      */
     int varCounter_; 
 
-    CFG  cfg_;
+    CFG* cfg_;
 
     /// Indicates whether a LivenessAnalysis CodePass has already been performed.
     bool firstLiveness_;
@@ -134,6 +134,8 @@ struct Function
     Undef* newUndef(Op::Type type);
 
     inline void insert(Var* var);
+
+    bool isTrivial() const;
 
     /*
      * dump methods

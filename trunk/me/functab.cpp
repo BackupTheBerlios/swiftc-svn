@@ -26,6 +26,7 @@
 #include "utils/assert.h"
 
 #include "me/arch.h"
+#include "me/cfg.h"
 #include "me/struct.h"
 #include "me/stacklayout.h"
 
@@ -45,7 +46,7 @@ Function::Function(std::string* id, size_t stackPlaces)
     : id_(id)
     , ssaCounter_(0)
     , varCounter_(-1) // >= 0 is reserved for vars already in SSA form
-    , cfg_(this)
+    , cfg_( new CFG(this) )
     , firstLiveness_(false)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
@@ -75,6 +76,7 @@ Function::~Function()
 
     delete id_;
     delete stackLayout_;
+    delete cfg_;
 }
 
 /*
@@ -202,6 +204,12 @@ Undef* Function::newUndef(Op::Type type)
     return undef;
 }
 
+bool Function::isTrivial() const
+{
+    // a trivial function consits of three LabelInstr - that's it
+    return cfg_->instrList_.size() == 3;
+}
+
 /*
  * dump methods
  */
@@ -224,20 +232,20 @@ void Function::dumpSSA(ofstream& ofs)
 
     // print idoms
     ofs << endl << "IDOMS:" << endl;
-    ofs << cfg_.dumpIdoms() << endl;
+    ofs << cfg_->dumpIdoms() << endl;
 
     // print domChildren
     ofs << endl << "DOM CHILDREN:" << endl;
-    ofs << cfg_.dumpDomChildren() << endl;
+    ofs << cfg_->dumpDomChildren() << endl;
 
     // print dominance frontier
     ofs << endl << "DOMINANCE FRONTIER:" << endl;
-    ofs << cfg_.dumpDomFrontier() << endl;
+    ofs << cfg_->dumpDomFrontier() << endl;
 }
 
 void Function::dumpDot(const string& baseFilename)
 {
-    cfg_.dumpDot(baseFilename);
+    cfg_->dumpDot(baseFilename);
 }
 
 //------------------------------------------------------------------------------
@@ -382,8 +390,8 @@ void FunctionTable::buildUpME()
 
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
-        CFG& cfg = iter->second->cfg_;
-        cfg.constructSSAForm();
+        CFG* cfg = iter->second->cfg_;
+        cfg->constructSSAForm();
     }
 }
 

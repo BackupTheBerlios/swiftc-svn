@@ -66,6 +66,12 @@ public:
     virtual void codeGen(me::Function* function, std::ofstream& ofs);
 
     /*
+     * clean up
+     */
+
+    virtual void cleanUp() const;
+
+    /*
      * dump helper
      */
 

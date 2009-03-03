@@ -21,6 +21,8 @@
 
 #include <typeinfo>
 
+#include "me/cfg.h"
+
 namespace me {
     
 //------------------------------------------------------------------------------
@@ -272,7 +274,7 @@ void LivenessAnalysis::liveInAtInstr(InstrNode* instr, Var* var)
         instr->value_->liveOut_.insert(var);
 
         // insert var to this basic block's liveIn
-        BBNode* bb = function_->cfg_.labelNode2BBNode_[instr];
+        BBNode* bb = function_->cfg_->labelNode2BBNode_[instr];
         bb->value_->liveIn_.insert(var);
 
         // for each predecessor of bb

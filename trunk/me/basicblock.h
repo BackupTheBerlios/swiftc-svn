@@ -31,12 +31,6 @@
 
 namespace me {
 
-#define BBLIST_EACH(iter, bbList) \
-    for (me::BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
-
-#define BBSET_EACH(iter, bbSet) \
-    for (me::BBSet::iterator (iter) = (bbSet).begin(); (iter) != (bbSet).end(); ++(iter))
-
 /** 
  * @brief This represents a basic block in the control flow graph (CFG).
  *
@@ -143,6 +137,14 @@ struct BasicBlock
     /// Returns a string holding the liveness infos for this BasicBlock.
     std::string livenessString() const;
 };
+
+//------------------------------------------------------------------------------
+
+#define BBLIST_EACH(iter, bbList) \
+    for (me::BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
+
+#define BBSET_EACH(iter, bbSet) \
+    for (me::BBSet::iterator (iter) = (bbSet).begin(); (iter) != (bbSet).end(); ++(iter))
 
 } // namespace me
 

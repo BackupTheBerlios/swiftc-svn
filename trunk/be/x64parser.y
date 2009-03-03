@@ -474,19 +474,19 @@ int_cmp
     | cmp int_type X64_CONST any_reg /* cmp r, c */
     { 
           EMIT("cmp" << suffix($2) << '\t' << reg2str($4) << ", " << cst2str($3))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp int_type any_reg X64_CONST /* cmp r, c */
     { 
           EMIT("cmp" << suffix($2) << '\t' << cst2str($4) << ", " << reg2str($3))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp int_type any_reg any_reg   /* cmp r, r */
     { 
           EMIT("cmp" << suffix($2) << '\t' << reg2str($4) << ", " << reg2str($3))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     ;
@@ -654,19 +654,19 @@ real_cmp
     | cmp real_type any_reg X64_CONST /* cmp c, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << mcst2str($4) << ", " << reg2str($3))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp real_type X64_CONST any_reg /* cmpn c, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << mcst2str($3) << ", " << reg2str($4))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2, true) << "b\t" << reg2str($1->resReg())) 
     }
     | cmp real_type any_reg any_reg   /* cmp r, r */
     { 
           EMIT("ucomi" << suffix($2) << '\t' << reg2str($4) << ", " << reg2str($3))
-          if ($1->resReg()->type_ != me::Op::R_SPECIAL)
+          if ($1->resReg()->color_ != me::Var::DONT_COLOR)
             EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($1->resReg())) 
     }
     ;

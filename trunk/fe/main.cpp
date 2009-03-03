@@ -172,6 +172,9 @@ int start(int argc, char** argv)
     {
         me::Function* function = iter->second;
 
+        if ( function->isTrivial() )
+            continue;
+
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
         me::StackColoring(function).process();
@@ -180,10 +183,20 @@ int start(int argc, char** argv)
 
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
-        me::arch->codeGen(iter->second, ofs);
+    {
+        me::Function* function = iter->second;
+
+        if ( function->isTrivial() )
+            continue;
+
+        me::arch->codeGen(function, ofs);
+    }
 
     // write constants to assembly language file
     me::arch->dumpConstants(ofs);
+    
+    // clean up
+    me::arch->cleanUp();
 
 #ifdef SWIFT_DEBUG
 

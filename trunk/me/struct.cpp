@@ -70,7 +70,6 @@ int type2size(me::Op::Type type)
             return me::arch->getPtrSize();
 
         case me::Op::R_STACK:
-        case me::Op::R_SPECIAL:
             swiftAssert(false, "illegal switch-case-value");
             return 0;
     }

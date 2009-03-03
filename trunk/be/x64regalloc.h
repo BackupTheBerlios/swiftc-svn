@@ -20,20 +20,25 @@
 #ifndef BE_X64_REG_ALLOC_H
 #define BE_X64_REG_ALLOC_H
 
-#include <set>
 #include <string>
+
+#include "utils/set.h"
 
 #include "me/arch.h"
 #include "me/codepass.h"
+
+/*
+ * forward declarations
+ */
+
+namespace me {
+    typedef Set<int> Colors;
+}
 
 namespace be {
 
 class X64RegAlloc : public me::RegAlloc
 {
-private:
-
-    bool omitFramePointer_;
-
 public:
 
     enum Regs
@@ -90,23 +95,40 @@ public:
     enum
     {
         NUM_INT_REGS = 6,
-        NUM_REAL_REGS = 8
+        NUM_XMM_REGS = 8,
+        NUM_INT_RETURN_REGS = 2,
+        NUM_XMM_RETURN_REGS = 2,
+        NUM_INT_CLOBBERED_REGS = 9, 
+        NUM_XMM_CLOBBERED_REGS = 16,
     };
 
-    static int  intRegs[NUM_INT_REGS]; 
-    static int realRegs[NUM_REAL_REGS];
+    static int intRegs[NUM_INT_REGS]; 
+    static int xmmRegs[NUM_XMM_REGS];
+    static int intReturnRegs[NUM_INT_RETURN_REGS]; 
+    static int xmmReturnRegs[NUM_XMM_RETURN_REGS];
+    static int intClobberedRegs[NUM_INT_CLOBBERED_REGS]; 
+    static int xmmClobberedRegs[NUM_XMM_CLOBBERED_REGS];
+
+    static me::Colors* intColors_;
+    static me::Colors* xmmColors_;
 
     /*
-     * constructor
+     * constructor and destructor
      */
 
     X64RegAlloc(me::Function* function);
+    static void destroyColors();
 
     /*
      * further methods
      */
 
+    static const me::Colors* getIntColors();
+    static const me::Colors* getXmmColors();
+
     virtual void process();
+
+    bool arg2Reg(me::InstrNode* iter, size_t i);
 
     void registerTargeting();
 
@@ -115,6 +137,8 @@ public:
     void targetStore(me::InstrNode* iter, me::BBNode* currentBB);
     void targetSetParams(me::InstrNode* iter, me::BBNode* currentBB);
     void targetSetResults(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB);
+
 
     static std::string reg2String(const me::Reg* reg);
 };

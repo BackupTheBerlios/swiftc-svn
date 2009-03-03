@@ -35,6 +35,16 @@ bool Op::typeCheck(int typeMask) const
     return type_ & typeMask;
 }
 
+bool Op::isReal(Type type)
+{
+    return (type == me::Op::R_REAL32 || type == me::Op::R_REAL64);
+}
+
+bool Op::isReal() const
+{
+    return isReal(type_);
+}
+
 Reg* Op::isReg(int typeMask)
 {
     return 0;
@@ -160,11 +170,21 @@ bool Var::isSSA() const
     return varNr_ >= 0;
 }
 
+bool Var::dontColor() const
+{
+    return color_ == DONT_COLOR;
+}
+
 size_t Var::var2Index() const
 {
     swiftAssert(varNr_ < 0, "this is not a var");
 
     return size_t(-varNr_);
+}
+
+bool Var::typeCheck(int typeMask) const
+{
+    return !dontColor() && Op::typeCheck(typeMask);
 }
 
 std::string Var::toString() const

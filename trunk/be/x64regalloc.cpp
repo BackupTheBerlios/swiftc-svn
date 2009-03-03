@@ -22,6 +22,7 @@
 #include <sstream>
 #include <typeinfo>
 
+#include "me/cfg.h"
 #include "me/coloring.h"
 #include "me/constpool.h"
 #include "me/copyinsertion.h"
@@ -41,20 +42,66 @@ namespace be {
  */
 
 int X64RegAlloc::intRegs[NUM_INT_REGS] = {RDI, RSI, RDX, RCX, R8, R9};
-int X64RegAlloc::realRegs[NUM_REAL_REGS] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+int X64RegAlloc::xmmRegs[NUM_XMM_REGS] = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7};
+
+int X64RegAlloc::intReturnRegs[NUM_INT_RETURN_REGS] = {RAX, RDX};
+int X64RegAlloc::xmmReturnRegs[NUM_XMM_RETURN_REGS] = {XMM0, XMM1};
+
+int X64RegAlloc::intClobberedRegs[NUM_INT_CLOBBERED_REGS] = 
+    {RAX, RDX, RCX, RSI, RDI, R8, R9, R10, R11};
+
+int X64RegAlloc::xmmClobberedRegs[NUM_XMM_CLOBBERED_REGS] = 
+    {XMM0, XMM1,  XMM2,  XMM3,  XMM4,  XMM5,  XMM6,  XMM7, 
+     XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, XMM15};
+
+me::Colors* X64RegAlloc::intColors_ = 0;
+me::Colors* X64RegAlloc::xmmColors_ = 0;
 
 /*
- * constructor
+ * constructor and destructor
  */
 
 X64RegAlloc::X64RegAlloc(me::Function* function)
     : me::RegAlloc(function)
-    , omitFramePointer_(false)
-{}
+{
+    if (!intColors_)
+    {
+        intColors_ = new me::Colors();
+        xmmColors_ = new me::Colors();
+
+        me::Colors intColors;
+        for (int i = R0; i <= R15; ++i)
+            intColors_->insert(i);
+
+        // do not use the stack pointer and the frame pointer as free registers
+        intColors_->erase(RSP);
+        intColors_->erase(RBP);
+
+        me::Colors xmmColors;
+        for (int i = XMM0; i <= XMM15; ++i)
+            xmmColors_->insert(i);
+    }
+}
+
+void X64RegAlloc::destroyColors()
+{
+    delete intColors_;
+    delete xmmColors_;
+}
 
 /*
- * methods
+ * further methods
  */
+
+const me::Colors* X64RegAlloc::getIntColors()
+{
+    return intColors_;
+}
+
+const me::Colors* X64RegAlloc::getXmmColors()
+{
+    return xmmColors_;
+}
 
 /*
  *  register targeting
@@ -89,33 +136,7 @@ void X64RegAlloc::process()
      * spill general purpose registers
      */
 
-    me::Colors rColors;
-    for (int i = R0; i <= R15; ++i)
-        rColors.insert(i);
-
-    // do not use stack pointer as a free register
-    rColors.erase(RSP);
-
-    // check whether the frame pointer can be used
-    if (!omitFramePointer_)
-        rColors.erase(RBP);
-
-    // use this to test better the spilling
-#if 0
-    rColors.erase(RCX);
-    rColors.erase(RSI);
-    rColors.erase(RDI);
-    rColors.erase(R8 );
-    rColors.erase(R9 );
-    rColors.erase(R10);
-    rColors.erase(R11);
-    rColors.erase(R12);
-    rColors.erase(R13);
-    rColors.erase(R14);
-    rColors.erase(R15);
-#endif
-
-    me::Spiller( function_, rColors.size(), R_TYPE_MASK ).process();
+    me::Spiller( function_, intColors_->size(), R_TYPE_MASK ).process();
 
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
@@ -125,11 +146,7 @@ void X64RegAlloc::process()
      * spill XMM registers
      */
 
-    me::Colors fColors;
-    for (int i = XMM0; i <= XMM15; ++i)
-        fColors.insert(i);
-
-    me::Spiller( function_, fColors.size(), F_TYPE_MASK ).process();
+    me::Spiller( function_, xmmColors_->size(), F_TYPE_MASK ).process();
 
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
@@ -162,10 +179,10 @@ void X64RegAlloc::process()
      */
 
     // general purpose registers
-    me::Coloring(function_, R_TYPE_MASK, rColors).process();
+    me::Coloring(function_, R_TYPE_MASK, *intColors_).process();
 
     // XMM registers
-    me::Coloring(function_, F_TYPE_MASK, fColors).process(); 
+    me::Coloring(function_, F_TYPE_MASK, *xmmColors_).process(); 
 
     // color spill slots
     me::Coloring(function_, R_TYPE_MASK | F_TYPE_MASK, X64::QUADWORDS).process();
@@ -173,6 +190,25 @@ void X64RegAlloc::process()
 
     // calculate all offsets and the like
     function_->stackLayout_->arangeStackLayout();
+}
+
+bool X64RegAlloc::arg2Reg(me::InstrNode* iter, size_t i)
+{
+    me::InstrBase* instr = iter->value_;
+    me::Op* op = instr->arg_[i].op_;
+
+    if ( typeid(*op) == typeid(me::Reg*) )
+        return false;
+
+    // create var which will holds the arg, the assignment and insert
+    me::Var* newVar = function_->newSSAReg(op->type_);
+    me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, op);
+    cfg_->instrList_.insert( iter->prev(), newCopy );
+
+    // substitute operand with newVar
+    instr->arg_[i].op_ = newVar;
+
+    return true;
 }
 
 void X64RegAlloc::registerTargeting()
@@ -195,6 +231,8 @@ void X64RegAlloc::registerTargeting()
             targetAssignInstr(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::Store) )
             targetStore(iter, currentBB);
+        else if ( typeid(*instr) == typeid(me::CallInstr) )
+            targetCallInstr(iter, currentBB);
     } // for each instruction
 }
 
@@ -237,16 +275,9 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
             {
                 swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                         "must be a Const here");
-                me::Const* cst = (me::Const*) ai->arg_[0].op_;
 
-                // create var which will hold the constant, the assignment and insert
-                me::Var* newVar = function_->newSSAReg(type);
-                me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
-                cfg_->instrList_.insert( iter->prev(), newCopy );
-
-                // substitute operand with newVar
-                ai->arg_[0].op_ = newVar;
-
+                bool res = arg2Reg(iter, 0);
+                swiftAssert( res, "must be true" );
                 currentBB->value_->fixPointers();
             }
             else if (opType1 == me::InstrBase::VAR)
@@ -264,7 +295,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
      * do register targeting on mul, div and idiv instructions
      */
 
-    if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
+    if ( ai->res_[0].var_->isReal() )
         return;
 
     if (ai->kind_ == '*' || ai->kind_ == '/')
@@ -342,7 +373,7 @@ void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
                     if (var->uses_.size() == 1)
                     {
                         // do not color this var
-                        var->type_ = me::Op::R_SPECIAL;
+                        var->color_ = me::Var::DONT_COLOR;
                     }
 
                     me::Op::Type type = ai->arg_[0].op_->type_;
@@ -392,24 +423,8 @@ void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
 
 void X64RegAlloc::targetStore(me::InstrNode* iter, me::BBNode* currentBB)
 {
-    me::Store* store = (me::Store*) iter->value_;
-
-    if ( typeid(*store->arg_[0].op_) != typeid(me::Reg) )
-    {
-        swiftAssert( typeid(*store->arg_[0].op_) == typeid(me::Const), 
-                "must be a Const here");
-        me::Const* cst = (me::Const*) store->arg_[0].op_;
-
-        // create var which will hold the constant, the assignment and insert
-        me::Var* newVar = function_->newSSAReg(cst->type_);
-        me::AssignInstr* newCopy = new me::AssignInstr('=', newVar, cst);
-        cfg_->instrList_.insert( iter->prev(), newCopy );
-
-        // substitute operand with newVar
-        store->arg_[0].op_ = newVar;
-
+    if ( arg2Reg(iter, 0 ) )
         currentBB->value_->fixPointers();
-    }
 }
 
 void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
@@ -420,7 +435,7 @@ void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
         sp->constrain();
 
     int intCounter = 0;
-    int realCounter = 0;
+    int xmmCounter = 0;
 
     for (size_t i = 0; i < sp->res_.size(); ++i)
     {
@@ -446,13 +461,67 @@ void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
 
             case me::Op::R_REAL32:
             case me::Op::R_REAL64:
-                sp->res_[i].constraint_ = realRegs[realCounter++];
+                sp->res_[i].constraint_ = xmmRegs[xmmCounter++];
                 break;
 
             default:
                 swiftAssert( false, "unreachable code" );
         }
     }
+}
+
+void X64RegAlloc::targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB)
+{
+    me::CallInstr* ci = (me::CallInstr*) iter->value_;
+
+    if ( ci->res_.size() + ci->arg_.size() == 0 )
+        return;
+
+    ci->constrain();
+
+    size_t intReturnCounter = 0;
+    size_t xmmReturnCounter = 0;
+
+    // for each result
+    for (size_t i = 0; i < ci->res_.size(); ++i)
+    {
+        if ( ci->res_[i].var_->isReal() )
+            ci->arg_[0].constraint_ = xmmReturnRegs[xmmReturnCounter++];
+        else
+            ci->arg_[0].constraint_ = intReturnRegs[intReturnCounter++];
+    }
+
+    bool fixPointers = false;
+    size_t intCounter = 0;
+    size_t xmmCounter = 0;
+
+    // for each arg
+    for (size_t i = 0; i < ci->arg_.size(); ++i)
+    {
+        fixPointers |= arg2Reg(iter, i);
+
+        if ( ci->arg_[i].op_->isReal() )
+            ci->arg_[i].constraint_ = xmmRegs[xmmCounter++];
+        else
+            ci->arg_[i].constraint_ = intRegs[intCounter++];
+    }
+
+    // add clobbered int registers as dummy results
+    for (size_t i = intReturnCounter; i < NUM_INT_CLOBBERED_REGS; ++i)
+    {
+        me::Var* dummy = function_->newSSAReg(me::Op::R_INT64);
+        ci->res_.push_back( me::Res(dummy, 0, intClobberedRegs[i]) );
+    }
+
+    // add clobbered xmm registers as dummy results
+    for (size_t i = xmmReturnCounter; i < NUM_XMM_CLOBBERED_REGS; ++i)
+    {
+        me::Var* dummy = function_->newSSAReg(me::Op::R_REAL64);
+        ci->res_.push_back( me::Res(dummy, 0, xmmClobberedRegs[i]) );
+    }
+
+    if (fixPointers)
+        currentBB->value_->fixPointers();
 }
 
 void X64RegAlloc::targetSetResults(me::InstrNode* iter, me::BBNode* currentBB)
@@ -463,33 +532,10 @@ void X64RegAlloc::targetSetResults(me::InstrNode* iter, me::BBNode* currentBB)
     sr->constrain();
 
     // TODO only one result supported
-    me::Op::Type type = sr->arg_[0].op_->type_;
-    switch (type)
-    {
-        case me::Op::R_BOOL:
-        case me::Op::R_INT8:
-        case me::Op::R_INT16:
-        case me::Op::R_INT32:
-        case me::Op::R_INT64:
-        case me::Op::R_SAT8:
-        case me::Op::R_SAT16:
-        case me::Op::R_UINT8:
-        case me::Op::R_UINT16:
-        case me::Op::R_UINT32:
-        case me::Op::R_UINT64:
-        case me::Op::R_USAT8:
-        case me::Op::R_USAT16:
-            sr->arg_[0].constraint_ = RAX;
-            break;
-
-        case me::Op::R_REAL32:
-        case me::Op::R_REAL64:
-            sr->arg_[0].constraint_ = XMM0;
-            break;
-
-        default:
-            swiftAssert( false, "unreachable code" );
-    }
+    if ( sr->arg_[0].op_->isReal() )
+        sr->arg_[0].constraint_ = XMM0;
+    else
+        sr->arg_[0].constraint_ = RAX;
 }
 
 std::string X64RegAlloc::reg2String(const me::Reg* reg)

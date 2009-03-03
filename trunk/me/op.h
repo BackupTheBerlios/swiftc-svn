@@ -88,9 +88,6 @@ struct Op
          * This is not a spilled local. See \a Memory for details.
          */
         R_STACK     = 1 << 16, 
-
-        // Use this to do something special by hand
-        R_SPECIAL   = 1 << 17
     };
 
     Type type_;
@@ -108,7 +105,10 @@ struct Op
      * further methods
      */
 
-    bool typeCheck(int typeMask) const;
+    virtual bool typeCheck(int typeMask) const;
+
+    bool isReal() const;
+    static bool isReal(Type type);
 
     virtual Reg* isReg(int typeMask);
 
@@ -213,17 +213,20 @@ struct Var : public Op
      */
     int varNr_;
 
-    /**
-     * The color after coloring: <br>
-     * \a NOT_COLORED_YET if a color has not already been assigned.
-     */
-    int color_;
-
     enum
     {
         /// Reg has not been colored so far.
-        NOT_COLORED_YET    = -1, 
+        NOT_COLORED_YET = -1, 
+        /// Use this if you don't want to color this var at all for some reason.
+        DONT_COLOR      = -2 
     };
+
+    /**
+     * The color after coloring: <br>
+     * \a NOT_COLORED_YET if a color has not already been assigned. <br>
+     * \a DONT_COLOR if it should not be considered during coloring.
+     */
+    int color_;
 
     DefUse def_;      ///< knows where the var is defined
     DefUseList uses_; ///< knows all uses of this var
@@ -251,13 +254,16 @@ struct Var : public Op
 
     virtual Var* clone(int varNr) const = 0;
 
-
     /*
      * further methods
      */
 
+    virtual bool typeCheck(int typeMask) const;
+
     /// Returns whether this Var is only defined once
     bool isSSA() const;
+
+    bool dontColor() const;
 
     /**
      * Checks via an swiftAssert whether this is not SSA and returns the var

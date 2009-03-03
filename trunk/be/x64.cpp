@@ -158,6 +158,15 @@ void X64::codeGen(me::Function* function, std::ofstream& ofs)
 }
 
 /*
+ * clean up
+ */
+
+void X64::cleanUp() const
+{
+    X64RegAlloc::destroyColors();
+}
+
+/*
  * dump helper
  */
 

@@ -21,6 +21,8 @@
 
 #include <typeinfo>
 
+#include "me/cfg.h"
+
 namespace me {
 
 /*

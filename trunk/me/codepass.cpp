@@ -25,7 +25,7 @@ namespace me {
 
 CodePass::CodePass(Function* function)
     : function_(function)
-    , cfg_( &function->cfg_ )
+    , cfg_( function->cfg_ )
 {}
 
 } // namespace me

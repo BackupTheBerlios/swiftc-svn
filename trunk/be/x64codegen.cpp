@@ -73,6 +73,7 @@ void X64CodeGen::process()
 {
     static int counter = 1;
 
+    // function prologue
     ofs_ << "\t.p2align 4,,15\n"
          << ".globl swift_" << counter << '\n'
          << "\t.type\tswift_" << counter << ", @function\n"
@@ -83,6 +84,14 @@ void X64CodeGen::process()
     //ofs_ << *function_->id_ << ":\n";
 
     ofs_ << "\tenter\t$0, $" << function_->stackLayout_->size_ << '\n';
+
+    // TODO check whether these regs are used anyway
+    // save registers which should be preserved during function calls
+    ofs_ << "\tpushq %rbx" << std::endl;
+    ofs_ << "\tpushq %r12" << std::endl;
+    ofs_ << "\tpushq %r13" << std::endl;
+    ofs_ << "\tpushq %r14" << std::endl;
+    ofs_ << "\tpushq %r15" << std::endl;
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -146,11 +155,14 @@ void X64CodeGen::process()
         x64parse();
     }
 
-    //if (localStackSize != 0)
-        //ofs_ << "\taddq\t$" << localStackSize << ", %rsp\n";
+    // restore saved registers
+    ofs_ << "\tpopq %r15" << std::endl;
+    ofs_ << "\tpopq %r14" << std::endl;
+    ofs_ << "\tpopq %r13" << std::endl;
+    ofs_ << "\tpopq %r12" << std::endl;
+    ofs_ << "\tpopq %rbx" << std::endl;
 
-    ofs_ << "\taddq\t$" << 128 << ", %rsp\n"; // TODO
-
+    // function epilogue
     ofs_ << "\tleave\n";
     ofs_ << "\tret\n";
 
@@ -254,6 +266,31 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     size_t phiIndex = nextNode->whichPred(prevNode);
 
+    /*
+     * collect free registers
+     */
+
+    me::Colors intFree = *X64RegAlloc::getIntColors();
+    me::Colors xmmFree = *X64RegAlloc::getXmmColors();;
+    VARSET_EACH(iter, prevNode->value_->liveIn_)
+    {
+        if ( (*iter)->type_ == me::Op::R_STACK )
+            continue; // ignore stack vars
+
+        if ( (*iter)->isReal() && !(*iter)->isSpilled() )
+        {
+            swiftAssert( xmmFree.contains((*iter)->color_), 
+                        "colors must be found here" );
+            xmmFree.erase( (*iter)->color_ );
+        }
+        else
+        {
+            swiftAssert( intFree.contains((*iter)->color_),
+                        "colors must be found here" );
+            intFree.erase( (*iter)->color_ );
+        }
+    }
+
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
 
@@ -342,6 +379,12 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             // if p doesn't have a predecessor erase it, too
             if ( p->pred_.empty() )
                 rg.erase(p);
+
+            // p is free now
+            if ( me::Op::isReal(p->value_->type_) )
+                xmmFree.insert(p->value_->color_);
+            else
+                intFree.insert(p->value_->color_);
         }
         else
             break;
@@ -383,10 +426,20 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         // mov r1, free
         me::Op::Type type = node->value_->type_;
 
-        if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
-            genMove(type, node->value_->color_, X64RegAlloc::XMM15); // TODO
+        int tmpRegColor;
+
+        if ( me::Op::isReal(type) )
+        {
+            swiftAssert( !xmmFree.empty(), "TODO" );
+            tmpRegColor = *xmmFree.begin();
+        }
         else
-            genMove(type, node->value_->color_, X64RegAlloc::R15); // TODO
+        {
+            swiftAssert( !intFree.empty(), "TODO" );
+            tmpRegColor = *intFree.begin();
+        }
+
+        genMove(type, node->value_->color_, tmpRegColor);
 
         std::vector<RegGraph::Node*> toBeErased;
         toBeErased.push_back(node);
@@ -408,10 +461,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         }
 
         // mov free, rn
-        if (type == me::Op::R_REAL32 || type == me::Op::R_REAL64)
-            genMove(type, X64RegAlloc::XMM15, predIter->value_->color_); // TODO
-        else
-            genMove(type, X64RegAlloc::R15, predIter->value_->color_); // TODO
+        genMove(type, tmpRegColor, predIter->value_->color_);
 
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)
@@ -439,7 +489,6 @@ void x64error(const char *s)
 int x64lex()
 {
     me::InstrBase* currentInstr = currentInstrNode->value_;
-    //std::cout << currentInstr->toString() << std::endl;
 
     switch (location)
     {
@@ -547,7 +596,6 @@ int x64lex()
 
             switch (type)
             {
-                case me::Op::R_SPECIAL:
                 case me::Op::R_BOOL:   return X64_BOOL;
 
                 case me::Op::R_INT8:   return X64_INT8;
