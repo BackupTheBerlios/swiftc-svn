@@ -122,8 +122,11 @@ using namespace swift;
 %token <expr_> L_REAL L_REAL32 L_REAL64
 %token <expr_> L_TRUE L_FALSE  L_NIL
 
-// built-in template types
-%token ARRAY SIMD
+// types
+%token PTR ARRAY SIMD
+
+// type modifiers
+%token VAR CONST
 
 // parameter qualifier
 %token IN INOUT OUT
@@ -177,7 +180,6 @@ using namespace swift;
 %type <exprList_>   expr_list expr_list_not_empty
 
 %type <statement_>  statement_list statement
-%type <baseType_>   base_type
 
 %start file
 
@@ -464,16 +466,12 @@ expr_list_not_empty
     ;
 
 type
-    : base_type { pointercount = 0; } pointer  { $$ = new Type($1, pointercount, currentLine); }
-    ;
-
-base_type
-    : ID { $$ = new BaseType($1, currentLine); }
-    ;
-
-pointer
-    : /**/
-    | '^' pointer { ++pointercount; }
+    : ID                       { $$ = new BaseType(    0, $1, currentLine); }
+    | CONST ID                 { $$ = new BaseType(CONST, $2, currentLine); }
+    | PTR         '{' type '}' { $$ = new Ptr(    0, $3, currentLine); }
+    | CONST PTR   '{' type '}' { $$ = new Ptr(CONST, $4, currentLine); }
+    /*| modifier ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
+    /*| modifier SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
     ;
 
 %%

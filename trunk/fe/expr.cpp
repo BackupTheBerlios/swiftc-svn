@@ -33,6 +33,7 @@
 #include "fe/symtab.h"
 #include "fe/var.h"
 
+#include "me/arch.h"
 #include "me/functab.h"
 #include "me/op.h"
 #include "me/offset.h"
@@ -108,30 +109,30 @@ bool Literal::analyze()
 
     switch (kind_)
     {
-        case L_INDEX:   type_ = new Type(new BaseType(new std::string("index")),  0); break;
+        case L_INDEX:   type_ = new BaseType(CONST, new std::string("index")); break;
 
-        case L_INT:     type_ = new Type(new BaseType(new std::string("int")),    0); break;
-        case L_INT8:    type_ = new Type(new BaseType(new std::string("int8")),   0); break;
-        case L_INT16:   type_ = new Type(new BaseType(new std::string("int16")),  0); break;
-        case L_INT32:   type_ = new Type(new BaseType(new std::string("int32")),  0); break;
-        case L_INT64:   type_ = new Type(new BaseType(new std::string("int64")),  0); break;
-        case L_SAT8:    type_ = new Type(new BaseType(new std::string("sat8")),   0); break;
-        case L_SAT16:   type_ = new Type(new BaseType(new std::string("sat16")),  0); break;
+        case L_INT:     type_ = new BaseType(CONST, new std::string("int"));   break;
+        case L_INT8:    type_ = new BaseType(CONST, new std::string("int8"));  break;
+        case L_INT16:   type_ = new BaseType(CONST, new std::string("int16")); break;
+        case L_INT32:   type_ = new BaseType(CONST, new std::string("int32")); break;
+        case L_INT64:   type_ = new BaseType(CONST, new std::string("int64")); break;
+        case L_SAT8:    type_ = new BaseType(CONST, new std::string("sat8"));  break;
+        case L_SAT16:   type_ = new BaseType(CONST, new std::string("sat16")); break;
 
-        case L_UINT:    type_ = new Type(new BaseType(new std::string("uint")),   0); break;
-        case L_UINT8:   type_ = new Type(new BaseType(new std::string("uint8")),  0); break;
-        case L_UINT16:  type_ = new Type(new BaseType(new std::string("uint16")), 0); break;
-        case L_UINT32:  type_ = new Type(new BaseType(new std::string("uint32")), 0); break;
-        case L_UINT64:  type_ = new Type(new BaseType(new std::string("uint64")), 0); break;
-        case L_USAT8:   type_ = new Type(new BaseType(new std::string("usat8")),  0); break;
-        case L_USAT16:  type_ = new Type(new BaseType(new std::string("usat16")), 0); break;
+        case L_UINT:    type_ = new BaseType(CONST, new std::string("uint"));   break;
+        case L_UINT8:   type_ = new BaseType(CONST, new std::string("uint8"));  break;
+        case L_UINT16:  type_ = new BaseType(CONST, new std::string("uint16")); break;
+        case L_UINT32:  type_ = new BaseType(CONST, new std::string("uint32")); break;
+        case L_UINT64:  type_ = new BaseType(CONST, new std::string("uint64")); break;
+        case L_USAT8:   type_ = new BaseType(CONST, new std::string("usat8"));  break;
+        case L_USAT16:  type_ = new BaseType(CONST, new std::string("usat16")); break;
 
-        case L_REAL:    type_ = new Type(new BaseType(new std::string("real")),   0); break;
-        case L_REAL32:  type_ = new Type(new BaseType(new std::string("real32")), 0); break;
-        case L_REAL64:  type_ = new Type(new BaseType(new std::string("real64")), 0); break;
+        case L_REAL:    type_ = new BaseType(CONST, new std::string("real"));   break;
+        case L_REAL32:  type_ = new BaseType(CONST, new std::string("real32")); break;
+        case L_REAL64:  type_ = new BaseType(CONST, new std::string("real64")); break;
 
         case L_TRUE: // like L_FALSE
-        case L_FALSE:   type_ = new Type(new BaseType(new std::string("bool")),   0); break;
+        case L_FALSE:   type_ = new BaseType(CONST, new std::string("bool"));   break;
 
         case L_NIL:
             std::cout << "TODO" << std::endl;
@@ -242,6 +243,47 @@ std::string Literal::toString() const
     return oss.str();
 }
 
+/*
+ * static methods
+ */
+
+void Literal::initTypeMap()
+{
+    typeMap_ = new Literal::TypeMap();
+
+    (*typeMap_)[L_TRUE]   = me::Op::R_BOOL;
+    (*typeMap_)[L_FALSE]  = me::Op::R_BOOL;
+
+    (*typeMap_)[L_INT8]   = me::Op::R_INT8;
+    (*typeMap_)[L_INT16]  = me::Op::R_INT16;
+    (*typeMap_)[L_INT32]  = me::Op::R_INT32;
+    (*typeMap_)[L_INT64]  = me::Op::R_INT64;
+
+    (*typeMap_)[L_SAT8]   = me::Op::R_SAT8;
+    (*typeMap_)[L_SAT16]  = me::Op::R_SAT16;
+
+    (*typeMap_)[L_UINT8]  = me::Op::R_UINT8;
+    (*typeMap_)[L_UINT16] = me::Op::R_UINT16;
+    (*typeMap_)[L_UINT32] = me::Op::R_UINT32;
+    (*typeMap_)[L_UINT64] = me::Op::R_UINT64;
+
+    (*typeMap_)[L_USAT8]  = me::Op::R_USAT8;
+    (*typeMap_)[L_USAT16] = me::Op::R_USAT16;
+
+    (*typeMap_)[L_REAL32] = me::Op::R_REAL32;
+    (*typeMap_)[L_REAL64] = me::Op::R_REAL64;
+
+    (*typeMap_)[L_INT]    = me::arch->getPreferedInt();
+    (*typeMap_)[L_UINT]   = me::arch->getPreferedUInt();
+    (*typeMap_)[L_INDEX]  = me::arch->getPreferedIndex();
+    (*typeMap_)[L_REAL]   = me::arch->getPreferedReal();
+}
+
+void Literal::destroyTypeMap()
+{
+    delete typeMap_;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -319,16 +361,18 @@ bool UnExpr::analyze()
     type_ = op_->type_->clone();
 
     if (c_ == '&')
-        ++type_->pointerCount_;
+        type_ = new Ptr(0, type_);
     else if (c_ == '^')
     {
-        if (type_->pointerCount_ == 0)
+        Ptr* ptr = dynamic_cast<Ptr*>(type_);
+
+        if (!ptr)
         {
             errorf(op_->line_, "unary ^ tried to dereference a non-pointer");
             return false;
         }
 
-        --type_->pointerCount_;
+        type_ = ptr->getInnerType();
     }
     else if (c_ == '!')
     {
@@ -346,7 +390,7 @@ bool UnExpr::analyze()
 
 void UnExpr::genSSA()
 {
-    me::Var* var = type_->baseType_->createVar();
+    me::Var* var = type_->createVar();
     place_ = var;
     int kind;
 
@@ -422,18 +466,28 @@ bool BinExpr::analyze()
         return false;
     }
 
-    if ( (op1_->type_->pointerCount_ >= 1 || op2_->type_->pointerCount_ >= 1) )
+    Ptr* ptr1 = dynamic_cast<Ptr*>(op1_->type_);
+    Ptr* ptr2 = dynamic_cast<Ptr*>(op2_->type_);
+
+    if ( ptr1 || ptr2 )
     {
         errorf( op1_->line_, "%s used with pointer type", getExprName().c_str() );
         return false;
     }
 
+    swiftAssert( typeid(*op1_->type_) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*op2_->type_) == typeid(BaseType), "must be a BaseType here" );
+
+    BaseType* bt1 = (BaseType*) op1_->type_;
+    //BaseType* bt2 = (BaseType*) op2_->type_;
+
     // check whether there is an operator which fits
     Sig sig;
     sig.params_.append( new Param(Param::ARG, op1_->type_->clone(), 0, 0) );
     sig.params_.append( new Param(Param::ARG, op2_->type_->clone(), 0, 0) );
-    std::string* opString = operatorToString(kind_); // TODO remove pointer stuff here
-    Method* method = symtab->lookupMethod(op1_->type_->baseType_->id_, opString, OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING);
+    std::string* opString = operatorToString(kind_);
+    Method* method = symtab->lookupMethod(
+            bt1->getId(), opString, OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING );
 
     delete opString;
 
@@ -459,7 +513,7 @@ bool BinExpr::analyze()
 
 void BinExpr::genSSA()
 {
-    me::Var* var = type_->baseType_->createVar();
+    me::Var* var = type_->createVar();
     place_ = var;
     int kind;
 
@@ -481,7 +535,7 @@ void BinExpr::genSSA()
             kind = kind_;
     }
 
-    if ( op1_->type_->isBuiltin() )
+    if ( op1_->type_->isAtomic() )
         me::functab->appendInstr( new me::AssignInstr(kind, var, op1_->place_, op2_->place_) );
     else
         swiftAssert(false, "TODO");
@@ -575,9 +629,12 @@ bool MemberAccess::analyze()
      * - the right most one -> right = true
      */
 
+    swiftAssert( typeid(*expr_->type_) == typeid(BaseType), "TODO" );
+    BaseType* exprBT = (BaseType*) expr_->type_;
+
     // get type and member var
-    const std::string* typeId = expr_->type_->baseType_->id_;
-    Class* _class = expr_->type_->baseType_->lookupClass();
+    const std::string* typeId = exprBT->getId();
+    Class* _class = exprBT->lookupClass();
     Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
     if ( iter == _class->memberVars_.end() )
@@ -603,7 +660,7 @@ bool MemberAccess::analyze()
 
     // create new place for the right most access if applicable
     if (!neededAsLValue_ && right_)
-        place_ = type_->baseType_->createVar();
+        place_ = type_->createVar();
 
     if ( right_ && !neededAsLValue_ )
         genSSA();
@@ -675,7 +732,7 @@ bool FunctionCall::analyze()
 
         if (returnType_)
         {
-            me::Var* var = returnType_->baseType_->createVar();
+            me::Var* var = returnType_->createVar();
             place_ = var;
             type_ = returnType_->clone();
         }
@@ -701,7 +758,8 @@ void FunctionCall::genSSA()
     for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
         exprVec.push_back(iter->expr_);
 
-    me::CallInstr* call = new me::CallInstr( numRes, exprVec.size(), *id_ );
+    me::CallInstr* call = new me::CallInstr( 
+            numRes, exprVec.size(), *id_, kind_ == 'v' ? true : false );
 
     for (size_t i = 0; i < exprVec.size(); ++i)
         call->arg_[i] = me::Arg( exprVec[i]->place_ );

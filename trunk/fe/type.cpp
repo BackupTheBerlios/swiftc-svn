@@ -30,12 +30,40 @@
 #include "fe/expr.h"
 #include "fe/symtab.h"
 
+#include "me/arch.h"
 #include "me/struct.h"
 
 namespace swift {
 
+//------------------------------------------------------------------------------
+
 /*
- * init static
+ * constructor
+ */
+
+Type::Type(int modifier, int line /*= NO_LINE*/)
+    : Node(line) 
+    , modifier_(modifier)
+{}
+
+/*
+ * virtual methods
+ */
+
+bool Type::isAtomic() const
+{
+    return false;
+}
+
+bool Type::isBool() const
+{
+    return false;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * init statics
  */
 
 BaseType::TypeMap* BaseType::typeMap_ = 0;
@@ -44,8 +72,8 @@ BaseType::TypeMap* BaseType::typeMap_ = 0;
  * constructor and destructor
  */
 
-BaseType::BaseType(std::string* id, int line /*= NO_LINE*/)
-    : Node(line)
+BaseType::BaseType(int modifier, std::string* id, int line /*= NO_LINE*/)
+    : Type(modifier, line)
     , id_(id)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
@@ -57,12 +85,47 @@ BaseType::~BaseType()
 }
 
 /*
- * further methods
+ * virtual methods
  */
 
 BaseType* BaseType::clone() const
 {
-    return new BaseType( new std::string(*id_), builtin_ );
+    return new BaseType( modifier_, new std::string(*id_), NO_LINE );
+}
+
+
+bool BaseType::validate() const
+{
+    if ( symtab->lookupClass(id_) == 0 )
+    {
+        errorf( line_, "class '%s' is not defined in this module", id_->c_str() );
+        return false;
+    }
+
+    return true;
+}
+
+bool BaseType::check(const Type* type) const
+{
+    const BaseType* bt = dynamic_cast<const BaseType*>(type);
+
+    if (!bt)
+        return false;
+
+    Class* class1 = symtab->lookupClass(id_);
+    Class* class2 = symtab->lookupClass(bt->id_);
+
+    // both classes must exist
+    swiftAssert(class1, "first class not found in the symbol table");
+    swiftAssert(class2, "second class not found in the symbol table");
+
+    if (class1 != class2) 
+    {
+        // different pointers -> hence different types
+        return false;
+    }
+
+    return true;
 }
 
 me::Op::Type BaseType::toMeType() const
@@ -71,23 +134,19 @@ me::Op::Type BaseType::toMeType() const
         return typeMap_->find(*id_)->second;
     else
         return me::Op::R_STACK;
-
-    // TODO ptr support
 }
 
-Class* BaseType::lookupClass() const
-{
-    Class* _class = symtab->lookupClass(id_);
-    swiftAssert(_class, "must be found");
-    return _class;
-}
-
-bool BaseType::isBuiltin() const
+bool BaseType::isAtomic() const
 {
     return builtin_;
 }
 
-me::Var* BaseType::createVar(std::string* id /*= 0*/) const
+bool BaseType::isBool() const
+{
+    return *id_ == "bool";
+}
+
+me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
 {
     me::Op::Type meType = toMeType();
 
@@ -113,6 +172,71 @@ me::Var* BaseType::createVar(std::string* id /*= 0*/) const
     return var;
 }
 
+std::string BaseType::toString() const
+{
+    return *id_;
+}
+
+/*
+ * further methods
+ */
+
+Class* BaseType::lookupClass() const
+{
+    Class* _class = symtab->lookupClass(id_);
+    swiftAssert(_class, "must be found");
+    return _class;
+}
+
+const std::string* BaseType::getId() const
+{
+    return id_;
+}
+
+/*
+ * static methods
+ */
+
+bool BaseType::isBuiltin(const std::string* id)
+{
+    return typeMap_->find(*id) != typeMap_->end();
+}
+
+void BaseType::initTypeMap()
+{
+    typeMap_ = new TypeMap();
+
+    (*typeMap_)["bool"]   = me::Op::R_BOOL;
+
+    (*typeMap_)["int8"]   = me::Op::R_INT8;
+    (*typeMap_)["int16"]  = me::Op::R_INT16;
+    (*typeMap_)["int32"]  = me::Op::R_INT32;
+    (*typeMap_)["int64"]  = me::Op::R_INT64;
+
+    (*typeMap_)["sat8"]   = me::Op::R_SAT8;
+    (*typeMap_)["sat16"]  = me::Op::R_SAT16;
+
+    (*typeMap_)["uint8"]  = me::Op::R_UINT8;
+    (*typeMap_)["uint16"] = me::Op::R_UINT16;
+    (*typeMap_)["uint32"] = me::Op::R_UINT32;
+    (*typeMap_)["uint64"] = me::Op::R_UINT64;
+
+    (*typeMap_)["usat8"]   = me::Op::R_USAT8;
+    (*typeMap_)["usat16"]  = me::Op::R_USAT16;
+
+    (*typeMap_)["real32"] = me::Op::R_REAL32;
+    (*typeMap_)["real64"] = me::Op::R_REAL64;
+
+    (*typeMap_)["int"]    = me::arch->getPreferedInt();
+    (*typeMap_)["uint"]   = me::arch->getPreferedUInt();
+    (*typeMap_)["index"]  = me::arch->getPreferedIndex();
+    (*typeMap_)["real"]   = me::arch->getPreferedReal();
+}
+
+void BaseType::destroyTypeMap()
+{
+    delete typeMap_;
+}
 
 //------------------------------------------------------------------------------
 
@@ -120,79 +244,83 @@ me::Var* BaseType::createVar(std::string* id /*= 0*/) const
  * constructor and destructor
  */
 
-Type::Type(BaseType* baseType, int pointerCount, int line /*= NO_LINE*/)
-    : Node(line)
-    , baseType_(baseType)
-    , pointerCount_(pointerCount)
+Container::Container(int modifier, Type* type, int line /*= NO_LINE*/)
+    : Type(modifier, line)
+    , type_(type)
 {}
 
-Type::~Type()
+Container::~Container()
 {
-    delete baseType_;
+    delete type_;
+}
+
+/*
+ * virtual methods
+ */
+
+bool Container::validate() const
+{
+    return type_->validate();
 }
 
 /*
  * further methods
  */
 
-Type* Type::clone() const
+Type* Container::getInnerType()
 {
-    return new Type(baseType_->clone(), pointerCount_, line_);
-};
+    return type_;
+}
 
-std::string Type::toString() const
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Ptr::Ptr(int modifier, Type* type, int line /*= NO_LINE*/)
+    : Container(modifier, type, line)
+{}
+
+Ptr* Ptr::clone() const
+{
+    return new Ptr(modifier_, type_->clone(), NO_LINE);
+}
+
+/*
+ * virtual methods
+ */
+
+bool Ptr::check(const Type* type) const
+{
+    const Ptr* ptr = dynamic_cast<const Ptr*>(type);
+
+    if (!ptr)
+        return false;
+    
+    return type_->check(ptr);
+}
+
+me::Op::Type Ptr::toMeType() const
+{
+    return me::Op::R_PTR;
+}
+
+me::Var* Ptr::createVar(const std::string* id /*= 0*/) const
+{
+#ifdef SWIFT_DEBUG
+    return me::functab->newReg(me::Op::R_PTR, id);
+#else // SWIFT_DEBUG
+    return me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+}
+
+std::string Ptr::toString() const
 {
     std::ostringstream oss;
-
-    oss << *baseType_->id_;
-    for (int i = 0; 0 < pointerCount_; ++i)
-        oss << '^';
+    oss << "ptr{" << type_->toString() << '}';
 
     return oss.str();
-}
-
-bool Type::check(Type* t1, Type* t2)
-{
-    if (!t1 || !t2)
-        return false; // if either of these is or both are void they are not compatible
-
-    if (t1->pointerCount_ != t2->pointerCount_)
-        return false; // pointerCount_ does not match
-
-    Class* class1 = symtab->lookupClass(t1->baseType_->id_);
-    Class* class2 = symtab->lookupClass(t2->baseType_->id_);
-
-    // both classes must exist
-    swiftAssert(class1, "first class not found in the symbol table");
-    swiftAssert(class2, "second class not found in the symbol table");
-
-    if (class1 != class2) {
-        // different pointers -> hence different types
-        return false;
-    }
-
-    return true;
-}
-
-bool Type::validate() const
-{
-    if ( symtab->lookupClass(baseType_->id_) == 0 )
-    {
-        errorf( line_, "class '%s' is not defined in this module", baseType_->id_->c_str() );
-        return false;
-    }
-
-    return true;
-}
-
-bool Type::isBool() const
-{
-    return *baseType_->id_ == "bool";
-}
-
-bool Type::isBuiltin() const
-{
-    return baseType_->isBuiltin() && pointerCount_ == 0;
 }
 
 } // namespace swift

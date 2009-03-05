@@ -106,7 +106,10 @@ bool Assignment::analyze(bool exprResult)
     for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
         argList.append(iter->expr_);
 
-    Class* _class = symtab->lookupClass(type_->baseType_->id_);
+    swiftAssert( typeid(*type_) == typeid(BaseType), "TODO" );
+    BaseType* bt = (BaseType*) type_;
+
+    Class* _class = bt->lookupClass();
 
     std::string createStr("create");
     Class::MethodMap::const_iterator iter = _class->methods_.find(&createStr);
@@ -128,7 +131,7 @@ bool Assignment::analyze(bool exprResult)
 
         while ( argIter != argList.sentinel() && argCheckResult )
         {
-            argCheckResult = Type::check( argIter->value_->type_, createIter->value_->type_);
+            argCheckResult = argIter->value_->type_->check(createIter->value_->type_);
 
             // move forward
             argIter = argIter->next_;
@@ -191,7 +194,7 @@ bool Declaration::analyze()
     if (!result)
         return false;
 
-    if ( !type_->isBuiltin() )
+    if ( !type_->isAtomic() )
     {
         if (!exprList_)
             me::functab->appendInstr( new me::AssignInstr('=', local_->meVar_, 

@@ -72,7 +72,7 @@ bool Param::check(const Param* param1, const Param* param2)
         return false;
 
     // check whether type fits
-    if ( Type::check(param1->type_, param2->type_) )
+    if ( param1->type_->check(param2->type_) )
         return true;
 
     // else
@@ -81,7 +81,7 @@ bool Param::check(const Param* param1, const Param* param2)
 
 bool Param::validateAndCreateVar()
 {
-    meVar_ = type_->baseType_->createVar(id_);
+    meVar_ = type_->createVar(id_);
 
     return type_->validate();
 }

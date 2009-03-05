@@ -34,33 +34,104 @@ struct Class;
 
 //------------------------------------------------------------------------------
 
-struct BaseType : public Node
+class Type : public Node
 {
-    std::string* id_;
-    bool builtin_;
+public:
 
     /*
-     * constructors and destructor
+     * constructor and destructor
      */
 
-    BaseType(std::string* id, int line = NO_LINE);
+    Type(int modifier, int line = NO_LINE);
+    virtual ~Type() {}
+
+    /*
+     * virtual methods
+     */
+
+    /// Creates a copy of this Type
+    virtual Type* clone() const = 0;
+
+    /// Checks whether a given type exists
+    virtual bool validate() const = 0;
+
+    virtual bool check(const Type* type) const = 0;
+
+    virtual me::Op::Type toMeType() const = 0;
+
+    virtual me::Var* createVar(const std::string* id = 0) const = 0;
+
+    /**
+     * Checks whether this is an atomic builtin type.
+     *
+     * @return True if this is a built in type, false otherwise
+     */
+    virtual bool isAtomic() const;
+
+    /// Checks whether this Type is the builtin bool Type
+    virtual bool isBool() const;
+
+    virtual std::string toString() const = 0;
+
+protected:
+
+    /*
+     * data
+     */
+
+    int modifier_;
+};
+
+
+//------------------------------------------------------------------------------
+
+class BaseType : public Type
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+    
+    BaseType(int modifier, std::string* id, int line = NO_LINE);
     ~BaseType();
+
+    /*
+     * virtual methods
+     */
+
+    virtual BaseType* clone() const;
+    virtual bool validate() const;
+    virtual bool check(const Type* type) const;
+    virtual me::Op::Type toMeType() const;
+    virtual bool isAtomic() const;
+    virtual bool isBool() const;
+    virtual me::Var* createVar(const std::string* id = 0) const;
+    virtual std::string toString() const;
 
     /*
      * further methods
      */
-    BaseType* clone() const;
-    me::Op::Type toMeType() const;
-
-    /**
-     * Checks whether this is a builtin type.
-     *
-     * @return True if this is a builtin type, false otherwise
-     */
-    bool isBuiltin() const;
 
     Class* lookupClass() const;
-    me::Var* createVar(std::string* id = 0) const;
+    const std::string* getId() const;
+
+    /*
+     * static methods
+     */
+
+    static bool isBuiltin(const std::string* id);
+    static void initTypeMap();
+    static void destroyTypeMap();
+
+private:
+
+    /*
+     * data
+     */
+
+    std::string* id_;
+    bool builtin_;
 
     typedef std::map<std::string, me::Op::Type> TypeMap;
     static TypeMap* typeMap_; 
@@ -68,47 +139,60 @@ struct BaseType : public Node
 
 //------------------------------------------------------------------------------
 
-struct Type : public Node
+class Container : public Type
 {
-    BaseType*   baseType_;
-    int         pointerCount_;
+public:
 
     /*
      * constructor and destructor
      */
+     
+    Container(int modifier, Type* type, int line = NO_LINE);
+    ~Container();
 
-    Type(BaseType* baseType, int pointerCount, int line = NO_LINE);
-    virtual ~Type();
+    /*
+     * virtual methods
+     */
+
+    virtual bool validate() const;
 
     /*
      * further methods
      */
 
-    /// Creates a copy of this Type
-    Type* clone() const;
+    Type* getInnerType();
 
-    /**
-     * Check Type \p t1 and Type \p t2 for consistency
-     *
-     * @param t1 first type to be checked
-     * @param t2 second type to be checked
-    */
-    static bool check(Type* t1, Type* t2);
+protected:
 
-    /// Checks whether a given type exists
-    bool validate() const;
-
-    /// Checks whether this Type is the builtin bool Type
-    bool isBool() const;
-
-    /**
-     * Checks whether this is a builtin type.
-     *
-     * @return True if this is a built in type, false otherwise
+    /*
+     * data
      */
-    bool isBuiltin() const;
 
-    std::string toString() const;
+    Type* type_;
+};
+
+
+//------------------------------------------------------------------------------
+
+class Ptr : public Container
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    Ptr(int modifier, Type* type, int line = NO_LINE);
+
+    /* 
+     * virtual methods
+     */
+
+    virtual Ptr* clone() const;
+    virtual bool check(const Type* type) const;
+    virtual me::Op::Type toMeType() const;
+    virtual me::Var* createVar(const std::string* id = 0) const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

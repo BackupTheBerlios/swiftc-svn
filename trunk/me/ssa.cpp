@@ -900,14 +900,23 @@ std::string SetResults::toString() const
  * constructor
  */
 
-CallInstr::CallInstr(size_t numRes, size_t numArgs, const std::string& symbol)
+CallInstr::CallInstr(size_t numRes, 
+                     size_t numArgs, 
+                     const std::string& symbol,
+                     bool vararg /*= false*/)
     : InstrBase(numRes, numArgs)
     , symbol_(symbol)
+    , vararg_(vararg)
 {}
 
 /*
  * further methods
  */
+
+bool CallInstr::isVarArg() const
+{
+    return vararg_;
+}
 
 std::string CallInstr::toString() const
 {

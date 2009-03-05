@@ -132,8 +132,8 @@ class Test
     end
 
     operator + (Complex c1, Complex c2) -> Complex result
-        result.r_ = c1.r_@ c2.r_
-        result.i_ = c1.i_ @ c2.i_
+        result.r = c1.r + c2.r
+        result.i = c1.i + c2.i
     end
 
 
@@ -269,7 +269,7 @@ for vec v in vecs.each()
     v + 3.f
 end
 
-@simd: v + 3.f
+simd: v + 3.f
 
 for index i in vecs1.each()
     vecs1[i] += vecs2[i]
@@ -278,3 +278,35 @@ end
 vecs1[@] += vecs2[@]
 
 vecs[3, 21] += vecs[8, 26]
+
+
+class Foo
+
+# pointers
+
+    routine foobar()
+        ptr{Foo} foo # Foo* foo
+
+        ptr{const Foo} # const Foo*
+        ptr{const Foo} # const Foo*
+
+        const ptr{Foo} # Foo const*
+        const ptr{Foo} # Foo const*
+
+    end
+
+# functions
+
+    reader foobar(Foo foo, int i, uint ui) -> real r, uint ui
+    end
+
+    routine test()
+        Foo foo
+        int i = 5
+
+        uint ui = 7
+        real r, ui = foobar(
+    end
+end
+
+

@@ -318,7 +318,7 @@ Scope* SymbolTable::currentScope()
 
 Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /*= NO_LINE*/)
 {
-    Local* local = new Local(type->clone(), type->baseType_->createVar(id), id, line);
+    Local* local = new Local(type->clone(), type->createVar(id), id, line);
     symtab->insert(local);
 
     return local;

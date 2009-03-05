@@ -50,7 +50,6 @@ using namespace swift;
 // forward declarations
 
 void readBuiltinTypes();
-void initTypeMaps();
 int start(int argc, char** argv);
 void cleanUpME();
 
@@ -86,7 +85,8 @@ int start(int argc, char** argv)
      * init globals
      */
     me::arch = new be::X64();
-    initTypeMaps();
+    BaseType::initTypeMap();
+    Literal::initTypeMap();
 
     syntaxtree = new SyntaxTree();
     syntaxtree->rootModule_ = new Module(new std::string("default"), currentLine);
@@ -134,8 +134,8 @@ int start(int argc, char** argv)
     delete syntaxtree;
     delete symtab;
     delete error;
-    delete Literal::typeMap_;
-    delete BaseType::typeMap_;
+    Literal::destroyTypeMap();
+    BaseType::destroyTypeMap();
 
     fclose(file);
 
@@ -266,65 +266,4 @@ void readBuiltinTypes()
         swiftparse();
         fclose(file);
     }
-}
-
-void initTypeMaps()
-{
-    BaseType::typeMap_ = new BaseType::TypeMap();
-
-    (*BaseType::typeMap_)["bool"]   = me::Op::R_BOOL;
-
-    (*BaseType::typeMap_)["int8"]   = me::Op::R_INT8;
-    (*BaseType::typeMap_)["int16"]  = me::Op::R_INT16;
-    (*BaseType::typeMap_)["int32"]  = me::Op::R_INT32;
-    (*BaseType::typeMap_)["int64"]  = me::Op::R_INT64;
-
-    (*BaseType::typeMap_)["sat8"]   = me::Op::R_SAT8;
-    (*BaseType::typeMap_)["sat16"]  = me::Op::R_SAT16;
-
-    (*BaseType::typeMap_)["uint8"]  = me::Op::R_UINT8;
-    (*BaseType::typeMap_)["uint16"] = me::Op::R_UINT16;
-    (*BaseType::typeMap_)["uint32"] = me::Op::R_UINT32;
-    (*BaseType::typeMap_)["uint64"] = me::Op::R_UINT64;
-
-    (*BaseType::typeMap_)["usat8"]   = me::Op::R_USAT8;
-    (*BaseType::typeMap_)["usat16"]  = me::Op::R_USAT16;
-
-    (*BaseType::typeMap_)["real32"] = me::Op::R_REAL32;
-    (*BaseType::typeMap_)["real64"] = me::Op::R_REAL64;
-
-    (*BaseType::typeMap_)["int"]    = me::arch->getPreferedInt();
-    (*BaseType::typeMap_)["uint"]   = me::arch->getPreferedUInt();
-    (*BaseType::typeMap_)["index"]  = me::arch->getPreferedIndex();
-    (*BaseType::typeMap_)["real"]   = me::arch->getPreferedReal();
-
-
-    Literal::typeMap_ = new Literal::TypeMap();
-
-    (*Literal::typeMap_)[L_TRUE]   = me::Op::R_BOOL;
-    (*Literal::typeMap_)[L_FALSE]  = me::Op::R_BOOL;
-
-    (*Literal::typeMap_)[L_INT8]   = me::Op::R_INT8;
-    (*Literal::typeMap_)[L_INT16]  = me::Op::R_INT16;
-    (*Literal::typeMap_)[L_INT32]  = me::Op::R_INT32;
-    (*Literal::typeMap_)[L_INT64]  = me::Op::R_INT64;
-
-    (*Literal::typeMap_)[L_SAT8]   = me::Op::R_SAT8;
-    (*Literal::typeMap_)[L_SAT16]  = me::Op::R_SAT16;
-
-    (*Literal::typeMap_)[L_UINT8]  = me::Op::R_UINT8;
-    (*Literal::typeMap_)[L_UINT16] = me::Op::R_UINT16;
-    (*Literal::typeMap_)[L_UINT32] = me::Op::R_UINT32;
-    (*Literal::typeMap_)[L_UINT64] = me::Op::R_UINT64;
-
-    (*Literal::typeMap_)[L_USAT8]  = me::Op::R_USAT8;
-    (*Literal::typeMap_)[L_USAT16] = me::Op::R_USAT16;
-
-    (*Literal::typeMap_)[L_REAL32] = me::Op::R_REAL32;
-    (*Literal::typeMap_)[L_REAL64] = me::Op::R_REAL64;
-
-    (*Literal::typeMap_)[L_INT]    = me::arch->getPreferedInt();
-    (*Literal::typeMap_)[L_UINT]   = me::arch->getPreferedUInt();
-    (*Literal::typeMap_)[L_INDEX]  = me::arch->getPreferedIndex();
-    (*Literal::typeMap_)[L_REAL]   = me::arch->getPreferedReal();
 }

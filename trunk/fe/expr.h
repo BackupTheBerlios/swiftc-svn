@@ -128,6 +128,19 @@ struct Literal : public Expr
 
     std::string toString() const;
 
+    /*
+     * static methods
+     */
+
+    static void initTypeMap();
+    static void destroyTypeMap();
+
+private:
+
+    /*
+     * data
+     */
+
     typedef std::map<int, me::Op::Type> TypeMap;
     static TypeMap* typeMap_;
 };

@@ -619,15 +619,24 @@ struct CallInstr : public InstrBase
      * @param numArgs  The number of arguments.
      * @param symbol The symbol used for calling
      */
-    CallInstr(size_t numRes, size_t numArgs, const std::string& symbol);
-
-    std::string symbol_;
+    CallInstr(size_t numRes, 
+              size_t numArgs, 
+              const std::string& symbol, 
+              bool vararg = false);
 
     /*
      * further methods
      */
 
+    bool isVarArg() const;
     virtual std::string toString() const;
+
+    /*
+     * data
+     */
+
+    std::string symbol_;
+    bool vararg_;
 };
 
 } // namespace me

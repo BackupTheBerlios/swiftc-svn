@@ -132,6 +132,12 @@ shr     { return SHR; }
 rol     { return ROL; }
 ror     { return ROR; }
 
+var   { return VAR; }
+const { return CONST; }
+ptr   { return PTR; }
+array { return ARRAY; }
+simd  { return SIMD; }
+
 public      { return PUBLIC; }
 protected   { return PROTECTED; }
 package     { return PACKAGE; }

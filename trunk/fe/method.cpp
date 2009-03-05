@@ -92,7 +92,8 @@ bool Method::analyze()
         if (sig_.params_.size() >= 1)
         {
             // check whether the first type matches the type of the current class
-            if ( *symtab->class_->id_ != *sig_.params_.first()->value_->type_->baseType_->id_ )
+            BaseType* bt = dynamic_cast<BaseType*>(sig_.params_.first()->value_->type_);
+            if ( !bt || *symtab->class_->id_ != *bt->getId() )
             {
                 errorf( line_, "The the first parameter of this operator must be of type %s",
                     symtab->class_->id_->c_str() );

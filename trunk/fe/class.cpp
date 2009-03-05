@@ -75,9 +75,7 @@ void Class::createDefaultConstructor()
 
 bool Class::analyze()
 {
-    const std::string& id = *id_;
-
-    if ( BaseType::typeMap_->find(id) != BaseType::typeMap_->end() )
+    if ( BaseType::isBuiltin(id_) )
     {
         // skip builtin types.
         return true;
@@ -188,31 +186,29 @@ bool MemberVar::analyze()
 
 bool MemberVar::registerMeMember()
 {
-    const std::string* typeId = type_->baseType_->id_;
-
     if (!type_->validate())
         return false;
 
-    // check whether the member is a builtin type
-    BaseType::TypeMap::iterator iter = 
-        (*BaseType::typeMap_).find(*typeId);
+    me::Op::Type meType = type_->toMeType();
 
-    if ( iter != (*BaseType::typeMap_).end() )
+    if (meType == me::Op::R_STACK)
     {
-        // -> it is a builtin type
+        swiftAssert( typeid(*type_) == typeid(BaseType),
+                "must be a BaseType here" );
+        BaseType* bt = (BaseType*) type_;
 
-#ifdef SWIFT_DEBUG
-        meMember_ = new me::AtomicMember(iter->second, *id_);
-#else // SWIFT_DEBUG
-        meMember_ = new me::AtomicMember(iter->second);
-#endif // SWIFT_DEBUG
+        Class* _class = bt->lookupClass();
+        swiftAssert(_class, "must be found here");
+        meMember_ = _class->meStruct_;
     }
     else
     {
-        // ATM this must be a class
-        Class* _class = symtab->lookupClass(typeId);
-        swiftAssert(_class, "must be found here");
-        meMember_ = _class->meStruct_;
+        // -> it is a builtin type or a pointer
+#ifdef SWIFT_DEBUG
+        meMember_ = new me::AtomicMember(meType, *id_);
+#else // SWIFT_DEBUG
+        meMember_ = new me::AtomicMember(tmeType);
+#endif // SWIFT_DEBUG
     }
 
     // append member to current me::Struct in all cases

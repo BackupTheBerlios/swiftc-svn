@@ -506,6 +506,16 @@ void X64RegAlloc::targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB)
             ci->arg_[i].constraint_ = intRegs[intCounter++];
     }
 
+    /*
+     * if this is a vararg function add an additional dummy arg with 
+     * RAX constraint which will hold the number of sse regs used
+     */
+    if ( ci->isVarArg() )
+    {
+        me::Var* newVar = function_->newSSAReg(me::Op::R_INT64);
+        ci->arg_.push_back( me::Arg(newVar, RAX) );
+    }
+
     // add clobbered int registers as dummy results
     for (size_t i = intReturnCounter; i < NUM_INT_CLOBBERED_REGS; ++i)
     {
