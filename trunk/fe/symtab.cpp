@@ -29,10 +29,10 @@
 #include "fe/error.h"
 #include "fe/method.h"
 #include "fe/var.h"
+#include "fe/scope.h"
+#include "fe/signature.h"
 #include "fe/syntaxtree.h"
 #include "fe/type.h"
-
-using namespace std;
 
 namespace swift {
 
@@ -76,7 +76,7 @@ bool SymbolTable::insert(Module* module)
 
 bool SymbolTable::insert(Class* _class)
 {
-    pair<Module::ClassMap::iterator, bool> p
+    std::pair<Module::ClassMap::iterator, bool> p
         = module_->classes_.insert( std::make_pair(_class->id_, _class) );
 
     if ( !p.second )
@@ -98,7 +98,7 @@ bool SymbolTable::insert(Class* _class)
 
 bool SymbolTable::insert(MemberVar* memberVar)
 {
-    pair<Class::MemberVarMap::iterator, bool> p
+    std::pair<Class::MemberVarMap::iterator, bool> p
         = class_->memberVars_.insert( std::make_pair(memberVar->id_, memberVar) );
 
     if ( !p.second )
@@ -123,50 +123,53 @@ void SymbolTable::insert(Method* method)
     method_ = method;
 
     // set current signature scope
-    sig_ = &method->sig_;
+    sig_ = method->sig_;
 }
 
-bool SymbolTable::insert(Param* param)
+void SymbolTable::insertParam(Param* param)
 {
-    PARAMS_EACH(iter, sig_->params_)
+    if ( sig_->findParam(param->id_) )
     {
-        if (*param->id_ == *iter->value_->id_)
-        {
-            errorf(param->line_, "there is already a parameter '%s' defined in this procedure",
+        errorf(param->line_, 
+                "there is already a parameter '%s' defined in this procedure",
                 param->id_->c_str());
-
-            return false;
-        }
+        return;
     }
 
-    sig_->params_.append(param);
+    sig_->appendInParam(param);
 
-    return true;
+    return;
+}
+
+void SymbolTable::insertRes(Param* param)
+{
+    Param* found = sig_->findParam(param->id_);
+    if (found) 
+    {
+        if (found->getKind() == Param::RES)
+        {
+            errorf(param->line_, 
+                    "there is already a parameter '%s' defined in this procedure",
+                    param->id_->c_str());
+        }
+        else
+        {
+            errorf(param->line_, 
+                    "there is already a parameter '%s' defined in this procedure", 
+                    param->id_->c_str());
+        }
+
+        return;
+    }
+
+    sig_->appendOutParam(param);
+
+    return;
 }
 
 bool SymbolTable::insert(Local* local)
 {
-    pair<Scope::LocalMap::iterator, bool> p
-        = currentScope()->locals_.insert( std::make_pair(local->id_, local) );
-
-    if ( !p.second )
-    {
-        errorf(local->line_, "there is already a local '%s' defined in this scope in line %i",
-            local->id_->c_str(), p.first->second->line_);
-
-        return false;
-    }
-
-    PARAMS_EACH(iter, sig_->params_)
-    {
-        if (*local->id_ == *iter->value_->id_)
-        {
-            errorf(local->line_, "local '%s' shadows a parameter", local->id_->c_str());
-            return false;
-        }
-    }
-
-    return true;
+    return currentScope()->insert(local, sig_);
 }
 
 /*
@@ -196,7 +199,7 @@ void SymbolTable::leaveClass()
 void SymbolTable::enterMethod(Method* method)
 {
     method_ = method;
-    sig_ = &method->sig_;
+    sig_ = method->sig_;
 
     scopeStack_.push(method_->rootScope_);
 }
@@ -223,7 +226,7 @@ void SymbolTable::leaveScope()
 Scope* SymbolTable::createAndEnterNewScope()
 {
     Scope* newScope = new Scope( currentScope() );
-    currentScope()->childScopes_.append(newScope);
+    currentScope()->childScopes_.push_back(newScope);
     enterScope(newScope);
 
     return newScope;
@@ -233,7 +236,7 @@ Scope* SymbolTable::createAndEnterNewScope()
  * lookup methods
  */
 
-Var* SymbolTable::lookupVar(const string* id)
+Var* SymbolTable::lookupVar(const std::string* id)
 {
     // is it a local?
     Local* local = currentScope()->lookupLocal(id);
@@ -244,7 +247,7 @@ Var* SymbolTable::lookupVar(const string* id)
     return sig_->findParam(id); // will return 0, if not found
 }
 
-Class* SymbolTable::lookupClass(const string* id)
+Class* SymbolTable::lookupClass(const std::string* id)
 {
     // currently only one module - the default module - is supported.
     Module::ClassMap::const_iterator iter = rootModule_->classes_.find(id);
@@ -258,9 +261,8 @@ Class* SymbolTable::lookupClass(const string* id)
 Method* SymbolTable::lookupMethod(const std::string* classId,
                                   const std::string* methodId,
                                   int methodQualifier,
-                                  const Sig& sig,
-                                  int line,
-                                  SigCheckingStyle sigCheckingStyle)
+                                  const Signature* sig,
+                                  int line)
 {
     // lookup class
     Class* _class = symtab->lookupClass(classId);
@@ -280,24 +282,11 @@ Method* SymbolTable::lookupMethod(const std::string* classId,
 
     // current method in loop below
     Method* method = 0;
-
     for (; iter != last; ++iter)
     {
         method = iter->second;
 
-        bool sigCheck;
-
-        switch (sigCheckingStyle)
-        {
-            case CHECK_JUST_INGOING:
-                sigCheck = method->sig_.checkIngoing(sig);
-                break;
-            case CHECK_ALL:
-                sigCheck = Sig::check(method->sig_, sig);
-                break;
-        }
-
-        if (sigCheck)
+        if ( method->sig_->checkIngoing(sig) )
             break;
         else
             method = 0; // mark as not found

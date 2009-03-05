@@ -30,6 +30,7 @@
 #include "fe/error.h"
 #include "fe/method.h"
 #include "fe/type.h"
+#include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/var.h"
 
@@ -315,8 +316,8 @@ bool Id::analyze()
     }
     // else
 
-    type_  = var_->type_->clone();
-    place_ = var_->meVar_;
+    type_  = var_->getType()->clone();
+    place_ = var_->getMeVar();
 
     return true;
 }
@@ -482,12 +483,12 @@ bool BinExpr::analyze()
     //BaseType* bt2 = (BaseType*) op2_->type_;
 
     // check whether there is an operator which fits
-    Sig sig;
-    sig.params_.append( new Param(Param::ARG, op1_->type_->clone(), 0, 0) );
-    sig.params_.append( new Param(Param::ARG, op2_->type_->clone(), 0, 0) );
+    Signature sig;
+    sig.appendInParam( new Param(Param::ARG, op1_->type_->clone(), 0, 0) );
+    sig.appendInParam( new Param(Param::ARG, op2_->type_->clone(), 0, 0) );
     std::string* opString = operatorToString(kind_);
     Method* method = symtab->lookupMethod(
-            bt1->getId(), opString, OPERATOR, sig, line_, SymTab::CHECK_JUST_INGOING );
+            bt1->getId(), opString, OPERATOR, &sig, line_);
 
     delete opString;
 
@@ -503,8 +504,7 @@ bool BinExpr::analyze()
     // else
 
     // find first out parameter and clone this type
-    type_ = method->sig_.findFirstOut()->value_->type_->clone();
-    swiftAssert(type_, "an operator should always return a type");
+    type_ = method->sig_->getOut(0)->getType()->clone();
 
     genSSA();
 

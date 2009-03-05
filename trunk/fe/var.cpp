@@ -40,6 +40,20 @@ Var::~Var()
     delete type_;
 }
 
+/*
+ * further methods
+ */
+
+const Type* Var::getType() const
+{
+    return type_;
+}
+
+me::Var* Var::getMeVar()
+{
+    return meVar_;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -64,6 +78,11 @@ Param::Param(Kind kind, Type* type, std::string* id, int line /*= NO_LINE*/)
 /*
  * further methods
  */
+
+Param::Kind Param::getKind() const
+{
+    return kind_;
+}
 
 bool Param::check(const Param* param1, const Param* param2)
 {

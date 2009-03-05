@@ -26,6 +26,7 @@
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/method.h"
+#include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
 #include "fe/var.h"
@@ -120,22 +121,22 @@ bool Assignment::analyze(bool exprResult)
     {
         Method* create = iter->second;
 
-        if ( create->sig_.params_.size() != argList.size() )
+        if ( create->sig_->getNumIn() != argList.size() )
             continue; // the number of arguments does not match
 
         // -> number of arguments fits, so check types
         ArgList::Node* argIter = argList.first();
-        Sig::Params::Node* createIter = create->sig_.params_.first();
 
         bool argCheckResult = true;
+        size_t i = 0;
 
         while ( argIter != argList.sentinel() && argCheckResult )
         {
-            argCheckResult = argIter->value_->type_->check(createIter->value_->type_);
+            argCheckResult = argIter->value_->type_->check( create->sig_->getIn(i)->getType() );
 
             // move forward
             argIter = argIter->next_;
-            createIter = createIter->next_;
+            ++i;
         }
 
         if (argCheckResult)
@@ -197,15 +198,15 @@ bool Declaration::analyze()
     if ( !type_->isAtomic() )
     {
         if (!exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->meVar_, 
-                        me::functab->newUndef(local_->meVar_->type_)) );
+            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(), 
+                        me::functab->newUndef(local_->getMeVar()->type_)) );
         else
             swiftAssert(false, "TODO");
     }
     else
     {
         if (exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->meVar_,
+            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(),
                         exprList_->expr_->place_) );
     }
 

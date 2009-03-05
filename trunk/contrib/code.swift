@@ -2,7 +2,7 @@
 class Test
     int foo
 
-    routine test(int i, int j, real uu) -> real re, int rs, inout int bs
+    routine test(int i, int j, inout real uu) -> real re, int rs, int bs
         int z
         z = 5 + 4 * j
         j = 7
@@ -25,7 +25,7 @@ class Test
         real d = a - b - 8.0 - 5.0 * c - a + 9.0
     end
 
-    routine test(real foo) -> real re, int rs, inout int bs
+    routine test(real foo) -> real re, int rs, int bs
         int e = 4
 
         real gg = 2.0 + 3.0

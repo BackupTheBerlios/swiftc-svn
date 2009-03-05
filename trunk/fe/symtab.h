@@ -34,7 +34,7 @@ struct MemberVar;
 struct Method;
 struct Module;
 struct Scope;
-struct Sig;
+struct Signature;
 struct Type;
 struct Var;
 
@@ -53,22 +53,16 @@ struct SymbolTable
     typedef std::stack<Scope*> ScopeStack;
 
     Module* rootModule_; ///< The root of the syntax tree.
-    Module* module_;     ///< Current Module.
-    Class*  class_;      ///< Current Class.
-    Method* method_;     ///< Current Method.
-    Sig*    sig_;        ///< Current Sig.
+    Module* module_;     ///< Current \a Module.
+    Class*  class_;      ///< Current \a Class.
+    Method* method_;     ///< Current \a Method.
+    Signature* sig_;     ///< Current \a Signature.
 
     ScopeStack scopeStack_; ///< Top of stack knows the current Scope.
 
     enum
     {
         NO_LINE = -1
-    };
-
-    enum SigCheckingStyle
-    {
-        CHECK_JUST_INGOING,
-        CHECK_ALL
     };
 
     /*
@@ -86,7 +80,8 @@ struct SymbolTable
     bool insert(Class* _class);
     void insert(Method* method);
     bool insert(MemberVar* memberVar);
-    bool insert(Param* param);
+    void insertParam(Param* param);
+    void insertRes(Param* param);
     bool insert(Local* local);
 
     void insertLocalByVarNr(Local* local);
@@ -141,9 +136,8 @@ struct SymbolTable
     Method* lookupMethod(const std::string* classId,
                          const std::string* methodId,
                          int methodQualifier,
-                         const Sig& sig,
-                         int line,
-                         SigCheckingStyle sigCheckingStyle);
+                         const Signature* sig,
+                         int line);
 
     /*
      * further methods

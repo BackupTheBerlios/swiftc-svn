@@ -24,12 +24,13 @@
 #include <string>
 
 #include "fe/class.h"
-#include "fe/sig.h"
 
 namespace swift {
 
 // forward declaration
-struct Param;
+class Param;
+class Signature;
+class Scope;
 
 //------------------------------------------------------------------------------
 
@@ -42,7 +43,7 @@ struct Method : public ClassMember
     int methodQualifier_;   ///< Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
     Statement* statements_; ///< The statements_ inside this Proc.
     Scope* rootScope_;      ///< The root Scope where vars of this Proc are stored.
-    Sig sig_;               ///< The signature of this Method.
+    Signature* sig_;        ///< The signature of this Method.
 
     /*
      * constructor and destructor

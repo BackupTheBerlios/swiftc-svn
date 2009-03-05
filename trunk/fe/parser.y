@@ -129,9 +129,11 @@ using namespace swift;
 %token VAR CONST
 
 // parameter qualifier
-%token IN INOUT OUT
+%token INOUT
+
 // method qualifier
 %token READER WRITER ROUTINE OPERATOR
+
 %token ARROW
 
 // constructor / destructor
@@ -312,7 +314,8 @@ parameter_list
     ;
 
 parameter
-    : type ID   { symtab->insert( new Param(Param::ARG, $1, $2, currentLine) ); }
+    :       type ID { symtab->insertParam( new Param(Param::ARG,       $1, $2, currentLine) ); }
+    | INOUT type ID { symtab->insertParam( new Param(Param::ARG_INOUT, $2, $3, currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -326,8 +329,7 @@ return_type_list
     ;
 
 return_type
-    : type ID       { symtab->insert( new Param(Param::RES, $1, $2, currentLine) ); }
-    | INOUT type ID { symtab->insert( new Param(Param::RES_INOUT, $2, $3, currentLine) ); }
+    : type ID       { symtab->insertRes( new Param(Param::RES, $1, $2, currentLine) ); }
     ;
 
 /*
@@ -358,6 +360,7 @@ statement_list
 statement
     : expr EOL                              { $$ = new ExprStatement($1, currentLine); }
     | expr '=' expr_list_not_empty EOL      { $$ = new AssignStatement('=', $1, $3, currentLine); }
+    /*| expr_list_not_empty '=' expr_list_not_empty EOL     { [> TODO <] }*/
 
     | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
     | type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }
@@ -470,8 +473,10 @@ type
     | CONST ID                 { $$ = new BaseType(CONST, $2, currentLine); }
     | PTR         '{' type '}' { $$ = new Ptr(    0, $3, currentLine); }
     | CONST PTR   '{' type '}' { $$ = new Ptr(CONST, $4, currentLine); }
-    /*| modifier ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
-    /*| modifier SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
+    /*| ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
+    /*| CONST ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
+    /*| SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
+    /*| CONST SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
     ;
 
 %%

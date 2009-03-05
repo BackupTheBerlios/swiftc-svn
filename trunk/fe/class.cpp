@@ -26,6 +26,7 @@
 
 #include "fe/error.h"
 #include "fe/method.h"
+#include "fe/signature.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
@@ -121,7 +122,7 @@ bool Class::analyze()
                 if (methodIter->second->methodQualifier_ != method->methodQualifier_)
                     continue;
 
-                if ( Sig::check(methodIter->second->sig_, method->sig_) )
+                if ( methodIter->second->sig_->check(method->sig_) )
                 {
                     errorf(methodIter->second->line_, "there is already a method '%s' defined in '%s' line %i",
                         methodIter->second->toString().c_str(),

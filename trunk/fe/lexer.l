@@ -123,9 +123,7 @@ operator    { keyLine = currentLine; return OPERATOR; }
 create  { keyLine = currentLine; return CREATE; }
 destroy { keyLine = currentLine; return DESTROY; }
 
-in      { return IN; }
 inout   { return INOUT; }
-out     { return OUT; }
 
 shl     { return SHL; }
 shr     { return SHR; }

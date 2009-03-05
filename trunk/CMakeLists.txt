@@ -91,7 +91,8 @@ ADD_EXECUTABLE (swift
     fe/expr.cpp
     fe/method.cpp
     fe/module.cpp
-    fe/sig.cpp
+    fe/scope.cpp
+    fe/signature.cpp
     fe/statement.cpp
     fe/symtab.cpp
     fe/syntaxtree.cpp

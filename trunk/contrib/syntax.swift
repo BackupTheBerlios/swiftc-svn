@@ -9,6 +9,15 @@ class Test
         .foo = i
     end
 
+    routine foo(inout int i, real r) -> int i
+    end
+
+    routine foobar()
+        int i = 8
+
+        int j = foo(inout i, r)
+    end
+
     routine int main(array{string} args)
         if args < 4
             printf("less then 2 args given")

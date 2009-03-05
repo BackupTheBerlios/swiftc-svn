@@ -41,16 +41,9 @@ struct Type;
  * This class is the base for a Local or a Param. It is the return value
  * for symtab lookups.
  */
-struct Var : public Symbol
+class Var : public Symbol
 {
-    Type* type_;
-
-    me::Var* meVar_;
-
-    enum
-    {
-        NO_LINE = -1
-    };
+public:
 
     /*
      * constructor and destructor
@@ -58,6 +51,22 @@ struct Var : public Symbol
 
     Var(Type* type, me::Var* var, std::string* id, int line = NO_LINE);
     virtual ~Var();
+
+    /*
+     * further methods
+     */
+
+    const Type* getType() const;
+    me::Var* getMeVar();
+
+protected:
+
+    /*
+     * data
+     */
+
+    Type* type_;
+    me::Var* meVar_;
 };
 
 //------------------------------------------------------------------------------
@@ -66,8 +75,10 @@ struct Var : public Symbol
  * This class represents either an ordinary local variable used by the
  * programmer or a compiler generated variable used to store a temporary value.
  */
-struct Local : public Var
+class Local : public Var
 {
+public:
+
     /*
      * constructor
      */
@@ -85,17 +96,17 @@ struct Local : public Var
  * Param is needed to check whether a signature fits a Param without \a id_ can
  * be used.
  */
-struct Param : public Var
+class Param : public Var
 {
+public:
+
     /// What kind of Param is this?
     enum Kind
     {
-        ARG,      ///< An ingoing parameter
-        RES,      ///< An outgoing parameter AKA result
-        RES_INOUT ///< An in- and outgoing paramter/result
+        ARG,      ///< An ingoing parameter.
+        ARG_INOUT,///< An in- and outgoing paramter.
+        RES,      ///< An outgoing parameter AKA result.
     };
-
-    Kind kind_;
 
     /*
      * constructor
@@ -107,11 +118,17 @@ struct Param : public Var
      * further methods
      */
 
+    Kind getKind() const;
+
     /// Check whether the type of both Param objects fit.
     static bool check(const Param* param1, const Param* param2);
 
     /// Check whether this Param has a correct Type.
     bool validateAndCreateVar(); 
+
+private:
+
+    Kind kind_;
 };
 
 } // namespace swift

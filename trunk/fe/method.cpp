@@ -22,6 +22,8 @@
 #include <sstream>
 
 #include "fe/error.h"
+#include "fe/scope.h"
+#include "fe/signature.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
@@ -40,12 +42,14 @@ Method::Method(int methodQualifier, std::string* id, Symbol* parent, int line /*
     : ClassMember(id, parent, line)
     , methodQualifier_(methodQualifier)
     , rootScope_( new Scope(0) )
+    , sig_( new Signature() )
 {}
 
 Method::~Method()
 {
-    delete rootScope_;
     delete statements_;
+    delete rootScope_;
+    delete sig_;
 }
 
 /*
@@ -78,7 +82,7 @@ bool Method::analyze()
     me::functab->insertFunction( new std::string(oss.str()) );
 
     bool result = true;
-    result &= sig_.analyze(); // needs the valid function in the functab
+    result &= sig_->analyze(); // needs the valid function in the functab
 
     // insert the first label since every function must start with one
     me::functab->appendInstr( new me::LabelInstr() );
@@ -89,10 +93,10 @@ bool Method::analyze()
         /*
          * check signature
          */
-        if (sig_.params_.size() >= 1)
+        if (sig_->getNumIn() >= 1)
         {
             // check whether the first type matches the type of the current class
-            BaseType* bt = dynamic_cast<BaseType*>(sig_.params_.first()->value_->type_);
+            const BaseType* bt = dynamic_cast<const BaseType*>( sig_->getIn(0)->getType() );
             if ( !bt || *symtab->class_->id_ != *bt->getId() )
             {
                 errorf( line_, "The the first parameter of this operator must be of type %s",
@@ -120,14 +124,9 @@ bool Method::analyze()
             || *id_ == "or"
             || *id_ == "xor")
         {
-            Sig::Params::Node* param1 = sig_.params_.first();
-            Sig::Params::Node* param2 = param1->next();
-            Sig::Params::Node* param3 = param2->next();
-
-            if (   sig_.params_.size() != 3
-                || param1->value_->kind_ != Param::ARG
-                || param2->value_->kind_ != Param::ARG
-                || param3->value_->kind_ != Param::RES)
+            if (   sig_->getNumIn() != 2 || sig_->getNumOut() != 1
+                || sig_->getIn(0)->getKind() != Param::ARG
+                || sig_->getIn(1)->getKind() != Param::ARG )
             {
                 if (*id_ == "-")
                     unaryMinus = true;
@@ -143,12 +142,9 @@ bool Method::analyze()
 
         if (*id_ == "not" || unaryMinus)
         {
-            Sig::Params::Node* param1 = sig_.params_.first();
-            Sig::Params::Node* param2 = param1->next();
 
-            if (   sig_.params_.size() != 2
-                || param1->value_->kind_ != Param::ARG
-                || param2->value_->kind_ != Param::RES)
+            if (   sig_->getNumIn() != 1 || sig_->getNumOut() != 1
+                || sig_->getIn(0)->getKind() != Param::ARG )
             {
                 if (*id_ == "-")
                 {
@@ -167,32 +163,34 @@ bool Method::analyze()
 
     // build function entry
     me::SetParams* setParams = 0;
-    me::AssignInstr* returnValues = 0;
     
-    PARAMS_CONST_EACH(iter, sig_.params_)
+    // for each ingoing param
+    for (size_t i = 0; i < sig_->getNumIn(); ++i) 
     {
-        const Param* param = iter->value_;
+        Param* param = sig_->getIn(i);
+        me::Var* var = param->getMeVar();
 
-        me::Var* var = param->meVar_;
-        swiftAssert(var, "must be found here");
-
-        if (param->kind_ == Param::RES)
-        {
-            if (returnValues)
-                returnValues->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
-            else
-                returnValues = new me::AssignInstr( '=', var, me::functab->newUndef(var->type_) );
-        }
+        if (setParams)
+            setParams->res_.push_back( me::Res(var, var->varNr_) );
         else
         {
-            if (setParams)
-                setParams->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
-            else
-            {
-                setParams = new me::SetParams(0);
-                setParams->res_.push_back( me::Res(var, var->varNr_, me::NO_CONSTRAINT) );
-            }
+            setParams = new me::SetParams(0);
+            setParams->res_.push_back( me::Res(var, var->varNr_) );
         }
+    }
+
+    me::AssignInstr* returnValues = 0;
+
+    // for each result
+    for (size_t i = 0; i < sig_->getNumOut(); ++i) 
+    {
+        Param* param = sig_->getOut(i);
+        me::Var* var = param->getMeVar();
+
+        if (returnValues)
+            returnValues->res_.push_back( me::Res(var, var->varNr_) );
+        else
+            returnValues = new me::AssignInstr( '=', var, me::functab->newUndef(var->type_) );
     }
 
     if (setParams)
@@ -208,20 +206,18 @@ bool Method::analyze()
     // insert the last label since every function must end with one
     me::functab->appendInstrNode( me::functab->getLastLabelNode() );
 
-    const Sig::Params::Node* firstOut = sig_.findFirstOut();
-
     // is there at least one result?
-    if (firstOut)
+    if ( sig_->getNumOut() > 0 )
     {
         // build function exit
         me::SetResults* setResults = new me::SetResults(0); // start with 0 args
         
-        for (const Sig::Params::Node* iter = firstOut; iter != sig_.params_.sentinel(); iter = iter->next())
+        for (size_t i = 0; i < sig_->getNumOut(); ++i)
         {
-            const Param* param = iter->value_;
+            Param* param = sig_->getOut(i);
 
-            me::Var* var = param->meVar_;
-            setResults->arg_.push_back( me::Arg(var, me::NO_CONSTRAINT) );
+            me::Var* var = param->getMeVar();
+            setResults->arg_.push_back( me::Arg(var) );
         }
 
         me::functab->appendInstr(setResults);
@@ -251,7 +247,7 @@ bool Method::analyze()
 //             return "";
 //     }
 //
-//     return oss.str() + sig_.toString();
+//     return oss.str() + sig_->toString();
 // }
 
 } // namespace swift
