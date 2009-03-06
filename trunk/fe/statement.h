@@ -26,9 +26,13 @@
 
 namespace swift {
 
-// forward declarations
-struct Expr;
-struct Local;
+/*
+ * forward declarations
+ */
+class Expr;
+class ExprList;
+class Local;
+class Tupel;
 
 //------------------------------------------------------------------------------
 
@@ -129,8 +133,8 @@ struct AssignStatement : public Statement
         char c_; ///< '=', others will follow.
     };
 
-    Expr*       expr_;      ///< The lvalue.
-    ExprList*   exprList_;  ///< The rvalue.
+    Tupel* tupel_;       ///< The lvalue.
+    ExprList* exprList_; ///< The rvalue.
 
     /*
      * constructor and destructor

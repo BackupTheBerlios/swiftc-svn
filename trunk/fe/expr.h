@@ -244,34 +244,6 @@ struct BinExpr : public Expr
 
 //------------------------------------------------------------------------------
 
-/**
- * @brief This class represents a comma sperated list of Expr instances used in
- * function/method/contructor calls.
- *
- * This is actually not a Expr, but belongs to expressions
- * so it is in this file.
- */
-struct ExprList : public Node
-{
-    Expr*       expr_;  ///< the Expr owned by this instance
-    ExprList*   next_;  ///< next element in the list
-
-    /*
-     * constructor and destructor
-     */
-
-    ExprList(Expr* expr, ExprList* next = 0, int line = NO_LINE);
-    virtual ~ExprList();
-
-    /*
-     * further methods
-     */
-
-    virtual bool analyze();
-};
-
-//------------------------------------------------------------------------------
-
 struct MemberAccess : public Expr
 {
     Expr* expr_;

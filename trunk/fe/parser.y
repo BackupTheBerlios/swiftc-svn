@@ -92,23 +92,19 @@ using namespace swift;
 %union
 {
     int                 int_;
-
     std::string*        id_;
-
-    swift::Module*      module_;
-    swift::Definition*  definition_;
 
     swift::Class*       class_;
     swift::ClassMember* classMember_;
-    swift::MemberVar*   memberVar_;
-    swift::Method*      method_;
-
-    swift::Type*        type_;
-    swift::BaseType*    baseType_;
-
-    swift::Statement*   statement_;
+    swift::Definition*  definition_;
     swift::Expr*        expr_;
     swift::ExprList*    exprList_;
+    swift::MemberVar*   memberVar_;
+    swift::Method*      method_;
+    swift::Module*      module_;
+    swift::Statement*   statement_;
+    swift::Tupel*       tupel_;
+    swift::Type*        type_;
 };
 
 /*
@@ -164,7 +160,7 @@ using namespace swift;
 // miscellaneous
 %token SCOPE CLASS END EOL
 
-%token <id_>        ID
+%token <id_> ID
 
 /*
     types
@@ -178,8 +174,9 @@ using namespace swift;
 %type <method_>     method
 %type <memberVar_>  member_var
 
-%type <expr_>       expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
-%type <exprList_>   expr_list expr_list_not_empty
+%type <expr_>     expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
+%type <exprList_> expr_list expr_list_not_empty
+%type <tupel_>    tupel
 
 %type <statement_>  statement_list statement
 
@@ -359,11 +356,10 @@ statement_list
 
 statement
     : expr EOL                              { $$ = new ExprStatement($1, currentLine); }
-    | expr '=' expr_list_not_empty EOL      { $$ = new AssignStatement('=', $1, $3, currentLine); }
-    /*| expr_list_not_empty '=' expr_list_not_empty EOL     { [> TODO <] }*/
+    | tupel '=' expr_list_not_empty EOL     { $$ = new AssignStatement('=', $1, $3, currentLine) }
 
     | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
-    | type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }
+    /*| type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }*/
 
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine); }
 
@@ -464,8 +460,17 @@ expr_list
     ;
 
 expr_list_not_empty
-    : expr                          { $$ = new ExprList($1,  0, currentLine); }
-    | expr ',' expr_list_not_empty  { $$ = new ExprList($1, $3, currentLine); }
+    :       expr                         { $$ = new ExprList(    0, $1,  0, currentLine); }
+    | INOUT expr                         { $$ = new ExprList(INOUT, $2,  0, currentLine); }
+    |       expr ',' expr_list_not_empty { $$ = new ExprList(    0, $1, $3, currentLine); }
+    | INOUT expr ',' expr_list_not_empty { $$ = new ExprList(INOUT, $2, $4, currentLine); }
+    ;
+
+tupel
+    : expr              { $$ = new ExprTupelElem($1,  0, currentLine); }
+    | expr ',' tupel    { $$ = new ExprTupelElem($1, $3, currentLine); }
+    | type ID           { $$ = new DeclTupelElem($1, $2,  0, currentLine); }
+    | type ID ',' tupel { $$ = new DeclTupelElem($1, $2, $4, currentLine); }
     ;
 
 type

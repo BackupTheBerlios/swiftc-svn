@@ -25,21 +25,18 @@ extern "C" int swiftparse();
 namespace swift {
 
 // it is important to declare all union members of YYSTYPE here
-struct Type;
-struct BaseType;
-
-struct Module;
-struct Definition;
-
-struct Class;
-struct ClassMember;
-struct Param;
-struct MemberVar;
-struct Method;
-
-struct Statement;
-struct ExprList;
-struct Expr;
+class Class;
+class ClassMember;
+class Definition;
+class Expr;
+class ExprList;
+class MemberVar;
+class Method;
+class Module;
+class Param;
+class Statement;
+class Tupel;
+class Type;
 
 //------------------------------------------------------------------------------
 

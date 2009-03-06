@@ -547,40 +547,6 @@ void BinExpr::genSSA()
  * constructor and destructor
  */
 
-ExprList::ExprList(Expr* expr, ExprList* next /*= 0*/, int line /*= NO_LINE*/)
-    : Node(line)
-    , expr_(expr)
-    , next_(next)
-{}
-
-ExprList::~ExprList()
-{
-    delete expr_;
-    if (next_)
-        delete next_;
-}
-
-/*
- * further methods
- */
-
-bool ExprList::analyze()
-{
-    bool result = true;
-
-    // for each expr in this list
-    for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        result &= iter->expr_->analyze();
-
-    return result;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
 MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
     , expr_(expr)

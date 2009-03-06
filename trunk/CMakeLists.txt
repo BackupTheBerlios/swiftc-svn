@@ -89,6 +89,7 @@ ADD_EXECUTABLE (swift
     fe/class.cpp
     fe/error.cpp
     fe/expr.cpp
+    fe/exprlist.cpp
     fe/method.cpp
     fe/module.cpp
     fe/scope.cpp
@@ -96,6 +97,7 @@ ADD_EXECUTABLE (swift
     fe/statement.cpp
     fe/symtab.cpp
     fe/syntaxtree.cpp
+    fe/tupel.cpp
     fe/type.cpp
     fe/var.cpp
 
