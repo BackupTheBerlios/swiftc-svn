@@ -208,7 +208,7 @@ bool MemberVar::registerMeMember()
 #ifdef SWIFT_DEBUG
         meMember_ = new me::AtomicMember(meType, *id_);
 #else // SWIFT_DEBUG
-        meMember_ = new me::AtomicMember(tmeType);
+        meMember_ = new me::AtomicMember(meType);
 #endif // SWIFT_DEBUG
     }
 

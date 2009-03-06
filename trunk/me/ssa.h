@@ -156,7 +156,7 @@ struct InstrBase
 
     enum OpType
     {
-        CONST, 
+        LITERAL, 
         VAR,
         VAR_DEAD
     };

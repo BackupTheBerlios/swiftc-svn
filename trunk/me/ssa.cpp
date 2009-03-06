@@ -205,7 +205,7 @@ bool InstrBase::livesThrough(Var* var) const
 InstrBase::OpType InstrBase::getOpType(size_t i) const
 {
     if ( typeid(*arg_[i].op_) == typeid(Const) )
-        return CONST;
+        return LITERAL;
 
     swiftAssert( dynamic_cast<Var*>(arg_[i].op_), "must be a Var" );
     Var* var = (Var*) arg_[i].op_;

@@ -271,7 +271,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
 
         if (opType2 == me::InstrBase::VAR_DEAD)
         {
-            if (opType1 == me::InstrBase::CONST)
+            if (opType1 == me::InstrBase::LITERAL)
             {
                 swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                         "must be a Const here");
