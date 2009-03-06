@@ -211,9 +211,9 @@ InstrBase::OpType InstrBase::getOpType(size_t i) const
     Var* var = (Var*) arg_[i].op_;
 
     if ( !liveOut_.contains(var) )
-        return VAR_DEAD;
+        return VARIABLE_DEAD;
     else
-        return VAR;
+        return VARIABLE;
 }
 
 bool InstrBase::isLastUse(InstrNode* instrNode, Var* var)

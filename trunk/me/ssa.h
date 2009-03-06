@@ -157,8 +157,8 @@ struct InstrBase
     enum OpType
     {
         LITERAL, 
-        VAR,
-        VAR_DEAD
+        VARIABLE,
+        VARIABLE_DEAD
     };
     
     OpType getOpType(size_t i) const;

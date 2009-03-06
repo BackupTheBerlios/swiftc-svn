@@ -269,7 +269,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
         me::InstrBase::OpType opType1 = ai->getOpType(0);
         me::InstrBase::OpType opType2 = ai->getOpType(1);
 
-        if (opType2 == me::InstrBase::VAR_DEAD)
+        if (opType2 == me::InstrBase::VARIABLE_DEAD)
         {
             if (opType1 == me::InstrBase::LITERAL)
             {
@@ -280,7 +280,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
                 swiftAssert( res, "must be true" );
                 currentBB->value_->fixPointers();
             }
-            else if (opType1 == me::InstrBase::VAR)
+            else if (opType1 == me::InstrBase::VARIABLE)
             {
                 // insert artificial use for all critical cases
                 me::Var* var = (me::Var*) ai->arg_[1].op_;
