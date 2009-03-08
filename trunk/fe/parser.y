@@ -358,7 +358,7 @@ statement
     : expr EOL                              { $$ = new ExprStatement($1, currentLine); }
     | tupel '=' expr_list_not_empty EOL     { $$ = new AssignStatement('=', $1, $3, currentLine) }
 
-    | type ID EOL                           { $$ = new Declaration($1, $2,  0, getKeyLine()); }
+    | type ID EOL                           { $$ = new Declaration($1, $2, getKeyLine()); }
     /*| type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }*/
 
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine); }

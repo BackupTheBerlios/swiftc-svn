@@ -67,34 +67,92 @@ bool ExprStatement::analyze()
 
 //------------------------------------------------------------------------------
 
-/**
- * Used internally by Declaration and AssignStatement.
+/*
+ * constructor and destructor
  */
-struct Assignment
+
+Declaration::Declaration(Type* type, std::string* id, int line /*= NO_LINE*/)
+    : Statement(line)
+    , type_(type)
+    , id_(id)
+    , local_(0) // This will be created in analyze
+{}
+
+
+Declaration::~Declaration()
 {
-    Type*       type_;      ///< Type of the rvalue.
-    ExprList*   exprList_;  ///< The rvalue.
-    int line_;
+    delete type_;
+    delete local_;
+    delete exprList_;
+}
 
-    /*
-     * constructor
-     */
+/*
+ * further methods
+ */
 
-    Assignment(Type* type, ExprList* exprList, int line)
-        : type_(type)
-        , exprList_(exprList)
-        , line_(line)
-    {}
-
-    /*
-     * further methods
-     */
-
-    bool analyze(bool exprResult);
-};
-
-bool Assignment::analyze(bool exprResult)
+bool Declaration::analyze()
 {
+    bool result = true;
+
+    // check whether this type exists
+    result &= type_->validate();
+
+    // insert the local in every case otherwise memory leaks can occur
+    local_ = symtab->createNewLocal(type_, id_, line_);
+
+    if (!result)
+        return false;
+
+    if ( !type_->isAtomic() )
+    {
+        if (!exprList_)
+            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(), 
+                        me::functab->newUndef(local_->getMeVar()->type_)) );
+        else
+            swiftAssert(false, "TODO");
+    }
+    else
+    {
+        if (exprList_)
+            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(),
+                        exprList_->expr_->place_) );
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+AssignStatement::AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line /*= NO_LINE*/)
+    : Statement(line)
+    , kind_(kind)
+    , tupel_(tupel)
+    , exprList_(exprList)
+{}
+
+AssignStatement::~AssignStatement()
+{
+    delete tupel_;
+    delete exprList_;
+}
+
+/*
+ * further methods
+ */
+
+bool AssignStatement::analyze()
+{
+    expr_->neededAsLValue_ = true;
+    bool result = expr_->analyze();
+
+    Assignment assignment(expr_->type_, exprList_, line_);
+    result &= assignment.analyze(result);
+
+    //---
     bool result = exprResult;
     result &= exprList_->analyze();
 
@@ -147,102 +205,8 @@ bool Assignment::analyze(bool exprResult)
             _class->id_->c_str() );
 
     return false;
-}
 
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-Declaration::Declaration(Type* type, std::string* id, ExprList* exprList, int line /*= NO_LINE*/)
-    : Statement(line)
-    , type_(type)
-    , id_(id)
-    , exprList_(exprList)
-    , local_(0) // This will be created in analyze
-{}
-
-
-Declaration::~Declaration()
-{
-    delete type_;
-    delete local_;
-    delete exprList_;
-}
-
-/*
- * further methods
- */
-
-bool Declaration::analyze()
-{
-    bool result = true;
-
-    // check whether this type exists
-    result &= type_->validate();
-
-    // do we have an initialization here?
-    if (exprList_)
-    {
-        Assignment assignment(type_, exprList_, line_);
-        result &= assignment.analyze(result);
-    }
-
-    // everything ok. so insert the local
-    local_ = symtab->createNewLocal(type_, id_, line_);
-
-    if (!result)
-        return false;
-
-    if ( !type_->isAtomic() )
-    {
-        if (!exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(), 
-                        me::functab->newUndef(local_->getMeVar()->type_)) );
-        else
-            swiftAssert(false, "TODO");
-    }
-    else
-    {
-        if (exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(),
-                        exprList_->expr_->place_) );
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-AssignStatement::AssignStatement(int kind, Expr* expr, ExprList* exprList, int line /*= NO_LINE*/)
-    : Statement(line)
-    , kind_(kind)
-    , expr_(expr)
-    , exprList_(exprList)
-{}
-
-AssignStatement::~AssignStatement()
-{
-    delete expr_;
-    delete exprList_;
-}
-
-/*
- * further methods
- */
-
-bool AssignStatement::analyze()
-{
-    expr_->neededAsLValue_ = true;
-    bool result = expr_->analyze();
-
-    Assignment assignment(expr_->type_, exprList_, line_);
-    result &= assignment.analyze(result);
+    //---
 
     if (result)
     {

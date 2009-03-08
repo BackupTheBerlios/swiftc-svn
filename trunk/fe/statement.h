@@ -98,7 +98,6 @@ struct Declaration : public Statement
 {
     Type* type_;
     std::string* id_;
-    ExprList* exprList_;
 
     /// Since this class created the Local it is responsible to delete it again.
     Local* local_;
@@ -107,7 +106,7 @@ struct Declaration : public Statement
      * constructor and destructor
      */
 
-    Declaration(Type* type, std::string* id, ExprList* exprList, int line = NO_LINE);
+    Declaration(Type* type, std::string* id, int line = NO_LINE);
     virtual ~Declaration();
 
     /*
@@ -140,7 +139,7 @@ struct AssignStatement : public Statement
      * constructor and destructor
      */
 
-    AssignStatement(int kind, Expr* expr, ExprList* exprList, int line = NO_LINE);
+    AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line = NO_LINE);
     virtual ~AssignStatement();
 
     /*
