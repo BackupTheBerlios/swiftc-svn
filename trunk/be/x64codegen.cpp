@@ -272,12 +272,14 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     me::Colors intFree = *X64RegAlloc::getIntColors();
     me::Colors xmmFree = *X64RegAlloc::getXmmColors();;
-    VARSET_EACH(iter, prevNode->value_->liveIn_)
+
+    // erase all not spilled regs which are in the live-out of the last instruction of prevNode
+    VARSET_EACH(iter, prevNode->value_->end_->prev_->value_->liveOut_) 
     {
-        if ( (*iter)->type_ == me::Op::R_STACK )
+        if ( (*iter)->type_ == me::Op::R_STACK || (*iter)->isSpilled() )
             continue; // ignore stack vars
 
-        if ( (*iter)->isReal() && !(*iter)->isSpilled() )
+        if ( (*iter)->isReal() )
         {
             swiftAssert( xmmFree.contains((*iter)->color_), 
                         "colors must be found here" );
