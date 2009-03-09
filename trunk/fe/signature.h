@@ -32,11 +32,14 @@ namespace swift {
  * forward declaraions
  */
 
-class Param;
-class Statement;
-class Scope;
 class Local;
 class Method;
+class Param;
+class Scope;
+class Statement;
+class Type;
+
+typedef std::vector<const Type*> TypeList;
 
 //------------------------------------------------------------------------------
 
@@ -82,6 +85,18 @@ public:
 
     /// Check whether two given signatures fit.
     bool check(const Signature* sig);
+
+    /**
+     * Check whether the ingoing part of the given Sig matches.
+     *
+     * @param in The TypeList which should be checked. 
+     *
+     * @return true -> it fits, flase -> otherwise.
+     */
+    bool check(const TypeList& in) const;
+
+    /// Check whether two given signatures fit.
+    bool check(const TypeList& in, const TypeList& out) const;
 
     /**
      * Find a Param by name.

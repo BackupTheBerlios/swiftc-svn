@@ -23,11 +23,14 @@
 #include <typeinfo>
 
 #include "fe/class.h"
+#include "fe/decl.h"
 #include "fe/error.h"
 #include "fe/expr.h"
+#include "fe/exprlist.h"
 #include "fe/method.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
+#include "fe/tupel.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -71,54 +74,33 @@ bool ExprStatement::analyze()
  * constructor and destructor
  */
 
-Declaration::Declaration(Type* type, std::string* id, int line /*= NO_LINE*/)
+DeclStatement::DeclStatement(Decl* decl, int line /*= NO_LINE*/)
     : Statement(line)
-    , type_(type)
-    , id_(id)
-    , local_(0) // This will be created in analyze
+    , decl_(decl)
 {}
 
 
-Declaration::~Declaration()
+DeclStatement::~DeclStatement()
 {
-    delete type_;
-    delete local_;
-    delete exprList_;
+    delete decl_;
 }
 
 /*
  * further methods
  */
 
-bool Declaration::analyze()
+bool DeclStatement::analyze()
 {
-    bool result = true;
+    bool result = decl_->analyze();
 
-    // check whether this type exists
-    result &= type_->validate();
-
-    // insert the local in every case otherwise memory leaks can occur
-    local_ = symtab->createNewLocal(type_, id_, line_);
-
-    if (!result)
-        return false;
-
-    if ( !type_->isAtomic() )
+    if (result)
     {
-        if (!exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(), 
-                        me::functab->newUndef(local_->getMeVar()->type_)) );
-        else
-            swiftAssert(false, "TODO");
-    }
-    else
-    {
-        if (exprList_)
-            me::functab->appendInstr( new me::AssignInstr('=', local_->getMeVar(),
-                        exprList_->expr_->place_) );
+        me::Var* op = (me::Var*) decl_->getPlace();
+        me::functab->appendInstr( 
+                new me::AssignInstr('=', op, me::functab->newUndef(op->type_)) );
     }
 
-    return true;
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -146,108 +128,126 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
-    expr_->neededAsLValue_ = true;
-    bool result = expr_->analyze();
+    // chack params
+    bool result = exprList_->analyze();
 
-    Assignment assignment(expr_->type_, exprList_, line_);
-    result &= assignment.analyze(result);
-
-    //---
-    bool result = exprResult;
-    result &= exprList_->analyze();
+    // check result tupel
+    result &= tupel_->analyze();
 
     if (!result)
         return false;
 
-    // put the exprList_ in a more comfortable List
-    typedef List<Expr*> ArgList;
-    ArgList argList;
-    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
-        argList.append(iter->expr_);
+    TypeList argTypeList = exprList_->getTypeList();
+    TypeList resTypeList = tupel_->getTypeList();
 
-    swiftAssert( typeid(*type_) == typeid(BaseType), "TODO" );
-    BaseType* bt = (BaseType*) type_;
+    swiftAssert( argTypeList.size() > 0, "must have at least one element" );
+    swiftAssert( resTypeList.size() > 0, "must have at least one element" );
 
-    Class* _class = bt->lookupClass();
-
-    std::string createStr("create");
-    Class::MethodMap::const_iterator iter = _class->methods_.find(&createStr);
-    swiftAssert( iter != _class->methods_.end(), "TODO");
-    Class::MethodMap::const_iterator last = _class->methods_.upper_bound(&createStr);
-
-    for (; iter != last; ++iter)
+    if ( argTypeList.size() > 1 && resTypeList.size() > 1 )
     {
-        Method* create = iter->second;
+        errorf(line_, "either the left-hand side or the right-hand side of an" 
+                "assignment statement must have exactly one element");
 
-        if ( create->sig_->getNumIn() != argList.size() )
-            continue; // the number of arguments does not match
+        return false;
+    }
 
-        // -> number of arguments fits, so check types
-        ArgList::Node* argIter = argList.first();
+    if (resTypeList.size() == 1)
+    {
+        // -> this is a constructor call
+        swiftAssert( typeid(*resTypeList[0]) == typeid(BaseType), "TODO" );
+        const BaseType* bt = (const BaseType*) resTypeList[0];
+        Class* _class = bt->lookupClass();
 
-        bool argCheckResult = true;
-        size_t i = 0;
+        std::string createStr("create");
+        Class::MethodMap::const_iterator iter = _class->methods_.find(&createStr);
+        swiftAssert( iter != _class->methods_.end(), "TODO");
+        Class::MethodMap::const_iterator last = _class->methods_.upper_bound(&createStr);
 
-        while ( argIter != argList.sentinel() && argCheckResult )
+        for (; iter != last; ++iter)
         {
-            argCheckResult = argIter->value_->type_->check( create->sig_->getIn(i)->getType() );
+            Method* create = iter->second;
 
-            // move forward
-            argIter = argIter->next_;
-            ++i;
+            if ( !create->sig_->check(argTypeList) )
+                continue; // the signature does not fit
+
+            genConstructorCall(_class, create);
+            return true;
         }
 
-        if (argCheckResult)
-            return true;
+        errorf( line_, "no constructor found for class %s with the given arguments", 
+                _class->id_->c_str() );
+
+        return false;
     }
-
-    errorf( line_, "no constructor found for class % s with the given arguments", 
-            _class->id_->c_str() );
-
-    return false;
-
-    //---
-
-    if (result)
+    else
     {
-        genSSA();
-        return true;
+        // -> it is an ordinary call of a function
+        FunctionCall* fc = exprList_->getFunctionCall();
+        if (!fc)
+        {
+            errorf(line_, "the right-hand side of an assignment statement with"
+                    "more than one item on the left-hand side" 
+                    "must be a function call");
+
+            return false;
+        }
+
+        // TODO
     }
-    // else
 
-    if (typeid(*expr_) == typeid(MemberAccess) )
-        delete ((MemberAccess*) expr_)->rootStructOffset_;
+    genSSA();
 
-    return false;
+    // TODO
+    //if (typeid(*expr_) == typeid(MemberAccess) )
+        //delete ((MemberAccess*) expr_)->rootStructOffset_;
+
+    return true;
+}
+
+void AssignStatement::genConstructorCall(Class* _class, Method* /*method*/)
+{
+    PlaceList lhsPlaces = tupel_->getPlaceList();
+    PlaceList rhsPlaces = exprList_->getPlaceList();
+
+    if ( BaseType::isBuiltin(_class->id_) )
+    {
+        me::functab->appendInstr( 
+                new me::AssignInstr(kind_ , (me::Reg*) lhsPlaces[0], rhsPlaces[0]) );
+        //tupel_->genStores();
+        return;
+    }
+
+    // else TODO
+    swiftAssert(false, "TODO");
 }
 
 void AssignStatement::genSSA()
 {
-    swiftAssert( dynamic_cast<me::Var*>(expr_->place_),
-            "expr_->place must be a me::Reg*" );
+    //swiftAssert( dynamic_cast<me::Var*>(expr_->place_),
+            //"expr_->place must be a me::Reg*" );
 
-    if ( typeid(*expr_) == typeid(MemberAccess))
-    {
-        MemberAccess* ma = (MemberAccess*) expr_;
+    //if ( typeid(*expr_) == typeid(MemberAccess))
+    //{
+        //MemberAccess* ma = (MemberAccess*) expr_;
 
-        me::Store* store = new me::Store( 
-                (me::Var*) ma->place_,              // memory variable
-                (me::Var*) exprList_->expr_->place_,// argument 
-                ma->rootStructOffset_);             // offset 
-        me::functab->appendInstr(store);
-    }
-    else
-    {
-        me::functab->appendInstr( 
-                new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
-    }
+        //me::Store* store = new me::Store( 
+                //(me::Var*) ma->place_,              // memory variable
+                //(me::Var*) exprList_->expr_->place_,// argument 
+                //ma->rootStructOffset_);             // offset 
+        //me::functab->appendInstr(store);
+    //}
+    //else
+    //{
+        //me::functab->appendInstr( 
+                //new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+    //}
 }
 
 //------------------------------------------------------------------------------
 
 /*
-    constructor and destructor
-*/
+ *  constructor and destructor
+ */
 
 WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line /*= NO_LINE*/)
         : Statement(line)
@@ -288,7 +288,7 @@ bool WhileStatement::analyze()
     // check whether expr_ is a boolean expr only if analyze resulted true
     if (result)
     {
-        if ( !expr_->type_->isBool() )
+        if ( !expr_->getType()->isBool() )
         {
             errorf(line_, "the prefacing expression of an while statement must be a boolean expression");
             result = false;
@@ -302,7 +302,7 @@ bool WhileStatement::analyze()
     if (result)
     {
         // generate instructions as you can see above if types are correct
-        me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
+        me::functab->appendInstr( new me::BranchInstr(expr_->getPlace(), trueLabelNode, nextLabelNode) );
         me::functab->appendInstrNode(trueLabelNode);
     }
 
@@ -358,7 +358,7 @@ bool IfElStatement::analyze()
     // check whether expr_ is a boolean expr only if analyze resulted true
     if (result)
     {
-        if ( !expr_->type_->isBool() )
+        if ( !expr_->getType()->isBool() )
         {
             errorf(line_, "the prefacing expression of an if statement must be a boolean expression");
             result = false;
@@ -385,7 +385,7 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate me::BranchInstr if types are correct
-            me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, nextLabelNode) );
+            me::functab->appendInstr( new me::BranchInstr(expr_->getPlace(), trueLabelNode, nextLabelNode) );
             me::functab->appendInstrNode(trueLabelNode);
         }
 
@@ -424,7 +424,7 @@ bool IfElStatement::analyze()
         if (result)
         {
             // generate me::BranchInstr if types are correct
-            me::functab->appendInstr( new me::BranchInstr(expr_->place_, trueLabelNode, falseLabelNode) );
+            me::functab->appendInstr( new me::BranchInstr(expr_->getPlace(), trueLabelNode, falseLabelNode) );
             me::functab->appendInstrNode(trueLabelNode);
         }
 

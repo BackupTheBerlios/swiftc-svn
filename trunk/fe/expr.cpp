@@ -28,6 +28,7 @@
 
 #include "fe/class.h"
 #include "fe/error.h"
+#include "fe/exprlist.h"
 #include "fe/method.h"
 #include "fe/type.h"
 #include "fe/signature.h"
@@ -57,19 +58,36 @@ namespace swift {
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
+ * constructor
  */
 
 Expr::Expr(int line)
-    : Node(line)
-    , neededAsLValue_(false)
-    , type_(0)
+    : TypeNode(0, line)
     , place_(0)
+    , neededAsLValue_(false)
 {}
 
-Expr::~Expr()
+/*
+ * virtual methods
+ */
+
+me::Var* Expr::getPlace()
 {
-    delete type_;
+    return (me::Var*) place_;
+}
+
+/*
+ * further methods
+ */
+
+void Expr::neededAsLValue()
+{
+    neededAsLValue_ = true;
+}
+
+bool Expr::isNeededAsLValue() const
+{
+    return neededAsLValue_;
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +120,7 @@ me::Op::Type Literal::toType() const
 
 bool Literal::analyze()
 {
-    if (neededAsLValue_)
+    if ( isNeededAsLValue() )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -347,7 +365,7 @@ UnExpr::~UnExpr()
 
 bool UnExpr::analyze()
 {
-    if (neededAsLValue_)
+    if ( isNeededAsLValue() )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -359,7 +377,7 @@ bool UnExpr::analyze()
         return false;
     }
 
-    type_ = op_->type_->clone();
+    type_ = op_->getType()->clone();
 
     if (c_ == '&')
         type_ = new Ptr(0, type_);
@@ -377,7 +395,7 @@ bool UnExpr::analyze()
     }
     else if (c_ == '!')
     {
-        if ( !op_->type_->isBool() )
+        if ( !op_->getType()->isBool() )
         {
             errorf(op_->line_, "unary ! not used with a bool");
             return false;
@@ -408,7 +426,7 @@ void UnExpr::genSSA()
             kind = kind_;
     }
 
-    me::functab->appendInstr( new me::AssignInstr(kind, var, op_->place_) );
+    me::functab->appendInstr( new me::AssignInstr(kind, var, op_->getPlace()) );
 }
 
 //------------------------------------------------------------------------------
@@ -455,7 +473,7 @@ std::string BinExpr::getOpString() const
 
 bool BinExpr::analyze()
 {
-    if (neededAsLValue_)
+    if ( isNeededAsLValue() )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -463,12 +481,10 @@ bool BinExpr::analyze()
 
     // return false when syntax is wrong
     if ( !op1_->analyze() | !op2_->analyze() ) // analyze both ops in all cases
-    {
         return false;
-    }
 
-    Ptr* ptr1 = dynamic_cast<Ptr*>(op1_->type_);
-    Ptr* ptr2 = dynamic_cast<Ptr*>(op2_->type_);
+    const Ptr* ptr1 = dynamic_cast<const Ptr*>( op1_->getType() );
+    const Ptr* ptr2 = dynamic_cast<const Ptr*>( op2_->getType() );
 
     if ( ptr1 || ptr2 )
     {
@@ -476,16 +492,16 @@ bool BinExpr::analyze()
         return false;
     }
 
-    swiftAssert( typeid(*op1_->type_) == typeid(BaseType), "must be a BaseType here" );
-    swiftAssert( typeid(*op2_->type_) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*op1_->getType()) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*op2_->getType()) == typeid(BaseType), "must be a BaseType here" );
 
-    BaseType* bt1 = (BaseType*) op1_->type_;
+    const BaseType* bt1 = (const BaseType*) op1_->getType();
     //BaseType* bt2 = (BaseType*) op2_->type_;
 
     // check whether there is an operator which fits
     Signature sig;
-    sig.appendInParam( new Param(Param::ARG, op1_->type_->clone(), 0, 0) );
-    sig.appendInParam( new Param(Param::ARG, op2_->type_->clone(), 0, 0) );
+    sig.appendInParam( new Param(Param::ARG, op1_->getType()->clone(), 0, 0) );
+    sig.appendInParam( new Param(Param::ARG, op2_->getType()->clone(), 0, 0) );
     std::string* opString = operatorToString(kind_);
     Method* method = symtab->lookupMethod(
             bt1->getId(), opString, OPERATOR, &sig, line_);
@@ -495,9 +511,9 @@ bool BinExpr::analyze()
     if (!method)
     {
         errorf( line_, "no operator %c (%s, %s) defined in class %s",
-            c_, op1_->type_->toString().c_str(),
-            op2_->type_->toString().c_str(),
-            op1_->type_->toString().c_str() );
+            c_, op1_->getType()->toString().c_str(),
+            op2_->getType()->toString().c_str(),
+            op1_->getType()->toString().c_str() );
 
         return false;
     }
@@ -535,8 +551,11 @@ void BinExpr::genSSA()
             kind = kind_;
     }
 
-    if ( op1_->type_->isAtomic() )
-        me::functab->appendInstr( new me::AssignInstr(kind, var, op1_->place_, op2_->place_) );
+    if ( op1_->getType()->isAtomic() )
+    {
+        me::functab->appendInstr( 
+                new me::AssignInstr(kind, var, op1_->getPlace(), op2_->getPlace()) );
+    }
     else
         swiftAssert(false, "TODO");
 }
@@ -581,13 +600,13 @@ bool MemberAccess::analyze()
     // pass-through places
     if (!ma)
     {
-        swiftAssert(expr_->place_->type_ == me::Op::R_STACK, "must be a stack location")
-        memPlace_ = (me::MemVar*) expr_->place_;
+        swiftAssert(expr_->getPlace()->type_ == me::Op::R_STACK, "must be a stack location")
+        memPlace_ = (me::MemVar*) expr_->getPlace();
     }
     else
         memPlace_ = ma->memPlace_; // pass-through
 
-    place_ = expr_->place_; // pass-through
+    place_ = expr_->getPlace(); // pass-through
 
     /*
      * In a chain of member accesses there are two special accesses:
@@ -595,8 +614,8 @@ bool MemberAccess::analyze()
      * - the right most one -> right = true
      */
 
-    swiftAssert( typeid(*expr_->type_) == typeid(BaseType), "TODO" );
-    BaseType* exprBT = (BaseType*) expr_->type_;
+    swiftAssert( typeid(*expr_->getType()) == typeid(BaseType), "TODO" );
+    const BaseType* exprBT = (const BaseType*) expr_->getType();
 
     // get type and member var
     const std::string* typeId = exprBT->getId();
@@ -625,10 +644,10 @@ bool MemberAccess::analyze()
         rootStructOffset_ = structOffset_;
 
     // create new place for the right most access if applicable
-    if (!neededAsLValue_ && right_)
+    if ( !isNeededAsLValue()  && right_)
         place_ = type_->createVar();
 
-    if ( right_ && !neededAsLValue_ )
+    if ( right_ && !isNeededAsLValue()  )
         genSSA();
 
     return true;
@@ -639,6 +658,28 @@ void MemberAccess::genSSA()
     me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
     me::functab->appendInstr(load); 
 }
+
+//void MemberAccess::genStores()
+//{
+    //swiftAssert( dynamic_cast<me::Var*>(place_),
+            //"expr_->place must be a me::Reg*" );
+
+    //if ( typeid(*expr_) == typeid(MemberAccess))
+    //{
+        //MemberAccess* ma = (MemberAccess*) expr_;
+
+        //me::Store* store = new me::Store( 
+                //(me::Var*) ma->place_,              // memory variable
+                //(me::Var*) exprList_->expr_->place_,// argument 
+                //ma->rootStructOffset_);             // offset 
+        //me::functab->appendInstr(store);
+    //}
+    //else
+    //{
+        //me::functab->appendInstr( 
+                //new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+    //}
+//}
 
 //------------------------------------------------------------------------------
 
@@ -712,23 +753,20 @@ bool FunctionCall::analyze()
     return true;
 }
 
+// TODO
 void FunctionCall::genSSA()
 {
     size_t numRes = 0;
     if (returnType_)
         numRes = 1;
 
-    typedef std::vector<Expr*> ExprVec;
-    ExprVec exprVec;
-
-    for (ExprList* iter = exprList_; iter != 0; iter = iter->next_)
-        exprVec.push_back(iter->expr_);
+    PlaceList places = exprList_->getPlaceList();
 
     me::CallInstr* call = new me::CallInstr( 
-            numRes, exprVec.size(), *id_, kind_ == 'v' ? true : false );
+            numRes, places.size(), *id_, kind_ == 'v' ? true : false );
 
-    for (size_t i = 0; i < exprVec.size(); ++i)
-        call->arg_[i] = me::Arg( exprVec[i]->place_ );
+    for (size_t i = 0; i < places.size(); ++i)
+        call->arg_[i] = me::Arg( places[i] );
 
     for (size_t i = 0; i < numRes; ++i)
         call->res_[i] = me::Res( (me::Var*) place_, ((me::Var*) place_)->varNr_ );

@@ -1,41 +1,40 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
 #include "fe/tupel.h"
 
 #include "fe/expr.h"
 
 namespace swift {
 
-//------------------------------------------------------------------------------
-
 /*
  * constructor and destructor
  */
 
-Tupel::Tupel(Tupel* next, int line /*= NO_LINE*/)
+Tupel::Tupel(TypeNode* typeNode, Tupel* next, int line /*= NO_LINE*/)
     : Node(line)
-    , next_(next)
+    , typeNode_(typeNode)
 {}
 
 Tupel::~Tupel()
 {
-    if (next_)
-        delete next_;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-DeclTupelElem::DeclTupelElem(Type* type, std::string* id, Tupel* next, int line /*= NO_LINE*/)
-    : Tupel(next, line)
-    , type_(type)
-    , id_(id)
-{}
-
-DeclTupelElem::~DeclTupelElem()
-{
-    delete type_;
+    delete typeNode_;
 
     if (next_)
         delete next_;
@@ -45,47 +44,40 @@ DeclTupelElem::~DeclTupelElem()
  * virtual methods
  */
 
-bool DeclTupelElem::analyze()
+bool Tupel::analyze()
 {
-    bool result = true;
+    Expr* expr = dynamic_cast<Expr*>(typeNode_);
+    if (expr)
+        expr->neededAsLValue();
 
-    // for each expr in this list
-    for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        result &= iter->expr_->analyze();
+    bool result = typeNode_->analyze();
+
+    if (next_)
+        result &= next_->analyze();
 
     return result;
 }
 
-//------------------------------------------------------------------------------
-
 /*
- * constructor and destructor
+ * further methods
  */
 
-ExprTupelElem::ExprTupelElem(Expr* expr, Tupel* next, int line /*= NO_LINE*/)
-    : Tupel(next, line)
-    , expr_(expr)
-{}
-
-ExprTupelElem::~ExprTupelElem()
+TypeList Tupel::getTypeList() const
 {
-    delete expr_;
+    TypeList result;
 
-    if (next_)
-        delete next_;
+    for (const Tupel* iter = this; iter != 0; iter = iter->next_)
+        result.push_back( iter->typeNode_->getType() );
+
+    return result;
 }
 
-/*
- * virtual methods
- */
-
-bool ExprTupelElem::analyze()
+PlaceList Tupel::getPlaceList()
 {
-    bool result = true;
+    PlaceList result;
 
-    // for each expr in this list
-    for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        result &= iter->expr_->analyze();
+    for (Tupel* iter = this; iter != 0; iter = iter->next_)
+        result.push_back( iter->typeNode_->getPlace() );
 
     return result;
 }

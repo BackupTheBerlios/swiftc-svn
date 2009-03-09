@@ -22,13 +22,16 @@
 #include <iostream>
 
 #include "fe/class.h"
+#include "fe/decl.h"
 #include "fe/error.h"
 #include "fe/expr.h"
+#include "fe/exprlist.h"
 #include "fe/lexer.h"
 #include "fe/method.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
+#include "fe/tupel.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -96,6 +99,7 @@ using namespace swift;
 
     swift::Class*       class_;
     swift::ClassMember* classMember_;
+    swift::Decl*        decl_;
     swift::Definition*  definition_;
     swift::Expr*        expr_;
     swift::ExprList*    exprList_;
@@ -168,6 +172,7 @@ using namespace swift;
 
 %type <int_>        method_qualifier operator
 %type <type_>       type
+%type <decl_>       decl
 
 %type <definition_> class_definition
 %type <classMember_> class_body class_member
@@ -355,11 +360,10 @@ statement_list
     ;
 
 statement
-    : expr EOL                              { $$ = new ExprStatement($1, currentLine); }
-    | tupel '=' expr_list_not_empty EOL     { $$ = new AssignStatement('=', $1, $3, currentLine) }
-
-    | type ID EOL                           { $$ = new Declaration($1, $2, getKeyLine()); }
-    /*| type ID '=' expr_list_not_empty EOL   { $$ = new Declaration($1, $2, $4, getKeyLine()); }*/
+    : expr EOL                          { $$ = new ExprStatement($1, currentLine); }
+    /* TODO | tupel EOL                         { $$ = new DeclStatement($1, getKeyLine()); }*/
+    | decl EOL                          { $$ = new DeclStatement($1, getKeyLine()); }
+    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine) }
 
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine); }
 
@@ -466,11 +470,15 @@ expr_list_not_empty
     | INOUT expr ',' expr_list_not_empty { $$ = new ExprList(INOUT, $2, $4, currentLine); }
     ;
 
+decl
+    : type ID { $$ = new Decl($1, $2); }
+    ;
+
 tupel
-    : expr              { $$ = new ExprTupelElem($1,  0, currentLine); }
-    | expr ',' tupel    { $$ = new ExprTupelElem($1, $3, currentLine); }
-    | type ID           { $$ = new DeclTupelElem($1, $2,  0, currentLine); }
-    | type ID ',' tupel { $$ = new DeclTupelElem($1, $2, $4, currentLine); }
+    : expr           { $$ = new Tupel($1,  0, currentLine); }
+    | decl           { $$ = new Tupel($1,  0, currentLine); }
+    | expr ',' tupel { $$ = new Tupel($1, $3, currentLine); }
+    | decl ',' tupel { $$ = new Tupel($1, $3, currentLine); }
     ;
 
 type

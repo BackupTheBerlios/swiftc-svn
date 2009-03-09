@@ -17,8 +17,10 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_TUPEL_H
-#define SWIFT_TUPEL_H
+#ifndef SWIFT_DECL_H
+#define SWIFT_DECL_H
+
+#include <string>
 
 #include "fe/syntaxtree.h"
 
@@ -28,18 +30,12 @@ namespace swift {
  * forward declarations
  */
 
-class Expr;
+class Local;
+class Type;
 
 //------------------------------------------------------------------------------
 
-/**
- * @brief This class represents a comma sperated list of Expr instances used in
- * function/method/constructor calls.
- *
- * This is actually not a Expr, but belongs to expressions
- * so it is in this file.
- */
-class Tupel : public Node
+class Decl : public TypeNode
 {
 public:
 
@@ -47,21 +43,15 @@ public:
      * constructor and destructor
      */
 
-    Tupel(TypeNode* typeNode, Tupel* next, int line = NO_LINE);
-    virtual ~Tupel();
+    Decl(Type* type, std::string* id, int line = NO_LINE);
+    virtual ~Decl();
 
     /*
      * virtual methods
      */
 
+    virtual me::Op* getPlace();
     virtual bool analyze();
-
-    /*
-     * further methods
-     */
-
-    PlaceList getPlaceList();
-    TypeList getTypeList() const;
 
 private:
 
@@ -69,12 +59,10 @@ private:
      * data
      */
 
-    TypeNode* typeNode_;
-    Tupel* next_; ///< Next element in the list.
+    std::string* id_;
+    Local* local_;
 };
-
-//------------------------------------------------------------------------------
 
 } // namespace swift
 
-#endif // SWIFT_TUPEL_H
+#endif // SWIFT_DECL_H

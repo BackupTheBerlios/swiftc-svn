@@ -22,14 +22,25 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "utils/assert.h"
 #include "fe/parser.h"
 
+/*
+ * forward declaration
+ */
+
+namespace me {
+    class Op;
+}
+
 namespace swift {
 
-// forward declaration
-struct Class;
+class Class;
+
+typedef std::vector<me::Op*> PlaceList;
+typedef std::vector<const Type*> TypeList;
 
 //------------------------------------------------------------------------------
 
@@ -69,7 +80,7 @@ struct Symbol : public Node
      */
 
     Symbol(std::string* id, Symbol* parent, int line = NO_LINE);
-    ~Symbol();
+    virtual ~Symbol();
 
     /*
      * further methods
@@ -81,6 +92,41 @@ struct Symbol : public Node
      * Returns the full name of the symbol.
      */
     std::string getFullName() const;
+};
+
+//------------------------------------------------------------------------------
+
+class TypeNode : public Node
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    TypeNode(Type* type, int line = NO_LINE);
+    virtual ~TypeNode();
+
+    /*
+     * virtual methods
+     */
+    
+    virtual me::Op* getPlace() = 0;
+    virtual bool analyze() = 0;
+
+    /*
+     * further methods
+     */
+
+    const Type* getType() const;
+
+protected:
+
+    /*
+     * data
+     */
+
+    Type* type_;
 };
 
 //------------------------------------------------------------------------------

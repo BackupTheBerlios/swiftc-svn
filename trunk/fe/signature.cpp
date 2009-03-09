@@ -28,6 +28,7 @@
 #include "fe/parser.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
+#include "fe/type.h"
 #include "fe/var.h"
 
 #include "me/functab.h"
@@ -64,6 +65,44 @@ bool Signature::analyze() const
     // check each outgoing param/result
     for (size_t i = 0; i < out_.size(); ++i)
         result &= out_[i]->validateAndCreateVar();
+
+    return result;
+}
+
+bool Signature::check(const TypeList& in) const
+{
+    // if the sizes do not match the Signature is obviously different
+    if ( in_.size() != in.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    // check each param
+    for (size_t i = 0; result && i < in_.size(); ++i)
+        result = in_[i]->getType()->check( in[i] );
+
+    return result;
+}
+
+bool Signature::check(const TypeList& in, const TypeList& out) const
+{
+    bool result = check(in);
+
+    if (!result)
+        return false;
+
+    /*
+     * now check the outgoing part
+     */
+
+    // if the sizes do not match the Signature is obviously different
+    if ( out_.size() != out.size() )
+        return false;
+
+    // check each result
+    for (size_t i = 0; result && i < out_.size(); ++i)
+        result = out_[i]->getType()->check( out[i] );
 
     return result;
 }

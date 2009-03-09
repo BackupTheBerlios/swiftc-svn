@@ -17,35 +17,47 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_PARSER_H
-#define SWIFT_PARSER_H
+#include "fe/decl.h"
 
-extern "C" int swiftparse();
+#include "fe/symtab.h"
+#include "fe/type.h"
 
 namespace swift {
 
-// it is important to declare all union members of YYSTYPE here
-class Class;
-class ClassMember;
-class Decl;
-class Definition;
-class Expr;
-class ExprList;
-class MemberVar;
-class Method;
-class Module;
-class Param;
-class Statement;
-class Tupel;
-class Type;
+/*
+ * constructor and destructor
+ */
 
-//------------------------------------------------------------------------------
+Decl::Decl(Type* type, std::string* id, int line /*= NO_LINE*/)
+    : TypeNode(type, line)
+    , id_(id)
+    , local_(0) // This will be created in analyze
+{}
 
-std::string* operatorToString(int _operator);
+Decl::~Decl()
+{
+    delete local_;
+}
+
+/*
+ * further methods
+ */
+
+me::Op* Decl::getPlace()
+{
+    return local_->getMeVar();
+}
+
+bool Decl::analyze()
+{
+    // check whether this type exists
+    bool result = type_->validate();
+
+    // insert the local in every case otherwise memory leaks can occur
+    local_ = symtab->createNewLocal(type_, id_, line_);
+
+    return result;
+}
+
 
 } // namespace swift
-
-// include auto generated parser header before tokens
-#include "parser.tab.hpp"
-
-#endif // SWIFT_PARSER_H

@@ -314,7 +314,9 @@ class Foo
         int i = 5
 
         uint ui = 7
-        real r, ui = foobar(
+        real r, ui = (bla + blub)[7].foo(5, 6, 7, inout i)
+
+        Foo f, g = t, u, inout i
     end
 end
 

@@ -39,7 +39,7 @@ class Tupel;
 /**
  * @brief This class represents a Statement. 
  *
- * It is either a Declaration, an ExprStatement, an IfElStatement 
+ * It is either a DeclStatement, an ExprStatement, an IfElStatement 
  * or an AssignStatement.
  */
 struct Statement : public Node
@@ -90,30 +90,33 @@ struct ExprStatement : public Statement
 //------------------------------------------------------------------------------
 
 /**
- * @brief This is Declaration, consisting of a Type, an Identifier and an ExprList.
+ * @brief This is DeclStatement, consisting of a Type, an Identifier and an ExprList.
  *
  * Furthermore it will create a Local which will be inserted in the SymbolTable.
  */
-struct Declaration : public Statement
+class DeclStatement : public Statement
 {
-    Type* type_;
-    std::string* id_;
-
-    /// Since this class created the Local it is responsible to delete it again.
-    Local* local_;
-
+public:
     /*
      * constructor and destructor
      */
 
-    Declaration(Type* type, std::string* id, int line = NO_LINE);
-    virtual ~Declaration();
+    DeclStatement(Decl* decl, int line = NO_LINE);
+    virtual ~DeclStatement();
 
     /*
      * further methods
      */
 
     virtual bool analyze();
+
+private:
+
+    /*
+     * data
+     */
+
+    Decl* decl_;
 };
 
 //------------------------------------------------------------------------------
@@ -147,6 +150,7 @@ struct AssignStatement : public Statement
      */
 
     virtual bool analyze();
+    void genConstructorCall(Class* _class, Method* method);
     void genSSA();
 };
 

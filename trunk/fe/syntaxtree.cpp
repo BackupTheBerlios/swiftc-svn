@@ -27,6 +27,7 @@
 
 #include "fe/module.h"
 #include "fe/symtab.h"
+#include "fe/type.h"
 
 #include "me/ssa.h"
 
@@ -92,6 +93,31 @@ std::string Symbol::getFullName() const
     }
 
     return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+TypeNode::TypeNode(Type* type, int line /*= NO_LINE*/)
+    : Node(line)
+    , type_(type)
+{}
+
+TypeNode::~TypeNode()
+{
+    delete type_;
+}
+
+/*
+ * further methods
+ */
+
+const Type* TypeNode::getType() const
+{
+    return type_;
 }
 
 //------------------------------------------------------------------------------

@@ -29,17 +29,17 @@
  */
 
 namespace me {
-    struct Struct;
-    struct StructOffset;
-    struct Member;
-    struct MemVar;
-    struct Var;
+    class Struct;
+    class StructOffset;
+    class Member;
+    class MemVar;
+    class Var;
 }
 
 namespace swift {
 
-struct Expr;
-struct Var;
+class Expr;
+class Var;
 
 //------------------------------------------------------------------------------
 
@@ -49,33 +49,42 @@ struct Var;
  * All expressions inherit from this class. Implement \a analyze in order to
  * implement the syntax checking.
  */
-struct Expr : public Node
+class Expr : public TypeNode
 {
-    bool    neededAsLValue_;
-    Type*   type_;
-
-    /// This me::Op knows where the result is stored.
-    me::Op* place_;
+public:
 
     /*
-     * constructor and destructor
+     * constructor
      */
 
     Expr(int line);
-    virtual ~Expr();
+
+    /*
+     * virtual methods
+     */
+
+    virtual void genSSA() = 0;
+    virtual me::Var* getPlace();
 
     /*
      * further methods
      */
 
-    /** 
-     * @brief Implement this in order to implenent syntax checking.
-     * 
-     * @return true -> syntax corrent, false oterwise
-     */
-    virtual bool analyze() = 0;
-    virtual void genSSA() = 0;
+    void neededAsLValue();
+    bool isNeededAsLValue() const;
 
+protected:
+
+    /*
+     * data
+     */
+
+    /// This me::Op knows where the result is stored.
+    me::Op* place_;
+
+private:
+
+    bool  neededAsLValue_;
 };
 
 //------------------------------------------------------------------------------
@@ -271,22 +280,9 @@ struct MemberAccess : public Expr
 
 //------------------------------------------------------------------------------
 
-struct FunctionCall : public Expr
+class FunctionCall : public Expr
 {
-    union
-    {
-        Expr* expr_;
-        Type* returnType_;
-    };
-
-    std::string*    id_;
-    ExprList*       exprList_;
-
-    /**
-     * Is either 'c' for c_call, 'v' for vc_call, ':' for readers,
-     * '.' for writers or routines or '0' for global routines
-     */
-    char kind_;
+public:
 
     /*
      * constructor and destructor
@@ -306,18 +302,36 @@ struct FunctionCall : public Expr
             char kind, 
             int line = NO_LINE);
 
-    ~FunctionCall();
+    virtual ~FunctionCall();
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool analyze();
     virtual void genSSA();
+
+private:
+
+    /*
+     * data
+     */
+
+    union
+    {
+        Expr* expr_;
+        Type* returnType_;
+    };
+
+    std::string* id_;
+    ExprList* exprList_;
+
+    /**
+     * Is either 'c' for c_call, 'v' for vc_call, ':' for readers,
+     * '.' for writers or routines or '0' for global routines
+     */
+    char kind_;
 };
-
-//------------------------------------------------------------------------------
-
 
 } // namespace swift
 
