@@ -296,21 +296,36 @@ Method* SymbolTable::lookupMethod(const std::string* classId,
 }
 
 /*
-    further methods
-*/
+ * current getters
+ */
 
 Scope* SymbolTable::currentScope()
 {
-    Scope* s = scopeStack_.top();
-    return s;
+    return scopeStack_.top();
 }
 
-Local* SymbolTable::createNewLocal(const Type* type, std::string* id, int line /*= NO_LINE*/)
+Class* SymbolTable::currentClass()
+{
+    return class_;
+}
+
+Method* SymbolTable::currentMethod()
+{
+    return method_;
+}
+
+/*
+ * further methods
+ */
+
+std::pair<Local*, bool> SymbolTable::createNewLocal(const Type* type, 
+                                                    std::string* id, 
+                                                    int line /*= NO_LINE*/)
 {
     Local* local = new Local(type->clone(), type->createVar(id), id, line);
-    symtab->insert(local);
+    bool b = symtab->insert(local);
 
-    return local;
+    return std::make_pair(local, b);
 }
 
 } // namespace swift

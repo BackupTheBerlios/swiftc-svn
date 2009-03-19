@@ -91,6 +91,7 @@ ADD_EXECUTABLE (swift
     fe/error.cpp
     fe/expr.cpp
     fe/exprlist.cpp
+    fe/functioncall.cpp
     fe/method.cpp
     fe/module.cpp
     fe/scope.cpp

@@ -30,7 +30,9 @@ namespace swift {
  * forward declarations
  */
 
-struct Class;
+class BaseType;
+class Class;
+class Ptr;
 
 //------------------------------------------------------------------------------
 
@@ -71,6 +73,9 @@ public:
     /// Checks whether this Type is the builtin bool Type
     virtual bool isBool() const;
 
+    virtual const BaseType* getFirstBaseType() const = 0;
+    virtual const Ptr* derefToInnerstPtr() const = 0;
+
     virtual std::string toString() const = 0;
 
 protected:
@@ -81,7 +86,6 @@ protected:
 
     int modifier_;
 };
-
 
 //------------------------------------------------------------------------------
 
@@ -107,6 +111,8 @@ public:
     virtual bool isAtomic() const;
     virtual bool isBool() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
+    virtual const BaseType* getFirstBaseType() const;
+    virtual const Ptr* derefToInnerstPtr() const;
     virtual std::string toString() const;
 
     /*
@@ -147,7 +153,7 @@ public:
      * constructor and destructor
      */
      
-    Container(int modifier, Type* type, int line = NO_LINE);
+    Container(int modifier, Type* innerType, int line = NO_LINE);
     ~Container();
 
     /*
@@ -168,7 +174,7 @@ protected:
      * data
      */
 
-    Type* type_;
+    Type* innerType_;
 };
 
 
@@ -182,7 +188,7 @@ public:
      * constructor and destructor
      */
 
-    Ptr(int modifier, Type* type, int line = NO_LINE);
+    Ptr(int modifier, Type* innerType, int line = NO_LINE);
 
     /* 
      * virtual methods
@@ -192,6 +198,8 @@ public:
     virtual bool check(const Type* type) const;
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
+    virtual const BaseType* getFirstBaseType() const;
+    virtual const Ptr* derefToInnerstPtr() const;
     virtual std::string toString() const;
 };
 

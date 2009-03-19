@@ -198,8 +198,7 @@ Struct::Struct()
 
 void Struct::append(Member* member)
 {
-    swiftAssert( memberMap_.find(member->nr_) == memberMap_.end(),
-            "already inserted" );
+    swiftAssert( !memberMap_.contains(member->nr_), "already inserted" );
 
     members_.push_back(member);
     memberMap_[member->nr_] = member;

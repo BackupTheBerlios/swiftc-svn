@@ -52,13 +52,13 @@ private:
     int spillCounter_;
 
     /// Var -> Mem
-    typedef std::map<Var*, Var*> SpillMap;
+    typedef Map<Var*, Var*> SpillMap;
 
     /// This set knows for each spilled var the first memory var. 
     SpillMap spillMap_;
 
     /// BBNode -> VarSet
-    typedef std::map<BBNode*, VarSet> BB2VarSet;
+    typedef Map<BBNode*, VarSet> BB2VarSet;
 
     /** 
      * Find the set of registers of a corresponding basic block which is going

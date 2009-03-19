@@ -20,7 +20,7 @@
 #ifndef ME_STRUCT_H
 #define ME_STRUCT_H
 
-#include <map>
+#include "utils/map.h"
 
 #include "me/op.h"
 
@@ -164,7 +164,7 @@ struct Struct : public Member
     Members members_;
 
     /// All members sorted by global name number.
-    typedef std::map<int, Member*> MemberMap;
+    typedef Map<int, Member*> MemberMap;
     MemberMap memberMap_;
 
     /*

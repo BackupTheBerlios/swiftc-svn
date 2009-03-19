@@ -36,7 +36,10 @@ Decl::Decl(Type* type, std::string* id, int line /*= NO_LINE*/)
 
 Decl::~Decl()
 {
-    delete local_;
+    if (local_)
+        delete local_;
+    else
+        delete id_;
 }
 
 /*
@@ -51,13 +54,22 @@ me::Op* Decl::getPlace()
 bool Decl::analyze()
 {
     // check whether this type exists
-    bool result = type_->validate();
+    if ( !type_->validate() )
+        return false;
 
-    // insert the local in every case otherwise memory leaks can occur
-    local_ = symtab->createNewLocal(type_, id_, line_);
+    std::pair<Local*, bool> p = symtab->createNewLocal(type_, id_, line_);
+    local_ = p.first;
 
-    return result;
+    return p.second;
 }
 
+/*
+ * further methods
+ */
+
+std::string Decl::toString() const
+{
+    return local_->toString() + *id_;
+}
 
 } // namespace swift

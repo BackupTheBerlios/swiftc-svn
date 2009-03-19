@@ -179,7 +179,7 @@ void CFG::calcCFG()
                 int varNr = var->varNr_;
                 currentBB->value_->vars_[varNr] = var;
 
-                if ( firstOccurance_.find(varNr) == firstOccurance_.end() )
+                if ( !firstOccurance_.contains(varNr) )
                     firstOccurance_[varNr] = currentBB;
             }
         }

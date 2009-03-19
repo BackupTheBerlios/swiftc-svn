@@ -20,6 +20,7 @@
 
 #include "fe/error.h"
 #include "fe/expr.h"
+#include "fe/functioncall.h"
 
 namespace swift {
 
@@ -27,7 +28,7 @@ namespace swift {
  * constructor and destructor
  */
 
-ExprList::ExprList(int modifier, Expr* expr, ExprList* next /*= 0*/, int line /*= NO_LINE*/)
+ExprList::ExprList(int modifier, Expr* expr, ExprList* next, int line /*= NO_LINE*/)
     : Node(line)
     , modifier_(modifier)
     , expr_(expr)

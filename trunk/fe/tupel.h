@@ -69,8 +69,8 @@ private:
      * data
      */
 
-    TypeNode* typeNode_;
-    Tupel* next_; ///< Next element in the list.
+    TypeNode* typeNode_; ///< Actual data.
+    Tupel* next_;        ///< Next element in the list, 0 if this is the last one.
 };
 
 //------------------------------------------------------------------------------

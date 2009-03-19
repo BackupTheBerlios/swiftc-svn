@@ -145,7 +145,7 @@ bool AssignStatement::analyze()
 
     if ( argTypeList.size() > 1 && resTypeList.size() > 1 )
     {
-        errorf(line_, "either the left-hand side or the right-hand side of an" 
+        errorf(line_, "either the left-hand side or the right-hand side of an "
                 "assignment statement must have exactly one element");
 
         return false;

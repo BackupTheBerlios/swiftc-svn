@@ -172,6 +172,18 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
     return var;
 }
 
+const BaseType* BaseType::getFirstBaseType() const
+{
+    return this;
+}
+
+
+const Ptr* BaseType::derefToInnerstPtr() const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
+}
+
 std::string BaseType::toString() const
 {
     return *id_;
@@ -244,14 +256,14 @@ void BaseType::destroyTypeMap()
  * constructor and destructor
  */
 
-Container::Container(int modifier, Type* type, int line /*= NO_LINE*/)
+Container::Container(int modifier, Type* innerType, int line /*= NO_LINE*/)
     : Type(modifier, line)
-    , type_(type)
+    , innerType_(innerType)
 {}
 
 Container::~Container()
 {
-    delete type_;
+    delete innerType_;
 }
 
 /*
@@ -260,7 +272,7 @@ Container::~Container()
 
 bool Container::validate() const
 {
-    return type_->validate();
+    return innerType_->validate();
 }
 
 /*
@@ -269,7 +281,7 @@ bool Container::validate() const
 
 Type* Container::getInnerType()
 {
-    return type_;
+    return innerType_;
 }
 
 //------------------------------------------------------------------------------
@@ -278,13 +290,13 @@ Type* Container::getInnerType()
  * constructor
  */
 
-Ptr::Ptr(int modifier, Type* type, int line /*= NO_LINE*/)
-    : Container(modifier, type, line)
+Ptr::Ptr(int modifier, Type* innerType, int line /*= NO_LINE*/)
+    : Container(modifier, innerType, line)
 {}
 
 Ptr* Ptr::clone() const
 {
-    return new Ptr(modifier_, type_->clone(), NO_LINE);
+    return new Ptr(modifier_, innerType_->clone(), NO_LINE);
 }
 
 /*
@@ -298,7 +310,7 @@ bool Ptr::check(const Type* type) const
     if (!ptr)
         return false;
     
-    return type_->check(ptr);
+    return innerType_->check(ptr);
 }
 
 me::Op::Type Ptr::toMeType() const
@@ -315,10 +327,26 @@ me::Var* Ptr::createVar(const std::string* id /*= 0*/) const
 #endif // SWIFT_DEBUG
 }
 
+const BaseType* Ptr::getFirstBaseType() const
+{
+    return innerType_->getFirstBaseType();
+}
+
+const Ptr* Ptr::derefToInnerstPtr() const
+{
+    if ( typeid(*innerType_) == typeid(Ptr) )
+    {
+        // TODO deref
+        return innerType_->derefToInnerstPtr();
+    }
+    else
+        return this;
+}
+
 std::string Ptr::toString() const
 {
     std::ostringstream oss;
-    oss << "ptr{" << type_->toString() << '}';
+    oss << "ptr{" << innerType_->toString() << '}';
 
     return oss.str();
 }

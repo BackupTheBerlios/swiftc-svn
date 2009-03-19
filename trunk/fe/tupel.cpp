@@ -30,6 +30,7 @@ namespace swift {
 Tupel::Tupel(TypeNode* typeNode, Tupel* next, int line /*= NO_LINE*/)
     : Node(line)
     , typeNode_(typeNode)
+    , next_(next)
 {}
 
 Tupel::~Tupel()

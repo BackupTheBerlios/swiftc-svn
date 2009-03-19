@@ -70,6 +70,8 @@ INTEGER     {DIGIT}+
     return yytext[0];
 }
 
+:: { return DOUBLE_COLON; }
+
 mod { return MOD_OP; }
 div { return DIV_OP; }
 ==  { return EQ_OP; }

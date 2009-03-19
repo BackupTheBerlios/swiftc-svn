@@ -280,59 +280,6 @@ struct MemberAccess : public Expr
 
 //------------------------------------------------------------------------------
 
-class FunctionCall : public Expr
-{
-public:
-
-    /*
-     * constructor and destructor
-     */
-
-    FunctionCall(
-            Expr* expr, 
-            std::string* id, 
-            ExprList* exprList, 
-            char kind, 
-            int line = NO_LINE);
-
-    FunctionCall(
-            Type* returnType, 
-            std::string* id, 
-            ExprList* exprList, 
-            char kind, 
-            int line = NO_LINE);
-
-    virtual ~FunctionCall();
-
-    /*
-     * virtual methods
-     */
-
-    virtual bool analyze();
-    virtual void genSSA();
-
-private:
-
-    /*
-     * data
-     */
-
-    union
-    {
-        Expr* expr_;
-        Type* returnType_;
-    };
-
-    std::string* id_;
-    ExprList* exprList_;
-
-    /**
-     * Is either 'c' for c_call, 'v' for vc_call, ':' for readers,
-     * '.' for writers or routines or '0' for global routines
-     */
-    char kind_;
-};
-
 } // namespace swift
 
 #endif // SWIFT_EXPR_H

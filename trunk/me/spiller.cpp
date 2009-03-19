@@ -202,7 +202,7 @@ Var* Spiller::insertSpill(BBNode* bbNode, Var* var, InstrNode* appendTo)
     {
         // yes -> so create new entry
         spillMap_.insert( std::make_pair(var, mem) );
-        swiftAssert( spills_.find(var) == spills_.end(), "must be found here" );
+        swiftAssert( !spills_.contains(var), "must not be found here" );
 
         VarDefUse* vdu = new VarDefUse();
         vdu->defs_.append( DefUse(mem, spillNode, bbNode) ); // newly created definition
@@ -211,7 +211,7 @@ Var* Spiller::insertSpill(BBNode* bbNode, Var* var, InstrNode* appendTo)
     else
     {
         // nope -> so use the one already there
-        swiftAssert( spills_.find(var) != spills_.end(), "must be found here" );
+        swiftAssert( spills_.contains(var), "must be found here" );
         VarDefUse* vdu = spills_.find(var)->second;
         vdu->defs_.append( DefUse(mem, spillNode, bbNode) ); // newly created definition
     }
@@ -224,7 +224,7 @@ Var* Spiller::insertSpill(BBNode* bbNode, Var* var, InstrNode* appendTo)
 void Spiller::insertReload(BBNode* bbNode, Var* var, InstrNode* appendTo)
 {
     swiftAssert( var->typeCheck(typeMask_), "wrong var type" );
-    swiftAssert( spillMap_.find(var) != spillMap_.end(), "must be in the spillMap_" )
+    swiftAssert( spillMap_.contains(var), "must be in the spillMap_" )
 
     Var* mem = spillMap_[var];
     swiftAssert( mem->isSpilled(), "must be a memory var" );
@@ -448,7 +448,7 @@ void Spiller::spill(BBNode* bbNode)
      */
     VarSet inVars;
 
-    swiftAssert( in_.find(bbNode) == in_.end(), "already inserted" );
+    swiftAssert( !in_.contains(bbNode), "already inserted" );
     VarSet& inB = in_.insert( std::make_pair(bbNode, VarSet()) ).first->second;
     DistanceBag currentlyInRegs;
 
@@ -620,7 +620,7 @@ void Spiller::spill(BBNode* bbNode)
     // put in remaining vars from inVars to inB
     inB.insert( inVars.begin(), inVars.end() );
     
-    swiftAssert( out_.find(bbNode) == out_.end(), "already inserted" );
+    swiftAssert( !out_.contains(bbNode), "already inserted" );
     VarSet& outB = out_.insert( std::make_pair(bbNode, VarSet()) ).first->second;
 
     DISTANCEBAG_EACH(varIter, currentlyInRegs)
@@ -848,7 +848,7 @@ bool isSpilled(Var* var, BBNode* bbNode)
 
 void Spiller::insertSpillIfNecessarry(Var* var, BBNode* bbNode)
 {
-    if ( spillMap_.find(var) != spillMap_.end() )
+    if ( spillMap_.contains(var) )
     {
         // -> in this case we need to check whether we have a dominating spill
 

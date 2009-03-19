@@ -49,7 +49,7 @@ public:
      * constructor and destructor
      */
 
-    ExprList(int modifier, Expr* expr, ExprList* next = 0, int line = NO_LINE);
+    ExprList(int modifier, Expr* expr, ExprList* next, int line = NO_LINE);
     virtual ~ExprList();
 
     /*
@@ -74,8 +74,8 @@ private:
      */
 
     int modifier_;   ///< \a INOUT or 0 if no modifier is used.
-    Expr* expr_;     ///< the Expr owned by this instance
-    ExprList* next_; ///< next element in the list
+    Expr* expr_;     ///< the Expr owned by this instance.
+    ExprList* next_; ///< next element in the list, 0 if this is the last one.
 };
 
 } // namespace swift

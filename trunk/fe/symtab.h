@@ -84,8 +84,6 @@ struct SymbolTable
     void insertRes(Param* param);
     bool insert(Local* local);
 
-    void insertLocalByVarNr(Local* local);
-
     /*
      * enter and leave methods
      */
@@ -140,11 +138,19 @@ struct SymbolTable
                          int line);
 
     /*
-     * further methods
+     * current getters
      */
 
     /// Returns the current Scope.
     Scope* currentScope();
+
+    Class* currentClass();
+    Method* currentMethod();
+
+
+    /*
+     * further methods
+     */
 
     /**
      * Creates a new Local with Type \p type, \p id and an optional \p line
@@ -154,7 +160,9 @@ struct SymbolTable
      * @param id Identifier the new Local should have.
      * @param line An optional line number the Local should have.
      */
-    Local* createNewLocal(const Type* type, std::string* id, int line = NO_LINE);
+    std::pair<Local*, bool> createNewLocal(const Type* type, 
+                                           std::string* id, 
+                                           int line = NO_LINE);
 };
 
 typedef SymbolTable SymTab;

@@ -20,10 +20,10 @@
 #ifndef ME_CFG_H
 #define ME_CFG_H
 
-#include <map>
 #include <stack>
 
 #include "utils/graph.h"
+#include "utils/map.h"
 
 #include "me/basicblock.h"
 
@@ -65,7 +65,7 @@ struct CFG : public Graph<BasicBlock>
      */
     LabelNode2BBNodeMap labelNode2BBNode_;
 
-    typedef std::map<int, BBNode*> FirstOccurance;
+    typedef Map<int, BBNode*> FirstOccurance;
     FirstOccurance firstOccurance_;
 
     /*

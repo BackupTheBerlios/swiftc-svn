@@ -20,10 +20,9 @@
 #ifndef ME_DEFUSE_H
 #define ME_DEFUSE_H
 
-#include <map>
-
 #include "utils/list.h"
 #include "utils/graph.h"
+#include "utils/map.h"
 
 #include "me/basicblock.h"
 #include "me/forward.h"
@@ -70,7 +69,7 @@ struct VarDefUse
 //------------------------------------------------------------------------------
 
 /// Keeps vars with their definitions und uses.
-typedef std::map<Var*, VarDefUse*> VDUMap;
+typedef Map<Var*, VarDefUse*> VDUMap;
 
 #define VDUMAP_EACH(iter, vdus) \
     for (VDUMap::iterator (iter) = (vdus).begin(); (iter) != (vdus).end(); ++(iter))

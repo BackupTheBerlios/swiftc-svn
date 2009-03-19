@@ -17,58 +17,22 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_DECL_H
-#define SWIFT_DECL_H
+#ifndef SWIFT_MAP_H
+#define SWIFT_MAP_H
 
-#include <string>
+#include <algorithm>
+#include <map>
+#include <vector>
 
-#include "fe/syntaxtree.h"
-
-namespace swift {
-
-/*
- * forward declarations
- */
-
-class Local;
-class Type;
-
-//------------------------------------------------------------------------------
-
-class Decl : public TypeNode
+template<class Key, class Value>
+class Map : public std::map<Key, Value>
 {
 public:
 
-    /*
-     * constructor and destructor
-     */
-
-    Decl(Type* type, std::string* id, int line = NO_LINE);
-    virtual ~Decl();
-
-    /*
-     * virtual methods
-     */
-
-    virtual me::Op* getPlace();
-    virtual bool analyze();
-
-    /*
-     * further methods
-     */
-
-    std::string toString() const;
-
-private:
-
-    /*
-     * data
-     */
-
-    std::string* id_;
-    Local* local_;
+    inline bool contains(const Key& key) const
+    {
+        return find(key) != this->end();
+    }
 };
 
-} // namespace swift
-
-#endif // SWIFT_DECL_H
+#endif // SWIFT_MAP_H

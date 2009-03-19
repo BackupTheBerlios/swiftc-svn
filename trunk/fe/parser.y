@@ -26,6 +26,7 @@
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/exprlist.h"
+#include "fe/functioncall.h"
 #include "fe/lexer.h"
 #include "fe/method.h"
 #include "fe/statement.h"
@@ -135,6 +136,7 @@ using namespace swift;
 %token READER WRITER ROUTINE OPERATOR
 
 %token ARROW
+%token DOUBLE_COLON
 
 // constructor / destructor
 %token CREATE DESTROY
@@ -402,8 +404,8 @@ add_expr
     | add_expr '-' mul_expr { $$ = new BinExpr('-', $1, $3, currentLine); }
     ;
 
-mul_expr:
-      un_expr               { $$ = $1; }
+mul_expr
+    : un_expr               { $$ = $1; }
     | mul_expr '*' un_expr  { $$ = new BinExpr('*', $1, $3, currentLine); }
     | mul_expr '/' un_expr  { $$ = new BinExpr('/', $1, $3, currentLine); }
     ;
@@ -419,17 +421,35 @@ un_expr
 
 postfix_expr
     : primary_expr                          { $$ = $1; }
+
+    /* 
+        member access 
+    */
     | postfix_expr '.' ID                   { $$ = new MemberAccess($1, $3, currentLine); }
     | '.' ID                                { $$ = new MemberAccess( 0, $2, currentLine); }
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, '.', currentLine); }
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new FunctionCall($1, $3, $5, ':', currentLine); }
-    |  C_CALL type ID '(' expr_list ')'     { $$ = new FunctionCall($2, $3, $5, 'c', currentLine); }
-    | VC_CALL type ID '(' expr_list ')'     { $$ = new FunctionCall($2, $3, $5, 'v', currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new FunctionCall((Type*) 0, $2, $4, 'c', currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new FunctionCall((Type*) 0, $2, $4, 'v', currentLine); }
-    | ID '(' expr_list ')'                  { $$ = new FunctionCall((Expr*) 0, $1, $3,   0, currentLine); }
-    | '.' ID '(' expr_list ')'              { $$ = new FunctionCall((Expr*) 0, $2, $4, '.', currentLine); }
-    | ':' ID '(' expr_list ')'              { $$ = new FunctionCall((Expr*) 0, $2, $4, ':', currentLine); }
+
+    /* 
+        c_call 
+    */
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, 'c', currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, 'v', currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, 'c', currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, 'v', currentLine); }
+
+    /* 
+        routines 
+    */
+    |                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3,            0, currentLine); }
+    |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, DOUBLE_COLON, currentLine); }
+    | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, DOUBLE_COLON, currentLine); }
+
+    /* 
+        methods 
+    */
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, '.', currentLine); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, ':', currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, '.', currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, ':', currentLine); }
     ;
 
 primary_expr
@@ -471,7 +491,7 @@ expr_list_not_empty
     ;
 
 decl
-    : type ID { $$ = new Decl($1, $2); }
+    : type ID { $$ = new Decl($1, $2, currentLine); }
     ;
 
 tupel
