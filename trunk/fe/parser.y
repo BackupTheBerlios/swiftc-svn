@@ -132,6 +132,8 @@ using namespace swift;
 // parameter qualifier
 %token INOUT
 
+%token SELF
+
 // method qualifier
 %token READER WRITER ROUTINE OPERATOR
 
@@ -362,15 +364,15 @@ statement_list
     ;
 
 statement
-    : expr EOL                          { $$ = new ExprStatement($1, currentLine); }
+    : expr EOL                          { $$ = new ExprStatement($1, currentLine-1); }
     /* TODO | tupel EOL                         { $$ = new DeclStatement($1, getKeyLine()); }*/
-    | decl EOL                          { $$ = new DeclStatement($1, getKeyLine()); }
-    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine) }
+    | decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
+    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine-1) }
 
-    | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine); }
+    | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine-1); }
 
-    | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement($2, $4,  0, currentLine); }
-    | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine); }
+    | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement($2, $4,  0, currentLine-1); }
+    | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine-1); }
     
     | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
     | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
@@ -431,25 +433,25 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, 'c', currentLine); }
-    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, 'v', currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, 'c', currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, 'v', currentLine); }
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5,  C_CALL, currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, VC_CALL, currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4,  C_CALL, currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, VC_CALL, currentLine); }
 
     /* 
         routines 
     */
-    |                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3,            0, currentLine); }
-    |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, DOUBLE_COLON, currentLine); }
-    | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, DOUBLE_COLON, currentLine); }
+  /*|                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3,       0, currentLine); }*/
+    |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, ROUTINE, currentLine); }
+    | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, ROUTINE, currentLine); }
 
     /* 
         methods 
     */
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, '.', currentLine); }
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, ':', currentLine); }
-    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, '.', currentLine); }
-    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, ':', currentLine); }
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, READER, currentLine); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, WRITER, currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, READER, currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, WRITER, currentLine); }
     ;
 
 primary_expr

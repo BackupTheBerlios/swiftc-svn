@@ -60,6 +60,11 @@ bool Type::isBool() const
     return false;
 }
 
+const BaseType* Type::unnestPtr() const
+{
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -92,7 +97,6 @@ BaseType* BaseType::clone() const
 {
     return new BaseType( modifier_, new std::string(*id_), NO_LINE );
 }
-
 
 bool BaseType::validate() const
 {
@@ -182,6 +186,11 @@ const Ptr* BaseType::derefToInnerstPtr() const
 {
     swiftAssert(false, "unreachable code");
     return 0;
+}
+
+const BaseType* BaseType::unnestPtr() const
+{
+    return this;
 }
 
 std::string BaseType::toString() const
@@ -310,7 +319,7 @@ bool Ptr::check(const Type* type) const
     if (!ptr)
         return false;
     
-    return innerType_->check(ptr);
+    return innerType_->check(ptr->innerType_);
 }
 
 me::Op::Type Ptr::toMeType() const
@@ -349,6 +358,11 @@ std::string Ptr::toString() const
     oss << "ptr{" << innerType_->toString() << '}';
 
     return oss.str();
+}
+
+const BaseType* Ptr::unnestPtr() const
+{
+    return innerType_->unnestPtr();
 }
 
 } // namespace swift

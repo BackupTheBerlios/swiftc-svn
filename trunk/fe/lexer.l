@@ -126,6 +126,7 @@ create  { keyLine = currentLine; return CREATE; }
 destroy { keyLine = currentLine; return DESTROY; }
 
 inout   { return INOUT; }
+self    { return SELF; }
 
 shl     { return SHL; }
 shr     { return SHR; }

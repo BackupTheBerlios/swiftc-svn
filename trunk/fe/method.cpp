@@ -93,10 +93,13 @@ bool Method::analyze()
         /*
          * check signature
          */
-        if (sig_->getNumIn() >= 1)
+        const TypeList&  in = sig_->getIn();
+        const TypeList& out = sig_->getOut();
+
+        if ( !in.empty() )
         {
             // check whether the first type matches the type of the current class
-            const BaseType* bt = dynamic_cast<const BaseType*>( sig_->getIn(0)->getType() );
+            const BaseType* bt = dynamic_cast<const BaseType*>( in[0] );
             if ( !bt || *symtab->class_->id_ != *bt->getId() )
             {
                 errorf( line_, "The the first parameter of this operator must be of type %s",
@@ -124,9 +127,7 @@ bool Method::analyze()
             || *id_ == "or"
             || *id_ == "xor")
         {
-            if (   sig_->getNumIn() != 2 || sig_->getNumOut() != 1
-                || sig_->getIn(0)->getKind() != Param::ARG
-                || sig_->getIn(1)->getKind() != Param::ARG )
+            if ( in.size() != 2 || out.size() != 1 )
             {
                 if (*id_ == "-")
                     unaryMinus = true;
@@ -143,8 +144,7 @@ bool Method::analyze()
         if (*id_ == "not" || unaryMinus)
         {
 
-            if (   sig_->getNumIn() != 1 || sig_->getNumOut() != 1
-                || sig_->getIn(0)->getKind() != Param::ARG )
+            if ( in.size() != 1 || out.size() != 1 )
             {
                 if (*id_ == "-")
                 {
@@ -167,7 +167,7 @@ bool Method::analyze()
     // for each ingoing param
     for (size_t i = 0; i < sig_->getNumIn(); ++i) 
     {
-        Param* param = sig_->getIn(i);
+        Param* param = sig_->getInParam(i);
         me::Var* var = param->getMeVar();
 
         if (setParams)
@@ -184,7 +184,7 @@ bool Method::analyze()
     // for each result
     for (size_t i = 0; i < sig_->getNumOut(); ++i) 
     {
-        Param* param = sig_->getOut(i);
+        Param* param = sig_->getOutParam(i);
         me::Var* var = param->getMeVar();
 
         if (returnValues)
@@ -214,7 +214,7 @@ bool Method::analyze()
         
         for (size_t i = 0; i < sig_->getNumOut(); ++i)
         {
-            Param* param = sig_->getOut(i);
+            Param* param = sig_->getOutParam(i);
 
             me::Var* var = param->getMeVar();
             setResults->arg_.push_back( me::Arg(var) );

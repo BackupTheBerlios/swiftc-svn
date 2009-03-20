@@ -76,6 +76,8 @@ public:
     virtual const BaseType* getFirstBaseType() const = 0;
     virtual const Ptr* derefToInnerstPtr() const = 0;
 
+    virtual const BaseType* unnestPtr() const = 0;
+
     virtual std::string toString() const = 0;
 
 protected:
@@ -113,6 +115,7 @@ public:
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
     virtual const Ptr* derefToInnerstPtr() const;
+    virtual const BaseType* unnestPtr() const;
     virtual std::string toString() const;
 
     /*
@@ -201,6 +204,7 @@ public:
     virtual const BaseType* getFirstBaseType() const;
     virtual const Ptr* derefToInnerstPtr() const;
     virtual std::string toString() const;
+    virtual const BaseType* unnestPtr() const;
 };
 
 //------------------------------------------------------------------------------

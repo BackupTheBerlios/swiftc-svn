@@ -258,21 +258,18 @@ Class* SymbolTable::lookupClass(const std::string* id)
     return 0;
 }
 
-Method* SymbolTable::lookupMethod(const std::string* classId,
+Method* SymbolTable::lookupMethod(Class* _class,
                                   const std::string* methodId,
                                   int methodQualifier,
-                                  const Signature* sig,
+                                  const TypeList& in,
                                   int line)
 {
-    // lookup class
-    Class* _class = symtab->lookupClass(classId);
-
     // lookup method
     Class::MethodMap::const_iterator iter = _class->methods_.find(methodId);
     if (iter == _class->methods_.end())
     {
-        errorf(line, "there is no method %s defined in class %s",
-            methodId->c_str(), classId->c_str());
+        errorf( line, "there is no method '%s' defined in class '%s'",
+            methodId->c_str(), _class->id_->c_str() );
 
         return 0;
     }
@@ -286,14 +283,43 @@ Method* SymbolTable::lookupMethod(const std::string* classId,
     {
         method = iter->second;
 
-        if ( method->sig_->checkIngoing(sig) )
+        if ( method->sig_->checkIn(in) )
             break;
         else
             method = 0; // mark as not found
     }
 
+    if (!method)
+    {
+        std::string methodType;
+        if (methodQualifier == READER)
+            methodType = "reader";
+        else if (methodQualifier == WRITER)
+            methodType = "writer";
+        else if (methodQualifier == CREATE)
+            methodType = "constructor";
+        else if (methodQualifier == OPERATOR)
+            methodType = "operator";
+        else methodType = "routine";
+
+        errorf(line, "there is no %s '%s(%s)' defined in class '%s'",
+                methodType.c_str(), 
+                methodId->c_str(), 
+                in.toString().c_str(), 
+                _class->id_->c_str());
+
+        return 0;
+    }
+
     return method;
 }
+
+Method* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
+{
+    std::string create = "create";
+    return lookupMethod(_class, &create, CREATE, in, line);
+}
+
 
 /*
  * current getters

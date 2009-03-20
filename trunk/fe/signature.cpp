@@ -43,11 +43,11 @@ namespace swift {
 
 Signature::~Signature()
 {
-    for (size_t i = 0; i < in_.size(); ++i)
-        delete in_[i];
+    for (size_t i = 0; i < inParams_.size(); ++i)
+        delete inParams_[i];
 
-    for (size_t i = 0; i < out_.size(); ++i)
-        delete out_[i];
+    for (size_t i = 0; i < outParams_.size(); ++i)
+        delete outParams_[i];
 }
 
 /*
@@ -59,90 +59,59 @@ bool Signature::analyze() const
     bool result = true;
 
     // check each ingoing param
-    for (size_t i = 0; i < in_.size(); ++i)
-        result &= in_[i]->validateAndCreateVar();
+    for (size_t i = 0; i < inParams_.size(); ++i)
+        result &= inParams_[i]->validateAndCreateVar();
 
     // check each outgoing param/result
-    for (size_t i = 0; i < out_.size(); ++i)
-        result &= out_[i]->validateAndCreateVar();
+    for (size_t i = 0; i < outParams_.size(); ++i)
+        result &= outParams_[i]->validateAndCreateVar();
 
     return result;
 }
 
-bool Signature::check(const TypeList& in) const
+bool Signature::checkIn(const TypeList& in) const
 {
     // if the sizes do not match the Signature is obviously different
-    if ( in_.size() != in.size() )
+    if ( inTypes_.size() != in.size() )
         return false;
 
     // assume a true result in the beginning
     bool result = true;
 
     // check each param
-    for (size_t i = 0; result && i < in_.size(); ++i)
-        result = in_[i]->getType()->check( in[i] );
+    for (size_t i = 0; result && i < inTypes_.size(); ++i)
+        result = inTypes_[i]->check( in[i] );
+
+    return result;
+}
+
+bool Signature::checkOut(const TypeList& out) const
+{
+    // if the sizes do not match the Signature is obviously different
+    if ( outTypes_.size() != out.size() )
+        return false;
+
+    // assume a true result in the beginning
+    bool result = true;
+
+    // check each result
+    for (size_t i = 0; result && i < outTypes_.size(); ++i)
+        result = outTypes_[i]->check( out[i] );
 
     return result;
 }
 
 bool Signature::check(const TypeList& in, const TypeList& out) const
 {
-    bool result = check(in);
+    if ( checkIn(in) && checkOut(out) )
+        return true;
 
-    if (!result)
-        return false;
-
-    /*
-     * now check the outgoing part
-     */
-
-    // if the sizes do not match the Signature is obviously different
-    if ( out_.size() != out.size() )
-        return false;
-
-    // check each result
-    for (size_t i = 0; result && i < out_.size(); ++i)
-        result = out_[i]->getType()->check( out[i] );
-
-    return result;
-}
-
-bool Signature::checkIngoing(const Signature* sig) const
-{
-    // if the sizes do not match the Signature is obviously different
-    if ( in_.size() != sig->in_.size() )
-        return false;
-
-    // assume a true result in the beginning
-    bool result = true;
-
-    // check each param
-    for (size_t i = 0; result && i < in_.size(); ++i)
-        result = Param::check(in_[i], sig->in_[i]);
-
-    return result;
+    return false;
 }
 
 bool Signature::check(const Signature* sig)
 {
-    bool result = checkIngoing(sig);
-
-    if (!result)
-        return false;
-
-    /*
-     * now check the outgoing part
-     */
-
-    // if the sizes do not match the Signature is obviously different
-    if ( out_.size() != sig->out_.size() )
-        return false;
-
-    // check each result
-    for (size_t i = 0; result && i < out_.size(); ++i)
-        result = Param::check(out_[i], sig->out_[i]);
-
-    return result;
+    return check( sig->getIn(), sig->getOut() );
 }
 
 // TODO remove copy&paste code
@@ -150,17 +119,17 @@ bool Signature::check(const Signature* sig)
 const Param* Signature::findParam(const std::string* id) const
 {
     // is it an ingoing param?
-    for (size_t i = 0; i < in_.size(); ++i)
+    for (size_t i = 0; i < inParams_.size(); ++i)
     {
-        if ( *in_[i]->id_ == *id)
-            return in_[i];
+        if ( *inParams_[i]->id_ == *id)
+            return inParams_[i];
     }
 
     // is it an outgoing param?
-    for (size_t i = 0; i < out_.size(); ++i)
+    for (size_t i = 0; i < outParams_.size(); ++i)
     {
-        if ( *out_[i]->id_ == *id)
-            return out_[i];
+        if ( *outParams_[i]->id_ == *id)
+            return outParams_[i];
     }
 
     // -> not found, so return 0
@@ -170,17 +139,17 @@ const Param* Signature::findParam(const std::string* id) const
 Param* Signature::findParam(const std::string* id)
 {
     // is it an ingoing param?
-    for (size_t i = 0; i < in_.size(); ++i)
+    for (size_t i = 0; i < inParams_.size(); ++i)
     {
-        if ( *in_[i]->id_ == *id)
-            return in_[i];
+        if ( *inParams_[i]->id_ == *id)
+            return inParams_[i];
     }
 
     // is it an outgoing param?
-    for (size_t i = 0; i < out_.size(); ++i)
+    for (size_t i = 0; i < outParams_.size(); ++i)
     {
-        if ( *out_[i]->id_ == *id)
-            return out_[i];
+        if ( *outParams_[i]->id_ == *id)
+            return outParams_[i];
     }
 
     // -> not found, so return 0
@@ -199,35 +168,49 @@ void Signature::appendInParam(Param* param)
 {
     swiftAssert(param->getKind() == Param::ARG || param->getKind() == Param::ARG_INOUT,
             "must be marked as ARG or ARG_INOUT");
-    in_.push_back(param);
+    inParams_.push_back(param);
+    inTypes_.push_back( param->getType() );
 }
 
 void Signature::appendOutParam(Param* param)
 {
     swiftAssert(param->getKind() == Param::RES, "must be marked as ARG or ARG_INOUT");
-    out_.push_back(param);
+    outParams_.push_back(param);
+    outTypes_.push_back( param->getType() );
 }
 
 size_t Signature::getNumIn() const
 {
-    return in_.size();
+    swiftAssert( inParams_.size() == inTypes_.size(), "sizes must match here" );
+    return inTypes_.size();
 }
 
 size_t Signature::getNumOut() const
 {
-    return out_.size();
+    swiftAssert( outParams_.size() == outTypes_.size(), "sizes must match here" );
+    return outTypes_.size();
 }
 
-Param* Signature::getIn(size_t i)
+Param* Signature::getInParam(size_t i)
 {
-    swiftAssert(i < in_.size(), "index out ouf bounds");
-    return in_[i];
+    swiftAssert(i < inParams_.size(), "index out ouf bounds" );
+    return inParams_[i];
 }
 
-Param* Signature::getOut(size_t i)
+Param* Signature::getOutParam(size_t i)
 {
-    swiftAssert(i < out_.size(), "index out ouf bounds");
-    return out_[i];
+    swiftAssert(i < outParams_.size(), "outdex out ouf bounds" );
+    return outParams_[i];
+}
+
+const TypeList& Signature::getIn() const
+{
+    return inTypes_;
+}
+
+const TypeList& Signature::getOut() const
+{
+    return outTypes_;
 }
 
 } // namespace swift

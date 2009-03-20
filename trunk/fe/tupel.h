@@ -21,6 +21,7 @@
 #define SWIFT_TUPEL_H
 
 #include "fe/syntaxtree.h"
+#include "fe/typelist.h"
 
 namespace swift {
 

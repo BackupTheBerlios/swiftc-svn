@@ -36,39 +36,16 @@
 namespace me {
 
 //------------------------------------------------------------------------------
-// helpers
-//------------------------------------------------------------------------------
 
-std::string args2str(const InstrBase::RHS& arg)
+std::string Res::toString() const
 {
-    if ( arg.empty() )
-        return "";
-
-    std::ostringstream oss;
-
-    for (size_t i = 0; i < arg.size() - 1; ++i)
-        oss << arg[i].op_->toString() << ", ";
-
-    oss << arg[ arg.size() - 1 ].op_->toString();
-
-    return oss.str();
+    return var_->toString();
 }
 
-std::string res2str(const InstrBase::LHS& res)
+std::string Arg::toString() const
 {
-    if ( res.empty() )
-        return "";
-
-    std::ostringstream oss;
-
-    for (size_t i = 0; i < res.size() - 1; ++i)
-        oss << res[i].var_->toString() << ", ";
-
-    oss << res[ res.size() - 1 ].var_->toString();
-
-    return oss.str();
+    return op_->toString();
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -283,15 +260,7 @@ std::string NOP::toString() const
 {
     std::ostringstream oss;
     oss << "NOP(";
-
-    for (size_t i = 0; i < arg_.size() - 1; ++i)
-    {
-        if (arg_[i].op_)
-            oss << arg_[i].op_->toString() << ", ";
-    }
-
-    if (arg_[arg_.size() - 1].op_ )
-        oss << arg_[arg_.size()-1].op_->toString() << ')';
+    oss << commaList( arg_.begin(), arg_.end() );
 
     return oss.str();
 }
@@ -865,7 +834,7 @@ std::string SetParams::toString() const
     swiftAssert( res_.size() >= 1, "must have at least one res" );
     
     std::ostringstream oss;
-    oss << res2str(res_) << "\t= setParams()";
+    oss << commaList( res_.begin(), res_.end() ) << "\t= setParams()";
 
     return oss.str();
 }
@@ -889,7 +858,7 @@ std::string SetResults::toString() const
     swiftAssert( arg_.size() >= 1, "must have at least one arg" );
 
     std::ostringstream oss;
-    oss << "setResults(" << args2str(arg_) << ')';
+    oss << "setResults(" << commaList( arg_.begin(), arg_.end() ) << ')';
 
     return oss.str();
 }

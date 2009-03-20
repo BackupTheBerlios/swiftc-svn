@@ -60,6 +60,8 @@ struct Res
         , oldVarNr_(oldVarNr)
         , constraint_(constraint)
     {}
+
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -74,6 +76,8 @@ struct Arg
         : op_(op)
         , constraint_(constraint)
     {}
+
+    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

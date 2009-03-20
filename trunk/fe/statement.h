@@ -29,6 +29,7 @@ namespace swift {
 /*
  * forward declarations
  */
+
 class Expr;
 class ExprList;
 class Local;

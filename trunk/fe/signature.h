@@ -26,6 +26,8 @@
 
 #include "utils/stringhelper.h"
 
+#include "fe/typelist.h"
+
 namespace swift {
 
 /*
@@ -37,9 +39,6 @@ class Method;
 class Param;
 class Scope;
 class Statement;
-class Type;
-
-typedef std::vector<const Type*> TypeList;
 
 //------------------------------------------------------------------------------
 
@@ -64,40 +63,32 @@ public:
     void appendInParam(Param* param);
     void appendOutParam(Param* param);
 
-    size_t getNumIn() const;
-    size_t getNumOut() const;
-
-    Param* getIn(size_t i);
-    Param* getOut(size_t i);
-
     /// Analyses this Sig for correct syntax.
     bool analyze() const;
 
     /**
-     * Check whether the ingoing part of the given Sig matches.
-     *
-     * @param inSig The Sig which should be checked. It is assumed that this
-     *      this Sig only has an ingoing part.
-     *
-     * @return true -> it fits, flase -> otherwise.
-     */
-    bool checkIngoing(const Signature* sig) const;
-
-    /// Check whether two given signatures fit.
-    bool check(const Signature* sig);
-
-    /**
-     * Check whether the ingoing part of the given Sig matches.
+     * Check whether the ingoing part of the given Signature matches.
      *
      * @param in The TypeList which should be checked. 
      *
      * @return true -> it fits, flase -> otherwise.
      */
-    bool check(const TypeList& in) const;
+    bool checkIn(const TypeList& in) const;
+
+    /**
+     * Check whether the outgoing part of the given Signature matches.
+     *
+     * @param out The TypeList which should be checked. 
+     *
+     * @return true -> it fits, flase -> otherwise.
+     */
+    bool checkOut(const TypeList& out) const;
 
     /// Check whether two given signatures fit.
     bool check(const TypeList& in, const TypeList& out) const;
-
+    
+    bool check(const Signature* sig);
+    
     /**
      * Find a Param by name.
      *
@@ -108,6 +99,15 @@ public:
     const Param* findParam(const std::string* id) const;
 
     std::string toString() const;
+
+    const TypeList& getIn() const;
+    const TypeList& getOut() const;
+
+    Param* getInParam(size_t i);
+    Param* getOutParam(size_t i);
+
+    size_t getNumIn() const;
+    size_t getNumOut() const;
 
 private:
 
@@ -120,18 +120,21 @@ private:
     /**
      * @brief This list stores the \a Param objects. 
      *
-     * The parameters are sorted from left to right as given in the Sig 
+     * The parameters are sorted from left to right as given in the signature
      * of the procedure. 
      */
-    Params in_;
+    Params inParams_;
 
     /**
      * @brief This list stores the \a Param objects. 
      *
-     * The return parameters are sorted from left to right as given in the Sig 
-     * of the procedure. 
+     * The return parameters are sorted from left to right as given in the 
+     * signature of the procedure. 
      */
-    Params out_;
+    Params outParams_;
+
+    TypeList inTypes_;
+    TypeList outTypes_;
 };
 
 } // namespace swift

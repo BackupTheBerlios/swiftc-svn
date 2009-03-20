@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "fe/syntaxtree.h"
+#include "fe/typelist.h"
 
 namespace swift {
 

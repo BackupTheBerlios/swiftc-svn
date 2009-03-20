@@ -1,8 +1,28 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
 #include "fe/functioncall.h"
 
 #include "fe/error.h"
 #include "fe/exprlist.h"
 #include "fe/method.h"
+#include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
 
@@ -59,6 +79,11 @@ void FunctionCall::genSSA()
  * further methods
  */
 
+Method* FunctionCall::getMethod()
+{
+    return method_;
+}
+
 void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPlaceList) const
 {
     result = exprList_ 
@@ -72,6 +97,23 @@ void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPl
     argPlaceList = exprList_
         ? exprList_->getPlaceList()
         : PlaceList(); // use empty TypeList when there is no ExprList
+}
+
+bool FunctionCall::analyze(Class* _class, const TypeList& argTypeList)
+{
+    method_ = symtab->lookupMethod(_class, id_, kind_, argTypeList, line_);
+
+    if (!method_)
+        return false;
+
+    const TypeList& out = method_->sig_->getOut();
+
+    if ( !out.empty() )
+        type_ = out[0]->clone();
+    else
+        type_ = 0;
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -155,15 +197,21 @@ bool RoutineCall::analyze()
     PlaceList argPlaceList;
     FunctionCall::analyze(result, argTypeList, argPlaceList);
 
+    if (!result)
+        return false;
+
+    Class* _class;
+
     if (kind_ == 0)
     {
-        // TODO -> global routine
+        swiftAssert(false, "TODO -> global routine");
+        _class = 0;
     }
     else
     {
         if (classId_)
         {
-            Class* _class = symtab->lookupClass(classId_);
+            _class = symtab->lookupClass(classId_);
             
             if (!_class)
             {
@@ -173,22 +221,10 @@ bool RoutineCall::analyze()
             }
         }
         else
-        {
-            /*
-             * 'self' reader or writer call
-             */
-
-            Method* method = symtab->currentMethod();
-
-            if (method->methodQualifier_ == ROUTINE)
-            {
-                result = false;
-                errorf(line_, "routines do not have a self pointer");
-            }
-        }
+            _class = symtab->currentClass();
     }
 
-    return result;
+    return FunctionCall::analyze(_class, argTypeList);
 }
 
 //------------------------------------------------------------------------------
@@ -223,19 +259,30 @@ bool MethodCall::analyze()
     PlaceList argPlaceList;
     FunctionCall::analyze(result, argTypeList, argPlaceList);
 
+    if (!result)
+        return false;
+
+    Class* _class;
+
     if (expr_) 
     {
-        /*
-         * class reader, writer or routine call
-         */
+        if  ( !expr_->analyze() )
+            return false;
 
-        result &= expr_->analyze();
+        _class = expr_->getType()->unnestPtr()->lookupClass();
+    }
+    else
+    {
+        _class = symtab->currentClass();
+
+        if ( symtab->currentMethod()->methodQualifier_ == ROUTINE ) 
+        {
+            errorf(line_, "routines do not have a 'self' pointer");
+            return false;
+        }
     }
 
-    //if (result)
-        //genSSA();
-
-    return result;
+    return FunctionCall::analyze(_class, argTypeList);
 }
 
 } // namespace swift

@@ -25,6 +25,7 @@
 #include <stack>
 #include <map>
 
+#include "fe/typelist.h"
 #include "fe/var.h"
 
 namespace swift {
@@ -124,17 +125,27 @@ struct SymbolTable
     /**
      * Looks up a method.
      *
-     * @param classId The identifier of the method's class.
+     * @param _class The method's class.
      * @param methodId The identifier of the method to be lookuped.
      * @param methodQualifier Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
-     * @param sig Signature the method should have.
+     * @param in in-signature the method should have.
      * @param line The line number of the method call.
-     * @param sigCheckingStyle Which params exactly should be checked?
      */
-    Method* lookupMethod(const std::string* classId,
+    Method* lookupMethod(Class* _class,
                          const std::string* methodId,
                          int methodQualifier,
-                         const Signature* sig,
+                         const TypeList& in,
+                         int line);
+
+    /**
+     * Looks up a constructor.
+     *
+     * @param _class The method's class.
+     * @param in The in-signature the method should have.
+     * @param line The line number of the method call.
+     */
+    Method* lookupCreate(Class* _class,
+                         const TypeList& in,
                          int line);
 
     /*

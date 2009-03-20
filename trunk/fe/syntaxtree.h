@@ -40,7 +40,6 @@ namespace swift {
 class Class;
 
 typedef std::vector<me::Op*> PlaceList;
-typedef std::vector<const Type*> TypeList;
 
 //------------------------------------------------------------------------------
 

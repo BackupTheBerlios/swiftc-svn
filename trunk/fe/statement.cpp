@@ -27,6 +27,7 @@
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/exprlist.h"
+#include "fe/functioncall.h"
 #include "fe/method.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
@@ -137,13 +138,13 @@ bool AssignStatement::analyze()
     if (!result)
         return false;
 
-    TypeList argTypeList = exprList_->getTypeList();
-    TypeList resTypeList = tupel_->getTypeList();
+    TypeList in = exprList_->getTypeList();
+    TypeList out = tupel_->getTypeList();
 
-    swiftAssert( argTypeList.size() > 0, "must have at least one element" );
-    swiftAssert( resTypeList.size() > 0, "must have at least one element" );
+    swiftAssert( in.size() > 0, "must have at least one element" );
+    swiftAssert( out.size() > 0, "must have at least one element" );
 
-    if ( argTypeList.size() > 1 && resTypeList.size() > 1 )
+    if ( in.size() > 1 && out.size() > 1 )
     {
         errorf(line_, "either the left-hand side or the right-hand side of an "
                 "assignment statement must have exactly one element");
@@ -151,33 +152,41 @@ bool AssignStatement::analyze()
         return false;
     }
 
-    if (resTypeList.size() == 1)
+    if (out.size() == 1)
     {
         // -> this is a constructor call
-        swiftAssert( typeid(*resTypeList[0]) == typeid(BaseType), "TODO" );
-        const BaseType* bt = (const BaseType*) resTypeList[0];
-        Class* _class = bt->lookupClass();
-
-        std::string createStr("create");
-        Class::MethodMap::const_iterator iter = _class->methods_.find(&createStr);
-        swiftAssert( iter != _class->methods_.end(), "TODO");
-        Class::MethodMap::const_iterator last = _class->methods_.upper_bound(&createStr);
-
-        for (; iter != last; ++iter)
+        if ( typeid(*out[0]) == typeid(Ptr) )
         {
-            Method* create = iter->second;
+            if (out.size() > 1)
+            {
+                errorf(line_, "a ptr constructer takes only one argument");
+                return false;
+            }
 
-            if ( !create->sig_->check(argTypeList) )
-                continue; // the signature does not fit
+            if ( !out[0]->check(in[0]) )
+            {
+                errorf(line_, "types do not match in ptr assignment");
+                return false;
+            }
 
-            genConstructorCall(_class, create);
-            return true;
+            genConstructorCall(0, 0);
         }
+        else
+        {
+            swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
-        errorf( line_, "no constructor found for class %s with the given arguments", 
-                _class->id_->c_str() );
+            const BaseType* bt = (const BaseType*) out[0];
+            Class* _class = bt->lookupClass();
+            Method* create = symtab->lookupCreate(_class, in, line_);
 
-        return false;
+            if (create)
+            {
+                genConstructorCall(_class, create);
+                return true;
+            }
+
+            return false;
+        }
     }
     else
     {
@@ -192,7 +201,16 @@ bool AssignStatement::analyze()
             return false;
         }
 
-        // TODO
+        Method* method = fc->getMethod();
+
+        if ( !method->sig_->checkOut(out) )
+        {
+            errorf( line_, "right-hand side needs out types '%s' but '%s' are given",
+                    commaListPtr(out.begin(), out.end()).c_str(), 
+                    commaListPtr(method->sig_->getOut().begin(), method->sig_->getOut().end()).c_str() );
+
+            return false;
+        }
     }
 
     genSSA();
@@ -209,7 +227,7 @@ void AssignStatement::genConstructorCall(Class* _class, Method* /*method*/)
     PlaceList lhsPlaces = tupel_->getPlaceList();
     PlaceList rhsPlaces = exprList_->getPlaceList();
 
-    if ( BaseType::isBuiltin(_class->id_) )
+    if ( !_class || BaseType::isBuiltin(_class->id_) )
     {
         me::functab->appendInstr( 
                 new me::AssignInstr(kind_ , (me::Reg*) lhsPlaces[0], rhsPlaces[0]) );

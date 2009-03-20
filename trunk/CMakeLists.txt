@@ -101,6 +101,7 @@ ADD_EXECUTABLE (swift
     fe/syntaxtree.cpp
     fe/tupel.cpp
     fe/type.cpp
+    fe/typelist.cpp
     fe/var.cpp
 
     fe/cmdlineparser.cpp

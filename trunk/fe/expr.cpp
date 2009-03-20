@@ -373,14 +373,10 @@ bool UnExpr::analyze()
 
     // return false when syntax is wrong
     if ( !op_->analyze() )
-    {
         return false;
-    }
-
-    type_ = op_->getType()->clone();
 
     if (c_ == '&')
-        type_ = new Ptr(0, type_);
+        type_ = new Ptr( 0, op_->getType()->clone() );
     else if (c_ == '^')
     {
         Ptr* ptr = dynamic_cast<Ptr*>(type_);
@@ -400,7 +396,11 @@ bool UnExpr::analyze()
             errorf(op_->line_, "unary ! not used with a bool");
             return false;
         }
+
+        type_ = op_->getType()->clone();
     }
+    else
+        type_ = op_->getType()->clone();
 
     genSSA();
 
@@ -422,7 +422,7 @@ void UnExpr::genSSA()
             kind = me::AssignInstr::NOT;
             break;
         default:
-            swiftAssert(kind_ == '^', "impossible switch/case value");
+            swiftAssert(kind_ == '&', "impossible switch/case value");
             kind = kind_;
     }
 
@@ -496,31 +496,25 @@ bool BinExpr::analyze()
     swiftAssert( typeid(*op2_->getType()) == typeid(BaseType), "must be a BaseType here" );
 
     const BaseType* bt1 = (const BaseType*) op1_->getType();
-    //BaseType* bt2 = (BaseType*) op2_->type_;
 
     // check whether there is an operator which fits
-    Signature sig;
-    sig.appendInParam( new Param(Param::ARG, op1_->getType()->clone(), 0, 0) );
-    sig.appendInParam( new Param(Param::ARG, op2_->getType()->clone(), 0, 0) );
+    TypeList argTypeList;
+    argTypeList.push_back(op1_->getType());
+    argTypeList.push_back(op2_->getType());
+    //Signature sig;
+    //sig.appendInParam( new Param(Param::ARG, op1_->getType()->clone(), 0, 0) );
+    //sig.appendInParam( new Param(Param::ARG, op2_->getType()->clone(), 0, 0) );
     std::string* opString = operatorToString(kind_);
     Method* method = symtab->lookupMethod(
-            bt1->getId(), opString, OPERATOR, &sig, line_);
+            symtab->lookupClass(bt1->getId()), opString, OPERATOR, argTypeList, line_);
 
     delete opString;
 
     if (!method)
-    {
-        errorf( line_, "no operator %c (%s, %s) defined in class %s",
-            c_, op1_->getType()->toString().c_str(),
-            op2_->getType()->toString().c_str(),
-            op1_->getType()->toString().c_str() );
-
         return false;
-    }
-    // else
 
     // find first out parameter and clone this type
-    type_ = method->sig_->getOut(0)->getType()->clone();
+    type_ = method->sig_->getOut()[0]->clone();
 
     genSSA();
 
