@@ -8,7 +8,33 @@ namespace swift {
 
 class Type;
 
-class TypeList : public std::vector<const Type*>
+class TypeItem
+{
+public:
+
+    TypeItem(const Type* type, int modifier)
+        : type_(type)
+        , modifier_(modifier)
+    {}
+    
+    const Type* getType() const;
+    bool isReadOnly() const;
+
+    std::string toString() const;
+
+private:
+
+    /*
+     * data
+     */
+
+    const Type* type_;
+    const int modifier_;
+};
+
+//------------------------------------------------------------------------------
+
+class TypeList : public std::vector<TypeItem>
 {
 public:
 
