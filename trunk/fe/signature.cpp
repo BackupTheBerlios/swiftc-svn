@@ -166,15 +166,15 @@ std::string Signature::toString() const
 
 void Signature::appendInParam(Param* param)
 {
-    swiftAssert(param->getKind() == Param::ARG || param->getKind() == Param::ARG_INOUT,
-            "must be marked as ARG or ARG_INOUT");
+    swiftAssert(param->getModifier() == CONST_PARAM || param->getModifier() == INOUT,
+            "must be marked as CONST_PARAM or INOUT");
     inParams_.push_back(param);
     inTypes_.push_back( param->getType() );
 }
 
 void Signature::appendOutParam(Param* param)
 {
-    swiftAssert(param->getKind() == Param::RES, "must be marked as ARG or ARG_INOUT");
+    swiftAssert(param->getModifier() == RETURN_VALUE, "must be marked as RETURN_VALUE");
     outParams_.push_back(param);
     outTypes_.push_back( param->getType() );
 }

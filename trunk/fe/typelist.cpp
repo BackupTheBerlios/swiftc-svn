@@ -1,41 +1,29 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
 #include "fe/typelist.h"
 
-#include <utils/stringhelper.h>
+#include "utils/stringhelper.h"
 
 #include "fe/type.h"
 
 namespace swift {
-
-const TypeItem::Type* getType() const
-{
-    return type_;
-}
-
-bool  TypeItem::isReadOnly() const
-{
-    if (modifier_ == CONST || modifier_ == NOT_INOUT)
-        return true;
-
-    swiftAssert(modifier_ == NOT_CONST || modifier_ == INOUT,
-            "must be NOT_CONST or INOUT_ here");
-    return false;
-}
-
-std::string TypeItem::toString() const
-{
-    std::string result;
-
-    if (modifier_ == CONST)
-        result = "const ";
-    else if (modifier_ == INOUT)
-        result = "inout ";
-
-    result += type_->toString();
-
-    return result; 
-}
-
-//------------------------------------------------------------------------------ 
 
 std::string TypeList::toString() const
 {

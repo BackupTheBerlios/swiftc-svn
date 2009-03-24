@@ -80,12 +80,27 @@ public:
 
     virtual std::string toString() const = 0;
 
+    /*
+     * further methods
+     */
+
+    int& modifier();
+    const int& modifier() const;
+
 protected:
 
     /*
      * data
      */
 
+    /**
+     * One of: <br>
+     * - VAR <br>
+     * - CONST <br>
+     * - INOUT <br>
+     * - CONST_PARAM<br>
+     * - RETURN_VALUE <br>
+     */
     int modifier_;
 };
 

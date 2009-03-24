@@ -65,6 +65,21 @@ const BaseType* Type::unnestPtr() const
     return 0;
 }
 
+/*
+ * further methods
+ */
+
+
+int& Type::modifier()
+{
+    return modifier_;
+}
+
+const int& Type::modifier() const
+{
+    return modifier_;
+}
+
 //------------------------------------------------------------------------------
 
 /*

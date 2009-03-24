@@ -70,25 +70,21 @@ Local::Local(Type* type, me::Var* var, std::string* id, int line /*= NO_LINE*/)
  * constructor and destructor
  */
 
-Param::Param(Kind kind, Type* type, std::string* id, int line /*= NO_LINE*/)
+Param::Param(Type* type, std::string* id, int line /*= NO_LINE*/)
     : Var(type, 0, id, line)
-    , kind_(kind)
 {}
 
 /*
  * further methods
  */
 
-Param::Kind Param::getKind() const
-{
-    return kind_;
-}
-
 bool Param::check(const Param* param1, const Param* param2)
 {
+    std::cout << "wtf" << std::endl;
     // first check whether kind_ fits
-    if (param1->kind_ != param2->kind_)
-        return false;
+    //if (param1->kind_ != param2->kind_)
+        //return false;
+        // TODO
 
     // check whether type fits
     if ( param1->type_->check(param2->type_) )
@@ -103,6 +99,11 @@ bool Param::validateAndCreateVar()
     meVar_ = type_->createVar(id_);
 
     return type_->validate();
+}
+
+int Param::getModifier() const
+{
+    return type_->modifier();
 }
 
 } // namespace swift

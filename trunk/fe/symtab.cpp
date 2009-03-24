@@ -146,16 +146,16 @@ void SymbolTable::insertRes(Param* param)
     Param* found = sig_->findParam(param->id_);
     if (found) 
     {
-        if (found->getKind() == Param::RES)
+        if (found->getModifier() == RETURN_VALUE)
         {
             errorf(param->line_, 
-                    "there is already a parameter '%s' defined in this procedure",
+                    "there is already a return value '%s' defined for this procedure",
                     param->id_->c_str());
         }
         else
         {
             errorf(param->line_, 
-                    "there is already a parameter '%s' defined in this procedure", 
+                    "there is already a parameter '%s' defined for this procedure", 
                     param->id_->c_str());
         }
 
@@ -268,7 +268,7 @@ Method* SymbolTable::lookupMethod(Class* _class,
     Class::MethodMap::const_iterator iter = _class->methods_.find(methodId);
     if (iter == _class->methods_.end())
     {
-        errorf( line, "there is no method '%s' defined in class '%s'",
+        errorf( line, "there is no method named '%s' in class '%s'",
             methodId->c_str(), _class->id_->c_str() );
 
         return 0;

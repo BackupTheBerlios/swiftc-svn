@@ -100,25 +100,15 @@ class Param : public Var
 {
 public:
 
-    /// What kind of Param is this?
-    enum Kind
-    {
-        ARG,      ///< An ingoing parameter.
-        ARG_INOUT,///< An in- and outgoing paramter.
-        RES,      ///< An outgoing parameter AKA result.
-    };
-
     /*
      * constructor
      */
 
-    Param(Kind kind, Type* type, std::string* id, int line = NO_LINE);
+    Param(Type* type, std::string* id, int line = NO_LINE);
 
     /*
      * further methods
      */
-
-    Kind getKind() const;
 
     /// Check whether the type of both Param objects fit.
     static bool check(const Param* param1, const Param* param2);
@@ -126,9 +116,7 @@ public:
     /// Check whether this Param has a correct Type.
     bool validateAndCreateVar(); 
 
-private:
-
-    Kind kind_;
+    int getModifier() const;
 };
 
 } // namespace swift

@@ -127,10 +127,7 @@ using namespace swift;
 %token PTR ARRAY SIMD
 
 // type modifiers
-%token VAR CONST
-
-// parameter qualifier
-%token INOUT
+%token VAR CONST CONST_PARAM INOUT RETURN_VALUE
 
 %token SELF
 
@@ -175,7 +172,7 @@ using namespace swift;
 */
 
 %type <int_>        method_qualifier operator
-%type <type_>       type
+%type <type_>       type bare_type
 %type <decl_>       decl
 
 %type <definition_> class_definition
@@ -320,8 +317,8 @@ parameter_list
     ;
 
 parameter
-    :       type ID { symtab->insertParam( new Param(Param::ARG,       $1, $2, currentLine) ); }
-    | INOUT type ID { symtab->insertParam( new Param(Param::ARG_INOUT, $2, $3, currentLine) ); }
+    :       bare_type ID { $1->modifier() = CONST_PARAM; symtab->insertParam( new Param($1, $2, currentLine) ); }
+    | INOUT bare_type ID { $2->modifier() = INOUT;       symtab->insertParam( new Param($2, $3, currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -335,7 +332,7 @@ return_type_list
     ;
 
 return_type
-    : type ID       { symtab->insertRes( new Param(Param::RES, $1, $2, currentLine) ); }
+    : bare_type ID       { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
     ;
 
 /*
@@ -503,10 +500,14 @@ tupel
     | decl ',' tupel { $$ = new Tupel($1, $3, currentLine); }
     ;
 
+bare_type
+    : ID               { $$ = new BaseType(0, $1, currentLine); }
+    | PTR '{' type '}' { $$ = new Ptr(0, $3, currentLine); }
+
 type
-    : ID                       { $$ = new BaseType(    0, $1, currentLine); }
+    : ID                       { $$ = new BaseType(  VAR, $1, currentLine); }
     | CONST ID                 { $$ = new BaseType(CONST, $2, currentLine); }
-    | PTR         '{' type '}' { $$ = new Ptr(    0, $3, currentLine); }
+    | PTR         '{' type '}' { $$ = new Ptr(  VAR, $3, currentLine); }
     | CONST PTR   '{' type '}' { $$ = new Ptr(CONST, $4, currentLine); }
     /*| ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
     /*| CONST ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
