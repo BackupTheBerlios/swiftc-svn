@@ -184,7 +184,7 @@ false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Litera
     return EOL;
 }
 
-.       { printf("%i: error: invalid input character '%c'\n", currentLine, yytext[0]); }
+. { printf("%i: error: invalid input character '%c'\n", currentLine, yytext[0]); }
 
 
 <EOL_STATE>[ \t]    { /* skip whitespaces */ }

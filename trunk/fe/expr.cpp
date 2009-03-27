@@ -775,9 +775,7 @@ bool Self::analyze()
             return false;
     }
 
-    std::string* classId = new std::string(*symtab->currentClass()->id_);
-    type_ = new Ptr( CONST, new BaseType(typeQualifier, classId) );
-
+    type_ = new Ptr( CONST, new BaseType(typeQualifier, symtab->currentClass()) );
     me::Reg* reg = me::functab->newReg(me::Op::R_PTR);
     // TODO
     place_ = reg;

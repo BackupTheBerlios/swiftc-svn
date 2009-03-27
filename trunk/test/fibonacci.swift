@@ -11,12 +11,13 @@ class Fibbonacci
         end
 
         int pre = 0
-        while n >= 2
+        int counter = n
+        while counter >= 2
             int f = result
             result = result + pre
             pre = f
 
-            n = n - 1
+            counter = counter - 1
         end
     end
 end

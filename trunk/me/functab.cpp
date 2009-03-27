@@ -42,7 +42,7 @@ FuncTab* functab = 0;
  * constructor and destructor
  */
 
-Function::Function(std::string* id, size_t stackPlaces)
+Function::Function(std::string* id, size_t stackPlaces, bool ignore)
     : id_(id)
     , ssaCounter_(0)
     , varCounter_(-1) // >= 0 is reserved for vars already in SSA form
@@ -51,6 +51,7 @@ Function::Function(std::string* id, size_t stackPlaces)
     , firstDefUse_(false)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
     , stackLayout_( new StackLayout(stackPlaces) )
+    , ignore_(ignore)
 {}
 
 Function::~Function()
@@ -204,10 +205,9 @@ Undef* Function::newUndef(Op::Type type)
     return undef;
 }
 
-bool Function::isTrivial() const
+bool Function::ignore() const
 {
-    // a trivial function consits of three LabelInstr - that's it
-    return cfg_->instrList_.size() == 3;
+    return ignore_;
 }
 
 /*
@@ -284,9 +284,9 @@ FunctionTable::~FunctionTable()
  * further methods
  */
 
-Function* FunctionTable::insertFunction(string* id)
+Function* FunctionTable::insertFunction(string* id, bool ignore)
 {
-    currentFunction_ = new Function( id, me::arch->getNumStackPlaces() );
+    currentFunction_ = new Function( id, me::arch->getNumStackPlaces(), ignore );
     functions_.insert( make_pair(id, currentFunction_) );
 
     return currentFunction_;

@@ -119,6 +119,7 @@ public:
      */
     
     BaseType(int modifier, std::string* id, int line = NO_LINE);
+    BaseType(int modifier, Class* _class);
     ~BaseType();
 
     /*

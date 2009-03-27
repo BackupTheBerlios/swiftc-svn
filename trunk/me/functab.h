@@ -99,11 +99,13 @@ struct Function
 
     StackLayout* stackLayout_;
 
+    bool ignore_;
+
     /*
      * constructor and destructor
      */
 
-    Function(std::string* id, size_t stackPlaces);
+    Function(std::string* id, size_t stackPlaces, bool ignore);
     ~Function();
 
     /*
@@ -135,7 +137,7 @@ struct Function
 
     inline void insert(Var* var);
 
-    bool isTrivial() const;
+    bool ignore() const;
 
     /*
      * dump methods
@@ -172,7 +174,7 @@ struct FunctionTable
      * further methods
      */
 
-    Function* insertFunction(std::string* id);
+    Function* insertFunction(std::string* id, bool ignore);
 
 #ifdef SWIFT_DEBUG
 

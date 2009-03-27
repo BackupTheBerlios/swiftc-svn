@@ -172,7 +172,7 @@ int start(int argc, char** argv)
     {
         me::Function* function = iter->second;
 
-        if ( function->isTrivial() )
+        if ( function->ignore() )
             continue;
 
         me::DefUseCalc(function).process();
@@ -186,7 +186,7 @@ int start(int argc, char** argv)
     {
         me::Function* function = iter->second;
 
-        if ( function->isTrivial() )
+        if ( function->ignore() )
             continue;
 
         me::arch->codeGen(function, ofs);

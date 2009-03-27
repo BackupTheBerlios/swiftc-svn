@@ -50,13 +50,19 @@ struct Method : public ClassMember
      */
 
     Method(int methodQualifier, std::string* id, Symbol* parent, int line = NO_LINE);
-    ~Method();
+    virtual ~Method();
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
 
     /*
      * further methods
      */
 
-    virtual bool analyze();
+    bool isTrivial() const;
 };
 
 } // namespace swift

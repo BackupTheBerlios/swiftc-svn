@@ -268,8 +268,11 @@ Method* SymbolTable::lookupMethod(Class* _class,
     Class::MethodMap::const_iterator iter = _class->methods_.find(methodId);
     if (iter == _class->methods_.end())
     {
-        errorf( line, "there is no method named '%s' in class '%s'",
-            methodId->c_str(), _class->id_->c_str() );
+        if (line)
+        {
+            errorf( line, "there is no method named '%s' in class '%s'",
+                methodId->c_str(), _class->id_->c_str() );
+        }
 
         return 0;
     }
@@ -302,11 +305,14 @@ Method* SymbolTable::lookupMethod(Class* _class,
             methodType = "operator";
         else methodType = "routine";
 
-        errorf(line, "there is no %s '%s(%s)' defined in class '%s'",
-                methodType.c_str(), 
-                methodId->c_str(), 
-                in.toString().c_str(), 
-                _class->id_->c_str());
+        if (line)
+        {
+            errorf(line, "there is no %s '%s(%s)' defined in class '%s'",
+                    methodType.c_str(), 
+                    methodId->c_str(), 
+                    in.toString().c_str(), 
+                    _class->id_->c_str());
+        }
 
         return 0;
     }

@@ -110,10 +110,15 @@ BaseType::BaseType(int modifier, std::string* id, int line /*= NO_LINE*/)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
 
+BaseType::BaseType(int modifier, Class* _class)
+    : Type(modifier, NO_LINE)
+    , id_( new std::string(*_class->id_) )
+    , builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
+{}
+
 BaseType::~BaseType()
 {
-    if (id_)
-        delete id_;
+    delete id_;
 }
 
 /*

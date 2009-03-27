@@ -50,6 +50,30 @@ struct Type;
  */
 struct Class : public Definition
 {
+    /**
+     * Knows whether the given class defines a constructor,
+     * if this is not the case a default constructor must be created artifically
+     */
+    bool hasCreate_;
+
+    enum DefaultCreate
+    {
+        DEFAULT_NONE,
+        DEFAULT_TRIVIAL,
+        DEFAULT_USER,
+    };
+
+    DefaultCreate defaultCreate_;
+
+    enum CopyCreate
+    {
+        COPY_NONE,
+        COPY_AUTO,
+        COPY_USER
+    };
+
+    CopyCreate copyCreate_;
+
     typedef std::multimap<const std::string*, Method*, StringPtrCmp> MethodMap;
     typedef std::map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
@@ -60,29 +84,24 @@ struct Class : public Definition
 
     me::Struct* meStruct_;
 
-    /**
-     * Knows whether the given class defines a constructor,
-     * if this is not the case a default constructor must be created artifically
-     */
-    bool hasCreate_;
-
     /*
      * constructor and destructor
      */
 
-    Class(std::string* id, Symbol* parent, int line = NO_LINE);
+    Class(std::string* id, Symbol* parent, int line);
     virtual ~Class();
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
 
     /*
      * further methods
      */
 
-    /**
-     * Is called when a defaul constructor must be created artifically i.e.
-     * hasCreate_ == false
-     */
-    void createDefaultConstructor();
-    virtual bool analyze();
+    void addConstructors();
 };
 
 //------------------------------------------------------------------------------

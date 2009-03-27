@@ -94,6 +94,18 @@ bool DeclStatement::analyze()
 {
     bool result = decl_->analyze();
 
+    const BaseType* bt = dynamic_cast<const BaseType*>( decl_->getType() );
+    if (bt)
+    {
+        Class* _class = bt->lookupClass();
+
+        if (_class->defaultCreate_ == Class::DEFAULT_NONE)
+        {
+            errorf( line_, "class '%s' does not provide a default constructor 'create()'",
+                    _class->id_->c_str() );
+        }
+    }
+
     if (result)
     {
         me::Var* op = (me::Var*) decl_->getPlace();
@@ -162,23 +174,19 @@ bool AssignStatement::analyze()
                 {
                     errorf(line_, "assignment of read-only variable '%s'", 
                             id->id_->c_str() );
+                    return false;
                 }
                 else
                 {
                     errorf(line_, "assignment of read-only location '%s'", 
                             expr->toString().c_str() );
+                    return false;
                 }
             }   
         }
-        else
-        {
-            swiftAssert( typeid(*typeNode) == typeid(const Decl), 
-                    "must be a const Decl" );
-            const Decl* decl = (const Decl*) typeNode;
-        }
     }
 
-    swiftAssert( in.size() > 0, "must have at least one element" );
+    swiftAssert(  in.size() > 0, "must have at least one element" );
     swiftAssert( out.size() > 0, "must have at least one element" );
 
     if ( in.size() > 1 && out.size() > 1 )
@@ -192,6 +200,7 @@ bool AssignStatement::analyze()
     if (out.size() == 1)
     {
         // -> this is a constructor call
+
         if ( typeid(*out[0]) == typeid(Ptr) )
         {
             if (out.size() > 1)
@@ -247,6 +256,24 @@ bool AssignStatement::analyze()
                     method->sig_->getOut().toString().c_str() ); 
 
             return false;
+        }
+
+        // check whether copy constructors are available for types on the lhs
+        for (size_t i = 0; i < out.size(); ++i)
+        {
+            const BaseType* bt = dynamic_cast<const BaseType*>( out[i] );
+
+            if (bt)
+            {
+                Class* _class = bt->lookupClass();
+
+                if (_class->copyCreate_ == Class::COPY_NONE)
+                {
+                    errorf( line_, "class '%s' does not provide a copy constructor 'create(%s)'",
+                            _class->id_->c_str(),
+                            _class->id_->c_str() );
+                }
+            }
         }
     }
 

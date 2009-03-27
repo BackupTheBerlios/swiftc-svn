@@ -227,8 +227,7 @@ class_definition
         {
             $$ = $<class_>4;
             $<class_>$->classMember_= $5;
-            if ( !$<class_>$->hasCreate_ )
-                $<class_>$->createDefaultConstructor();
+            $<class_>$->addConstructors();
         }
     ;
 

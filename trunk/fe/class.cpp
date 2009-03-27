@@ -42,9 +42,10 @@ namespace swift {
  * constructor and destructor
  */
 
-Class::Class(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Class::Class(std::string* id, Symbol* parent, int line)
     : Definition(id, parent, line)
-    , hasCreate_(false)
+    , defaultCreate_(DEFAULT_NONE)
+    , copyCreate_(COPY_USER)
 {}
 
 Class::~Class()
@@ -56,21 +57,73 @@ Class::~Class()
  * further methods
  */
 
-void Class::createDefaultConstructor()
+void Class::addConstructors()
 {
-    swiftAssert(hasCreate_ == false, "hasCreate_ must be true");
-
-    Method* create = new Method(CREATE, new std::string("create"), this, -1);
-
-    // link with this class
-    if (classMember_ == 0)
-        classMember_ = create;
-    else
+    /*
+     * handling of the default constructor
+     */
     {
-        // prepend default constructor
-        create->next_ = classMember_;
-        classMember_ = create;
-        symtab->insert(create);
+        // check whether there is already a default constructor
+        TypeList in;
+        Method* create = symtab->lookupCreate(this, in, 0);
+
+        if (create)
+            defaultCreate_ = DEFAULT_USER;
+        else if (!hasCreate_)
+        {
+            /*
+            * -> construct a trivial default constructor 
+            * if there are no constructors defined at all
+            */
+            defaultCreate_ = DEFAULT_TRIVIAL;
+
+            create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+            symtab->insert(create);
+            create->statements_ = 0;
+
+            // link with this class
+            if (classMember_ == 0)
+                classMember_ = create;
+            else
+            {
+                // prepend default constructor
+                create->next_ = classMember_;
+                classMember_ = create;
+            }
+        }
+    }
+
+    /*
+     * handling of the copy constructor
+     */
+    {
+        // check whether there is already a copy constructor
+        BaseType* newType = new BaseType(CONST_PARAM, this);
+        TypeList in;
+        in.push_back(newType);
+        Method* create = symtab->lookupCreate(this, in, 0);
+
+        if (!create)
+        {
+            copyCreate_ = COPY_AUTO;
+
+            create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+            create->statements_ = 0;
+            symtab->insert(create);
+            symtab->insertParam( new Param(newType, new std::string("arg")) );
+
+            // link with this class
+            if (classMember_ == 0)
+                classMember_ = create;
+            else
+            {
+                // prepend copy constructor
+                create->next_ = classMember_;
+                classMember_ = create;
+            }
+        }
+        else
+            delete newType;
     }
 }
 

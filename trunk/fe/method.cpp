@@ -79,7 +79,7 @@ bool Method::analyze()
     oss << '$' << counter;
     ++counter;
 
-    me::functab->insertFunction( new std::string(oss.str()) );
+    me::functab->insertFunction( new std::string(oss.str()), isTrivial() );
 
     bool result = true;
     result &= sig_->analyze(); // needs the valid function in the functab
@@ -249,5 +249,10 @@ bool Method::analyze()
 //
 //     return oss.str() + sig_->toString();
 // }
+
+bool Method::isTrivial() const
+{
+    return !statements_;
+}
 
 } // namespace swift
