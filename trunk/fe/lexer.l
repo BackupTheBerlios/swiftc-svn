@@ -126,7 +126,6 @@ create  { keyLine = currentLine; return CREATE; }
 destroy { keyLine = currentLine; return DESTROY; }
 
 inout   { return INOUT; }
-self    { return SELF; }
 
 shl     { return SHL; }
 shr     { return SHR; }
@@ -143,6 +142,9 @@ public      { return PUBLIC; }
 protected   { return PROTECTED; }
 package     { return PACKAGE; }
 private     { return PRIVATE; }
+
+nil  { return NIL; }
+self { return SELF; }
 
 {INTEGER}x      { swiftlval.expr_ = new Literal(L_INDEX ); ((Literal*) swiftlval.expr_)->index_    = strtol (yytext, 0, 10); return L_INDEX; }
 
@@ -168,7 +170,6 @@ private     { return PRIVATE; }
 
 true            { swiftlval.expr_ = new Literal(L_TRUE,   currentLine); ((Literal*) swiftlval.expr_)->bool_   = true;   return L_TRUE; }
 false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Literal*) swiftlval.expr_)->bool_   = false;  return L_TRUE; }
-nil             { swiftlval.expr_ = new Literal(L_NIL,    currentLine); ((Literal*) swiftlval.expr_)->ptr_    = 0;      return L_TRUE; }
 
 {ID} { keyLine = currentLine; swiftlval.id_ = new std::string(yytext); return ID; }
 

@@ -47,6 +47,25 @@ std::string Arg::toString() const
     return op_->toString();
 }
 
+template<class T>
+std::string commaList(T begin, T end)
+{
+    std::ostringstream oss;
+
+    while (begin != end)
+    {
+        oss << (*begin).toString() << ", ";
+        ++begin;
+    }
+
+    std::string result = oss.str();
+
+    if ( !result.empty() )
+        result = result.substr(0, result.size() - 2);
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 /*

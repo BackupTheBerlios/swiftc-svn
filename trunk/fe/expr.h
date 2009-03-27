@@ -293,6 +293,57 @@ struct MemberAccess : public Expr
 
 //------------------------------------------------------------------------------
 
+class Nil : public Expr
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    Nil(Type* innerType, int line);
+    virtual ~Nil();
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+    virtual bool analyze();
+    virtual void genSSA();
+
+private:
+
+    /*
+     * data
+     */
+
+    Type* innerType_;
+};
+
+//------------------------------------------------------------------------------
+
+class Self : public Expr
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    Self(int line);
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+    virtual bool analyze();
+    virtual void genSSA();
+};
+
 } // namespace swift
+
+//------------------------------------------------------------------------------
 
 #endif // SWIFT_EXPR_H

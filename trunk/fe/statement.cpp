@@ -202,7 +202,7 @@ bool AssignStatement::analyze()
 
             if ( !out[0]->check(in[0]) )
             {
-                errorf(line_, "types do not match in ptr assignment");
+                errorf(line_, "types do not match in 'ptr' assignment");
                 return false;
             }
 
@@ -243,8 +243,8 @@ bool AssignStatement::analyze()
         if ( !method->sig_->checkOut(out) )
         {
             errorf( line_, "right-hand side needs out types '%s' but '%s' are given",
-                    commaListPtr(out.begin(), out.end()).c_str(), 
-                    commaListPtr(method->sig_->getOut().begin(), method->sig_->getOut().end()).c_str() );
+                    out.toString().c_str(), 
+                    method->sig_->getOut().toString().c_str() ); 
 
             return false;
         }
@@ -403,8 +403,7 @@ IfElStatement::~IfElStatement()
 {
     delete expr_;
     delete ifBranch_;
-    if (elBranch_)
-        delete elBranch_;
+    delete elBranch_;
 }
 
 /*

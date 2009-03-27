@@ -61,6 +61,8 @@ protected:
     void analyze(bool& result, TypeList& argTypeList, PlaceList& argPlaceList) const;
     bool analyze(Class* _class, const TypeList& argTypeList);
 
+    std::string callToString() const;
+
     /*
      * data
      */

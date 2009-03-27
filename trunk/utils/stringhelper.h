@@ -38,42 +38,4 @@ struct StringPtrCmp
 /// Builds a string from a number which has at least 4 digits
 std::string number2String(int number);
 
-template<class T>
-std::string commaList(T begin, T end)
-{
-    std::ostringstream oss;
-
-    while (begin != end)
-    {
-        oss << (*begin).toString() << ", ";
-        ++begin;
-    }
-
-    std::string result = oss.str();
-
-    if ( !result.empty() )
-        result = result.substr(0, result.size() - 2);
-
-    return result;
-}
-
-template<class T>
-std::string commaListPtr(T begin, T end)
-{
-    std::ostringstream oss;
-
-    while (begin != end)
-    {
-        oss << (*begin)->toString() << ", ";
-        ++begin;
-    }
-
-    std::string result = oss.str();
-
-    if ( !result.empty() )
-        result = result.substr(0, result.size() - 2);
-
-    return result;
-}
-
 #endif // SWIFT_STRINGHELPER_H

@@ -153,9 +153,6 @@ bool Literal::analyze()
         case L_TRUE: // like L_FALSE
         case L_FALSE:   type_ = new BaseType(CONST, new std::string("bool"));   break;
 
-        case L_NIL:
-            std::cout << "TODO" << std::endl;
-
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
@@ -198,8 +195,6 @@ void Literal::genSSA()
         case L_TRUE:
         case L_FALSE:   literal->value_.bool_      = bool_;    break;
 
-        case L_NIL:     literal->value_.ptr_       = ptr_;     break;
-
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
@@ -231,8 +226,6 @@ std::string Literal::toString() const
 
         case L_TRUE:    oss << "true";                  break;
         case L_FALSE:   oss << "false";                 break;
-
-        case L_NIL:     oss << "nil";                   break;
 
         // hence it is real, real32 or real64
 
@@ -381,7 +374,7 @@ bool UnExpr::analyze()
         return false;
 
     if (c_ == '&')
-        type_ = new Ptr( 0, op_->getType()->clone() );
+        type_ = new Ptr( VAR, op_->getType()->clone() );
     else if (c_ == '^')
     {
         Ptr* ptr = dynamic_cast<Ptr*>(type_);
@@ -515,9 +508,7 @@ bool BinExpr::analyze()
     TypeList argTypeList;
     argTypeList.push_back(op1_->getType());
     argTypeList.push_back(op2_->getType());
-    //Signature sig;
-    //sig.appendInParam( new Param(Param::ARG, op1_->getType()->clone(), 0, 0) );
-    //sig.appendInParam( new Param(Param::ARG, op2_->getType()->clone(), 0, 0) );
+
     std::string* opString = operatorToString(kind_);
     Method* method = symtab->lookupMethod(
             symtab->lookupClass(bt1->getId()), opString, OPERATOR, argTypeList, line_);
@@ -702,5 +693,106 @@ std::string MemberAccess::toString() const
 {
     return expr_->toString() + "." + *id_;
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+Nil::Nil(Type* innerType, int line)
+    : Expr(line)
+    , innerType_(innerType)
+{}
+
+Nil::~Nil()
+{
+    delete innerType_;
+}
+
+/*
+ * virtual methods
+ */
+
+bool Nil::analyze()
+{
+    if ( !innerType_->validate() )
+        return false;
+    
+    type_ = new Ptr( CONST, innerType_->clone() );
+
+    me::Const* literal = me::functab->newConst(me::Op::R_PTR);
+    literal->value_.ptr_ = 0;
+    place_ = literal;
+
+    return true;
+}
+
+void Nil::genSSA() 
+{
+}
+
+std::string Nil::toString() const
+{
+    return "nil{" + innerType_->toString() + "}";
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
+Self::Self(int line)
+    : Expr(line)
+{}
+
+/*
+ * virtual methods
+ */
+
+bool Self::analyze()
+{
+    int methodQualifier = symtab->currentMethod()->methodQualifier_;
+
+    int typeQualifier;
+    switch (methodQualifier)
+    {
+        case ROUTINE:
+            errorf(line_, "routines do not have a 'self' pointer");
+            return false;
+
+        case READER:
+            typeQualifier = CONST;
+            break;
+
+        case WRITER:
+            typeQualifier = VAR;
+            break;
+
+        default:
+            swiftAssert(false, "unreachable code");
+            return false;
+    }
+
+    std::string* classId = new std::string(*symtab->currentClass()->id_);
+    type_ = new Ptr( CONST, new BaseType(typeQualifier, classId) );
+
+    me::Reg* reg = me::functab->newReg(me::Op::R_PTR);
+    // TODO
+    place_ = reg;
+
+    return true;
+}
+
+void Self::genSSA() 
+{
+}
+
+std::string Self::toString() const
+{
+    return "self";
+}
+
 
 } // namespace swift

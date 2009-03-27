@@ -116,6 +116,11 @@ bool FunctionCall::analyze(Class* _class, const TypeList& argTypeList)
     return true;
 }
 
+std::string FunctionCall::callToString() const
+{
+    return *id_ + '(' + (exprList_ ? exprList_->toString() : "") + ')';
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -156,7 +161,7 @@ bool CCall::analyze()
         {
             me::Var* var = returnType_->createVar();
             place_ = var;
-            type_ = returnType_->clone();
+            type_ = returnType_->constClone();
         }
     }
     else
@@ -177,7 +182,7 @@ std::string CCall::toString() const
     if (returnType_)
         result += returnType_->toString() + " ";
 
-    result += '(' + exprList_->toString() + ')';
+    result += callToString();
 
     return result;
 }
@@ -246,7 +251,7 @@ bool RoutineCall::analyze()
 
 std::string RoutineCall::toString() const
 {
-    return *classId_ + "::" + *id_ + '(' + exprList_->toString() + ')';
+    return *classId_ + "::" + callToString();
 }
 
 //------------------------------------------------------------------------------
@@ -319,7 +324,7 @@ std::string MethodCall::toString() const
         access = '.';
     }
 
-    return expr_->toString() + access + *id_ + '(' + exprList_->toString() + ')';
+    return expr_->toString() + access + callToString();
 }
 
 } // namespace swift

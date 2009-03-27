@@ -27,7 +27,20 @@ namespace swift {
 
 std::string TypeList::toString() const
 {
-    return commaListPtr( begin(), end() ); 
+    std::string result;
+
+    for (size_t i = 0; i < size(); ++i)
+    {
+        if ( (*this)[i] )
+            result += (*this)[i]->toString() + ", ";
+        else
+            result += "void, ";
+    }
+
+    if ( !result.empty() )
+        result = result.substr(0, result.size() - 2);
+
+    return result;
 }
 
 } // namespace swift

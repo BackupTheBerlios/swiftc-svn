@@ -121,7 +121,9 @@ using namespace swift;
 %token <expr_>  L_INT  L_INT8   L_INT16  L_INT32  L_INT64  L_SAT8  L_SAT16
 %token <expr_> L_UINT L_UINT8  L_UINT16 L_UINT32 L_UINT64 L_USAT8 L_USAT16
 %token <expr_> L_REAL L_REAL32 L_REAL64
-%token <expr_> L_TRUE L_FALSE  L_NIL
+%token <expr_> L_TRUE L_FALSE
+
+%token NIL
 
 // types
 %token PTR ARRAY SIMD
@@ -448,29 +450,30 @@ postfix_expr
     ;
 
 primary_expr
-    : ID            { $$ = new Id($1, getKeyLine()); }
-    | L_INDEX       { $$ = $1; }
-    | L_INT         { $$ = $1; }
-    | L_INT8        { $$ = $1; }
-    | L_INT16       { $$ = $1; }
-    | L_INT32       { $$ = $1; }
-    | L_INT64       { $$ = $1; }
-    | L_SAT8        { $$ = $1; }
-    | L_SAT16       { $$ = $1; }
-    | L_UINT        { $$ = $1; }
-    | L_UINT8       { $$ = $1; }
-    | L_UINT16      { $$ = $1; }
-    | L_UINT32      { $$ = $1; }
-    | L_UINT64      { $$ = $1; }
-    | L_USAT8       { $$ = $1; }
-    | L_USAT16      { $$ = $1; }
-    | L_REAL        { $$ = $1; }
-    | L_REAL32      { $$ = $1; }
-    | L_REAL64      { $$ = $1; }
-    | L_TRUE        { $$ = $1; }
-    | L_FALSE       { $$ = $1; }
-    | L_NIL         { $$ = $1; }
-    | '(' expr ')'  { $$ = $2; }
+    : ID               { $$ = new  Id($1, currentLine); }
+    | NIL '{' type '}' { $$ = new Nil($3, currentLine); }
+    | SELF             { $$ = new Self(currentLine); }
+    | L_INDEX          { $$ = $1; }
+    | L_INT            { $$ = $1; }
+    | L_INT8           { $$ = $1; }
+    | L_INT16          { $$ = $1; }
+    | L_INT32          { $$ = $1; }
+    | L_INT64          { $$ = $1; }
+    | L_SAT8           { $$ = $1; }
+    | L_SAT16          { $$ = $1; }
+    | L_UINT           { $$ = $1; }
+    | L_UINT8          { $$ = $1; }
+    | L_UINT16         { $$ = $1; }
+    | L_UINT32         { $$ = $1; }
+    | L_UINT64         { $$ = $1; }
+    | L_USAT8          { $$ = $1; }
+    | L_USAT16         { $$ = $1; }
+    | L_REAL           { $$ = $1; }
+    | L_REAL32         { $$ = $1; }
+    | L_REAL64         { $$ = $1; }
+    | L_TRUE           { $$ = $1; }
+    | L_FALSE          { $$ = $1; }
+    | '(' expr ')'     { $$ = $2; }
     ;
 
 expr_list
