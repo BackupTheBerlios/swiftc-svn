@@ -327,12 +327,8 @@ arrow_return_type_list
     ;
 
 return_type_list
-    : return_type
-    | return_type ',' return_type_list
-    ;
-
-return_type
-    : bare_type ID       { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
+    : bare_type ID                      { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
+    | bare_type ID ',' return_type_list { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
     ;
 
 /*

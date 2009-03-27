@@ -83,4 +83,27 @@ PlaceList Tupel::getPlaceList()
     return result;
 }
 
+const Tupel* Tupel::next() const
+{
+    return next_;
+}
+
+const TypeNode* Tupel::getTypeNode() const
+{
+    return typeNode_;
+}
+
+std::string Tupel::toString() const
+{
+    std::string result;
+
+    for (const Tupel* iter = this; iter != 0; iter = iter->next_)
+        result += iter->typeNode_->toString() + ", ";
+
+    if ( !result.empty() )
+        result = result.substr( 0, result.size() - 2 );
+
+    return result;
+}
+
 } // namespace swift

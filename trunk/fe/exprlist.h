@@ -58,6 +58,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual std::string toString() const;
 
     /*
      * further methods

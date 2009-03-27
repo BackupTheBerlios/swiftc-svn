@@ -135,7 +135,11 @@ struct Literal : public Expr
     virtual bool analyze();
     virtual void genSSA();
 
-    std::string toString() const;
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
 
     /*
      * static methods
@@ -172,9 +176,10 @@ struct Id : public Expr
     virtual ~Id();
 
     /*
-     * further methods
+     * virtual methods
      */
 
+    virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
 };
@@ -208,9 +213,10 @@ struct UnExpr : public Expr
     virtual ~UnExpr();
 
     /*
-     * further methods
+     * virtual methods
      */
 
+    virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
 };
@@ -242,13 +248,19 @@ struct BinExpr : public Expr
     virtual ~BinExpr();
 
     /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+    virtual bool analyze();
+    virtual void genSSA();
+
+    /*
      * further methods
      */
 
     std::string getExprName() const;
     std::string getOpString() const;
-    virtual bool analyze();
-    virtual void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -271,9 +283,10 @@ struct MemberAccess : public Expr
     ~MemberAccess();
 
     /*
-     * further methods
+     * virtual methods
      */
 
+    virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
 };

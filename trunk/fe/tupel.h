@@ -56,6 +56,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -63,6 +64,8 @@ public:
 
     PlaceList getPlaceList();
     TypeList getTypeList() const;
+    const Tupel* next() const;
+    const TypeNode* getTypeNode() const;
 
 private:
 

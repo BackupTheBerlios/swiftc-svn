@@ -84,8 +84,12 @@ public:
      * further methods
      */
 
+    Type* constClone() const;
+
     int& modifier();
     const int& modifier() const;
+
+    bool isReadOnly() const;
 
 protected:
 

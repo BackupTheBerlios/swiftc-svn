@@ -88,4 +88,17 @@ FunctionCall* ExprList::getFunctionCall()
     return dynamic_cast<FunctionCall*>(expr_);
 }
 
+std::string ExprList::toString() const
+{
+    std::string result;
+
+    for (const ExprList* iter = this; iter != 0; iter = iter->next_)
+        result += modifier_ ? "inout " : "" + iter->expr_->toString() + ", ";
+
+    if ( !result.empty() )
+        result = result.substr( 0, result.size() - 2 );
+
+    return result;
+}
+
 } // namespace swift

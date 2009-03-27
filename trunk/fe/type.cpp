@@ -69,6 +69,13 @@ const BaseType* Type::unnestPtr() const
  * further methods
  */
 
+Type* Type::constClone() const
+{
+    Type* type = this->clone();
+    type->modifier_ = CONST;
+
+    return type;
+}
 
 int& Type::modifier()
 {
@@ -78,6 +85,11 @@ int& Type::modifier()
 const int& Type::modifier() const
 {
     return modifier_;
+}
+
+bool Type::isReadOnly() const
+{
+    return modifier_ == CONST || modifier_ == CONST_PARAM;
 }
 
 //------------------------------------------------------------------------------

@@ -62,6 +62,13 @@ struct Node
 
     Node(int line = NO_LINE);
     virtual ~Node() {}
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const = 0;
+
 };
 
 //------------------------------------------------------------------------------
@@ -82,10 +89,15 @@ struct Symbol : public Node
     virtual ~Symbol();
 
     /*
+     * virtual methods
+     */
+
+    /// Returns the \a id_ of this Symbol.
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
-    /// Returns the \a id_ of this Symbol.
-    std::string toString() const;
 
     /**
      * Returns the full name of the symbol.

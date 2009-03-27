@@ -104,6 +104,11 @@ bool DeclStatement::analyze()
     return result;
 }
 
+std::string DeclStatement::toString() const
+{
+    return decl_->toString();
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -140,6 +145,38 @@ bool AssignStatement::analyze()
 
     TypeList in = exprList_->getTypeList();
     TypeList out = tupel_->getTypeList();
+
+    // check whether there is a const type in out
+    for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
+    {
+        const TypeNode* typeNode = iter->getTypeNode();
+
+        const Expr* expr = dynamic_cast<const Expr*>(typeNode);
+        if ( expr )
+        {
+            if ( expr->getType()->isReadOnly() )
+            {
+                const Id* id = dynamic_cast<const Id*>(expr);
+
+                if (id)
+                {
+                    errorf(line_, "assignment of read-only variable '%s'", 
+                            id->id_->c_str() );
+                }
+                else
+                {
+                    errorf(line_, "assignment of read-only location '%s'", 
+                            expr->toString().c_str() );
+                }
+            }   
+        }
+        else
+        {
+            swiftAssert( typeid(*typeNode) == typeid(const Decl), 
+                    "must be a const Decl" );
+            const Decl* decl = (const Decl*) typeNode;
+        }
+    }
 
     swiftAssert( in.size() > 0, "must have at least one element" );
     swiftAssert( out.size() > 0, "must have at least one element" );
@@ -259,6 +296,11 @@ void AssignStatement::genSSA()
         //me::functab->appendInstr( 
                 //new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
     //}
+}
+
+std::string AssignStatement::toString() const
+{
+    return tupel_->toString() + " = " + exprList_->toString();
 }
 
 //------------------------------------------------------------------------------

@@ -106,6 +106,12 @@ public:
     virtual ~DeclStatement();
 
     /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
@@ -145,6 +151,12 @@ struct AssignStatement : public Statement
 
     AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line = NO_LINE);
     virtual ~AssignStatement();
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
 
     /*
      * further methods

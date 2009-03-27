@@ -342,6 +342,11 @@ bool Id::analyze()
 
 void Id::genSSA() {} // do nothing
 
+std::string Id::toString() const
+{
+    return *id_;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -427,6 +432,15 @@ void UnExpr::genSSA()
     }
 
     me::functab->appendInstr( new me::AssignInstr(kind, var, op_->getPlace()) );
+}
+
+std::string UnExpr::toString() const
+{
+    std::string* opString = operatorToString(kind_);
+    std::string result = *opString + " " + op_->toString();
+    delete opString;
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -554,6 +568,15 @@ void BinExpr::genSSA()
         swiftAssert(false, "TODO");
 }
 
+std::string BinExpr::toString() const
+{
+    std::string* opString = operatorToString(kind_);
+    std::string result = op1_->toString() + " " + *opString + " " + op2_->toString();
+    delete opString;
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -675,7 +698,9 @@ void MemberAccess::genSSA()
     //}
 //}
 
-//------------------------------------------------------------------------------
-
+std::string MemberAccess::toString() const
+{
+    return expr_->toString() + "." + *id_;
+}
 
 } // namespace swift

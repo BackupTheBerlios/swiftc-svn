@@ -94,6 +94,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual std::string toString() const;
 
 private:
 
@@ -127,6 +128,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual std::string toString() const;
 
 private:
 
@@ -160,6 +162,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual std::string toString() const;
 
 private:
 

@@ -165,6 +165,23 @@ bool CCall::analyze()
     return result;
 }
 
+std::string CCall::toString() const
+{
+    std::string result;
+
+    if (kind_ == C_CALL)
+        result = "c_call ";
+    else
+        result = "vc_call ";
+
+    if (returnType_)
+        result += returnType_->toString() + " ";
+
+    result += '(' + exprList_->toString() + ')';
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -227,6 +244,11 @@ bool RoutineCall::analyze()
     return FunctionCall::analyze(_class, argTypeList);
 }
 
+std::string RoutineCall::toString() const
+{
+    return *classId_ + "::" + *id_ + '(' + exprList_->toString() + ')';
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -283,6 +305,21 @@ bool MethodCall::analyze()
     }
 
     return FunctionCall::analyze(_class, argTypeList);
+}
+
+std::string MethodCall::toString() const
+{
+    char access;
+
+    if (kind_ == READER)
+        access = ':';
+    else
+    {
+        swiftAssert(kind_ == WRITER, "must be a writer");
+        access = '.';
+    }
+
+    return expr_->toString() + access + *id_ + '(' + exprList_->toString() + ')';
 }
 
 } // namespace swift
