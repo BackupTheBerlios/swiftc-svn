@@ -82,7 +82,7 @@ bool Method::analyze()
     me::functab->insertFunction( new std::string(oss.str()), isTrivial() );
 
     bool result = true;
-    result &= sig_->analyze(); // needs the valid function in the functab
+    result &= sig_->analyze();
 
     // insert the first label since every function must start with one
     me::functab->appendInstr( new me::LabelInstr() );
@@ -102,7 +102,8 @@ bool Method::analyze()
             const BaseType* bt = dynamic_cast<const BaseType*>( in[0] );
             if ( !bt || *symtab->class_->id_ != *bt->getId() )
             {
-                errorf( line_, "The the first parameter of this operator must be of type %s",
+                errorf( line_, "The the first parameter of the '%s'-operator must be of type %s",
+                    id_->c_str(),
                     symtab->class_->id_->c_str() );
                 result = false;
             }
@@ -141,7 +142,7 @@ bool Method::analyze()
 
         }
 
-        if (*id_ == "not" || unaryMinus)
+        if (*id_ == "not" || *id_ == "=" || unaryMinus)
         {
 
             if ( in.size() != 1 || out.size() != 1 )

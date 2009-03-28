@@ -47,14 +47,16 @@ Tupel::~Tupel()
 
 bool Tupel::analyze()
 {
-    Expr* expr = dynamic_cast<Expr*>(typeNode_);
-    if (expr)
-        expr->neededAsLValue();
+    bool result = true;
 
-    bool result = typeNode_->analyze();
+    for (const Tupel* iter = this; iter != 0; iter = iter->next_)
+    {
+        Expr* expr = dynamic_cast<Expr*>(iter->typeNode_);
+        if (expr)
+            expr->neededAsLValue();
 
-    if (next_)
-        result &= next_->analyze();
+        result &= iter->typeNode_->analyze();
+    }
 
     return result;
 }

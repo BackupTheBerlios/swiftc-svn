@@ -92,7 +92,8 @@ DeclStatement::~DeclStatement()
 
 bool DeclStatement::analyze()
 {
-    bool result = decl_->analyze();
+    if ( !decl_->analyze() )
+        return false;
 
     const BaseType* bt = dynamic_cast<const BaseType*>( decl_->getType() );
     if (bt)
@@ -103,17 +104,16 @@ bool DeclStatement::analyze()
         {
             errorf( line_, "class '%s' does not provide a default constructor 'create()'",
                     _class->id_->c_str() );
+
+            return false;
         }
     }
 
-    if (result)
-    {
-        me::Var* op = (me::Var*) decl_->getPlace();
-        me::functab->appendInstr( 
-                new me::AssignInstr('=', op, me::functab->newUndef(op->type_)) );
-    }
+    me::Var* op = (me::Var*) decl_->getPlace();
+    me::functab->appendInstr( 
+            new me::AssignInstr('=', op, me::functab->newUndef(op->type_)) );
 
-    return result;
+    return true;
 }
 
 std::string DeclStatement::toString() const
@@ -258,20 +258,52 @@ bool AssignStatement::analyze()
             return false;
         }
 
-        // check whether copy constructors are available for types on the lhs
-        for (size_t i = 0; i < out.size(); ++i)
+        /*
+         * check whether copy constructors or assign operators are available
+         * for types on the lhs respectively
+         *
+         * TODO merge this with above
+         */
+
+        for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
         {
-            const BaseType* bt = dynamic_cast<const BaseType*>( out[i] );
+            const Decl* decl = dynamic_cast<const Decl*>( iter->getTypeNode() );
 
-            if (bt)
+            if (decl)
             {
-                Class* _class = bt->lookupClass();
+                const BaseType* bt = dynamic_cast<const BaseType*>( decl->getType() );
 
-                if (_class->copyCreate_ == Class::COPY_NONE)
+                if (bt)
                 {
-                    errorf( line_, "class '%s' does not provide a copy constructor 'create(%s)'",
-                            _class->id_->c_str(),
-                            _class->id_->c_str() );
+                    Class* _class = bt->lookupClass();
+
+                    if (_class->copyCreate_ == Class::COPY_NONE)
+                    {
+                        errorf( line_, "class '%s' does not provide a copy constructor 'create(%s)'",
+                                _class->id_->c_str(),
+                                _class->id_->c_str() );
+                    }
+                }
+            }
+            else
+            {
+                swiftAssert( typeid(*iter->getTypeNode()) == typeid(const Expr),
+                        "must be an Expr here");
+                const Expr* expr = (const Expr*) iter->getTypeNode();
+
+                const BaseType* bt = dynamic_cast<const BaseType*>( expr->getType() );
+
+                if (bt)
+                {
+                    Class* _class = bt->lookupClass();
+
+                    if (_class->assignOperator_ == Class::ASSIGN_NONE)
+                    {
+                        errorf( line_, "class '%s' does not provide an assign operator '=(%s) -> %s'",
+                                _class->id_->c_str(),
+                                _class->id_->c_str(),
+                                _class->id_->c_str() );
+                    }
                 }
             }
         }
@@ -401,11 +433,8 @@ bool WhileStatement::analyze()
         result &= iter->analyze();
 
     // generate instructions as you can see above
-    if (result)
-    {
-        me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
-        me::functab->appendInstrNode(nextLabelNode);
-    }
+    me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
+    me::functab->appendInstrNode(nextLabelNode);
 
     // return to parent scope
     symtab->leaveScope();

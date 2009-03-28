@@ -16,8 +16,8 @@
 # Boston, MA 02110-1301, USA.
 
 class int
-    create (int i)
-    end
+    #create (int i)
+    #end
 
     operator + (int i1, int i2) -> int res
     end

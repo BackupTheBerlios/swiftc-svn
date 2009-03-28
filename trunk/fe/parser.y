@@ -309,6 +309,7 @@ operator
     |   OR_OP   { $$ = OR_OP; }
     |   XOR_OP  { $$ = XOR_OP; }
     |   NOT_OP  { $$ = NOT_OP; }
+    |   '='     { $$ = '='; }
     ;
 
 parameter_list

@@ -322,10 +322,15 @@ Method* SymbolTable::lookupMethod(Class* _class,
 
 Method* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
 {
-    std::string create = "create";
+    std::string create("create");
     return lookupMethod(_class, &create, CREATE, in, line);
 }
 
+Method* SymbolTable::lookupAssignOperator(Class* _class, const TypeList& in, int line)
+{
+    std::string op("=");
+    return lookupMethod(_class, &op, OPERATOR, in, line);
+}
 
 /*
  * current getters

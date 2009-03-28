@@ -145,6 +145,11 @@ class Test
         result.i = c1.i + c2.i
     end
 
+    operator = (Complex c) -> Complex result
+        result.r = c.r
+        result.i = c.i
+    end
+
 
     writer constMember()
     routine staticMember()

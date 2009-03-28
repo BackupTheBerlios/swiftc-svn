@@ -46,6 +46,7 @@ Class::Class(std::string* id, Symbol* parent, int line)
     : Definition(id, parent, line)
     , defaultCreate_(DEFAULT_NONE)
     , copyCreate_(COPY_USER)
+    , assignOperator_(ASSIGN_USER)
 {}
 
 Class::~Class()
@@ -81,15 +82,7 @@ void Class::addConstructors()
             symtab->insert(create);
             create->statements_ = 0;
 
-            // link with this class
-            if (classMember_ == 0)
-                classMember_ = create;
-            else
-            {
-                // prepend default constructor
-                create->next_ = classMember_;
-                classMember_ = create;
-            }
+            prependMember(create);
         }
     }
 
@@ -112,18 +105,53 @@ void Class::addConstructors()
             symtab->insert(create);
             symtab->insertParam( new Param(newType, new std::string("arg")) );
 
-            // link with this class
-            if (classMember_ == 0)
-                classMember_ = create;
-            else
-            {
-                // prepend copy constructor
-                create->next_ = classMember_;
-                classMember_ = create;
-            }
+            prependMember(create);
         }
         else
             delete newType;
+    }
+
+    /*
+     * handling of the assign operator
+     */
+    {
+        // check whether there is already a assign operator
+        BaseType* newType = new BaseType(CONST_PARAM, this);
+        TypeList in;
+        in.push_back(newType);
+        Method* op = symtab->lookupAssignOperator(this, in, 0);
+
+        if (!op)
+        {
+            assignOperator_ = ASSIGN_AUTO;
+
+            op = new Method(OPERATOR, new std::string("="), this, NO_LINE);
+            op->statements_ = 0;
+            symtab->insert(op);
+            symtab->insertParam( new Param(newType, new std::string("arg")) );
+
+            BaseType* returnType = new BaseType(RETURN_VALUE, this);
+            TypeList out;
+            out.push_back(returnType);
+            symtab->insertRes( new Param(returnType, new std::string("result")) );
+
+            prependMember(op);
+        }
+        else
+            delete newType;
+    }
+}
+
+void Class::prependMember(ClassMember* newMember)
+{
+    // link with this class
+    if (classMember_ == 0)
+        classMember_ = newMember;
+    else
+    {
+        // prepend newMember
+        newMember->next_ = classMember_;
+        classMember_ = newMember;
     }
 }
 

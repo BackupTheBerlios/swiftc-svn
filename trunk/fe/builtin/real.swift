@@ -16,8 +16,8 @@
 # Boston, MA 02110-1301, USA.
 
 class real
-    create (real r)
-    end
+    #create (real r)
+    #end
 
     operator + (real r1, real r2) -> real res
     end

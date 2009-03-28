@@ -16,8 +16,8 @@
 # Boston, MA 02110-1301, USA.
 
 class bool
-    create (bool b)
-    end
+    #create (bool b)
+    #end
 
 #    operator bool and or xor (bool b1, bool b2)
 #    end
