@@ -307,6 +307,11 @@ bool MethodCall::analyze()
             errorf(line_, "routines do not have a 'self' pointer");
             return false;
         }
+        else if ( symtab->currentMethod()->methodQualifier_ == OPERATOR ) 
+        {
+            errorf(line_, "operators do not have a 'self' pointer");
+            return false;
+        }
     }
 
     return FunctionCall::analyze(_class, argTypeList);

@@ -35,9 +35,8 @@ class Scope;
 //------------------------------------------------------------------------------
 
 /**
- * This class represents a Method of a Class. Because there may be one day
- * routines all the logic is handled in Proc in order to share code.
-*/
+ * This class represents a Method of a Class. 
+ */
 struct Method : public ClassMember
 {
     int methodQualifier_;   ///< Either READER, WRITER, ROUTINE, CREATE or OPERATOR.

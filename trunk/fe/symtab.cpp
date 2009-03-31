@@ -303,6 +303,8 @@ Method* SymbolTable::lookupMethod(Class* _class,
             methodType = "constructor";
         else if (methodQualifier == OPERATOR)
             methodType = "operator";
+        else if (methodQualifier == ASSIGN)
+            methodType = "assign operator";
         else methodType = "routine";
 
         if (line)
@@ -328,7 +330,7 @@ Method* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
 
 Method* SymbolTable::lookupAssignOperator(Class* _class, const TypeList& in, int line)
 {
-    std::string op("=");
+    std::string op("assign");
     return lookupMethod(_class, &op, OPERATOR, in, line);
 }
 

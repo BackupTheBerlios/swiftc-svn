@@ -134,7 +134,7 @@ using namespace swift;
 %token SELF
 
 // method qualifier
-%token READER WRITER ROUTINE OPERATOR
+%token READER WRITER ROUTINE ASSIGN OPERATOR
 
 %token ARROW
 %token DOUBLE_COLON
@@ -227,7 +227,7 @@ class_definition
         {
             $$ = $<class_>4;
             $<class_>$->classMember_= $5;
-            $<class_>$->addConstructors();
+            $<class_>$->autoGenMethods();
         }
     ;
 
@@ -276,6 +276,17 @@ method
         {
             $$ = $<method_>3;
             $$->statements_ = $9;
+        }
+    | ASSIGN 
+        {
+            $<method_>$ = new Method( ASSIGN, new std::string("assign"), symtab->class_, getKeyLine() );
+            symtab->insert($<method_>$);
+        }
+        '(' parameter_list ')'
+        EOL statement_list END EOL
+        {
+            $$ = $<method_>2;
+            $$->statements_ = $7;
         }
     | CREATE
         {

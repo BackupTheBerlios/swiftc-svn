@@ -74,15 +74,6 @@ struct Class : public Definition
 
     CopyCreate copyCreate_;
 
-    enum AssignOperator
-    {
-        ASSIGN_NONE,
-        ASSIGN_AUTO,
-        ASSIGN_USER
-    };
-
-    AssignOperator assignOperator_;
-
     typedef std::multimap<const std::string*, Method*, StringPtrCmp> MethodMap;
     typedef std::map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
 
@@ -110,8 +101,11 @@ struct Class : public Definition
      * further methods
      */
 
-    void addConstructors();
+    void autoGenMethods();
     void prependMember(ClassMember* newMember);
+    void addDefaultCreate();
+    void addCopyCreate();
+    void addAssignOperators();
 };
 
 //------------------------------------------------------------------------------

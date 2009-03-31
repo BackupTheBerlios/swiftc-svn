@@ -87,22 +87,22 @@ bool Method::analyze()
     // insert the first label since every function must start with one
     me::functab->appendInstr( new me::LabelInstr() );
 
+    const TypeList&  in = sig_->getIn();
+    const TypeList& out = sig_->getOut();
+
     // is it an operator?
     if (methodQualifier_ == OPERATOR)
     {
         /*
          * check signature
          */
-        const TypeList&  in = sig_->getIn();
-        const TypeList& out = sig_->getOut();
-
         if ( !in.empty() )
         {
             // check whether the first type matches the type of the current class
             const BaseType* bt = dynamic_cast<const BaseType*>( in[0] );
             if ( !bt || *symtab->class_->id_ != *bt->getId() )
             {
-                errorf( line_, "The the first parameter of the '%s'-operator must be of type %s",
+                errorf( line_, "the first parameter of the '%s'-operator must be of type %s",
                     id_->c_str(),
                     symtab->class_->id_->c_str() );
                 result = false;
@@ -134,7 +134,7 @@ bool Method::analyze()
                     unaryMinus = true;
                 else
                 {
-                    errorf( line_, "The '%s'-operator must exactly have two incoming and one outgoing parameter",
+                    errorf( line_, "the '%s'-operator must exactly have two incoming and one outgoing parameter",
                         id_->c_str() );
                     result = false;
                 }
@@ -142,7 +142,7 @@ bool Method::analyze()
 
         }
 
-        if (*id_ == "not" || *id_ == "=" || unaryMinus)
+        if (*id_ == "not" || unaryMinus)
         {
 
             if ( in.size() != 1 || out.size() != 1 )
@@ -150,15 +150,31 @@ bool Method::analyze()
                 if (*id_ == "-")
                 {
                     errorf(line_,
-                        "The '-'-operator must either have exactly two incoming and one outgoing or one incoming and one outgoing parameter");
+                        "the '-'-operator must either have exactly two incoming and one outgoing or one incoming and one outgoing parameter");
                 }
                 else
                 {
-                    errorf( line_, "The '%s'-operator must exactly have one incoming and one outgoing parameter",
+                    errorf( line_, "the '%s'-operator must exactly have one incoming and one outgoing parameter",
                         id_->c_str() );
                 }
                 result = false;
             }
+        }
+    }
+    else if (methodQualifier_ == ASSIGN)
+    {
+        if ( in.empty() || !out.empty() )
+        {
+            errorf(line_, "an assignment must have exactly one or more "
+                    "incoming parameters and no outgoing parameters");
+            result = false;
+        }
+        else if (in[0]->modifier() != CONST_PARAM)
+        {
+            swiftAssert(in[0]->modifier() == INOUT, "must be inout here");
+            errorf( line_, "the argument of an assignment "
+                "must not be declared as 'inout'");
+            result = false;
         }
     }
 

@@ -46,7 +46,6 @@ Class::Class(std::string* id, Symbol* parent, int line)
     : Definition(id, parent, line)
     , defaultCreate_(DEFAULT_NONE)
     , copyCreate_(COPY_USER)
-    , assignOperator_(ASSIGN_USER)
 {}
 
 Class::~Class()
@@ -58,87 +57,92 @@ Class::~Class()
  * further methods
  */
 
-void Class::addConstructors()
+void Class::autoGenMethods()
 {
-    /*
-     * handling of the default constructor
-     */
+    addDefaultCreate();
+    addCopyCreate();
+    addAssignOperators();
+}
+
+void Class::addDefaultCreate()
+{
+    // check whether there is already a default constructor
+    TypeList in;
+    Method* create = symtab->lookupCreate(this, in, 0);
+
+    if (create)
+        defaultCreate_ = DEFAULT_USER;
+    else if (!hasCreate_)
     {
-        // check whether there is already a default constructor
-        TypeList in;
-        Method* create = symtab->lookupCreate(this, in, 0);
+        /*
+        * -> construct a trivial default constructor 
+        * if there are no constructors defined at all
+        */
+        defaultCreate_ = DEFAULT_TRIVIAL;
 
-        if (create)
-            defaultCreate_ = DEFAULT_USER;
-        else if (!hasCreate_)
-        {
-            /*
-            * -> construct a trivial default constructor 
-            * if there are no constructors defined at all
-            */
-            defaultCreate_ = DEFAULT_TRIVIAL;
+        create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+        symtab->insert(create);
+        create->statements_ = 0;
 
-            create = new Method(CREATE, new std::string("create"), this, NO_LINE);
-            symtab->insert(create);
-            create->statements_ = 0;
-
-            prependMember(create);
-        }
+        prependMember(create);
     }
+}
 
-    /*
-     * handling of the copy constructor
-     */
+void Class::addCopyCreate()
+{
+    // check whether there is already a copy constructor
+    BaseType* newType = new BaseType(CONST_PARAM, this);
+    TypeList in;
+    in.push_back(newType);
+    Method* create = symtab->lookupCreate(this, in, 0);
+
+    if (!create)
     {
-        // check whether there is already a copy constructor
-        BaseType* newType = new BaseType(CONST_PARAM, this);
-        TypeList in;
-        in.push_back(newType);
-        Method* create = symtab->lookupCreate(this, in, 0);
+        copyCreate_ = COPY_AUTO;
 
-        if (!create)
-        {
-            copyCreate_ = COPY_AUTO;
+        create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+        create->statements_ = 0;
+        symtab->insert(create);
+        symtab->insertParam( new Param(newType, new std::string("arg")) );
 
-            create = new Method(CREATE, new std::string("create"), this, NO_LINE);
-            create->statements_ = 0;
-            symtab->insert(create);
-            symtab->insertParam( new Param(newType, new std::string("arg")) );
-
-            prependMember(create);
-        }
-        else
-            delete newType;
+        prependMember(create);
     }
+    else
+        delete newType;
+}
 
-    /*
-     * handling of the assign operator
-     */
+void Class::addAssignOperators()
+{
+    // lookup first create method
+    std::string createStr = "create";
+    Class::MethodMap::const_iterator iter = methods_.find(&createStr);
+
+    // get iterator to the first method, which has not "create" as identifier
+    Class::MethodMap::const_iterator last = methods_.upper_bound(&createStr);
+
+    for (Method* create = 0; iter != last; ++iter)
     {
-        // check whether there is already a assign operator
-        BaseType* newType = new BaseType(CONST_PARAM, this);
-        TypeList in;
-        in.push_back(newType);
-        Method* op = symtab->lookupAssignOperator(this, in, 0);
+        create = iter->second;
+        TypeList in = create->sig_->getIn();
+
+        // is this the default constructor?
+        if ( in.empty() )
+            continue;
+
+        // check wether there is already an assign operator defined with this in-types
+        Method* op = symtab->lookupAssignOperator(this, create->sig_->getIn(), 0);
 
         if (!op)
         {
-            assignOperator_ = ASSIGN_AUTO;
-
-            op = new Method(OPERATOR, new std::string("="), this, NO_LINE);
+            op = new Method(ASSIGN, new std::string("assign"), this, NO_LINE);
             op->statements_ = 0;
             symtab->insert(op);
-            symtab->insertParam( new Param(newType, new std::string("arg")) );
 
-            BaseType* returnType = new BaseType(RETURN_VALUE, this);
-            TypeList out;
-            out.push_back(returnType);
-            symtab->insertRes( new Param(returnType, new std::string("result")) );
+            for (size_t i = 0; i < in.size(); ++i)
+                symtab->insertParam( new Param(in[i]->clone(), new std::string("arg")) );
 
             prependMember(op);
         }
-        else
-            delete newType;
     }
 }
 

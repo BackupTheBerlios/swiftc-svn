@@ -325,4 +325,42 @@ class Foo
     end
 end
 
+# 
+# constructors and assign operators
+#
 
+class Vec2
+
+    # copy constructor
+    create (Vec2 v)
+        .x = v.x
+        .y = v.y
+    end
+
+    # real constructor
+    create (real x, real y)
+    end
+
+    assign (real x, real y, real z)
+    end
+
+    # assignment statements
+    # 1.
+    item1, item2 = funcExpr
+        # 
+
+    routine test()
+        Vec2 v1 = 2.0, 3.0  # real constructor
+        Vec2 v2 = v1        # copy constructor
+        v1 = v2             # assign operator
+        v1 = 2.0, 3.0       # error: no assign operator defined '=(real, real)'
+        v1 = Vec2(2.0, 3.0) # assign operator
+    end
+
+    #
+    # data
+    # 
+
+    real x
+    real y
+end

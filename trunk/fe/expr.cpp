@@ -758,10 +758,6 @@ bool Self::analyze()
     int typeQualifier;
     switch (methodQualifier)
     {
-        case ROUTINE:
-            errorf(line_, "routines do not have a 'self' pointer");
-            return false;
-
         case READER:
             typeQualifier = CONST;
             break;
@@ -769,6 +765,14 @@ bool Self::analyze()
         case WRITER:
             typeQualifier = VAR;
             break;
+
+        case ROUTINE:
+            errorf(line_, "routines do not have a 'self' pointer");
+            return false;
+
+        case ASSIGN:
+            errorf(line_, "assign operators do not have a 'self' pointer");
+            return false;
 
         default:
             swiftAssert(false, "unreachable code");

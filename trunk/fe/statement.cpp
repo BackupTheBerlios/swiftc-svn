@@ -297,13 +297,13 @@ bool AssignStatement::analyze()
                 {
                     Class* _class = bt->lookupClass();
 
-                    if (_class->assignOperator_ == Class::ASSIGN_NONE)
-                    {
-                        errorf( line_, "class '%s' does not provide an assign operator '=(%s) -> %s'",
-                                _class->id_->c_str(),
-                                _class->id_->c_str(),
-                                _class->id_->c_str() );
-                    }
+                    //if (_class->assignOperator_ == Class::ASSIGN_NONE)
+                    //{
+                        //errorf( line_, "class '%s' does not provide an assign operator '=(%s) -> %s'",
+                                //_class->id_->c_str(),
+                                //_class->id_->c_str(),
+                                //_class->id_->c_str() );
+                    //}
                 }
             }
         }

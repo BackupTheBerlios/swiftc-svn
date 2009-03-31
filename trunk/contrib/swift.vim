@@ -1,4 +1,4 @@
-syn case ignore
+"syn case noignore
 syn sync lines=250
 
 syn keyword swiftBoolean        true false
@@ -7,10 +7,10 @@ syn keyword swiftConstant	nil
 syn keyword swiftLabel		case goto label 
 syn keyword swiftOperator	and div downto in mod not of or packed with
 syn keyword swiftRepeat	        for while do 
-syn keyword swiftStatement	routine function reader writer operator
+syn keyword swiftStatement	routine function reader writer operator create assign
 syn keyword swiftStatement	program begin end const var type
 syn keyword swiftStruct	        class
-syn keyword swiftType		array simd bool int int8 int16 int32 int64 uint uin8 uint16 uint32 uint64 real real32 real64
+syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uin8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16
 "syn keyword swiftType		string text variant
 
 syn keyword swiftTodo contained	TODO FIXME XXX DEBUG NOTE
@@ -117,7 +117,7 @@ endif
 if !exists("swift_traditional")
 
   syn keyword swiftStatement	constructor destructor implementation inherited
-  syn keyword swiftStatement	interface unit uses
+  syn keyword swiftStatement	interface uses
   syn keyword swiftModifier	absolute assembler external far forward inline
   syn keyword swiftModifier	interrupt near virtual 
   syn keyword swiftAcces	private public 
@@ -128,12 +128,6 @@ if !exists("swift_traditional")
   syn region swiftPreProc	start="{\$"  end="}"
 
   syn region  swiftAsm		matchgroup=swiftAsmKey start="\<asm\>" end="\<end\>" contains=swiftComment,swiftPreProc
-
-  syn keyword swiftType	ShortInt LongInt Byte Word
-  syn keyword swiftType	ByteBool WordBool LongBool
-  syn keyword swiftType	Cardinal LongWord
-  syn keyword swiftType	Single Double Extended Comp
-  syn keyword swiftType	PChar
 
 
   if !exists ("swift_fpc")
@@ -148,18 +142,8 @@ if !exists("swift_traditional")
     syn keyword swiftType	ShortString AnsiString WideString
   endif
 
-  if exists("swift_gpc")
-    syn keyword swiftType	SmallInt
-    syn keyword swiftType	AnsiChar
-    syn keyword swiftType	PAnsiChar
-  endif
-
   if exists("swift_delphi")
     syn region swiftComment	start="//"  end="$" contains=swiftTodo,swiftSpaceError
-    syn keyword swiftType	SmallInt Int64
-    syn keyword swiftType	Real48 Currency
-    syn keyword swiftType	AnsiChar WideChar
-    syn keyword swiftType	ShortString AnsiString WideString
     syn keyword swiftType	PAnsiChar PWideChar
     syn match  swiftFloat	"-\=\<\d\+\.\d\+[dD]-\=\d\+\>"
     syn match  swiftStringEscape	contained "#[12][0-9]\=[0-9]\="
@@ -220,7 +204,7 @@ if !exists("swift_traditional")
     syn keyword swiftPredefined SegB800 SelectorInc StackLimit Test8087
 
     " file functions
-    syn keyword swiftFunction	Append Assign BlockRead BlockWrite ChDir Close
+    syn keyword swiftFunction	Append BlockRead BlockWrite ChDir Close
     syn keyword swiftFunction	Erase FilePos FileSize Flush GetDir IOResult
     syn keyword swiftFunction	MkDir Read Readln Rename Reset Rewrite RmDir
     syn keyword swiftFunction	Seek SeekEof SeekEoln SetTextBuf Truncate
@@ -279,9 +263,6 @@ if !exists("swift_traditional")
     syn keyword swiftFunction	SetPalette SetRGBPalette SetTextJustify
     syn keyword swiftFunction	SetTextStyle SetUserCharSize SetViewPort
     syn keyword swiftFunction	SetVisualPage SetWriteMode TextHeight TextWidth
-    syn keyword swiftType	ArcCoordsType FillPatternType FillSettingsType
-    syn keyword swiftType	LineSettingsType PaletteType PointType
-    syn keyword swiftType	TextSettingsType ViewPortType
 
     " string functions
     syn keyword swiftFunction	StrAlloc StrBufSize StrCat StrComp StrCopy
