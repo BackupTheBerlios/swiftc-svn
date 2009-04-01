@@ -130,7 +130,7 @@ void Class::addAssignOperators()
             continue;
 
         // check wether there is already an assign operator defined with this in-types
-        Method* op = symtab->lookupAssignOperator(this, create->sig_->getIn(), 0);
+        Method* op = symtab->lookupAssign(this, create->sig_->getIn(), 0);
 
         if (!op)
         {

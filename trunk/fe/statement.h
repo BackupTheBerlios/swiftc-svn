@@ -23,6 +23,7 @@
 #include "utils/assert.h"
 
 #include "fe/syntaxtree.h"
+#include "fe/typelist.h"
 
 namespace swift {
 
@@ -163,8 +164,11 @@ struct AssignStatement : public Statement
      */
 
     virtual bool analyze();
+    void genPtrAssignCreate();
     void genConstructorCall(Class* _class, Method* method);
     void genSSA();
+
+    bool analyzeFunctionCall(const TypeList& in, const TypeList& out);
 };
 
 //------------------------------------------------------------------------------

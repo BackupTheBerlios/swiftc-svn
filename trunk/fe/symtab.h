@@ -155,9 +155,7 @@ struct SymbolTable
      * @param in The in-signature the method should have.
      * @param line The line number of the method call.
      */
-    Method* lookupAssignOperator(Class* _class,
-                                 const TypeList& in,
-                                 int line);
+    Method* lookupAssign(Class* _class, const TypeList& in, int line);
 
     /*
      * current getters

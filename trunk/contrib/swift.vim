@@ -3,14 +3,13 @@ syn sync lines=250
 
 syn keyword swiftBoolean        true false
 syn keyword swiftConditional	if else elseif
-syn keyword swiftConstant	nil
+syn keyword swiftConstant	nil self
 syn keyword swiftLabel		case goto label 
 syn keyword swiftOperator	and div downto in mod not of or packed with
 syn keyword swiftRepeat	        for while do 
 syn keyword swiftStatement	routine function reader writer operator create assign
-syn keyword swiftStatement	program begin end const var type
-syn keyword swiftStruct	        class
-syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uin8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16
+syn keyword swiftStruct	        class end
+syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uin8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16 const
 "syn keyword swiftType		string text variant
 
 syn keyword swiftTodo contained	TODO FIXME XXX DEBUG NOTE
@@ -147,7 +146,7 @@ if !exists("swift_traditional")
     syn keyword swiftType	PAnsiChar PWideChar
     syn match  swiftFloat	"-\=\<\d\+\.\d\+[dD]-\=\d\+\>"
     syn match  swiftStringEscape	contained "#[12][0-9]\=[0-9]\="
-    syn keyword swiftStruct	class dispinterface
+    syn keyword swiftStruct	class dispinterface end
     syn keyword swiftException	try except raise at on finally
     syn keyword swiftStatement	out
     syn keyword swiftStatement	library package 

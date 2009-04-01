@@ -304,7 +304,7 @@ Method* SymbolTable::lookupMethod(Class* _class,
         else if (methodQualifier == OPERATOR)
             methodType = "operator";
         else if (methodQualifier == ASSIGN)
-            methodType = "assign operator";
+            methodType = "assignment";
         else methodType = "routine";
 
         if (line)
@@ -328,10 +328,10 @@ Method* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
     return lookupMethod(_class, &create, CREATE, in, line);
 }
 
-Method* SymbolTable::lookupAssignOperator(Class* _class, const TypeList& in, int line)
+Method* SymbolTable::lookupAssign(Class* _class, const TypeList& in, int line)
 {
     std::string op("assign");
-    return lookupMethod(_class, &op, OPERATOR, in, line);
+    return lookupMethod(_class, &op, ASSIGN, in, line);
 }
 
 /*

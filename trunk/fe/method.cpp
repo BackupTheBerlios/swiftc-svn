@@ -149,13 +149,15 @@ bool Method::analyze()
             {
                 if (*id_ == "-")
                 {
-                    errorf(line_,
-                        "the '-'-operator must either have exactly two incoming and one outgoing or one incoming and one outgoing parameter");
+                    errorf(line_, "the '-'-operator must either have exactly "
+                            "two incoming and one outgoing or one incoming " 
+                            "and one outgoing parameter");
                 }
                 else
                 {
-                    errorf( line_, "the '%s'-operator must exactly have one incoming and one outgoing parameter",
-                        id_->c_str() );
+                    errorf( line_, "the '%s'-operator must exactly have "
+                            "one incoming and one outgoing parameter",
+                            id_->c_str() );
                 }
                 result = false;
             }

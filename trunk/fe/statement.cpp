@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "statement.h"
+#include "fe/statement.h"
 
 #include <sstream>
 #include <typeinfo>
@@ -199,121 +199,147 @@ bool AssignStatement::analyze()
 
     if (out.size() == 1)
     {
-        // -> this is a constructor call
+        bool isDecl = dynamic_cast<const Decl*>(tupel_->getTypeNode());
 
         if ( typeid(*out[0]) == typeid(Ptr) )
         {
+            std::string methodStr;
+
+            if (isDecl)
+                methodStr = "constructer";
+            else
+                methodStr = "assignment";
+
             if (out.size() > 1)
             {
-                errorf(line_, "a ptr constructer takes only one argument");
+                errorf(line_, "a 'ptr' %s takes only one argument", 
+                        methodStr.c_str() );
                 return false;
             }
 
             if ( !out[0]->check(in[0]) )
             {
-                errorf(line_, "types do not match in 'ptr' assignment");
+                errorf( line_, "types do not match in 'ptr'-%s", 
+                        methodStr.c_str() );
                 return false;
             }
 
-            genConstructorCall(0, 0);
+            genPtrAssignCreate();
+            return true;
+        }
+
+        swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
+
+        const BaseType* bt = (const BaseType*) out[0];
+        Class* _class = bt->lookupClass();
+
+        if (isDecl)
+        {
+            Method* create = symtab->lookupCreate(_class, in, line_);
+            if (!create)
+                return false;
+
+            genConstructorCall(_class, create);
         }
         else
         {
-            swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
+            Method* assign = symtab->lookupAssign(_class, in, line_);
+            if (!assign)
+                return false;
 
-            const BaseType* bt = (const BaseType*) out[0];
-            Class* _class = bt->lookupClass();
-            Method* create = symtab->lookupCreate(_class, in, line_);
-
-            if (create)
-            {
-                genConstructorCall(_class, create);
-                return true;
-            }
-
-            return false;
+            genConstructorCall(_class, assign);
         }
     }
     else
     {
-        // -> it is an ordinary call of a function
-        FunctionCall* fc = exprList_->getFunctionCall();
-        if (!fc)
-        {
-            errorf(line_, "the right-hand side of an assignment statement with"
-                    "more than one item on the left-hand side" 
-                    "must be a function call");
-
+        if ( !analyzeFunctionCall(in, out) )
             return false;
-        }
-
-        Method* method = fc->getMethod();
-
-        if ( !method->sig_->checkOut(out) )
-        {
-            errorf( line_, "right-hand side needs out types '%s' but '%s' are given",
-                    out.toString().c_str(), 
-                    method->sig_->getOut().toString().c_str() ); 
-
-            return false;
-        }
-
-        /*
-         * check whether copy constructors or assign operators are available
-         * for types on the lhs respectively
-         *
-         * TODO merge this with above
-         */
-
-        for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
-        {
-            const Decl* decl = dynamic_cast<const Decl*>( iter->getTypeNode() );
-
-            if (decl)
-            {
-                const BaseType* bt = dynamic_cast<const BaseType*>( decl->getType() );
-
-                if (bt)
-                {
-                    Class* _class = bt->lookupClass();
-
-                    if (_class->copyCreate_ == Class::COPY_NONE)
-                    {
-                        errorf( line_, "class '%s' does not provide a copy constructor 'create(%s)'",
-                                _class->id_->c_str(),
-                                _class->id_->c_str() );
-                    }
-                }
-            }
-            else
-            {
-                swiftAssert( typeid(*iter->getTypeNode()) == typeid(const Expr),
-                        "must be an Expr here");
-                const Expr* expr = (const Expr*) iter->getTypeNode();
-
-                const BaseType* bt = dynamic_cast<const BaseType*>( expr->getType() );
-
-                if (bt)
-                {
-                    Class* _class = bt->lookupClass();
-
-                    //if (_class->assignOperator_ == Class::ASSIGN_NONE)
-                    //{
-                        //errorf( line_, "class '%s' does not provide an assign operator '=(%s) -> %s'",
-                                //_class->id_->c_str(),
-                                //_class->id_->c_str(),
-                                //_class->id_->c_str() );
-                    //}
-                }
-            }
-        }
     }
+
+    if (!result)
+        return false;
 
     genSSA();
 
     // TODO
     //if (typeid(*expr_) == typeid(MemberAccess) )
         //delete ((MemberAccess*) expr_)->rootStructOffset_;
+
+    return true;
+}
+
+bool AssignStatement::analyzeFunctionCall(const TypeList& in, const TypeList& out)
+{
+    // -> it is an ordinary call of a function
+    FunctionCall* fc = exprList_->getFunctionCall();
+    if (!fc)
+    {
+        errorf(line_, "the right-hand side of an assignment statement with"
+                "more than one item on the left-hand side" 
+                "must be a function call");
+
+        return false;
+    }
+
+    Method* method = fc->getMethod();
+
+    if ( !method->sig_->checkOut(out) )
+    {
+        errorf( line_, "right-hand side needs out types '%s' but '%s' are given",
+                out.toString().c_str(), 
+                method->sig_->getOut().toString().c_str() ); 
+
+        return false;
+    }
+
+    /*
+     * check whether copy constructors or assign operators are available
+     * for types on the lhs respectively
+     */
+
+    for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
+    {
+        const Decl* decl = dynamic_cast<const Decl*>( iter->getTypeNode() );
+
+        if (decl)
+        {
+            const BaseType* bt = dynamic_cast<const BaseType*>( decl->getType() );
+
+            if (bt)
+            {
+                Class* _class = bt->lookupClass();
+
+                if (_class->copyCreate_ == Class::COPY_NONE)
+                {
+                    errorf( line_, 
+                            "class '%s' does not provide a copy constructor 'create(%s)'",
+                            _class->id_->c_str(),
+                            _class->id_->c_str() );
+
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            swiftAssert( dynamic_cast<const Expr*>(iter->getTypeNode()),
+                    "must be an Expr here" );
+            const Expr* expr = (const Expr*) iter->getTypeNode();
+            const BaseType* bt = dynamic_cast<const BaseType*>( expr->getType() );
+
+            if (bt)
+            {
+                Class* _class = bt->lookupClass();
+                TypeList in;
+                in.push_back(bt);
+                Method* assign = symtab->lookupAssign(_class, in, line_);
+
+                if (!assign)
+                    return false;
+            }
+
+        }
+    }
 
     return true;
 }
@@ -333,6 +359,10 @@ void AssignStatement::genConstructorCall(Class* _class, Method* /*method*/)
 
     // else TODO
     swiftAssert(false, "TODO");
+}
+
+void AssignStatement::genPtrAssignCreate()
+{
 }
 
 void AssignStatement::genSSA()

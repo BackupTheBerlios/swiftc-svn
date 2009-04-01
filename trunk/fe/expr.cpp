@@ -763,6 +763,7 @@ bool Self::analyze()
             break;
 
         case WRITER:
+        case CREATE:
             typeQualifier = VAR;
             break;
 
