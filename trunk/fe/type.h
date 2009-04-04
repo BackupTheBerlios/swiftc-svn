@@ -21,6 +21,7 @@
 #define SWIFT_TYPE_H
 
 #include "fe/syntaxtree.h"
+#include "fe/typelist.h"
 
 #include "me/op.h"
 
@@ -70,6 +71,8 @@ public:
      */
     virtual bool isAtomic() const;
 
+    virtual bool isNonAtomicBuiltin() const;
+
     /// Checks whether this Type is the builtin bool Type
     virtual bool isBool() const;
 
@@ -77,6 +80,10 @@ public:
     virtual const Ptr* derefToInnerstPtr() const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
+
+    virtual bool hasAssignCreate(const TypeList& in, 
+                                 bool hasCreate, 
+                                 int line) const = 0;
 
     virtual std::string toString() const = 0;
 
@@ -131,11 +138,17 @@ public:
     virtual bool check(const Type* type) const;
     virtual me::Op::Type toMeType() const;
     virtual bool isAtomic() const;
+    virtual bool isNonAtomicBuiltin() const;
     virtual bool isBool() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
     virtual const Ptr* derefToInnerstPtr() const;
     virtual const BaseType* unnestPtr() const;
+
+    virtual bool hasAssignCreate(const TypeList& in, 
+                                 bool hasCreate, 
+                                 int line) const;
+
     virtual std::string toString() const;
 
     /*
@@ -223,8 +236,12 @@ public:
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
     virtual const Ptr* derefToInnerstPtr() const;
-    virtual std::string toString() const;
+    virtual bool hasAssignCreate(const TypeList& in, 
+                                 bool hasCreate, 
+                                 int line) const;
+
     virtual const BaseType* unnestPtr() const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------

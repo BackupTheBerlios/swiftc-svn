@@ -55,6 +55,11 @@ bool Type::isAtomic() const
     return false;
 }
 
+bool Type::isNonAtomicBuiltin() const
+{
+    return true;
+}
+
 bool Type::isBool() const
 {
     return false;
@@ -64,6 +69,7 @@ const BaseType* Type::unnestPtr() const
 {
     return 0;
 }
+
 
 /*
  * further methods
@@ -225,6 +231,14 @@ const BaseType* BaseType::unnestPtr() const
     return this;
 }
 
+bool BaseType::hasAssignCreate(const TypeList& /*in*/, 
+                               bool /*isCreate*/, 
+                               int /*line*/) const
+{
+    swiftAssert(false, "unreachable code");
+    return false;
+}
+
 std::string BaseType::toString() const
 {
     return *id_;
@@ -244,6 +258,11 @@ Class* BaseType::lookupClass() const
 const std::string* BaseType::getId() const
 {
     return id_;
+}
+
+bool BaseType::isNonAtomicBuiltin() const
+{
+    return false;
 }
 
 /*
@@ -384,17 +403,36 @@ const Ptr* Ptr::derefToInnerstPtr() const
         return this;
 }
 
+const BaseType* Ptr::unnestPtr() const
+{
+    return innerType_->unnestPtr();
+}
+
+bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
+{
+    std::string methodStr = hasCreate ? "constructer" : "assignment";
+
+    if ( in.size() > 1 )
+    {
+        errorf(line, "a 'ptr' %s takes only one argument", methodStr.c_str() );
+        return false;
+    }
+
+    if ( !check(in[0]) )
+    {
+        errorf( line_, "types do not match in 'ptr' %s", methodStr.c_str() );
+        return false;
+    }
+
+    return true;
+}
+
 std::string Ptr::toString() const
 {
     std::ostringstream oss;
     oss << "ptr{" << innerType_->toString() << '}';
 
     return oss.str();
-}
-
-const BaseType* Ptr::unnestPtr() const
-{
-    return innerType_->unnestPtr();
 }
 
 } // namespace swift

@@ -157,6 +157,15 @@ struct SymbolTable
      */
     Method* lookupAssign(Class* _class, const TypeList& in, int line);
 
+    /**
+     * Looks up the assign constructor.
+     *
+     * @param _class The method's class.
+     * @param in The in-signature the method should have.
+     * @param line The line number of the method call.
+     */
+    Method* lookupAssignCreate(Class* _class, const TypeList& in, bool create, int line);
+
     /*
      * current getters
      */

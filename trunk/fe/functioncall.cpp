@@ -296,6 +296,24 @@ bool MethodCall::analyze()
         if  ( !expr_->analyze() )
             return false;
 
+        if ( kind_ == WRITER && expr_->getType()->isReadOnly() )
+        {
+            if ( typeid(*expr_) == typeid(Id) )
+            {
+                Id* id = (Id*) expr_;
+                errorf(line_, "'writer' used with read-only variable '%s'",
+                        id->id_->c_str() );
+            }
+            else
+            {
+                errorf(line_, "'writer' used with read-only location '%s'",
+                        expr_->toString().c_str() );
+            }
+            
+            return false;
+        }
+
+        // TODO
         _class = expr_->getType()->unnestPtr()->lookupClass();
     }
     else

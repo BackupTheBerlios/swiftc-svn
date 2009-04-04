@@ -166,6 +166,7 @@ struct AssignStatement : public Statement
     virtual bool analyze();
     void genPtrAssignCreate();
     void genConstructorCall(Class* _class, Method* method);
+    void genAssignCall(Class* _class, Method* method);
     void genSSA();
 
     bool analyzeFunctionCall(const TypeList& in, const TypeList& out);

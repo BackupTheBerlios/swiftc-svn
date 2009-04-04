@@ -167,7 +167,6 @@ bool Class::analyze()
         return true;
     }
 
-
     // assume true as initial state
     bool result = true;
 

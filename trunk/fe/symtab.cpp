@@ -334,6 +334,17 @@ Method* SymbolTable::lookupAssign(Class* _class, const TypeList& in, int line)
     return lookupMethod(_class, &op, ASSIGN, in, line);
 }
 
+Method* SymbolTable::lookupAssignCreate(Class* _class, 
+                                        const TypeList& in, 
+                                        bool create, 
+                                        int line)
+{
+    if (create)
+        return lookupCreate(_class, in, line);
+    else
+        return lookupAssign(_class, in, line);
+}
+
 /*
  * current getters
  */

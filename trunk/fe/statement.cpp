@@ -201,54 +201,19 @@ bool AssignStatement::analyze()
     {
         bool isDecl = dynamic_cast<const Decl*>(tupel_->getTypeNode());
 
-        if ( typeid(*out[0]) == typeid(Ptr) )
-        {
-            std::string methodStr;
-
-            if (isDecl)
-                methodStr = "constructer";
-            else
-                methodStr = "assignment";
-
-            if (out.size() > 1)
-            {
-                errorf(line_, "a 'ptr' %s takes only one argument", 
-                        methodStr.c_str() );
-                return false;
-            }
-
-            if ( !out[0]->check(in[0]) )
-            {
-                errorf( line_, "types do not match in 'ptr'-%s", 
-                        methodStr.c_str() );
-                return false;
-            }
-
-            genPtrAssignCreate();
-            return true;
-        }
+        if ( out[0]->isNonAtomicBuiltin() )
+            return out[0]->hasAssignCreate(in, isDecl, line_);
 
         swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
         const BaseType* bt = (const BaseType*) out[0];
         Class* _class = bt->lookupClass();
+        Method* assignCreate = symtab->lookupAssignCreate(_class, in, isDecl, line_);
 
-        if (isDecl)
-        {
-            Method* create = symtab->lookupCreate(_class, in, line_);
-            if (!create)
-                return false;
+        if (!assignCreate)
+            return false;
 
-            genConstructorCall(_class, create);
-        }
-        else
-        {
-            Method* assign = symtab->lookupAssign(_class, in, line_);
-            if (!assign)
-                return false;
-
-            genConstructorCall(_class, assign);
-        }
+        genAssignCall(_class, assignCreate);
     }
     else
     {
@@ -345,6 +310,23 @@ bool AssignStatement::analyzeFunctionCall(const TypeList& in, const TypeList& ou
 }
 
 void AssignStatement::genConstructorCall(Class* _class, Method* /*method*/)
+{
+    PlaceList lhsPlaces = tupel_->getPlaceList();
+    PlaceList rhsPlaces = exprList_->getPlaceList();
+
+    if ( !_class || BaseType::isBuiltin(_class->id_) )
+    {
+        me::functab->appendInstr( 
+                new me::AssignInstr(kind_ , (me::Reg*) lhsPlaces[0], rhsPlaces[0]) );
+        //tupel_->genStores();
+        return;
+    }
+
+    // else TODO
+    swiftAssert(false, "TODO");
+}
+
+void AssignStatement::genAssignCall(Class* _class, Method* /*method*/)
 {
     PlaceList lhsPlaces = tupel_->getPlaceList();
     PlaceList rhsPlaces = exprList_->getPlaceList();
