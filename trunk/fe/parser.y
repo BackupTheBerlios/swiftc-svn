@@ -454,10 +454,10 @@ postfix_expr
     /* 
         methods 
     */
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, READER, currentLine); }
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, WRITER, currentLine); }
-    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, READER, currentLine); }
-    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, WRITER, currentLine); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, READER, currentLine); }
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, WRITER, currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, READER, currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, WRITER, currentLine); }
     ;
 
 primary_expr

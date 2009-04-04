@@ -296,36 +296,34 @@ bool MethodCall::analyze()
         if  ( !expr_->analyze() )
             return false;
 
-        if ( kind_ == WRITER && expr_->getType()->isReadOnly() )
+        const BaseType* bt = expr_->getType()->unnestPtr();
+
+        if (bt->isReadOnly() && kind_ == WRITER)
         {
-            if ( typeid(*expr_) == typeid(Id) )
-            {
-                Id* id = (Id*) expr_;
-                errorf(line_, "'writer' used with read-only variable '%s'",
-                        id->id_->c_str() );
-            }
-            else
-            {
-                errorf(line_, "'writer' used with read-only location '%s'",
-                        expr_->toString().c_str() );
-            }
-            
+            errorf( line_, "'writer' used on read-only location '%s'",
+                    expr_->toString().c_str() );
             return false;
         }
 
-        // TODO
-        _class = expr_->getType()->unnestPtr()->lookupClass();
+        _class = bt->lookupClass();
     }
     else
     {
         _class = symtab->currentClass();
 
-        if ( symtab->currentMethod()->methodQualifier_ == ROUTINE ) 
+        int currentMethodQualifier = symtab->currentMethod()->methodQualifier_;
+
+        if (currentMethodQualifier == READER && kind_ == WRITER)
+        {
+            errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
+            return false;
+        }
+        else if ( currentMethodQualifier == ROUTINE ) 
         {
             errorf(line_, "routines do not have a 'self' pointer");
             return false;
         }
-        else if ( symtab->currentMethod()->methodQualifier_ == OPERATOR ) 
+        else if ( currentMethodQualifier == OPERATOR ) 
         {
             errorf(line_, "operators do not have a 'self' pointer");
             return false;

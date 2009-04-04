@@ -208,9 +208,10 @@ bool Class::analyze()
 
                 if ( methodIter->second->sig_->check(method->sig_) )
                 {
-                    errorf(methodIter->second->line_, "there is already a method '%s' defined in '%s' line %i",
-                        methodIter->second->toString().c_str(),
-                        method->getFullName().c_str(), method->line_);
+                    errorf( methodIter->second->line_, 
+                            "there is already a method '%s' defined in '%s' line %i",
+                            methodIter->second->toString().c_str(),
+                            method->getFullName().c_str(), method->line_ );
 
                     result = false;
 

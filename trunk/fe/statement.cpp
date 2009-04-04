@@ -340,7 +340,7 @@ void AssignStatement::genAssignCall(Class* _class, Method* /*method*/)
     }
 
     // else TODO
-    swiftAssert(false, "TODO");
+    //swiftAssert(false, "TODO");
 }
 
 void AssignStatement::genPtrAssignCreate()

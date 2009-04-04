@@ -753,34 +753,24 @@ Self::Self(int line)
 
 bool Self::analyze()
 {
+    int selfModifier = VAR;
     int methodQualifier = symtab->currentMethod()->methodQualifier_;
 
-    int typeQualifier;
-    switch (methodQualifier)
+    if (methodQualifier == ROUTINE)
     {
-        case READER:
-            typeQualifier = CONST;
-            break;
-
-        case WRITER:
-        case CREATE:
-            typeQualifier = VAR;
-            break;
-
-        case ROUTINE:
-            errorf(line_, "routines do not have a 'self' pointer");
-            return false;
-
-        case ASSIGN:
-            errorf(line_, "assign operators do not have a 'self' pointer");
-            return false;
-
-        default:
-            swiftAssert(false, "unreachable code");
-            return false;
+        errorf(line_, "routines do not have a 'self' pointer");
+        return false;
     }
+    else if (methodQualifier == OPERATOR)
+    {
+        errorf(line_, "operators do not have a 'self' pointer");
+        return false;
+    }
+    else if (methodQualifier == READER)
+        selfModifier = CONST;
 
-    type_ = new Ptr( CONST, new BaseType(typeQualifier, symtab->currentClass()) );
+    type_ = new Ptr( CONST, 
+            new BaseType(selfModifier, symtab->currentClass()) );
     me::Reg* reg = me::functab->newReg(me::Op::R_PTR);
     // TODO
     place_ = reg;
