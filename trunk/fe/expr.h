@@ -64,11 +64,13 @@ public:
      */
 
     virtual void genSSA() = 0;
-    virtual me::Var* getPlace();
 
     /*
      * further methods
      */
+
+    me::Var* getPlace();
+    const me::Var* getPlace() const;
 
     void neededAsLValue();
     bool isNeededAsLValue() const;
@@ -280,7 +282,7 @@ struct MemberAccess : public Expr
      */
 
     MemberAccess(Expr* expr_, std::string* id, int line = NO_LINE);
-    ~MemberAccess();
+    virtual ~MemberAccess();
 
     /*
      * virtual methods

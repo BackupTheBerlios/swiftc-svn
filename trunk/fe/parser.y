@@ -371,7 +371,6 @@ statement_list
 
 statement
     : expr EOL                          { $$ = new ExprStatement($1, currentLine-1); }
-    /* TODO | tupel EOL                         { $$ = new DeclStatement($1, getKeyLine()); }*/
     | decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
     | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine-1) }
 

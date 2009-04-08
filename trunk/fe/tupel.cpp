@@ -90,7 +90,17 @@ const Tupel* Tupel::next() const
     return next_;
 }
 
-const TypeNode* Tupel::getTypeNode() const
+Tupel* Tupel::next()
+{
+    return next_;
+}
+
+const TypeNode* Tupel::typeNode() const
+{
+    return typeNode_;
+}
+
+TypeNode* Tupel::typeNode()
 {
     return typeNode_;
 }

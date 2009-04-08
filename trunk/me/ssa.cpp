@@ -767,6 +767,58 @@ std::string Load::toString() const
  * constructor and destructor
  */
 
+LoadPtr::LoadPtr(Reg* result, Var* location, Offset* offset)
+    : InstrBase(1, 1)
+    , offset_(offset)
+{
+    swiftAssert(result->type_ == Op::R_PTR, "must be an R_PTR");
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+            "must be an R_PTR");
+
+    res_[0].var_ = result;
+    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0].oldVarNr_ = result->varNr_;
+
+    arg_[0].op_ = location;
+    arg_[0].constraint_ = NO_CONSTRAINT;
+}
+
+LoadPtr::~LoadPtr()
+{
+    delete offset_;
+}
+
+/*
+ * further methods
+ */
+
+int LoadPtr::getOffset() const
+{
+    return offset_->getOffset();
+}
+
+Reg* LoadPtr::result()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+    return (Reg*) res_[0].var_;
+}
+
+std::string LoadPtr::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= LoadPtr(" 
+        << arg_[0].op_->toString() << ", "
+        << offset_->toString() << ')';
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
 Store::Store(Var* location, Op* arg, Offset* offset)
     : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
     , offset_(offset)

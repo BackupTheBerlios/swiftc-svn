@@ -56,7 +56,7 @@ struct Statement : public Node
     virtual ~Statement();
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool analyze() = 0;
@@ -157,13 +157,13 @@ struct AssignStatement : public Statement
      * virtual methods
      */
 
+    virtual bool analyze();
     virtual std::string toString() const;
 
     /*
      * further methods
      */
 
-    virtual bool analyze();
     void genPtrAssignCreate();
     void genConstructorCall(Class* _class, Method* method);
     void genAssignCall(Class* _class, Method* method);
@@ -191,7 +191,7 @@ struct WhileStatement : public Statement
     virtual ~WhileStatement();
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool analyze();
@@ -218,7 +218,7 @@ struct IfElStatement : public Statement
     virtual ~IfElStatement();
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool analyze();
@@ -236,7 +236,7 @@ struct CFStatement : public Statement
     CFStatement(int kind, int line = NO_LINE);
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool analyze();

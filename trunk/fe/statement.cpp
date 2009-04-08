@@ -161,7 +161,7 @@ bool AssignStatement::analyze()
     // check whether there is a const type in out
     for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
     {
-        const TypeNode* typeNode = iter->getTypeNode();
+        const TypeNode* typeNode = iter->typeNode();
 
         const Expr* expr = dynamic_cast<const Expr*>(typeNode);
         if ( expr )
@@ -199,7 +199,7 @@ bool AssignStatement::analyze()
 
     if (out.size() == 1)
     {
-        bool isDecl = dynamic_cast<const Decl*>(tupel_->getTypeNode());
+        bool isDecl = dynamic_cast<const Decl*>(tupel_->typeNode());
 
         if ( out[0]->isNonAtomicBuiltin() )
             return out[0]->hasAssignCreate(in, isDecl, line_);
@@ -264,7 +264,7 @@ bool AssignStatement::analyzeFunctionCall(const TypeList& in, const TypeList& ou
 
     for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
     {
-        const Decl* decl = dynamic_cast<const Decl*>( iter->getTypeNode() );
+        const Decl* decl = dynamic_cast<const Decl*>( iter->typeNode() );
 
         if (decl)
         {
@@ -287,9 +287,9 @@ bool AssignStatement::analyzeFunctionCall(const TypeList& in, const TypeList& ou
         }
         else
         {
-            swiftAssert( dynamic_cast<const Expr*>(iter->getTypeNode()),
+            swiftAssert( dynamic_cast<const Expr*>(iter->typeNode()),
                     "must be an Expr here" );
-            const Expr* expr = (const Expr*) iter->getTypeNode();
+            const Expr* expr = (const Expr*) iter->typeNode();
             const BaseType* bt = dynamic_cast<const BaseType*>( expr->getType() );
 
             if (bt)
@@ -349,23 +349,56 @@ void AssignStatement::genPtrAssignCreate()
 
 void AssignStatement::genSSA()
 {
-    //swiftAssert( dynamic_cast<me::Var*>(expr_->place_),
-            //"expr_->place must be a me::Reg*" );
+    /*
+     * decl = expr1, expr2, ...
+     *  - eval expr1
+     *  - eval expr2
+     *  - ...
+     *  - create call with new var of decl
+     *
+     * expr0 = expr1, expr2, ...
+     *  - eval expr1
+     *  - eval expr2
+     *  - ...
+     *  - eval expr0
+     *  - assign call with place of expr0
+     *
+     * decl_or_expr1, decl_or_expr2, ... = functioncall 
+     *  - eval functioncall
+     *  - eval expr1
+     *  - eval expr0
+     *  - ...
+     *  - functioncall
+     *  - results are copyied  to lhs expr via copy assign
+     *  - results are created with lhs decls via copy constructor
+     * 
+     */ 
+    //TypeList rhsPlaces = exprList_->getPlaceList();
 
-    //if ( typeid(*expr_) == typeid(MemberAccess))
+    //for (Tupel* iter = tupel_; iter != 0; iter = iter->next())
     //{
-        //MemberAccess* ma = (MemberAccess*) expr_;
+        //Expr* expr = dynamic_cast<Expr*>( iter->typeNode() );
+        //if (!expr)
+            //continue;
+
+        //MemberAccess* ma = dynamic_cast<MemberAccess*>(expr);
+        //if (!ma)
+            //continue;
+
+        //swiftAssert( dynamic_cast<const me::Var*>(expr->getPlace()),
+                //"expr->place must be a me::Reg*" );
 
         //me::Store* store = new me::Store( 
-                //(me::Var*) ma->place_,              // memory variable
-                //(me::Var*) exprList_->expr_->place_,// argument 
+                //(me::Var*) ma->getPlace(),          // memory variable
+                //(me::Var*) exprList_->expr_->getPlace(),// argument 
                 //ma->rootStructOffset_);             // offset 
         //me::functab->appendInstr(store);
-    //}
-    //else
-    //{
-        //me::functab->appendInstr( 
-                //new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+
+        ////else
+        ////{
+            ////me::functab->appendInstr( 
+                    ////new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
+        ////}
     //}
 }
 

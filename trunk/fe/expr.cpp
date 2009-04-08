@@ -71,14 +71,19 @@ Expr::Expr(int line)
  * virtual methods
  */
 
+/*
+ * further methods
+ */
+
 me::Var* Expr::getPlace()
 {
     return (me::Var*) place_;
 }
 
-/*
- * further methods
- */
+const me::Var* Expr::getPlace() const
+{
+    return (me::Var*) place_;
+}
 
 void Expr::neededAsLValue()
 {

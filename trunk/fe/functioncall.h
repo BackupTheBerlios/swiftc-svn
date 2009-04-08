@@ -71,6 +71,7 @@ protected:
     ExprList* exprList_;
     int kind_;
     Method* method_;
+    //std::vector<me::Vec*> results_;
 };
 
 //------------------------------------------------------------------------------

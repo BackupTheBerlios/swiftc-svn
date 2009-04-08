@@ -65,7 +65,9 @@ public:
     PlaceList getPlaceList();
     TypeList getTypeList() const;
     const Tupel* next() const;
-    const TypeNode* getTypeNode() const;
+    Tupel* next();
+    const TypeNode* typeNode() const;
+    TypeNode* typeNode();
 
 private:
 

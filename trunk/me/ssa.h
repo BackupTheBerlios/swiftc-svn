@@ -217,7 +217,7 @@ struct PhiInstr : public InstrBase
      */
 
     PhiInstr(Var* result, size_t numRhs);
-    ~PhiInstr();
+    virtual ~PhiInstr();
 
     /*
      * getters
@@ -507,7 +507,7 @@ struct Load : public InstrBase
      * @param offset The offset to the base pointer / stack location.
      */
     Load(Var* result, Var* location, Offset* offset);
-    ~Load();
+    virtual ~Load();
 
     /*
      * further methods
@@ -515,6 +515,52 @@ struct Load : public InstrBase
 
     int getOffset() const;
     Reg* resReg();
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief Load from a stack location or an arbitrary memory location.
+ *
+ * A Load actually has two versions: <br>
+ * - ptr = Load(stack_var, offset) <br>
+ * - ptr = Load(ptr, offset) <br>
+ * The former variant fetches the adress of an item from the stack. 
+ * The latter one fetches the adress of an item from an arbitrary memory 
+ * location. <br>
+ * Note that the offset is not a real argument it is just a member of this
+ * class although the notation might imply that.
+ */
+struct LoadPtr : public InstrBase
+{
+    Offset* offset_;
+
+    /*
+     * constructor and destructor
+     */
+
+    /** 
+     * @brief Loads the the content of \p mem via \p ptr with an at 
+     * compile time known \p offset into \p result.
+     * 
+     * @param result A proper pseudo-varister. Is an lvalue.
+     *
+     * @param location The memory location to load from. Must be either of 
+     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      This is an rvalue.
+     *
+     * @param offset The offset to the base pointer / stack location.
+     */
+    LoadPtr(Reg* result, Var* location, Offset* offset);
+    virtual ~LoadPtr();
+
+    /*
+     * further methods
+     */
+
+    int getOffset() const;
+    Reg* result();
     std::string toString() const;
 };
 
@@ -552,7 +598,7 @@ struct Store : public InstrBase
      * @param offset The offset to the base pointer / stack location.
      */
     Store(Var* location, Op* arg, Offset* offset);
-    ~Store();
+    virtual ~Store();
 
     /*
      * further methods
