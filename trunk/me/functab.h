@@ -75,9 +75,8 @@ struct Function
     InstrNode* lastLabelNode_;
     InstrList instrList_;
 
-    VarMap in_;
-    VarMap inout_;
-    VarMap out_;
+    //VarVec arg_;
+    //VarVec res_;
     VarMap vars_;
 
     typedef std::vector<Const*> Consts;

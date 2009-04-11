@@ -37,6 +37,21 @@ class Ptr;
 
 //------------------------------------------------------------------------------
 
+/** 
+ * @brief Baseclass for all types in swift.
+ *
+ * Terminology: <br>
+ * - \em inner types: int, uint, real, ... and user defined types, i.e. all inner
+ *   types are \a BaseType instances 
+ * - \em atmoic types: int, uint, real, ... and all ptr types, i.e. all types
+ *   which can be represented with \a me::Op::Type <br>
+ * - \em builtin types: int, uint, real, all ptr, array and simd types, i.e. all
+ *   types where the compiler must provide the implementation <br><br>
+ *
+ * This combination is useful: <br>
+ * \em inner \em atomic types: int, uint, real, ..., i.e all builtin types 
+ * known by the \a symtab.
+ */
 class Type : public Node
 {
 public:
@@ -64,14 +79,9 @@ public:
 
     virtual me::Var* createVar(const std::string* id = 0) const = 0;
 
-    /**
-     * Checks whether this is an atomic builtin type.
-     *
-     * @return True if this is a built in type, false otherwise
-     */
     virtual bool isAtomic() const;
-
-    virtual bool isNonAtomicBuiltin() const;
+    virtual bool isBuiltin() const;
+    virtual const BaseType* isInner() const;
 
     /// Checks whether this Type is the builtin bool Type
     virtual bool isBool() const;
@@ -92,6 +102,7 @@ public:
      */
 
     Type* constClone() const;
+    const BaseType* isInnerAtomic() const;
 
     int& modifier();
     const int& modifier() const;
@@ -138,7 +149,8 @@ public:
     virtual bool check(const Type* type) const;
     virtual me::Op::Type toMeType() const;
     virtual bool isAtomic() const;
-    virtual bool isNonAtomicBuiltin() const;
+    virtual bool isBuiltin() const;
+    virtual const BaseType* isInner() const;
     virtual bool isBool() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
@@ -197,6 +209,8 @@ public:
      */
 
     virtual bool validate() const;
+    virtual bool isBuiltin() const;
+    virtual const BaseType* isInner() const;
 
     /*
      * further methods
@@ -232,6 +246,8 @@ public:
 
     virtual Ptr* clone() const;
     virtual bool check(const Type* type) const;
+    virtual bool isAtomic() const;
+
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;

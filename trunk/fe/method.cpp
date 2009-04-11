@@ -206,6 +206,7 @@ bool Method::analyze()
         Param* param = sig_->getOutParam(i);
         me::Var* var = param->getMeVar();
 
+        // TODO default constructor call
         if (returnValues)
             returnValues->res_.push_back( me::Res(var, var->varNr_) );
         else

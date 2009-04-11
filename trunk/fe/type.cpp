@@ -50,16 +50,6 @@ Type::Type(int modifier, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Type::isAtomic() const
-{
-    return false;
-}
-
-bool Type::isNonAtomicBuiltin() const
-{
-    return true;
-}
-
 bool Type::isBool() const
 {
     return false;
@@ -81,6 +71,11 @@ Type* Type::constClone() const
     type->modifier_ = CONST;
 
     return type;
+}
+
+const BaseType* Type::isInnerAtomic() const
+{
+    return isAtomic() ? isInner() : 0;
 }
 
 int& Type::modifier()
@@ -183,6 +178,16 @@ bool BaseType::isAtomic() const
     return builtin_;
 }
 
+bool BaseType::isBuiltin() const
+{
+    return builtin_;
+}
+
+const BaseType* BaseType::isInner() const
+{
+    return this;
+}
+
 bool BaseType::isBool() const
 {
     return *id_ == "bool";
@@ -260,11 +265,6 @@ const std::string* BaseType::getId() const
     return id_;
 }
 
-bool BaseType::isNonAtomicBuiltin() const
-{
-    return false;
-}
-
 /*
  * static methods
  */
@@ -333,6 +333,16 @@ Container::~Container()
 bool Container::validate() const
 {
     return innerType_->validate();
+}
+
+bool Container::isBuiltin() const
+{
+    return true;
+}
+
+const BaseType* Container::isInner() const
+{
+    return 0;
 }
 
 /*

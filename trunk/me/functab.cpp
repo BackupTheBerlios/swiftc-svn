@@ -61,13 +61,11 @@ Function::~Function()
         delete iter->value_;
 
     // delete all pseudo vars
-    for (VarMap::iterator iter = in_   .begin(); iter != in_   .end(); ++iter)
-        delete iter->second;
-    for (VarMap::iterator iter = inout_.begin(); iter != inout_.end(); ++iter)
-        delete iter->second;
-    for (VarMap::iterator iter = out_  .begin(); iter != out_  .end(); ++iter)
-        delete iter->second;
-    for (VarMap::iterator iter = vars_ .begin(); iter != vars_ .end(); ++iter)
+    //for (size_t i = 0; i < arg_.size(); ++i)
+        //delete arg_[i];
+    //for (size_t i = 0; i < res_.size(); ++i)
+        //delete res_[i];
+    for (VarMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
         delete iter->second;
 
     for (size_t i = 0; i < consts_.size(); ++i)

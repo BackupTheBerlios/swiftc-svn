@@ -524,9 +524,10 @@ struct Load : public InstrBase
  * @brief Load from a stack location or an arbitrary memory location.
  *
  * A Load actually has two versions: <br>
- * - ptr = Load(stack_var, offset) <br>
- * - ptr = Load(ptr, offset) <br>
+ * - ptr = LoadPtr(stack_var, offset) <br>
+ * - ptr = LoadPtr(ptr, offset) <br>
  * The former variant fetches the adress of an item from the stack. 
+ * If \a offset is zero the adress of stack_var is returned.
  * The latter one fetches the adress of an item from an arbitrary memory 
  * location. <br>
  * Note that the offset is not a real argument it is just a member of this
