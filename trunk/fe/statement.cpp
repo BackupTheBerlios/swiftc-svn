@@ -28,7 +28,7 @@
 #include "fe/expr.h"
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/tupel.h"
@@ -146,7 +146,103 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
+    // check params
+    bool result = exprList_->analyze();
+
+    // check result tupel
+    result &= tupel_->analyze();
+
+    if (!result)
+        return false;
+
+    TypeList in = exprList_->getTypeList();
+    TypeList out = tupel_->getTypeList();
+
+    // check whether there is a const type in out
+    for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
+    {
+        const TypeNode* typeNode = iter->typeNode();
+
+        const Expr* expr = dynamic_cast<const Expr*>(typeNode);
+        if ( expr )
+        {
+            if ( expr->getType()->isReadOnly() )
+            {
+                const Id* id = dynamic_cast<const Id*>(expr);
+
+                if (id)
+                {
+                    errorf(line_, "assignment of read-only variable '%s'", 
+                            id->id_->c_str() );
+                    return false;
+                }
+                else
+                {
+                    errorf(line_, "assignment of read-only location '%s'", 
+                            expr->toString().c_str() );
+                    return false;
+                }
+            }   
+        }
+    }
+
+    swiftAssert(  in.size() > 0, "must have at least one element" );
+    swiftAssert( out.size() > 0, "must have at least one element" );
+
+    if ( in.size() > 1 && out.size() > 1 )
+    {
+        errorf(line_, "either the left-hand side or the right-hand side of an "
+                "assignment statement must have exactly one element");
+
+        return false;
+    }
+
+    if (out.size() == 1)
+    {
+        const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
+        
+        if ( out[0]->isNonInnerBuiltin() )
+            return out[0]->hasAssignCreate(in, decl, line_);
+
+        if ( out[0]->isBuiltin() )
+        {
+            genMove();
+            return true;
+        }
+
+        swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
+
+        const BaseType* bt = (const BaseType*) out[0];
+        Class* _class = bt->lookupClass();
+        Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
+
+        if (!assignCreate)
+            return false;
+
+        // TODO
+    }
+    else
+    {
+        /*
+         * function call
+         */
+    }
+
+    if (!result)
+        return false;
+
     return true;
+}
+
+void AssignStatement::genMove()
+{
+    swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+            "must be a Var here" );
+
+    me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
+    me::Op*  rhsPlace = exprList_->getPlaceList()[0];
+
+    me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
 }
 
 /*

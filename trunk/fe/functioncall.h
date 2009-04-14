@@ -54,7 +54,7 @@ public:
      * further methods
      */
 
-    Method* getMethod();
+    MemberFunction* getMemberFunction();
 
 protected:
 
@@ -70,7 +70,7 @@ protected:
     std::string* id_;
     ExprList* exprList_;
     int kind_;
-    Method* method_;
+    MemberFunction* memberFunction_;
     //std::vector<me::Vec*> results_;
 };
 

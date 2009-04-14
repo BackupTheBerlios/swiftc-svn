@@ -39,7 +39,7 @@ namespace me {
 namespace swift {
 
 struct ClassMember;
-struct Method;
+struct MemberFunction;
 struct Type;
 
 //------------------------------------------------------------------------------
@@ -74,13 +74,13 @@ struct Class : public Definition
 
     CopyCreate copyCreate_;
 
-    typedef std::multimap<const std::string*, Method*, StringPtrCmp> MethodMap;
-    typedef std::map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
-
     ClassMember* classMember_; ///< Linked list of class members.
 
-    MethodMap methods_; ///< Methods defined in this class.
-    MemberVarMap memberVars_; ///< MemberVars defined in this class.
+    typedef std::multimap<const std::string*, MemberFunction*, StringPtrCmp> MemberFunctionMap;
+    typedef std::map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
+
+    MemberFunctionMap memberFunctions_; ///< Methods defined in this class.
+    MemberVarMap memberVars_;           ///< MemberVars defined in this class.
 
     me::Struct* meStruct_;
 

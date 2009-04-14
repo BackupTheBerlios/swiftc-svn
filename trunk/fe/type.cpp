@@ -78,6 +78,16 @@ const BaseType* Type::isInnerAtomic() const
     return isAtomic() ? isInner() : 0;
 }
 
+const BaseType* Type::isInnerNonAtomic() const
+{
+    return !isAtomic() ? isInner() : 0;
+}
+
+bool Type::isNonInnerBuiltin() const
+{
+    return !isInner() && isBuiltin();
+}
+
 int& Type::modifier()
 {
     return modifier_;
@@ -395,6 +405,11 @@ me::Var* Ptr::createVar(const std::string* id /*= 0*/) const
 #else // SWIFT_DEBUG
     return me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
+}
+
+bool Ptr::isAtomic() const
+{
+    return true;
 }
 
 const BaseType* Ptr::getFirstBaseType() const

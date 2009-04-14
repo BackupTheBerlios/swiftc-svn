@@ -27,7 +27,7 @@
 
 #include "fe/class.h"
 #include "fe/error.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/var.h"
 #include "fe/scope.h"
 #include "fe/signature.h"
@@ -56,7 +56,7 @@ void SymbolTable::reset()
 {
 //     module_ = 0; TODO
     class_  = 0;
-    method_ = 0;
+    memberFunction_ = 0;
     sig_ = 0;
 }
 
@@ -114,16 +114,16 @@ bool SymbolTable::insert(MemberVar* memberVar)
     return true;
 }
 
-void SymbolTable::insert(Method* method)
+void SymbolTable::insert(MemberFunction* memberFunction)
 {
-    Class::MethodMap::iterator iter
-        = class_->methods_.insert( std::make_pair(method->id_, method) );
+    Class::MemberFunctionMap::iterator iter
+        = class_->memberFunctions_.insert( std::make_pair(memberFunction->id_, memberFunction) );
 
     // set current method scope
-    method_ = method;
+    memberFunction_ = memberFunction;
 
     // set current signature scope
-    sig_ = method->sig_;
+    sig_ = memberFunction_->sig_;
 }
 
 void SymbolTable::insertParam(Param* param)
@@ -196,17 +196,17 @@ void SymbolTable::leaveClass()
     class_ = 0;
 }
 
-void SymbolTable::enterMethod(Method* method)
+void SymbolTable::enterMemberFunction(MemberFunction* memberFunction)
 {
-    method_ = method;
-    sig_ = method->sig_;
+    memberFunction_ = memberFunction;
+    sig_ = memberFunction->sig_;
 
-    scopeStack_.push(method_->rootScope_);
+    scopeStack_.push(memberFunction->rootScope_);
 }
 
-void SymbolTable::leaveMethod()
+void SymbolTable::leaveMemberFunction()
 {
-    method_ = 0;
+    memberFunction_ = 0;
     sig_ = 0;
     scopeStack_.pop();
 
@@ -258,60 +258,49 @@ Class* SymbolTable::lookupClass(const std::string* id)
     return 0;
 }
 
-Method* SymbolTable::lookupMethod(Class* _class,
-                                  const std::string* methodId,
-                                  int methodQualifier,
-                                  const TypeList& in,
-                                  int line)
+MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
+                                          const std::string* id,
+                                          const TypeList& in,
+                                          int line)
 {
     // lookup method
-    Class::MethodMap::const_iterator iter = _class->methods_.find(methodId);
-    if (iter == _class->methods_.end())
+    Class::MemberFunctionMap::const_iterator iter = 
+        _class->memberFunctions_.find(id);
+
+    if (iter == _class->memberFunctions_.end())
     {
         if (line)
         {
             errorf( line, "there is no method named '%s' in class '%s'",
-                methodId->c_str(), _class->id_->c_str() );
+                id->c_str(), _class->id_->c_str() );
         }
 
         return 0;
     }
 
     // get iterator to the first method, which has not methodId as identifier
-    Class::MethodMap::const_iterator last = _class->methods_.upper_bound(methodId);
+    Class::MemberFunctionMap::const_iterator last 
+        = _class->memberFunctions_.upper_bound(id);
 
     // current method in loop below
-    Method* method = 0;
+    MemberFunction* memberFunction = 0;
     for (; iter != last; ++iter)
     {
-        method = iter->second;
+        memberFunction = iter->second;
 
-        if ( method->sig_->checkIn(in) )
+        if ( memberFunction->sig_->checkIn(in) )
             break;
         else
-            method = 0; // mark as not found
+            memberFunction = 0; // mark as not found
     }
 
-    if (!method)
+    if (!memberFunction)
     {
-        std::string methodType;
-        if (methodQualifier == READER)
-            methodType = "reader";
-        else if (methodQualifier == WRITER)
-            methodType = "writer";
-        else if (methodQualifier == CREATE)
-            methodType = "constructor";
-        else if (methodQualifier == OPERATOR)
-            methodType = "operator";
-        else if (methodQualifier == ASSIGN)
-            methodType = "assignment";
-        else methodType = "routine";
-
         if (line)
         {
             errorf(line, "there is no %s '%s(%s)' defined in class '%s'",
-                    methodType.c_str(), 
-                    methodId->c_str(), 
+                    memberFunction->qualifierString().c_str(), 
+                    id->c_str(), 
                     in.toString().c_str(), 
                     _class->id_->c_str());
         }
@@ -319,19 +308,19 @@ Method* SymbolTable::lookupMethod(Class* _class,
         return 0;
     }
 
-    return method;
+    return memberFunction;
 }
 
-Method* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
+Create* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
 {
     std::string create("create");
-    return lookupMethod(_class, &create, CREATE, in, line);
+    return (Create*) lookupMemberFunction(_class, &create, in, line);
 }
 
-Method* SymbolTable::lookupAssign(Class* _class, const TypeList& in, int line)
+Assign* SymbolTable::lookupAssign(Class* _class, const TypeList& in, int line)
 {
     std::string op("assign");
-    return lookupMethod(_class, &op, ASSIGN, in, line);
+    return (Assign*) lookupMemberFunction(_class, &op, in, line);
 }
 
 Method* SymbolTable::lookupAssignCreate(Class* _class, 
@@ -359,9 +348,9 @@ Class* SymbolTable::currentClass()
     return class_;
 }
 
-Method* SymbolTable::currentMethod()
+MemberFunction* SymbolTable::currentMemberFunction()
 {
-    return method_;
+    return memberFunction_;
 }
 
 /*

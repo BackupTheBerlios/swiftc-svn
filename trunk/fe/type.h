@@ -79,9 +79,9 @@ public:
 
     virtual me::Var* createVar(const std::string* id = 0) const = 0;
 
-    virtual bool isAtomic() const;
-    virtual bool isBuiltin() const;
-    virtual const BaseType* isInner() const;
+    virtual bool isAtomic() const = 0;
+    virtual bool isBuiltin() const = 0;
+    virtual const BaseType* isInner() const = 0;
 
     /// Checks whether this Type is the builtin bool Type
     virtual bool isBool() const;
@@ -103,6 +103,8 @@ public:
 
     Type* constClone() const;
     const BaseType* isInnerAtomic() const;
+    const BaseType* isInnerNonAtomic() const;
+    bool isNonInnerBuiltin() const;
 
     int& modifier();
     const int& modifier() const;

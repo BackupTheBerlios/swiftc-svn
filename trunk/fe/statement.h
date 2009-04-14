@@ -164,10 +164,10 @@ struct AssignStatement : public Statement
      * further methods
      */
 
-    void genPtrAssignCreate();
-    void genConstructorCall(Class* _class, Method* method);
-    void genAssignCall(Class* _class, Method* method);
-    void genSSA();
+    void genMove();
+    //void genConstructorCall(Class* _class, Method* method);
+    //void genAssignCall(Class* _class, Method* method);
+    //void genSSA();
 
     bool analyzeFunctionCall(const TypeList& in, const TypeList& out);
 };

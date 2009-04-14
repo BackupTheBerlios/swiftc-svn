@@ -25,7 +25,7 @@
 #include "utils/assert.h"
 
 #include "fe/error.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
@@ -80,7 +80,7 @@ void Class::addDefaultCreate()
         */
         defaultCreate_ = DEFAULT_TRIVIAL;
 
-        create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+        create = new Create(this);
         symtab->insert(create);
         create->statements_ = 0;
 
@@ -100,7 +100,7 @@ void Class::addCopyCreate()
     {
         copyCreate_ = COPY_AUTO;
 
-        create = new Method(CREATE, new std::string("create"), this, NO_LINE);
+        create = new Create(this);
         create->statements_ = 0;
         symtab->insert(create);
         symtab->insertParam( new Param(newType, new std::string("arg")) );
@@ -115,12 +115,12 @@ void Class::addAssignOperators()
 {
     // lookup first create method
     std::string createStr = "create";
-    Class::MethodMap::const_iterator iter = methods_.find(&createStr);
+    Class::MemberFunctionMap::const_iterator iter = memberFunctions_.find(&createStr);
 
     // get iterator to the first method, which has not "create" as identifier
-    Class::MethodMap::const_iterator last = methods_.upper_bound(&createStr);
+    Class::MemberFunctionMap::const_iterator last = memberFunctions_.upper_bound(&createStr);
 
-    for (Method* create = 0; iter != last; ++iter)
+    for (MemberFunction* create = 0; iter != last; ++iter)
     {
         create = iter->second;
         TypeList in = create->sig_->getIn();
@@ -130,18 +130,18 @@ void Class::addAssignOperators()
             continue;
 
         // check wether there is already an assign operator defined with this in-types
-        Method* op = symtab->lookupAssign(this, create->sig_->getIn(), 0);
+        Assign* assign = symtab->lookupAssign(this, create->sig_->getIn(), 0);
 
-        if (!op)
+        if (!assign)
         {
-            op = new Method(ASSIGN, new std::string("assign"), this, NO_LINE);
-            op->statements_ = 0;
-            symtab->insert(op);
+            assign = new Assign(this);
+            assign->statements_ = 0;
+            symtab->insert(assign);
 
             for (size_t i = 0; i < in.size(); ++i)
                 symtab->insertParam( new Param(in[i]->clone(), new std::string("arg")) );
 
-            prependMember(op);
+            prependMember(assign);
         }
     }
 }
@@ -180,38 +180,38 @@ bool Class::analyze()
          * whether in real-world-programms an O(n log n) algorithm with sorting
          * is faster
          */
-        if ( typeid(*iter) == typeid(Method) )
+        MemberFunction* memberFunction = dynamic_cast<MemberFunction*>(iter);
+        if (memberFunction)
         {
-            Method* method = (Method*) iter;
-
             /*
              * check whether there is method with the same name and the same signature
              */
-            typedef Class::MethodMap::iterator Iter;
-            Iter methodIter = methods_.find(method->id_);
+            typedef Class::MemberFunctionMap::iterator Iter;
+            Iter methodIter = memberFunctions_.find(memberFunction->id_);
 
             // move iter to point to method
-            while (methodIter->second != method)
+            while (methodIter->second != memberFunction)
                 ++methodIter;
 
             // and one further to the first item which is not itself
             ++methodIter;
 
             // find element behind the last one
-            Iter last = methods_.upper_bound(method->id_);
+            Iter last = memberFunctions_.upper_bound(memberFunction->id_);
 
             for (; methodIter != last; ++methodIter)
             {
                 // check methodQualifier_
-                if (methodIter->second->methodQualifier_ != method->methodQualifier_)
+                if ( typeid(*methodIter->second) != typeid(*memberFunction) )
                     continue;
 
-                if ( methodIter->second->sig_->check(method->sig_) )
+                if ( methodIter->second->sig_->check(memberFunction->sig_) )
                 {
+                    // TODO better error message
                     errorf( methodIter->second->line_, 
-                            "there is already a method '%s' defined in '%s' line %i",
+                            "there is already a member function '%s' defined in '%s' line %i",
                             methodIter->second->toString().c_str(),
-                            method->getFullName().c_str(), method->line_ );
+                            memberFunction->getFullName().c_str(), memberFunction->line_ );
 
                     result = false;
 

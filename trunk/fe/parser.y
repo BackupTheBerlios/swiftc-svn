@@ -28,7 +28,7 @@
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
 #include "fe/lexer.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
@@ -95,21 +95,21 @@ using namespace swift;
 
 %union
 {
-    int                 int_;
-    std::string*        id_;
+    int                     int_;
+    std::string*            id_;
 
-    swift::Class*       class_;
-    swift::ClassMember* classMember_;
-    swift::Decl*        decl_;
-    swift::Definition*  definition_;
-    swift::Expr*        expr_;
-    swift::ExprList*    exprList_;
-    swift::MemberVar*   memberVar_;
-    swift::Method*      method_;
-    swift::Module*      module_;
-    swift::Statement*   statement_;
-    swift::Tupel*       tupel_;
-    swift::Type*        type_;
+    swift::Class*           class_;
+    swift::ClassMember*     classMember_;
+    swift::Decl*            decl_;
+    swift::Definition*      definition_;
+    swift::Expr*            expr_;
+    swift::ExprList*        exprList_;
+    swift::MemberVar*       memberVar_;
+    swift::MemberFunction*  memberFunction_;
+    swift::Module*          module_;
+    swift::Statement*       statement_;
+    swift::Tupel*           tupel_;
+    swift::Type*            type_;
 };
 
 /*
@@ -179,7 +179,7 @@ using namespace swift;
 
 %type <definition_> class_definition
 %type <classMember_> class_body class_member
-%type <method_>     method
+%type <memberFunction_> member_function
 %type <memberVar_>  member_var
 
 %type <expr_>     expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
@@ -238,14 +238,12 @@ class_body
     ;
 
 class_member
-    : method        { $$ = $1; }
-    | member_var    { $$ = $1; }
+    : member_function { $$ = $1; }
+    | member_var      { $$ = $1; }
     ;
 
 /*
-    *******
-    methods
-    *******
+    member_functions
 */
 
 method_qualifier
@@ -254,50 +252,67 @@ method_qualifier
     | ROUTINE   { $$ = ROUTINE; }
     ;
 
-method
+member_function
     : method_qualifier ID
         {
-            $<method_>$ = new Method( $1, $2, symtab->class_, getKeyLine() );
-            symtab->insert($<method_>$);
+            switch ($1)
+            {
+                case READER: 
+                    $<memberFunction_>$ = new Reader($2, symtab->class_, getKeyLine() );
+                    break;
+
+                case WRITER: 
+                    $<memberFunction_>$ = new Writer($2, symtab->class_, getKeyLine() );
+                    break;
+
+                case ROUTINE: 
+                    $<memberFunction_>$ = new Routine($2, symtab->class_, getKeyLine() );
+                    break;
+
+                default:
+                    swiftAssert(false, "unreachable code");
+            }
+
+            symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$ = $<method_>3;
+            $$ = $<memberFunction_>3;
             $$->statements_ = $9;
         }
     | OPERATOR operator
         {
-            $<method_>$ = new Method( OPERATOR, operatorToString($2), symtab->class_, getKeyLine() );
-            symtab->insert($<method_>$);
+            $<memberFunction_>$ = new Operator( operatorToString($2), symtab->class_, getKeyLine() );
+            symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$ = $<method_>3;
+            $$ = $<memberFunction_>3;
             $$->statements_ = $9;
         }
     | ASSIGN 
         {
-            $<method_>$ = new Method( ASSIGN, new std::string("assign"), symtab->class_, getKeyLine() );
-            symtab->insert($<method_>$);
+            $<memberFunction_>$ = new Assign(symtab->class_, getKeyLine() );
+            symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')'
         EOL statement_list END EOL
         {
-            $$ = $<method_>2;
+            $$ = $<memberFunction_>2;
             $$->statements_ = $7;
         }
     | CREATE
         {
-            $<method_>$ = new Method( CREATE, new std::string("create"), symtab->class_, getKeyLine() );
-            symtab->insert($<method_>$);
+            $<memberFunction_>$ = new Create(symtab->class_, getKeyLine() );
+            symtab->insert($<memberFunction_>$);
             symtab->class_->hasCreate_ = true;
         }
         '(' parameter_list')'
         EOL statement_list END EOL
         {
-            $$ = $<method_>2;
+            $$ = $<memberFunction_>2;
             $$->statements_ = $7;
             symtab->class_->hasCreate_ = true;
         }

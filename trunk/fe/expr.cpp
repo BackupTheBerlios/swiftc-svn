@@ -29,7 +29,7 @@
 #include "fe/class.h"
 #include "fe/error.h"
 #include "fe/exprlist.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/type.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
@@ -515,16 +515,16 @@ bool BinExpr::analyze()
     argTypeList.push_back(op2_->getType());
 
     std::string* opString = operatorToString(kind_);
-    Method* method = symtab->lookupMethod(
-            symtab->lookupClass(bt1->getId()), opString, OPERATOR, argTypeList, line_);
+    MemberFunction* memberFunction = symtab->lookupMemberFunction(
+            symtab->lookupClass(bt1->getId()), opString, argTypeList, line_);
 
     delete opString;
 
-    if (!method)
+    if (!memberFunction)
         return false;
 
     // find first out parameter and clone this type
-    type_ = method->sig_->getOut()[0]->clone();
+    type_ = memberFunction->sig_->getOut()[0]->clone();
 
     genSSA();
 
@@ -759,19 +759,19 @@ Self::Self(int line)
 bool Self::analyze()
 {
     int selfModifier = VAR;
-    int methodQualifier = symtab->currentMethod()->methodQualifier_;
+    const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
 
-    if (methodQualifier == ROUTINE)
+    if ( methodQualifier == typeid(Routine) )
     {
         errorf(line_, "routines do not have a 'self' pointer");
         return false;
     }
-    else if (methodQualifier == OPERATOR)
+    else if ( methodQualifier == typeid(Operator) )
     {
         errorf(line_, "operators do not have a 'self' pointer");
         return false;
     }
-    else if (methodQualifier == READER)
+    else if ( methodQualifier == typeid(Reader) )
         selfModifier = CONST;
 
     type_ = new Ptr( CONST, 

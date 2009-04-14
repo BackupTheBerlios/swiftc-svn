@@ -31,7 +31,10 @@
 namespace swift {
 
 // forward declarations
+struct Assign;
+struct Create;
 struct MemberVar;
+struct MemberFunction;
 struct Method;
 struct Module;
 struct Scope;
@@ -47,19 +50,18 @@ struct Var;
 symtab->foo();
 @endverbatim
  * A stack of scope manages scoping and thus the top of stack is the current
- * Scope. Other pointers point to current Module, Class, or Method.
+ * Scope. Other pointers point to current Module, Class, or MemberFunction.
  */
 struct SymbolTable
 {
     typedef std::stack<Scope*> ScopeStack;
 
-    Module* rootModule_; ///< The root of the syntax tree.
-    Module* module_;     ///< Current \a Module.
-    Class*  class_;      ///< Current \a Class.
-    Method* method_;     ///< Current \a Method.
-    Signature* sig_;     ///< Current \a Signature.
-
-    ScopeStack scopeStack_; ///< Top of stack knows the current Scope.
+    Module* rootModule_;            ///< The root of the syntax tree.
+    Module* module_;                ///< Current \a Module.
+    Class*  class_;                 ///< Current \a Class.
+    MemberFunction* memberFunction_;///< Current \a MemberFunction.
+    Signature* sig_;                ///< Current \a Signature.
+    ScopeStack scopeStack_;         ///< Top of stack knows the current Scope.
 
     enum
     {
@@ -79,7 +81,7 @@ struct SymbolTable
 
     bool insert(Module* module);
     bool insert(Class* _class);
-    void insert(Method* method);
+    void insert(MemberFunction* memberFunction);
     bool insert(MemberVar* memberVar);
     void insertParam(Param* param);
     void insertRes(Param* param);
@@ -93,8 +95,8 @@ struct SymbolTable
     void leaveModule();
     void enterClass(Class* _class);
     void leaveClass();
-    void enterMethod(Method* method);
-    void leaveMethod();
+    void enterMemberFunction(MemberFunction* memberFunction);
+    void leaveMemberFunction();
     void enterScope(Scope* scope);
     void leaveScope();
 
@@ -123,39 +125,41 @@ struct SymbolTable
     Class* lookupClass(const std::string* id);
 
     /**
-     * Looks up a method.
+     * Looks up a member function.
      *
-     * @param _class The method's class.
-     * @param methodId The identifier of the method to be lookuped.
+     * @param _class The member function's class.
+     * @param id The identifier of the member function to be lookuped.
      * @param methodQualifier Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
-     * @param in in-signature the method should have.
-     * @param line The line number of the method call.
+     * @param in in-signature the member function should have.
+     * @param line The line number of the MemberFunction call.
+     *          Use 0 if you want to omit error output.
      */
-    Method* lookupMethod(Class* _class,
-                         const std::string* methodId,
-                         int methodQualifier,
-                         const TypeList& in,
-                         int line);
+    MemberFunction* lookupMemberFunction(Class* _class,
+                                         const std::string* id,
+                                         const TypeList& in,
+                                         int line);
 
     /**
      * Looks up a constructor.
      *
-     * @param _class The method's class.
+     * @param _class The contructor's class.
      * @param in The in-signature the method should have.
      * @param line The line number of the method call.
+     *          Use 0 if you want to omit error output.
      */
-    Method* lookupCreate(Class* _class,
+    Create* lookupCreate(Class* _class,
                          const TypeList& in,
                          int line);
 
     /**
-     * Looks up the assign constructor.
+     * Looks up the assign operator.
      *
-     * @param _class The method's class.
+     * @param _class The assign operator's class.
      * @param in The in-signature the method should have.
      * @param line The line number of the method call.
+     *          Use 0 if you want to omit error output.
      */
-    Method* lookupAssign(Class* _class, const TypeList& in, int line);
+    Assign* lookupAssign(Class* _class, const TypeList& in, int line);
 
     /**
      * Looks up the assign constructor.
@@ -163,6 +167,7 @@ struct SymbolTable
      * @param _class The method's class.
      * @param in The in-signature the method should have.
      * @param line The line number of the method call.
+     *          Use 0 if you want to omit error output.
      */
     Method* lookupAssignCreate(Class* _class, const TypeList& in, bool create, int line);
 
@@ -174,7 +179,7 @@ struct SymbolTable
     Scope* currentScope();
 
     Class* currentClass();
-    Method* currentMethod();
+    MemberFunction* currentMemberFunction();
 
 
     /*

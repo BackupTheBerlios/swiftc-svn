@@ -92,7 +92,7 @@ ADD_EXECUTABLE (swift
     fe/expr.cpp
     fe/exprlist.cpp
     fe/functioncall.cpp
-    fe/method.cpp
+    fe/memberfunction.cpp
     fe/module.cpp
     fe/scope.cpp
     fe/signature.cpp

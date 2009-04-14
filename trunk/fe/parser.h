@@ -32,7 +32,7 @@ class Definition;
 class Expr;
 class ExprList;
 class MemberVar;
-class Method;
+class MemberFunction;
 class Module;
 class Param;
 class Statement;

@@ -21,7 +21,7 @@
 
 #include "fe/error.h"
 #include "fe/exprlist.h"
-#include "fe/method.h"
+#include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
@@ -79,9 +79,9 @@ void FunctionCall::genSSA()
  * further methods
  */
 
-Method* FunctionCall::getMethod()
+MemberFunction* FunctionCall::getMemberFunction()
 {
-    return method_;
+    return memberFunction_;
 }
 
 void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPlaceList) const
@@ -101,12 +101,12 @@ void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPl
 
 bool FunctionCall::analyze(Class* _class, const TypeList& argTypeList)
 {
-    method_ = symtab->lookupMethod(_class, id_, kind_, argTypeList, line_);
+    memberFunction_ = symtab->lookupMemberFunction(_class, id_, argTypeList, line_);
 
-    if (!method_)
+    if (!memberFunction_)
         return false;
 
-    const TypeList& out = method_->sig_->getOut();
+    const TypeList& out = memberFunction_->sig_->getOut();
 
     if ( !out.empty() )
         type_ = out[0]->clone();
@@ -311,19 +311,20 @@ bool MethodCall::analyze()
     {
         _class = symtab->currentClass();
 
-        int currentMethodQualifier = symtab->currentMethod()->methodQualifier_;
+        const std::type_info& currentMethodQualifier = 
+            typeid( *symtab->currentMemberFunction() );
 
-        if (currentMethodQualifier == READER && kind_ == WRITER)
+        if (currentMethodQualifier == typeid(Reader) && kind_ == WRITER)
         {
             errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
             return false;
         }
-        else if ( currentMethodQualifier == ROUTINE ) 
+        else if ( currentMethodQualifier == typeid(Routine) ) 
         {
             errorf(line_, "routines do not have a 'self' pointer");
             return false;
         }
-        else if ( currentMethodQualifier == OPERATOR ) 
+        else if ( currentMethodQualifier == typeid(Operator) ) 
         {
             errorf(line_, "operators do not have a 'self' pointer");
             return false;
