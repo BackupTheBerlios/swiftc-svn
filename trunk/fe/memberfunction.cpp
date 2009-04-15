@@ -88,10 +88,7 @@ bool MemberFunction::analyze()
     // insert the first label since every function must start with one
     me::functab->appendInstr( new me::LabelInstr() );
 
-    const TypeList&  in = sig_->getIn();
-    const TypeList& out = sig_->getOut();
-
-    if ( !specialAnalyze(in, out) )
+    if ( !specialAnalyze() )
         return false;;
 
     // build function entry
@@ -184,6 +181,20 @@ Method::Method(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
     : MemberFunction(id, parent, line)
 {}
 
+bool Method::specialAnalyze()
+{
+    // the self pointer is the first (hidden) argument
+    me::functab->appendArg(self_);
+
+    // now append all other hidden args (non atomic types)
+
+    //for ()
+    //me::functab->appendArg();
+    //
+
+    return true;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -198,7 +209,7 @@ Reader::Reader(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Reader::specialAnalyze(const TypeList& in, const TypeList& out)
+bool Reader::specialAnalyze()
 {
     return true;
 }
@@ -222,7 +233,7 @@ Writer::Writer(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Writer::specialAnalyze(const TypeList& in, const TypeList& out)
+bool Writer::specialAnalyze()
 {
     return true;
 }
@@ -246,7 +257,7 @@ Create::Create(Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Create::specialAnalyze(const TypeList& /*in*/, const TypeList& /*out*/)
+bool Create::specialAnalyze()
 {
     return true;
 }
@@ -270,8 +281,11 @@ Assign::Assign(Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Assign::specialAnalyze(const TypeList& in, const TypeList& out)
+bool Assign::specialAnalyze()
 {
+    const TypeList&  in = sig_->getIn();
+    const TypeList& out = sig_->getOut();
+
     if ( in.empty() || !out.empty() )
     {
         errorf(line_, "an assignment must have exactly one or more "
@@ -320,7 +334,7 @@ Routine::Routine(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Routine::specialAnalyze(const TypeList& /*in*/, const TypeList& /*out*/)
+bool Routine::specialAnalyze()
 {
     return true;
 }
@@ -344,8 +358,10 @@ Operator::Operator(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Operator::specialAnalyze(const TypeList& in, const TypeList& out)
+bool Operator::specialAnalyze()
 {
+    const TypeList&  in = sig_->getIn();
+    const TypeList& out = sig_->getOut();
     /*
      * check signature
      */

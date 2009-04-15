@@ -183,6 +183,14 @@ me::Op::Type BaseType::toMeType() const
         return me::Op::R_STACK;
 }
 
+me::Op::Type BaseType::toMeParamType() const
+{
+    if (builtin_)
+        return typeMap_->find(*id_)->second;
+    else
+        return me::Op::R_PTR;
+}
+
 bool BaseType::isAtomic() const
 {
     return builtin_;
@@ -394,6 +402,11 @@ bool Ptr::check(const Type* type) const
 }
 
 me::Op::Type Ptr::toMeType() const
+{
+    return me::Op::R_PTR;
+}
+
+me::Op::Type Ptr::toMeParamType() const
 {
     return me::Op::R_PTR;
 }

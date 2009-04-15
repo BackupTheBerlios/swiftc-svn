@@ -26,11 +26,16 @@
 #include "fe/class.h"
 #include "fe/typelist.h"
 
-namespace swift {
-
 /*
  * forward declarations
  */
+
+namespace me {
+    class Reg;
+}
+
+namespace swift {
+
 class Param;
 class Signature;
 class Scope;
@@ -56,7 +61,7 @@ public:
      */
 
     virtual bool analyze();
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out) = 0;
+    virtual bool specialAnalyze() = 0;
     virtual std::string qualifierString() const = 0;
 
     /*
@@ -67,9 +72,14 @@ public:
 
 //protected: TODO
 
-    Statement* statements_; ///< The statements_ inside this Proc.
-    Scope* rootScope_;      ///< The root Scope where vars of this Proc are stored.
-    Signature* sig_;        ///< The signature of this Method.
+    /*
+     * data
+     */
+
+    Statement* statements_;///< The statements_ inside this Proc.
+    Scope* rootScope_;     ///< The root Scope where vars of this Proc are stored.
+    Signature* sig_;       ///< The signature of this Method.
+    std::string meId_;     ///< Identifier used by the middle-end for this function.
 };
 
 //------------------------------------------------------------------------------
@@ -83,6 +93,16 @@ public:
      */
 
     Method(std::string* id, Symbol* parent, int line = NO_LINE);
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool specialAnalyze();
+
+// protected: TODO
+
+    me::Reg* self_;
 };
 
 //------------------------------------------------------------------------------
@@ -101,7 +121,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 
@@ -121,7 +141,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 
@@ -141,7 +161,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 
@@ -161,7 +181,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 
@@ -194,7 +214,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 
@@ -214,7 +234,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze(const TypeList& in, const TypeList& out);
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const;
 };
 

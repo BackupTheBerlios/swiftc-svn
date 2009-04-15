@@ -36,7 +36,9 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
-// forward declarations
+/*
+ * forward declarations
+ */
 struct CFG;
 struct Function;
 struct Struct;
@@ -75,8 +77,8 @@ struct Function
     InstrNode* lastLabelNode_;
     InstrList instrList_;
 
-    //VarVec arg_;
-    //VarVec res_;
+    VarVec res_;
+    VarVec arg_;
     VarMap vars_;
 
     typedef std::vector<Const*> Consts;
@@ -137,6 +139,11 @@ struct Function
     inline void insert(Var* var);
 
     bool ignore() const;
+
+    void appendArg(me::Var* arg);
+    void appendRes(me::Var* res);
+
+    std::string getId() const;
 
     /*
      * dump methods
@@ -211,6 +218,12 @@ struct FunctionTable
     void dumpDot();
 
     void genCode();
+
+    void appendArg(me::Var* arg);
+    void appendRes(me::Var* res);
+
+    std::string getId() const;
+
 
     /*
      * struct handling

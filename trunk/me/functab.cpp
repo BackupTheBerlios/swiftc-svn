@@ -61,10 +61,10 @@ Function::~Function()
         delete iter->value_;
 
     // delete all pseudo vars
-    //for (size_t i = 0; i < arg_.size(); ++i)
-        //delete arg_[i];
-    //for (size_t i = 0; i < res_.size(); ++i)
-        //delete res_[i];
+    for (size_t i = 0; i < arg_.size(); ++i)
+        delete arg_[i];
+    for (size_t i = 0; i < res_.size(); ++i)
+        delete res_[i];
     for (VarMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
         delete iter->second;
 
@@ -246,6 +246,21 @@ void Function::dumpDot(const string& baseFilename)
     cfg_->dumpDot(baseFilename);
 }
 
+void Function::appendArg(me::Var* arg)
+{
+    arg_.push_back(arg);
+}
+
+void Function::appendRes(me::Var* res)
+{
+    res_.push_back(res);
+}
+
+std::string Function::getId() const
+{
+    return *id_;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -418,6 +433,22 @@ InstrNode* FunctionTable::getLastLabelNode()
 {
     return currentFunction_->lastLabelNode_;
 }
+
+void FunctionTable::appendArg(me::Var* arg)
+{
+    currentFunction_->arg_.push_back(arg);
+}
+
+void FunctionTable::appendRes(me::Var* res)
+{
+    currentFunction_->res_.push_back(res);
+}
+
+std::string FunctionTable::getId() const
+{
+    return *currentFunction_->id_;
+}
+
 
 /*
  * struct handling

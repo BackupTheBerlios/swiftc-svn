@@ -687,6 +687,11 @@ struct CallInstr : public InstrBase
 
     std::string symbol_;
     bool vararg_;
+
+    /// Since dummy values can be added the original number of results must be stored.
+    size_t numRes_;
+    /// Since dummy values can be added the original number of arguments must be stored.
+    size_t numArg_;
 };
 
 } // namespace me

@@ -76,6 +76,7 @@ public:
     virtual bool check(const Type* type) const = 0;
 
     virtual me::Op::Type toMeType() const = 0;
+    virtual me::Op::Type toMeParamType() const = 0;
 
     virtual me::Var* createVar(const std::string* id = 0) const = 0;
 
@@ -150,6 +151,7 @@ public:
     virtual bool validate() const;
     virtual bool check(const Type* type) const;
     virtual me::Op::Type toMeType() const;
+    virtual me::Op::Type toMeParamType() const;
     virtual bool isAtomic() const;
     virtual bool isBuiltin() const;
     virtual const BaseType* isInner() const;
@@ -251,6 +253,7 @@ public:
     virtual bool isAtomic() const;
 
     virtual me::Op::Type toMeType() const;
+    virtual me::Op::Type toMeParamType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
     virtual const Ptr* derefToInnerstPtr() const;
