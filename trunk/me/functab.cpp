@@ -60,11 +60,6 @@ Function::~Function()
     for (InstrNode* iter = instrList_.first(); iter != instrList_.sentinel(); iter = iter->next())
         delete iter->value_;
 
-    // delete all pseudo vars
-    for (size_t i = 0; i < arg_.size(); ++i)
-        delete arg_[i];
-    for (size_t i = 0; i < res_.size(); ++i)
-        delete res_[i];
     for (VarMap::iterator iter = vars_.begin(); iter != vars_.end(); ++iter)
         delete iter->second;
 

@@ -162,6 +162,33 @@ bool MemberFunction::analyze()
     return result;
 }
 
+bool MemberFunction::specialAnalyze()
+{
+    /* 
+     * all other hidden args (non atomic return values) 
+     * or append regular results if applicable
+     */
+    for (size_t i = 0; i < sig_->getNumOut(); ++i)
+    {
+        Param* param = sig_->getOutParam(i);
+        me::Var* var = param->getMeVar();
+
+        if ( !param->getType()->isAtomic() )
+            me::functab->appendArg(var); // hidden arg
+        else
+            me::functab->appendRes(var); // regular res
+    }
+
+    // append regular arguments
+    for (size_t i = 0; i < sig_->getNumIn(); ++i)
+    {
+        me::Var* param = sig_->getInParam(i)->getMeVar();
+        me::functab->appendArg(param); // hidden arg
+    }
+
+    return true;
+}
+
 /*
  * further methods
  */
@@ -183,16 +210,13 @@ Method::Method(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
 
 bool Method::specialAnalyze()
 {
+    BaseType self( getSelfModifier(), symtab->currentClass() );
+    self_ = (me::Reg*) self.createVar(); 
+
     // the self pointer is the first (hidden) argument
     me::functab->appendArg(self_);
 
-    // now append all other hidden args (non atomic types)
-
-    //for ()
-    //me::functab->appendArg();
-    //
-
-    return true;
+    return MemberFunction::specialAnalyze();
 }
 
 //------------------------------------------------------------------------------
@@ -209,9 +233,9 @@ Reader::Reader(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Reader::specialAnalyze()
+int Reader::getSelfModifier() const
 {
-    return true;
+    return CONST_PARAM;
 }
 
 std::string Reader::qualifierString() const
@@ -233,9 +257,9 @@ Writer::Writer(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Writer::specialAnalyze()
+int Writer::getSelfModifier() const
 {
-    return true;
+    return INOUT;
 }
 
 std::string Writer::qualifierString() const
@@ -257,9 +281,9 @@ Create::Create(Symbol* parent, int line /*= NO_LINE*/)
  * virtual methods
  */
 
-bool Create::specialAnalyze()
+int Create::getSelfModifier() const
 {
-    return true;
+    return INOUT;
 }
 
 std::string Create::qualifierString() const
@@ -283,6 +307,9 @@ Assign::Assign(Symbol* parent, int line /*= NO_LINE*/)
 
 bool Assign::specialAnalyze()
 {
+    if ( !Method::specialAnalyze() )
+        return false;
+
     const TypeList&  in = sig_->getIn();
     const TypeList& out = sig_->getOut();
 
@@ -303,6 +330,11 @@ bool Assign::specialAnalyze()
     }
 
     return true;
+}
+
+int Assign::getSelfModifier() const
+{
+    return INOUT;
 }
 
 std::string Assign::qualifierString() const

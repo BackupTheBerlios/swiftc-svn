@@ -228,6 +228,11 @@ bool Class::analyze()
     return result;
 }
 
+BaseType* Class::createType(int modifier) const
+{
+    return new BaseType( modifier, this );
+}
+
 //------------------------------------------------------------------------------
 
 /*

@@ -567,6 +567,24 @@ struct LoadPtr : public InstrBase
 
 //------------------------------------------------------------------------------
 
+struct Deref : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    Deref(Reg* result, Reg* ptr);
+
+    /*
+     * further methods
+     */
+
+    Reg* result();
+    std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
 /** 
  * @brief Store into a stack location or an arbitrary memory location.
  *

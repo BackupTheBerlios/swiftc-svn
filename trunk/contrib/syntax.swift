@@ -364,3 +364,19 @@ class Vec2
     real x
     real y
 end
+
+class Foo
+    ptr{Gnatz} gnatz
+
+    writer foo(ptr{Gnatz} gnatz)
+        .gnatz = gnatz
+    end
+
+    routine main()
+        ptr{Gnatz} gnatz = new Gnatz()
+
+        Foo f
+        f.foo(gnatz)
+    end
+end
+

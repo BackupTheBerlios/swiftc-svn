@@ -34,14 +34,10 @@ namespace swift {
  * constructor and destructor
  */
 
-FunctionCall::FunctionCall(std::string* id, 
-                           ExprList* exprList, 
-                           int kind,
-                           int line /*= NO_LINE*/)
+FunctionCall::FunctionCall(std::string* id, ExprList* exprList, int line)
     : Expr(line)
     , id_(id)
     , exprList_(exprList)
-    , kind_(kind)
 {}
 
 FunctionCall::~FunctionCall()
@@ -56,24 +52,18 @@ FunctionCall::~FunctionCall()
 
 void FunctionCall::genSSA()
 {
-    //size_t numRes = 0;
-    //if (returnType_)
-        //numRes = 1;
+    me::CallInstr* call = new me::CallInstr( 
+            out_.size(), in_.size(), *id_, false);
+            //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
 
-    //PlaceList places = exprList_->getPlaceList();
+    for (size_t i = 0; i < in_.size(); ++i)
+        call->arg_[i] = me::Arg( in_[i] );
 
-    //me::CallInstr* call = new me::CallInstr( 
-            //numRes, places.size(), *id_, kind_ == 'v' ? true : false );
+    for (size_t i = 0; i < out_.size(); ++i)
+        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
 
-    //for (size_t i = 0; i < places.size(); ++i)
-        //call->arg_[i] = me::Arg( places[i] );
-
-    //for (size_t i = 0; i < numRes; ++i)
-        //call->res_[i] = me::Res( (me::Var*) place_, ((me::Var*) place_)->varNr_ );
-
-    //me::functab->appendInstr(call); 
+    me::functab->appendInstr(call); 
 };
-
 
 /*
  * further methods
@@ -84,9 +74,9 @@ MemberFunction* FunctionCall::getMemberFunction()
     return memberFunction_;
 }
 
-void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPlaceList) const
+bool FunctionCall::analyze(TypeList& argTypeList, PlaceList& argPlaceList) const
 {
-    result = exprList_ 
+    bool result = exprList_ 
            ? exprList_->analyze() 
            : true; // true when there is no ExprList
 
@@ -97,23 +87,8 @@ void FunctionCall::analyze(bool& result, TypeList& argTypeList, PlaceList& argPl
     argPlaceList = exprList_
         ? exprList_->getPlaceList()
         : PlaceList(); // use empty TypeList when there is no ExprList
-}
 
-bool FunctionCall::analyze(Class* _class, const TypeList& argTypeList)
-{
-    memberFunction_ = symtab->lookupMemberFunction(_class, id_, argTypeList, line_);
-
-    if (!memberFunction_)
-        return false;
-
-    const TypeList& out = memberFunction_->sig_->getOut();
-
-    if ( !out.empty() )
-        type_ = out[0]->clone();
-    else
-        type_ = 0;
-
-    return true;
+    return result;
 }
 
 std::string FunctionCall::callToString() const
@@ -128,18 +103,18 @@ std::string FunctionCall::callToString() const
  */
 
 CCall::CCall(Type* returnType, 
+             int kind,
              std::string* id, 
              ExprList* exprList, 
-             int kind,
-             int line /*= NO_LINE*/)
-    : FunctionCall(id, exprList, kind, line)
+             int line)
+    : FunctionCall(id, exprList, line)
     , returnType_(returnType)
+    , kind_(kind)
 {}
 
 CCall::~CCall()
 {
-    if (returnType_)
-        delete returnType_;
+    delete returnType_;
 }
 
 /*
@@ -148,10 +123,9 @@ CCall::~CCall()
 
 bool CCall::analyze()
 {
-    bool result;
     TypeList argTypeList;
     PlaceList argPlaceList;
-    FunctionCall::analyze(result, argTypeList, argPlaceList);
+    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
 
     if (returnType_)
     {
@@ -193,19 +167,48 @@ std::string CCall::toString() const
  * constructor and destructor
  */
 
+MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int line)
+    : FunctionCall(id, exprList, line)
+{}
+
+/*
+ * further methods
+ */
+
+bool MemberFunctionCall::analyze(Class* _class, const TypeList& argTypeList)
+{
+    memberFunction_ = symtab->lookupMemberFunction(_class, id_, argTypeList, line_);
+
+    if (!memberFunction_)
+        return false;
+
+    const TypeList& out = memberFunction_->sig_->getOut();
+
+    if ( !out.empty() )
+        type_ = out[0]->clone();
+    else
+        type_ = 0;
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
 RoutineCall::RoutineCall(std::string* classId, 
                          std::string* id, 
                          ExprList* exprList, 
-                         int kind,
-                         int line /*= NO_LINE*/)
-    : FunctionCall(id, exprList, kind, line)
+                         int line)
+    : MemberFunctionCall(id, exprList, line)
     , classId_(classId)
 {}
 
 RoutineCall::~RoutineCall()
 {
-    if (classId_)
-        delete classId_;
+    delete classId_;
 }
 
 /*
@@ -214,39 +217,30 @@ RoutineCall::~RoutineCall()
 
 bool RoutineCall::analyze()
 {
-    bool result;
     TypeList argTypeList;
     PlaceList argPlaceList;
-    FunctionCall::analyze(result, argTypeList, argPlaceList);
+    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
 
     if (!result)
         return false;
 
     Class* _class;
 
-    if (kind_ == 0)
+    if (classId_)
     {
-        swiftAssert(false, "TODO -> global routine");
-        _class = 0;
+        _class = symtab->lookupClass(classId_);
+        
+        if (!_class)
+        {
+            errorf(line_, "class '%s' is not defined in this module", 
+                    classId_->c_str() );
+            return false;
+        }
     }
     else
-    {
-        if (classId_)
-        {
-            _class = symtab->lookupClass(classId_);
-            
-            if (!_class)
-            {
-                errorf(line_, "class '%s' is not defined in this module", 
-                        classId_->c_str() );
-                return false;
-            }
-        }
-        else
-            _class = symtab->currentClass();
-    }
+        _class = symtab->currentClass();
 
-    return FunctionCall::analyze(_class, argTypeList);
+    return MemberFunctionCall::analyze(_class, argTypeList);
 }
 
 std::string RoutineCall::toString() const
@@ -260,19 +254,14 @@ std::string RoutineCall::toString() const
  * constructor and destructor
  */
 
-MethodCall::MethodCall(Expr* expr, 
-                       std::string* id, 
-                       ExprList* exprList, 
-                       int kind,
-                       int line /*= NO_LINE*/)
-    : FunctionCall(id, exprList, kind, line)
+MethodCall::MethodCall(Expr* expr, std::string* id, ExprList* exprList, int line)
+    : MemberFunctionCall(id, exprList, line)
     , expr_(expr)
 {}
 
 MethodCall::~MethodCall()
 {
-    if (expr_)
-        delete expr_;
+    delete expr_;
 }
 
 /*
@@ -281,10 +270,9 @@ MethodCall::~MethodCall()
 
 bool MethodCall::analyze()
 {
-    bool result;
     TypeList argTypeList;
     PlaceList argPlaceList;
-    FunctionCall::analyze(result, argTypeList, argPlaceList);
+    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
 
     if (!result)
         return false;
@@ -298,7 +286,7 @@ bool MethodCall::analyze()
 
         const BaseType* bt = expr_->getType()->unnestPtr();
 
-        if (bt->isReadOnly() && kind_ == WRITER)
+        if ( bt->isReadOnly() && typeid(*this) == typeid(WriterCall) )
         {
             errorf( line_, "'writer' used on read-only location '%s'",
                     expr_->toString().c_str() );
@@ -314,39 +302,94 @@ bool MethodCall::analyze()
         const std::type_info& currentMethodQualifier = 
             typeid( *symtab->currentMemberFunction() );
 
-        if (currentMethodQualifier == typeid(Reader) && kind_ == WRITER)
+        if ( currentMethodQualifier == typeid(Reader) && typeid(*this) == typeid(WriterCall) )
         {
             errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
             return false;
         }
         else if ( currentMethodQualifier == typeid(Routine) ) 
         {
-            errorf(line_, "routines do not have a 'self' pointer");
+            errorf(line_, "routines do not have a 'self' argument");
             return false;
         }
         else if ( currentMethodQualifier == typeid(Operator) ) 
         {
-            errorf(line_, "operators do not have a 'self' pointer");
+            errorf(line_, "operators do not have a 'self' argument");
             return false;
         }
     }
 
-    return FunctionCall::analyze(_class, argTypeList);
+    /*
+     * fill in_ and out_
+     */
+
+    if ( !MemberFunctionCall::analyze(_class, argTypeList) )
+        return false;
+
+    swiftAssert( dynamic_cast<Method*>(memberFunction_), 
+            "must be castable to Method" );
+    Method* method = (Method*) memberFunction_;
+
+    in_.push_back(method->self_);
+
+    genSSA();
+
+    return true;
 }
 
 std::string MethodCall::toString() const
 {
-    char access;
-
-    if (kind_ == READER)
-        access = ':';
-    else
-    {
-        swiftAssert(kind_ == WRITER, "must be a writer");
-        access = '.';
-    }
-
-    return expr_->toString() + access + callToString();
+    return expr_->toString() + concatentationStr() + callToString();
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+ReaderCall::ReaderCall(Expr* expr, std::string* id, ExprList* exprList, int line)
+    : MethodCall(expr, id, exprList, line)
+{}
+
+/*
+ * virtual methods
+ */
+
+std::string ReaderCall::concatentationStr() const
+{
+    return ":";
+}
+
+//bool ReaderCall::specialAnalyze() const
+//{
+    //return true;
+//}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+WriterCall::WriterCall(Expr* expr, std::string* id, ExprList* exprList, int line)
+    : MethodCall(expr, id, exprList, line)
+{}
+
+/*
+ * virtual methods
+ */
+
+std::string WriterCall::concatentationStr() const
+{
+    return ".";
+}
+
+//bool WriterCall::specialAnalyze() const
+//{
+    //return true;
+//}
+
+//------------------------------------------------------------------------------
 
 } // namespace swift

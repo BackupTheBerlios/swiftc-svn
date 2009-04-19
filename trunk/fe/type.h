@@ -82,13 +82,14 @@ public:
 
     virtual bool isAtomic() const = 0;
     virtual bool isBuiltin() const = 0;
+    virtual bool isActuallyPtr() const = 0;
     virtual const BaseType* isInner() const = 0;
 
     /// Checks whether this Type is the builtin bool Type
     virtual bool isBool() const;
 
     virtual const BaseType* getFirstBaseType() const = 0;
-    virtual const Ptr* derefToInnerstPtr() const = 0;
+    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
 
@@ -140,7 +141,7 @@ public:
      */
     
     BaseType(int modifier, std::string* id, int line = NO_LINE);
-    BaseType(int modifier, Class* _class);
+    BaseType(int modifier, const Class* _class);
     ~BaseType();
 
     /*
@@ -154,11 +155,12 @@ public:
     virtual me::Op::Type toMeParamType() const;
     virtual bool isAtomic() const;
     virtual bool isBuiltin() const;
+    virtual bool isActuallyPtr() const;
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
-    virtual const Ptr* derefToInnerstPtr() const;
+    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual const BaseType* unnestPtr() const;
 
     virtual bool hasAssignCreate(const TypeList& in, 
@@ -251,12 +253,13 @@ public:
     virtual Ptr* clone() const;
     virtual bool check(const Type* type) const;
     virtual bool isAtomic() const;
+    virtual bool isActuallyPtr() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Op::Type toMeParamType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual const BaseType* getFirstBaseType() const;
-    virtual const Ptr* derefToInnerstPtr() const;
+    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
                                  int line) const;

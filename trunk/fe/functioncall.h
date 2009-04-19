@@ -37,11 +37,7 @@ public:
      * constructor and destructor
      */
 
-    FunctionCall(std::string* id, 
-                 ExprList* exprList, 
-                 int kind, 
-                 int line = NO_LINE);
-
+    FunctionCall(std::string* id, ExprList* exprList, int line);
     virtual ~FunctionCall();
 
     /*
@@ -58,8 +54,7 @@ public:
 
 protected:
 
-    void analyze(bool& result, TypeList& argTypeList, PlaceList& argPlaceList) const;
-    bool analyze(Class* _class, const TypeList& argTypeList);
+    bool analyze(TypeList& argTypeList, PlaceList& argPlaceList) const;
 
     std::string callToString() const;
 
@@ -69,9 +64,10 @@ protected:
 
     std::string* id_;
     ExprList* exprList_;
-    int kind_;
     MemberFunction* memberFunction_;
-    //std::vector<me::Vec*> results_;
+
+    std::vector<me::Var*> in_;
+    std::vector<me::Var*> out_;
 };
 
 //------------------------------------------------------------------------------
@@ -85,10 +81,10 @@ public:
      */
 
     CCall(Type* returnType, 
+          int kind, 
           std::string* id, 
           ExprList* exprList, 
-          int kind, 
-          int line = NO_LINE);
+          int line);
 
     virtual ~CCall();
 
@@ -106,11 +102,39 @@ private:
      */
 
     Type* returnType_;
+    int kind_;
 };
 
 //------------------------------------------------------------------------------
 
-class RoutineCall : public FunctionCall
+class MemberFunctionCall : public FunctionCall
+{
+public:
+
+    /*
+     * constructor 
+     */
+
+    MemberFunctionCall(std::string* id, ExprList* exprList, int line);
+
+protected:
+
+    /*
+     * further methods
+     */
+
+    bool analyze(Class* _class, const TypeList& argTypeList);
+
+    /*
+     * data
+     */
+
+    std::string* classId_;
+};
+
+//------------------------------------------------------------------------------
+
+class RoutineCall : public MemberFunctionCall
 {
 public:
 
@@ -121,8 +145,7 @@ public:
     RoutineCall(std::string* classId, 
                 std::string* id, 
                 ExprList* exprList, 
-                int kind, 
-                int line = NO_LINE);
+                int line);
 
     virtual ~RoutineCall();
 
@@ -142,9 +165,10 @@ private:
     std::string* classId_;
 };
 
+
 //------------------------------------------------------------------------------
 
-class MethodCall : public FunctionCall
+class MethodCall : public MemberFunctionCall
 {
 public:
 
@@ -155,8 +179,7 @@ public:
     MethodCall(Expr* expr, 
                std::string* id, 
                ExprList* exprList, 
-               int kind, 
-               int line = NO_LINE);
+               int line);
 
     virtual ~MethodCall();
 
@@ -166,6 +189,8 @@ public:
 
     virtual bool analyze();
     virtual std::string toString() const;
+    //virtual bool specialAnalyze() = 0;
+    virtual std::string concatentationStr() const = 0;
 
 private:
 
@@ -177,5 +202,57 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+class ReaderCall : public MethodCall
+{
+public:
+
+    /*
+     * constructor 
+     */
+
+    ReaderCall(Expr* expr, 
+               std::string* id, 
+               ExprList* exprList, 
+               int line);
+
+    /*
+     * virtual methods
+     */
+
+    //virtual bool specialAnalyze();
+    virtual std::string concatentationStr() const;
+
+protected:
+
+    /*
+     * data
+     */
+
+    Expr* expr_;
+};
+
+//------------------------------------------------------------------------------
+
+class WriterCall : public MethodCall
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    WriterCall(Expr* expr, 
+               std::string* id, 
+               ExprList* exprList, 
+               int line);
+
+    /*
+     * virtual methods
+     */
+
+    //virtual bool specialAnalyze();
+    virtual std::string concatentationStr() const;
+};
 
 } // namespace swift

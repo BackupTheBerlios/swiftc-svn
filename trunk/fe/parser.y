@@ -435,7 +435,7 @@ mul_expr
 un_expr
     : postfix_expr          { $$ = $1; }
     | '^' un_expr           { $$ = new UnExpr('^', $2, currentLine); }
-    | '&' un_expr           { $$ = new UnExpr('&', $2, currentLine); }
+    /*| '&' un_expr           { $$ = new UnExpr('&', $2, currentLine); }*/
     | '-' un_expr           { $$ = new UnExpr('-', $2, currentLine); }
     | '+' un_expr           { $$ = new UnExpr('+', $2, currentLine); }
     | '!' un_expr           { $$ = new UnExpr('!', $2, currentLine); }
@@ -453,25 +453,25 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5,  C_CALL, currentLine); }
-    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, $3, $5, VC_CALL, currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4,  C_CALL, currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, $2, $4, VC_CALL, currentLine); }
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2,  C_CALL, $3, $5, currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, VC_CALL, $3, $5, currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0,  C_CALL, $2, $4, currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, VC_CALL, $2, $4, currentLine); }
 
     /* 
         routines 
     */
   /*|                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3,       0, currentLine); }*/
-    |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, ROUTINE, currentLine); }
-    | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, ROUTINE, currentLine); }
+    |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, currentLine); }
+    | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, currentLine); }
 
     /* 
         methods 
     */
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, READER, currentLine); }
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new MethodCall(       $1, $3, $5, WRITER, currentLine); }
-    | ':' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, READER, currentLine); }
-    | '.' ID '(' expr_list ')'              { $$ = new MethodCall((Expr*) 0, $2, $4, WRITER, currentLine); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new ReaderCall(       $1, $3, $5, currentLine); }
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(       $1, $3, $5, currentLine); }
+    | ':' ID '(' expr_list ')'              { $$ = new ReaderCall((Expr*) 0, $2, $4, currentLine); }
+    | '.' ID '(' expr_list ')'              { $$ = new WriterCall((Expr*) 0, $2, $4, currentLine); }
     ;
 
 primary_expr

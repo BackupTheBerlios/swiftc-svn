@@ -157,6 +157,10 @@ int start(int argc, char** argv)
      */
     me::functab->buildUpME();
 
+    me::functab->dumpSSA();
+    me::functab->dumpDot();
+    return 0;
+
     /*
      * build up back-end and generate assembly code
      */

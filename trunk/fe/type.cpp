@@ -31,6 +31,7 @@
 #include "fe/symtab.h"
 
 #include "me/arch.h"
+#include "me/ssa.h"
 #include "me/struct.h"
 
 namespace swift {
@@ -59,7 +60,6 @@ const BaseType* Type::unnestPtr() const
 {
     return 0;
 }
-
 
 /*
  * further methods
@@ -121,7 +121,7 @@ BaseType::BaseType(int modifier, std::string* id, int line /*= NO_LINE*/)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
 
-BaseType::BaseType(int modifier, Class* _class)
+BaseType::BaseType(int modifier, const Class* _class)
     : Type(modifier, NO_LINE)
     , id_( new std::string(*_class->id_) )
     , builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
@@ -180,7 +180,12 @@ me::Op::Type BaseType::toMeType() const
     if (builtin_)
         return typeMap_->find(*id_)->second;
     else
-        return me::Op::R_STACK;
+    {
+        if (modifier_ == CONST_PARAM || modifier_ == INOUT)
+            return me::Op::R_PTR; // params are passed in pointers
+        else
+            return me::Op::R_STACK;
+    }
 }
 
 me::Op::Type BaseType::toMeParamType() const
@@ -199,6 +204,11 @@ bool BaseType::isAtomic() const
 bool BaseType::isBuiltin() const
 {
     return builtin_;
+}
+
+bool BaseType::isActuallyPtr() const
+{
+    return !isBuiltin() && (modifier_ == INOUT || modifier_ == CONST_PARAM);
 }
 
 const BaseType* BaseType::isInner() const
@@ -242,11 +252,27 @@ const BaseType* BaseType::getFirstBaseType() const
     return this;
 }
 
-
-const Ptr* BaseType::derefToInnerstPtr() const
+me::Reg* BaseType::derefToInnerstPtr(me::Reg* reg) const
 {
-    swiftAssert(false, "unreachable code");
-    return 0;
+    if ( isActuallyPtr() )
+        return reg; // reg is a hidden ptr
+
+    /*
+     * load adress into pointer reg
+     */
+    swiftAssert(!builtin_, "LoadPtr not allowed");
+    
+#ifdef SWIFT_DEBUG
+    std::string str = "tmp";
+    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
+#else // SWIFT_DEBUG
+    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
+    me::functab->appendInstr(loadPtr);
+
+    return ptr;
 }
 
 const BaseType* BaseType::unnestPtr() const
@@ -425,20 +451,38 @@ bool Ptr::isAtomic() const
     return true;
 }
 
+bool Ptr::isActuallyPtr() const
+{
+    return true;
+}
+
 const BaseType* Ptr::getFirstBaseType() const
 {
     return innerType_->getFirstBaseType();
 }
 
-const Ptr* Ptr::derefToInnerstPtr() const
+me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
 {
-    if ( typeid(*innerType_) == typeid(Ptr) )
+    if ( innerType_->isActuallyPtr() )
     {
-        // TODO deref
-        return innerType_->derefToInnerstPtr();
+        swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
+
+#ifdef SWIFT_DEBUG
+        std::string str = "tmp";
+        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
+#else // SWIFT_DEBUG
+        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+        me::Deref* derefInstr = new me::Deref(derefed, reg);
+        me::functab->appendInstr(derefInstr);
+
+        return innerType_->derefToInnerstPtr(derefed);
     }
-    else
-        return this;
+    // else
+
+    // this is already the innerst pointer
+    return reg;
 }
 
 const BaseType* Ptr::unnestPtr() const

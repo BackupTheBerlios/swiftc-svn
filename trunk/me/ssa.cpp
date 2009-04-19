@@ -816,6 +816,46 @@ std::string LoadPtr::toString() const
 //------------------------------------------------------------------------------
 
 /*
+ * constructor
+ */
+
+Deref::Deref(Reg* result, Reg* ptr)
+    : InstrBase(1, 1)
+{
+    swiftAssert(ptr->type_ == Op::R_PTR, "must be an R_PTR");
+
+    res_[0].var_ = result;
+    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0].oldVarNr_ = result->varNr_;
+
+    arg_[0].op_ = ptr;
+    arg_[0].constraint_ = NO_CONSTRAINT;
+}
+
+/*
+ * further methods
+ */
+
+Reg* Deref::result()
+{
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
+
+    return (Reg*) res_[0].var_;
+}
+
+std::string Deref::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= Deref(" 
+        << arg_[0].op_->toString() << ", " << ')';
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+
+/*
  * constructor and destructor
  */
 
@@ -960,7 +1000,12 @@ bool CallInstr::isVarArg() const
 
 std::string CallInstr::toString() const
 {
-    return "TODO";
+    std::ostringstream oss;
+    oss << commaList( res_.begin(), res_.end() )
+        << " CALL " << symbol_ << '(' 
+        << commaList( arg_.begin(), arg_.end() ) << ')';
+
+    return oss.str();
 }
 
 } // namespace me

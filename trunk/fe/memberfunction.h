@@ -61,7 +61,7 @@ public:
      */
 
     virtual bool analyze();
-    virtual bool specialAnalyze() = 0;
+    virtual bool specialAnalyze();
     virtual std::string qualifierString() const = 0;
 
     /*
@@ -99,6 +99,7 @@ public:
      */
 
     virtual bool specialAnalyze();
+    virtual int getSelfModifier() const = 0;
 
 // protected: TODO
 
@@ -121,7 +122,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze();
+    virtual int getSelfModifier() const;
     virtual std::string qualifierString() const;
 };
 
@@ -141,7 +142,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze();
+    virtual int getSelfModifier() const;
     virtual std::string qualifierString() const;
 };
 
@@ -161,7 +162,7 @@ public:
      * virtual methods
      */
 
-    virtual bool specialAnalyze();
+    virtual int getSelfModifier() const;
     virtual std::string qualifierString() const;
 };
 
@@ -182,6 +183,7 @@ public:
      */
 
     virtual bool specialAnalyze();
+    virtual int getSelfModifier() const;
     virtual std::string qualifierString() const;
 };
 

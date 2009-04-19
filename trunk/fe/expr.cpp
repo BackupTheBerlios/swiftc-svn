@@ -378,9 +378,10 @@ bool UnExpr::analyze()
     if ( !op_->analyze() )
         return false;
 
-    if (c_ == '&')
-        type_ = new Ptr( VAR, op_->getType()->clone() );
-    else if (c_ == '^')
+    //if (c_ == '&')
+        //type_ = new Ptr( VAR, op_->getType()->clone() );
+    //else 
+    if (c_ == '^')
     {
         Ptr* ptr = dynamic_cast<Ptr*>(type_);
 
@@ -758,27 +759,27 @@ Self::Self(int line)
 
 bool Self::analyze()
 {
-    int selfModifier = VAR;
+    int selfModifier = INOUT;
     const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
 
     if ( methodQualifier == typeid(Routine) )
     {
-        errorf(line_, "routines do not have a 'self' pointer");
+        errorf(line_, "routines do not have a 'self' argument");
         return false;
     }
     else if ( methodQualifier == typeid(Operator) )
     {
-        errorf(line_, "operators do not have a 'self' pointer");
+        errorf(line_, "operators do not have a 'self' argument");
         return false;
     }
     else if ( methodQualifier == typeid(Reader) )
-        selfModifier = CONST;
+        selfModifier = CONST_PARAM;
 
-    type_ = new Ptr( CONST, 
-            new BaseType(selfModifier, symtab->currentClass()) );
-    me::Reg* reg = me::functab->newReg(me::Op::R_PTR);
-    // TODO
-    place_ = reg;
+    swiftAssert( dynamic_cast<Method*>(symtab->currentMemberFunction()),
+            "must be castable to Method" );
+
+    type_ = symtab->currentClass()->createType(selfModifier);
+    place_ = ((Method*) symtab->currentMemberFunction())->self_;
 
     return true;
 }

@@ -38,8 +38,10 @@ namespace me {
 
 namespace swift {
 
+struct BaseType;
 struct ClassMember;
 struct MemberFunction;
+struct Ptr;
 struct Type;
 
 //------------------------------------------------------------------------------
@@ -106,6 +108,7 @@ struct Class : public Definition
     void addDefaultCreate();
     void addCopyCreate();
     void addAssignOperators();
+    BaseType* createType(int modifier) const;
 };
 
 //------------------------------------------------------------------------------
