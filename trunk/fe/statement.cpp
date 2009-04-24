@@ -6,6 +6,7 @@
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
  *
+ *
  * This framework is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -146,92 +147,110 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
-    // check params
-    bool result = exprList_->analyze();
+    if ( tupel_->moreThanOne() )
+    {
+        if ( exprList_->moreThanOne() )
+        {
+            errorf(line_, "either the left-hand side or the right-hand side of an "
+                    "assignment statement must have exactly one element");
 
-    // check result tupel
-    result &= tupel_->analyze();
+            return false;
+        }
 
-    if (!result)
-        return false;
+        return analyzeFunctionCall();
+    }
+    else
+        return analyzeAssignCreate();
+}
 
-    TypeList in = exprList_->getTypeList();
-    TypeList out = tupel_->getTypeList();
+/*
+ * further methods
+ */
 
+bool AssignStatement::constCheck()
+{
     // check whether there is a const type in out
     for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
     {
         const TypeNode* typeNode = iter->typeNode();
 
         const Expr* expr = dynamic_cast<const Expr*>(typeNode);
-        if ( expr )
+        if ( expr && expr->getType()->isReadOnly() )
         {
-            if ( expr->getType()->isReadOnly() )
-            {
-                const Id* id = dynamic_cast<const Id*>(expr);
+            const Id* id = dynamic_cast<const Id*>(expr);
 
-                if (id)
-                {
-                    errorf(line_, "assignment of read-only variable '%s'", 
-                            id->id_->c_str() );
-                    return false;
-                }
-                else
-                {
-                    errorf(line_, "assignment of read-only location '%s'", 
-                            expr->toString().c_str() );
-                    return false;
-                }
-            }   
-        }
+            if (id)
+            {
+                errorf(line_, "assignment of read-only variable '%s'", 
+                        id->id_->c_str() );
+                return false;
+            }
+            else
+            {
+                errorf(line_, "assignment of read-only location '%s'", 
+                        expr->toString().c_str() );
+                return false;
+            }
+        }   
     }
 
-    swiftAssert(  in.size() > 0, "must have at least one element" );
-    swiftAssert( out.size() > 0, "must have at least one element" );
+    return true;
+}
 
-    if ( in.size() > 1 && out.size() > 1 )
+bool AssignStatement::analyzeFunctionCall()
+{
+    FunctionCall* fc = exprList_->getFunctionCall();
+
+    if (!fc)
     {
-        errorf(line_, "either the left-hand side or the right-hand side of an "
-                "assignment statement must have exactly one element");
+        errorf(line_, "the right-hand side of an assignment statement with"
+                "more than one item on the left-hand side" 
+                "must be a function call");
 
         return false;
     }
 
-    if (out.size() == 1)
-    {
-        const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
-        
-        if ( out[0]->isNonInnerBuiltin() )
-            return out[0]->hasAssignCreate(in, decl, line_);
-
-        if ( out[0]->isBuiltin() )
-        {
-            genMove();
-            return true;
-        }
-
-        swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
-
-        const BaseType* bt = (const BaseType*) out[0];
-        Class* _class = bt->lookupClass();
-        Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
-
-        if (!assignCreate)
-            return false;
-
-        // TODO
-    }
-    else
-    {
-        /*
-         * function call
-         */
-    }
+    bool result = fc->analyzeArgs();
+    result &= constCheck();
 
     if (!result)
         return false;
 
+    fc->setTupel(tupel_);
+
+    if ( !fc->analyze() )
+        return false;
+
+    /*
+     * gen stores
+     * 
+     * TODO
+     */
+
     return true;
+}
+
+bool AssignStatement::analyzeAssignCreate()
+{
+    const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
+    
+    if ( out[0]->isNonInnerBuiltin() )
+        return out[0]->hasAssignCreate(in, decl, line_);
+
+    if ( out[0]->isBuiltin() )
+    {
+        genMove();
+        return true;
+    }
+
+    swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
+
+    const BaseType* bt = (const BaseType*) out[0];
+    Class* _class = bt->lookupClass();
+    Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
+
+    if (!assignCreate)
+        return false;
 }
 
 void AssignStatement::genMove()

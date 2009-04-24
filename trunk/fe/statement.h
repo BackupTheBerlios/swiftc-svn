@@ -169,7 +169,9 @@ struct AssignStatement : public Statement
     //void genAssignCall(Class* _class, Method* method);
     //void genSSA();
 
-    bool analyzeFunctionCall(const TypeList& in, const TypeList& out);
+    bool analyzeFunctionCall();
+    bool analyzeAssignCreate();
+    bool constCheck();
 };
 
 //------------------------------------------------------------------------------

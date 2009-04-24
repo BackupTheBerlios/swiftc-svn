@@ -117,6 +117,8 @@ public:
     bool validateAndCreateVar(); 
 
     int getModifier() const;
+
+    bool isHiddenArg() const;
 };
 
 } // namespace swift

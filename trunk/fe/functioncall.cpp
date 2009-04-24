@@ -38,6 +38,7 @@ FunctionCall::FunctionCall(std::string* id, ExprList* exprList, int line)
     : Expr(line)
     , id_(id)
     , exprList_(exprList)
+    , tupel_(0)
 {}
 
 FunctionCall::~FunctionCall()
@@ -69,16 +70,24 @@ void FunctionCall::genSSA()
  * further methods
  */
 
-MemberFunction* FunctionCall::getMemberFunction()
+bool FunctionCall::analyzeArgs() const
 {
-    return memberFunction_;
+    return exprList_ 
+        ? exprList_->analyze() 
+        : true; // true when there is no ExprList
 }
 
 bool FunctionCall::analyze(TypeList& argTypeList, PlaceList& argPlaceList) const
 {
-    bool result = exprList_ 
-           ? exprList_->analyze() 
-           : true; // true when there is no ExprList
+    bool result;
+
+    // if tupel_ is present it has already been analyzed
+    if (!tupel_)
+    {
+        result = exprList_ 
+            ? exprList_->analyze() 
+            : true; // true when there is no ExprList
+    }
 
     argTypeList = exprList_ 
         ? exprList_->getTypeList() 
@@ -331,6 +340,24 @@ bool MethodCall::analyze()
     Method* method = (Method*) memberFunction_;
 
     in_.push_back(method->self_);
+
+    Signature* sig = method->sig_;
+
+    for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
+    {
+        const Param* param = method->sig_->getOutParam(i);
+
+        if ( param->isHiddenArg() )
+
+    }
+
+    //for (size_t i = 0; i < argPlaceList.size(); ++i)
+    //{
+        //me::Op* op = argPlaceList[i];
+
+        //// TODO
+        //in_.push_back(op);
+    //}
 
     genSSA();
 

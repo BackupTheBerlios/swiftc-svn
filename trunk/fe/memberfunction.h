@@ -22,6 +22,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "fe/class.h"
 #include "fe/typelist.h"
@@ -39,6 +40,8 @@ namespace swift {
 class Param;
 class Signature;
 class Scope;
+
+typedef std::vector<Param*> Params;
 
 //------------------------------------------------------------------------------
 
@@ -80,6 +83,9 @@ public:
     Scope* rootScope_;     ///< The root Scope where vars of this Proc are stored.
     Signature* sig_;       ///< The signature of this Method.
     std::string meId_;     ///< Identifier used by the middle-end for this function.
+
+    Params hiddenIn_;
+    Params hiddenOut_;
 };
 
 //------------------------------------------------------------------------------

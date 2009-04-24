@@ -68,6 +68,7 @@ public:
     Tupel* next();
     const TypeNode* typeNode() const;
     TypeNode* typeNode();
+    bool moreThanOne() const;
 
 private:
 

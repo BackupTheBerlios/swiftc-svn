@@ -333,7 +333,25 @@ bool Id::analyze()
     // else
 
     type_  = var_->getType()->clone();
-    place_ = var_->getMeVar();
+
+    if ( type_->isInternalAtomic() )
+        place_ = var_->getMeVar();
+    else
+    {
+        /*
+         * get pointer to location
+         */
+
+#ifdef SWIFT_DEBUG
+        std::string tmpStr = std::string("p_") + *var_->id_;
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+        me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
+        place_ = tmp;
+    }
 
     return true;
 }

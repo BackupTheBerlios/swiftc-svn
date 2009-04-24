@@ -80,12 +80,32 @@ public:
 
     virtual me::Var* createVar(const std::string* id = 0) const = 0;
 
+    /// Is this a type which can be represented as an atomic value?
     virtual bool isAtomic() const = 0;
+
+    /// Is this a type which is built into swift?
     virtual bool isBuiltin() const = 0;
+
+    /**
+     * @brief Is this type represented by a pointer? 
+     *
+     * This means that the Type in question is a \a Ptr or it is a non atomic
+     * type which is a function's parameter passed by reference. The
+     * internal type modifiers \a RETURN_VALUE, \a CONST_PARAM and \a INOUT
+     * indicate this.
+     *
+     * Note that a atomic parameter is not represented by a pointer.
+     */
     virtual bool isActuallyPtr() const = 0;
+
+    /**
+     * @brief Returns 'this' if this a a BaseType.
+     *
+     * @return 'this' or 0.
+     */
     virtual const BaseType* isInner() const = 0;
 
-    /// Checks whether this Type is the builtin bool Type
+    /// Checks whether this Type is the builtin bool type.
     virtual bool isBool() const;
 
     virtual const BaseType* getFirstBaseType() const = 0;
@@ -107,6 +127,7 @@ public:
     const BaseType* isInnerAtomic() const;
     const BaseType* isInnerNonAtomic() const;
     bool isNonInnerBuiltin() const;
+    bool isInternalAtomic() const;
 
     int& modifier();
     const int& modifier() const;

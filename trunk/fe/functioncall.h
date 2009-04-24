@@ -50,7 +50,8 @@ public:
      * further methods
      */
 
-    MemberFunction* getMemberFunction();
+    void setTupel(Tupel* tupel);
+    bool analyzeArgs();
 
 protected:
 
@@ -64,9 +65,9 @@ protected:
 
     std::string* id_;
     ExprList* exprList_;
-    MemberFunction* memberFunction_;
+    Tupel* tupel_;
 
-    std::vector<me::Var*> in_;
+    std::vector<me::Op*> in_;
     std::vector<me::Var*> out_;
 };
 
@@ -130,6 +131,7 @@ protected:
      */
 
     std::string* classId_;
+    MemberFunction* memberFunction_;
 };
 
 //------------------------------------------------------------------------------

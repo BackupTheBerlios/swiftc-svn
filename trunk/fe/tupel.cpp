@@ -118,4 +118,9 @@ std::string Tupel::toString() const
     return result;
 }
 
+bool Tupel::moreThanOne() const
+{
+    return next_;
+}
+
 } // namespace swift

@@ -12,34 +12,6 @@ bool AssignStatement::analyze()
     TypeList in = exprList_->getTypeList();
     TypeList out = tupel_->getTypeList();
 
-    // check whether there is a const type in out
-    for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
-    {
-        const TypeNode* typeNode = iter->typeNode();
-
-        const Expr* expr = dynamic_cast<const Expr*>(typeNode);
-        if ( expr )
-        {
-            if ( expr->getType()->isReadOnly() )
-            {
-                const Id* id = dynamic_cast<const Id*>(expr);
-
-                if (id)
-                {
-                    errorf(line_, "assignment of read-only variable '%s'", 
-                            id->id_->c_str() );
-                    return false;
-                }
-                else
-                {
-                    errorf(line_, "assignment of read-only location '%s'", 
-                            expr->toString().c_str() );
-                    return false;
-                }
-            }   
-        }
-    }
-
     swiftAssert(  in.size() > 0, "must have at least one element" );
     swiftAssert( out.size() > 0, "must have at least one element" );
 

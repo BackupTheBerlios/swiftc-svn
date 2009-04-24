@@ -101,4 +101,9 @@ std::string ExprList::toString() const
     return result;
 }
 
+bool ExprList::moreThanOne() const
+{
+    return next_;
+}
+
 } // namespace swift

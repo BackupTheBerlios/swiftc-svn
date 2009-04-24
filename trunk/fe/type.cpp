@@ -88,6 +88,11 @@ bool Type::isNonInnerBuiltin() const
     return !isInner() && isBuiltin();
 }
 
+bool Type::isInternalAtomic() const
+{
+    return isAtomic() || isActuallyPtr();
+}
+
 int& Type::modifier()
 {
     return modifier_;

@@ -69,6 +69,8 @@ public:
     int getModifier() const;
     FunctionCall* getFunctionCall();
 
+    bool moreThanOne() const;
+
 private:
 
     /*
