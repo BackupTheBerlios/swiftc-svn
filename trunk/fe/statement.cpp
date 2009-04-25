@@ -218,7 +218,7 @@ bool AssignStatement::analyzeFunctionCall()
 
     fc->setTupel(tupel_);
 
-    if ( !fc->analyze() )
+    if ( !((Expr*) fc)->analyze() )
         return false;
 
     /*
@@ -233,6 +233,9 @@ bool AssignStatement::analyzeFunctionCall()
 bool AssignStatement::analyzeAssignCreate()
 {
     const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
+
+    TypeList in = exprList_->getTypeList();
+    TypeList out = tupel_->getTypeList();
     
     if ( out[0]->isNonInnerBuiltin() )
         return out[0]->hasAssignCreate(in, decl, line_);

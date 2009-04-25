@@ -24,6 +24,7 @@
 #include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
+#include "fe/tupel.h"
 #include "fe/type.h"
 
 namespace swift {
@@ -70,11 +71,16 @@ void FunctionCall::genSSA()
  * further methods
  */
 
-bool FunctionCall::analyzeArgs() const
+bool FunctionCall::analyzeArgs()
 {
     return exprList_ 
         ? exprList_->analyze() 
         : true; // true when there is no ExprList
+}
+
+void FunctionCall::setTupel(Tupel* tupel)
+{
+    tupel_ = tupel;
 }
 
 bool FunctionCall::analyze(TypeList& argTypeList, PlaceList& argPlaceList) const
@@ -343,12 +349,14 @@ bool MethodCall::analyze()
 
     Signature* sig = method->sig_;
 
+    Tupel* tupelIter = tupel_;
     for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
     {
         const Param* param = method->sig_->getOutParam(i);
 
-        if ( param->isHiddenArg() )
+        //if ( param->isHiddenArg() )
 
+        tupelIter = tupelIter->next();
     }
 
     //for (size_t i = 0; i < argPlaceList.size(); ++i)
