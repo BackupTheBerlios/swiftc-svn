@@ -337,21 +337,7 @@ bool Id::analyze()
     if ( type_->isInternalAtomic() )
         place_ = var_->getMeVar();
     else
-    {
-        /*
-         * get pointer to location
-         */
-
-#ifdef SWIFT_DEBUG
-        std::string tmpStr = std::string("p_") + *var_->id_;
-        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
-#else // SWIFT_DEBUG
-        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-
-        me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
-        place_ = tmp;
-    }
+        place_ = loadPtr();
 
     return true;
 }
@@ -397,7 +383,7 @@ bool UnExpr::analyze()
         return false;
 
     //if (c_ == '&')
-        //type_ = new Ptr( VAR, op_->getType()->clone() );
+        //type_ = new Ptr( VAR, op_->getType()->varClone() );
     //else 
     if (c_ == '^')
     {
@@ -419,10 +405,10 @@ bool UnExpr::analyze()
             return false;
         }
 
-        type_ = op_->getType()->clone();
+        type_ = op_->getType()->varClone();
     }
     else
-        type_ = op_->getType()->clone();
+        type_ = op_->getType()->varClone();
 
     genSSA();
 
@@ -543,7 +529,7 @@ bool BinExpr::analyze()
         return false;
 
     // find first out parameter and clone this type
-    type_ = memberFunction->sig_->getOut()[0]->clone();
+    type_ = memberFunction->sig_->getOut()[0]->varClone();
 
     genSSA();
 
@@ -663,6 +649,7 @@ bool MemberAccess::analyze()
     }
 
     MemberVar* member = iter->second;
+    // TODO
     type_ = member->type_->clone();
 
     structOffset_ = new me::StructOffset(_class->meStruct_, member->meMember_);

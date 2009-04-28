@@ -78,22 +78,6 @@ Param::Param(Type* type, std::string* id, int line /*= NO_LINE*/)
  * further methods
  */
 
-bool Param::check(const Param* param1, const Param* param2)
-{
-    std::cout << "wtf" << std::endl;
-    // first check whether kind_ fits
-    //if (param1->kind_ != param2->kind_)
-        //return false;
-        // TODO
-
-    // check whether type fits
-    if ( param1->type_->check(param2->type_) )
-        return true;
-
-    // else
-    return false;
-}
-
 bool Param::validateAndCreateVar()
 {
     meVar_ = type_->createVar(id_);

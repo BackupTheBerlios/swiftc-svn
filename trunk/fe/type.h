@@ -48,9 +48,10 @@ class Ptr;
  * - \em builtin types: int, uint, real, all ptr, array and simd types, i.e. all
  *   types where the compiler must provide the implementation <br><br>
  *
- * This combination is useful: <br>
- * \em inner \em atomic types: int, uint, real, ..., i.e all builtin types 
- * known by the \a symtab.
+ * Theses combinations are useful: <br>
+ * - \em inner \em atomic types: int, uint, real, ..., i.e all builtin types 
+ * known by the \a symtab
+ * - TODO
  */
 class Type : public Node
 {
@@ -124,6 +125,8 @@ public:
      */
 
     Type* constClone() const;
+    Type* varClone() const;
+    //Type* param2VarClone() const;
     const BaseType* isInnerAtomic() const;
     const BaseType* isInnerNonAtomic() const;
     bool isNonInnerBuiltin() const;
@@ -135,6 +138,8 @@ public:
     bool isReadOnly() const;
 
 protected:
+
+    //void modifier2NonParamModfier();
 
     /*
      * data

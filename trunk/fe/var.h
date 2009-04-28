@@ -110,15 +110,10 @@ public:
      * further methods
      */
 
-    /// Check whether the type of both Param objects fit.
-    static bool check(const Param* param1, const Param* param2);
-
     /// Check whether this Param has a correct Type.
     bool validateAndCreateVar(); 
 
     int getModifier() const;
-
-    bool isHiddenArg() const;
 };
 
 } // namespace swift

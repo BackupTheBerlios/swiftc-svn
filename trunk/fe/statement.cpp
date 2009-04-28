@@ -211,6 +211,7 @@ bool AssignStatement::analyzeFunctionCall()
     }
 
     bool result = fc->analyzeArgs();
+    result &= tupel_->analyze();
     result &= constCheck();
 
     if (!result)
@@ -246,6 +247,8 @@ bool AssignStatement::analyzeAssignCreate()
         return true;
     }
 
+
+
     swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
     const BaseType* bt = (const BaseType*) out[0];
@@ -254,6 +257,8 @@ bool AssignStatement::analyzeAssignCreate()
 
     if (!assignCreate)
         return false;
+
+    return true;
 }
 
 void AssignStatement::genMove()

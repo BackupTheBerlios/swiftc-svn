@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     return result;
 }
 
-// inits all compiler globas and controls all compiler passes
+// inits all compiler globals and controls all compiler passes
 int start(int argc, char** argv)
 {
     // parse the command line

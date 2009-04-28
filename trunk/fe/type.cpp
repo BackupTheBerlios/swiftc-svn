@@ -73,6 +73,22 @@ Type* Type::constClone() const
     return type;
 }
 
+Type* Type::varClone() const
+{
+    Type* type = this->clone();
+    type->modifier_ = VAR;
+
+    return type;
+}
+
+//Type* Type::param2VarClone() const
+//{
+    //Type* type = this->clone();
+    //type->modifier2NonParamModfier();
+
+    //return type;
+//}
+
 const BaseType* Type::isInnerAtomic() const
 {
     return isAtomic() ? isInner() : 0;
@@ -107,6 +123,23 @@ bool Type::isReadOnly() const
 {
     return modifier_ == CONST || modifier_ == CONST_PARAM;
 }
+
+//void Type::modifier2NonParamModfier() const
+//{
+    //switch (modifier_)
+    //{
+        //case CONST_PARAM:
+            //modifier_= CONST;
+            //return;
+        //case RETURN_VALUE:
+        //case INOUT:
+            //modifier_ =  VAR;
+            //return;
+        //default:
+            //// do nothing in this case
+            //return;
+    //}
+//}
 
 //------------------------------------------------------------------------------
 

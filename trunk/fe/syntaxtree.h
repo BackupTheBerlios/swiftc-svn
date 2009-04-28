@@ -33,6 +33,8 @@
 
 namespace me {
     class Op;
+    class Var;
+    class Reg;
 }
 
 namespace swift {
@@ -122,7 +124,7 @@ public:
      * virtual methods
      */
     
-    virtual me::Op* getPlace() = 0;
+    virtual me::Var* getPlace() = 0;
     virtual bool analyze() = 0;
 
     /*
@@ -130,6 +132,8 @@ public:
      */
 
     const Type* getType() const;
+
+    me::Reg* loadPtr();
 
 protected:
 

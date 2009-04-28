@@ -46,7 +46,7 @@ Decl::~Decl()
  * further methods
  */
 
-me::Op* Decl::getPlace()
+me::Var* Decl::getPlace()
 {
     return local_->getMeVar();
 }

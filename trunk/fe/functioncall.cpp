@@ -19,6 +19,7 @@
 
 #include "fe/functioncall.h"
 
+#include "fe/decl.h"
 #include "fe/error.h"
 #include "fe/exprlist.h"
 #include "fe/memberfunction.h"
@@ -150,7 +151,7 @@ bool CCall::analyze()
         {
             me::Var* var = returnType_->createVar();
             place_ = var;
-            type_ = returnType_->constClone();
+            type_ = returnType_->varClone();
         }
     }
     else
@@ -200,7 +201,7 @@ bool MemberFunctionCall::analyze(Class* _class, const TypeList& argTypeList)
     const TypeList& out = memberFunction_->sig_->getOut();
 
     if ( !out.empty() )
-        type_ = out[0]->clone();
+        type_ = out[0]->varClone();
     else
         type_ = 0;
 
@@ -289,6 +290,8 @@ bool MethodCall::analyze()
     PlaceList argPlaceList;
     bool result = FunctionCall::analyze(argTypeList, argPlaceList);
 
+    PlaceList resPlaceList = tupel_->getPlaceList();
+
     if (!result)
         return false;
 
@@ -345,27 +348,39 @@ bool MethodCall::analyze()
             "must be castable to Method" );
     Method* method = (Method*) memberFunction_;
 
+    swiftAssert( method->sig_->getNumOut() == resPlaceList.size(),
+            "sizes must match here" );
+    swiftAssert( method->sig_->getNumIn() == argPlaceList.size(),
+            "sizes must match here" );
+
+    // first in_ is the self pointer
     in_.push_back(method->self_);
 
-    Signature* sig = method->sig_;
-
+    // examine results
     Tupel* tupelIter = tupel_;
     for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
     {
         const Param* param = method->sig_->getOutParam(i);
 
-        //if ( param->isHiddenArg() )
+        if ( !param->getType()->isAtomic() )
+        {
+            // -> this one is a hidden in-param
+            swiftAssert( param->getType()->isActuallyPtr(), 
+                    "must actually be a pointer" );
+            in_.push_back( resPlaceList[i] );
+        }
+        else
+        {
+            // -> this one is an ordinary out-param
+            out_.push_back( (me::Var*) resPlaceList[i] );
+        }
 
         tupelIter = tupelIter->next();
     }
 
-    //for (size_t i = 0; i < argPlaceList.size(); ++i)
-    //{
-        //me::Op* op = argPlaceList[i];
-
-        //// TODO
-        //in_.push_back(op);
-    //}
+    // now append ordinary in-params
+    for (size_t i = 0; i < argPlaceList.size(); ++i)
+        in_.push_back( argPlaceList[i] );
 
     genSSA();
 
