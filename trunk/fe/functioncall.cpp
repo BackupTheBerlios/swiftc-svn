@@ -84,6 +84,47 @@ void FunctionCall::setTupel(Tupel* tupel)
     tupel_ = tupel;
 }
 
+bool FunctionCall::analyze()
+{
+    /*
+     * fill in_ and out_
+     */
+
+    if ( !MemberFunctionCall::analyze(_class, argTypeList) )
+        return false;
+
+    swiftAssert( method->sig_->getNumOut() == resPlaceList.size(),
+            "sizes must match here" );
+    swiftAssert( method->sig_->getNumIn() == argPlaceList.size(),
+            "sizes must match here" );
+
+    // examine results
+    Tupel* tupelIter = tupel_;
+    for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
+    {
+        const Param* param = method->sig_->getOutParam(i);
+
+        if ( !param->getType()->isAtomic() )
+        {
+            // -> this one is a hidden in-param
+            swiftAssert( param->getType()->isActuallyPtr(), 
+                    "must actually be a pointer" );
+            in_.push_back( resPlaceList[i] );
+        }
+        else
+        {
+            // -> this one is an ordinary out-param
+            out_.push_back( (me::Var*) resPlaceList[i] );
+        }
+
+        tupelIter = tupelIter->next();
+    }
+
+    // now append ordinary in-params
+    for (size_t i = 0; i < argPlaceList.size(); ++i)
+        in_.push_back( argPlaceList[i] );
+}
+
 bool FunctionCall::analyze(TypeList& argTypeList, PlaceList& argPlaceList) const
 {
     bool result;
@@ -337,50 +378,13 @@ bool MethodCall::analyze()
         }
     }
 
-    /*
-     * fill in_ and out_
-     */
-
-    if ( !MemberFunctionCall::analyze(_class, argTypeList) )
-        return false;
-
+    // TODO
     swiftAssert( dynamic_cast<Method*>(memberFunction_), 
             "must be castable to Method" );
     Method* method = (Method*) memberFunction_;
 
-    swiftAssert( method->sig_->getNumOut() == resPlaceList.size(),
-            "sizes must match here" );
-    swiftAssert( method->sig_->getNumIn() == argPlaceList.size(),
-            "sizes must match here" );
-
     // first in_ is the self pointer
     in_.push_back(method->self_);
-
-    // examine results
-    Tupel* tupelIter = tupel_;
-    for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
-    {
-        const Param* param = method->sig_->getOutParam(i);
-
-        if ( !param->getType()->isAtomic() )
-        {
-            // -> this one is a hidden in-param
-            swiftAssert( param->getType()->isActuallyPtr(), 
-                    "must actually be a pointer" );
-            in_.push_back( resPlaceList[i] );
-        }
-        else
-        {
-            // -> this one is an ordinary out-param
-            out_.push_back( (me::Var*) resPlaceList[i] );
-        }
-
-        tupelIter = tupelIter->next();
-    }
-
-    // now append ordinary in-params
-    for (size_t i = 0; i < argPlaceList.size(); ++i)
-        in_.push_back( argPlaceList[i] );
 
     genSSA();
 

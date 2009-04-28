@@ -146,12 +146,14 @@ protected:
      */
 
     /**
+     * Modifier of this type.
+     *
      * One of: <br>
-     * - VAR <br>
-     * - CONST <br>
-     * - INOUT <br>
-     * - CONST_PARAM<br>
-     * - RETURN_VALUE <br>
+     * - VAR: an ordinary variable with read and write access <br>
+     * - CONST: a constant with read-only access <br>
+     * - INOUT: an in-going parameter with read and write access <br>
+     * - CONST_PARAM: an in-going parameter with read-only access <br>
+     * - RETURN_VALUE: a result; always with read and write access <br>
      */
     int modifier_;
 };
