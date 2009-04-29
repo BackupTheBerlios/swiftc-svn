@@ -79,7 +79,9 @@ bool ExprStatement::analyze()
 DeclStatement::DeclStatement(Decl* decl, int line /*= NO_LINE*/)
     : Statement(line)
     , decl_(decl)
-{}
+{
+    decl_->setAsStandAlone();
+}
 
 
 DeclStatement::~DeclStatement()

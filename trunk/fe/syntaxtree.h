@@ -40,6 +40,7 @@ namespace me {
 namespace swift {
 
 class Class;
+class Var;
 
 typedef std::vector<me::Op*> PlaceList;
 
@@ -124,7 +125,6 @@ public:
      * virtual methods
      */
     
-    virtual me::Var* getPlace() = 0;
     virtual bool analyze() = 0;
 
     /*
@@ -132,8 +132,8 @@ public:
      */
 
     const Type* getType() const;
-
-    me::Reg* loadPtr();
+    const me::Op* getPlace() const;
+    me::Op* getPlace();
 
 protected:
 
@@ -142,6 +142,7 @@ protected:
      */
 
     Type* type_;
+    me::Op* place_;
 };
 
 //------------------------------------------------------------------------------

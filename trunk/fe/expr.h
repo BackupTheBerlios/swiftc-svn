@@ -69,9 +69,6 @@ public:
      * further methods
      */
 
-    me::Var* getPlace();
-    const me::Var* getPlace() const;
-
     void neededAsLValue();
     bool isNeededAsLValue() const;
 
@@ -80,9 +77,6 @@ protected:
     /*
      * data
      */
-
-    /// This me::Op knows where the result is stored.
-    me::Op* place_;
 
 private:
 

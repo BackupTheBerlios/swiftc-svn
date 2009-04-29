@@ -120,19 +120,6 @@ const Type* TypeNode::getType() const
     return type_;
 }
 
-me::Reg* TypeNode::loadPtr()
-{
-#ifdef SWIFT_DEBUG
-    std::string tmpStr = std::string("p_") + getPlace()->id_;
-    me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
-#else // SWIFT_DEBUG
-    me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-
-    me::functab->appendInstr( new me::LoadPtr(tmp, getPlace(), 0) );
-
-    return tmp;
-}
 
 //------------------------------------------------------------------------------
 

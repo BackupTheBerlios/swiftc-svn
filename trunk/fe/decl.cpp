@@ -28,10 +28,11 @@ namespace swift {
  * constructor and destructor
  */
 
-Decl::Decl(Type* type, std::string* id, int line /*= NO_LINE*/)
+Decl::Decl(Type* type, std::string* id, int line)
     : TypeNode(type, line)
     , id_(id)
     , local_(0) // This will be created in analyze
+    , standAlone_(false)
 {}
 
 Decl::~Decl()
@@ -46,11 +47,6 @@ Decl::~Decl()
  * further methods
  */
 
-me::Var* Decl::getPlace()
-{
-    return local_->getMeVar();
-}
-
 bool Decl::analyze()
 {
     // check whether this type exists
@@ -59,6 +55,34 @@ bool Decl::analyze()
 
     std::pair<Local*, bool> p = symtab->createNewLocal(type_, id_, line_);
     local_ = p.first;
+    me::Var* meVar = local_->getMeVar();
+
+    if (standAlone_)
+    {
+        me::AssignInstr* ai = new me::AssignInstr(
+                '=', meVar, me::functab->newUndef(meVar->type_) );
+        me::functab->appendInstr(ai);
+
+        place_ = 0;
+    }
+    if ( type_->isInternalAtomic() )
+        place_ = meVar;
+    else
+    {
+#ifdef SWIFT_DEBUG
+        std::string tmpStr = std::string("p_") + meVar->id_;
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+        me::AssignInstr* ai = new me::AssignInstr(
+                '=', meVar, me::functab->newUndef(meVar->type_) );
+        me::functab->appendInstr(ai);
+        me::functab->appendInstr( new me::LoadPtr(tmp, meVar, 0) );
+
+        place_ = tmp;
+    }
 
     return p.second;
 }
@@ -66,6 +90,11 @@ bool Decl::analyze()
 /*
  * further methods
  */
+
+void Decl::setAsStandAlone()
+{
+    standAlone_ = true;
+}
 
 std::string Decl::toString() const
 {

@@ -63,7 +63,6 @@ namespace swift {
 
 Expr::Expr(int line)
     : TypeNode(0, line)
-    , place_(0)
     , neededAsLValue_(false)
 {}
 
@@ -74,16 +73,6 @@ Expr::Expr(int line)
 /*
  * further methods
  */
-
-me::Var* Expr::getPlace()
-{
-    return (me::Var*) place_;
-}
-
-const me::Var* Expr::getPlace() const
-{
-    return (me::Var*) place_;
-}
 
 void Expr::neededAsLValue()
 {
@@ -337,7 +326,17 @@ bool Id::analyze()
     if ( type_->isInternalAtomic() )
         place_ = var_->getMeVar();
     else
-        place_ = loadPtr();
+    {
+#ifdef SWIFT_DEBUG
+        std::string tmpStr = std::string("p_") + var_->getMeVar()->id_;
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+        me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
+        place_ = tmp;
+    }
 
     return true;
 }

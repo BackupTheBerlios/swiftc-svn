@@ -43,7 +43,7 @@ public:
      * constructor and destructor
      */
 
-    Decl(Type* type, std::string* id, int line = NO_LINE);
+    Decl(Type* type, std::string* id, int line);
     virtual ~Decl();
 
     /*
@@ -58,6 +58,7 @@ public:
      */
 
     std::string toString() const;
+    void setAsStandAlone();
 
 private:
 
@@ -67,6 +68,7 @@ private:
 
     std::string* id_;
     Local* local_;
+    bool standAlone_;
 };
 
 } // namespace swift
