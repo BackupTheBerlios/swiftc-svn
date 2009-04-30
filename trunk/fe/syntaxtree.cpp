@@ -120,6 +120,15 @@ const Type* TypeNode::getType() const
     return type_;
 }
 
+const me::Op* TypeNode::getPlace() const
+{
+    return place_;
+}
+
+me::Op* TypeNode::getPlace()
+{
+    return place_;
+}
 
 //------------------------------------------------------------------------------
 

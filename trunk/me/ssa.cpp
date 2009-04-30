@@ -807,8 +807,12 @@ std::string LoadPtr::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= LoadPtr(" 
-        << arg_[0].op_->toString() << ", "
-        << offset_->toString() << ')';
+        << arg_[0].op_->toString() << ", ";
+
+    if (offset_)
+        oss << offset_->toString(); 
+    
+    oss << ')';
 
     return oss.str();
 }
@@ -1002,7 +1006,7 @@ std::string CallInstr::toString() const
 {
     std::ostringstream oss;
     oss << commaList( res_.begin(), res_.end() )
-        << " CALL " << symbol_ << '(' 
+        << " = CALL " << symbol_ << '(' 
         << commaList( arg_.begin(), arg_.end() ) << ')';
 
     return oss.str();

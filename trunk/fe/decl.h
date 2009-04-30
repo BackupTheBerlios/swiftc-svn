@@ -50,7 +50,6 @@ public:
      * virtual methods
      */
 
-    virtual me::Var* getPlace();
     virtual bool analyze();
 
     /*

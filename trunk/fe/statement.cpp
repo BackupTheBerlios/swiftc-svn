@@ -149,9 +149,9 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
-    if ( tupel_->moreThanOne() )
+    if ( exprList_->moreThanOne() )
     {
-        if ( exprList_->moreThanOne() )
+        if ( tupel_->moreThanOne() )
         {
             errorf(line_, "either the left-hand side or the right-hand side of an "
                     "assignment statement must have exactly one element");
@@ -159,8 +159,13 @@ bool AssignStatement::analyze()
             return false;
         }
 
-        return analyzeFunctionCall();
+        return analyzeAssignCreate();
     }
+
+    FunctionCall* fc = exprList_->getFunctionCall();
+
+    if (fc)
+        return analyzeFunctionCall();
     else
         return analyzeAssignCreate();
 }
@@ -201,6 +206,7 @@ bool AssignStatement::constCheck()
 
 bool AssignStatement::analyzeFunctionCall()
 {
+    // if the rhs has only one item it has already been checked that fc is valid
     FunctionCall* fc = exprList_->getFunctionCall();
 
     if (!fc)

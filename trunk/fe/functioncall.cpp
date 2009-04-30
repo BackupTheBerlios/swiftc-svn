@@ -55,17 +55,6 @@ FunctionCall::~FunctionCall()
 
 void FunctionCall::genSSA()
 {
-    me::CallInstr* call = new me::CallInstr( 
-            out_.size(), in_.size(), *id_, false);
-            //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
-
-    for (size_t i = 0; i < in_.size(); ++i)
-        call->arg_[i] = me::Arg( in_[i] );
-
-    for (size_t i = 0; i < out_.size(); ++i)
-        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
-
-    me::functab->appendInstr(call); 
 };
 
 /*
@@ -84,68 +73,9 @@ void FunctionCall::setTupel(Tupel* tupel)
     tupel_ = tupel;
 }
 
-bool FunctionCall::analyze()
+bool FunctionCall::analyzeExprList() const
 {
-    /*
-     * fill in_ and out_
-     */
-
-    if ( !MemberFunctionCall::analyze(_class, argTypeList) )
-        return false;
-
-    swiftAssert( method->sig_->getNumOut() == resPlaceList.size(),
-            "sizes must match here" );
-    swiftAssert( method->sig_->getNumIn() == argPlaceList.size(),
-            "sizes must match here" );
-
-    // examine results
-    Tupel* tupelIter = tupel_;
-    for (size_t i = 0; i < method->sig_->getNumOut(); ++i)
-    {
-        const Param* param = method->sig_->getOutParam(i);
-
-        if ( !param->getType()->isAtomic() )
-        {
-            // -> this one is a hidden in-param
-            swiftAssert( param->getType()->isActuallyPtr(), 
-                    "must actually be a pointer" );
-            in_.push_back( resPlaceList[i] );
-        }
-        else
-        {
-            // -> this one is an ordinary out-param
-            out_.push_back( (me::Var*) resPlaceList[i] );
-        }
-
-        tupelIter = tupelIter->next();
-    }
-
-    // now append ordinary in-params
-    for (size_t i = 0; i < argPlaceList.size(); ++i)
-        in_.push_back( argPlaceList[i] );
-}
-
-bool FunctionCall::analyze(TypeList& argTypeList, PlaceList& argPlaceList) const
-{
-    bool result;
-
-    // if tupel_ is present it has already been analyzed
-    if (!tupel_)
-    {
-        result = exprList_ 
-            ? exprList_->analyze() 
-            : true; // true when there is no ExprList
-    }
-
-    argTypeList = exprList_ 
-        ? exprList_->getTypeList() 
-        : TypeList(); // use empty TypeList when there is no ExprList
-
-    argPlaceList = exprList_
-        ? exprList_->getPlaceList()
-        : PlaceList(); // use empty TypeList when there is no ExprList
-
-    return result;
+    return true;
 }
 
 std::string FunctionCall::callToString() const
@@ -182,7 +112,9 @@ bool CCall::analyze()
 {
     TypeList argTypeList;
     PlaceList argPlaceList;
-    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
+    // TODO
+    //bool result = FunctionCall::analyze(argTypeList, argPlaceList);
+    bool result;
 
     if (returnType_)
     {
@@ -232,22 +164,9 @@ MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int 
  * further methods
  */
 
-bool MemberFunctionCall::analyze(Class* _class, const TypeList& argTypeList)
-{
-    memberFunction_ = symtab->lookupMemberFunction(_class, id_, argTypeList, line_);
-
-    if (!memberFunction_)
-        return false;
-
-    const TypeList& out = memberFunction_->sig_->getOut();
-
-    if ( !out.empty() )
-        type_ = out[0]->varClone();
-    else
-        type_ = 0;
-
-    return true;
-}
+//bool MemberFunctionCall::analyze(const TypeList& argTypeList)
+//{
+//}
 
 //------------------------------------------------------------------------------
 
@@ -276,18 +195,18 @@ bool RoutineCall::analyze()
 {
     TypeList argTypeList;
     PlaceList argPlaceList;
-    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
+    // TODO
+    //bool result = FunctionCall::analyze(argTypeList, argPlaceList);
+    bool result;
 
     if (!result)
         return false;
 
-    Class* _class;
-
     if (classId_)
     {
-        _class = symtab->lookupClass(classId_);
+        class_ = symtab->lookupClass(classId_);
         
-        if (!_class)
+        if (!class_)
         {
             errorf(line_, "class '%s' is not defined in this module", 
                     classId_->c_str() );
@@ -295,9 +214,11 @@ bool RoutineCall::analyze()
         }
     }
     else
-        _class = symtab->currentClass();
+        class_ = symtab->currentClass();
 
-    return MemberFunctionCall::analyze(_class, argTypeList);
+    // TODO
+    //return MemberFunctionCall::analyze(argTypeList);
+    return true;
 }
 
 std::string RoutineCall::toString() const
@@ -327,17 +248,6 @@ MethodCall::~MethodCall()
 
 bool MethodCall::analyze()
 {
-    TypeList argTypeList;
-    PlaceList argPlaceList;
-    bool result = FunctionCall::analyze(argTypeList, argPlaceList);
-
-    PlaceList resPlaceList = tupel_->getPlaceList();
-
-    if (!result)
-        return false;
-
-    Class* _class;
-
     if (expr_) 
     {
         if  ( !expr_->analyze() )
@@ -352,11 +262,11 @@ bool MethodCall::analyze()
             return false;
         }
 
-        _class = bt->lookupClass();
+        class_ = bt->lookupClass();
     }
     else
     {
-        _class = symtab->currentClass();
+        class_ = symtab->currentClass();
 
         const std::type_info& currentMethodQualifier = 
             typeid( *symtab->currentMemberFunction() );
@@ -378,15 +288,144 @@ bool MethodCall::analyze()
         }
     }
 
-    // TODO
-    swiftAssert( dynamic_cast<Method*>(memberFunction_), 
-            "must be castable to Method" );
-    Method* method = (Method*) memberFunction_;
+    if (!tupel_)
+    {
+        if ( exprList_ && !exprList_->analyze() )
+            return false;
+    }
 
-    // first in_ is the self pointer
-    in_.push_back(method->self_);
+    TypeList argTypeList = exprList_ 
+        ? exprList_->getTypeList() 
+        : TypeList(); // use empty TypeList when there is no ExprList
 
-    genSSA();
+    PlaceList argPlaceList = exprList_
+        ? exprList_->getPlaceList()
+        : PlaceList(); // use empty PlaceList when there is no ExprList
+
+    memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+
+    if (!memberFunction_)
+        return false;
+
+    /*
+     * fill in_ and out_
+     */
+
+    //if ( !MemberFunctionCall::analyze(argTypeList) )
+        //return false;
+
+    swiftAssert( memberFunction_->sig_->getNumIn() == argPlaceList.size(),
+            "sizes must match here" );
+
+    /*
+     * are there locations to put the results or do we have to create them? 
+     */
+
+    if (tupel_)
+    {
+        PlaceList resPlaceList = tupel_->getPlaceList();
+
+        swiftAssert( memberFunction_->sig_->getNumOut() == resPlaceList.size(),
+                "sizes must match here" );
+
+        // examine results
+        Tupel* tupelIter = tupel_;
+        for (size_t i = 0; i < memberFunction_->sig_->getNumOut(); ++i)
+        {
+            const Param* param = memberFunction_->sig_->getOutParam(i);
+
+            if ( param->getType()->isAtomic() )
+            {
+                // -> this one is an ordinary out-param
+                out_.push_back( (me::Var*) resPlaceList[i] );
+            }
+            else
+            {
+                // -> this one is a hidden in-param
+                swiftAssert( param->getType()->isActuallyPtr(), 
+                        "must actually be a pointer" );
+
+                in_.push_back( resPlaceList[i] );
+            }
+
+            tupelIter = tupelIter->next();
+        }
+    }
+    else
+    {
+        // no tupel given -> create results
+
+        for (size_t i = 0; i < memberFunction_->sig_->getNumOut(); ++i)
+        {
+            const Param* param = memberFunction_->sig_->getOutParam(i);
+
+            // create place to hold the result and init with undef
+#ifdef SWIFT_DEBUG
+            std::string resStr = std::string("res");
+            me::Reg* res = me::functab->newReg( param->getType()->toMeParamType(), &resStr );
+#else // SWIFT_DEBUG
+            me::Reg* res = me::functab->newReg( param->getType()->toMeParamType() );
+#endif // SWIFT_DEBUG
+
+            me::AssignInstr* ai = new me::AssignInstr(
+                    '=', res, me::functab->newUndef(res->type_) );
+            me::functab->appendInstr(ai);
+
+            if ( param->getType()->isAtomic() )
+            {
+                // -> this one is an ordinary out-param
+                out_.push_back(res);
+            }
+            else
+            {
+#ifdef SWIFT_DEBUG
+                std::string tmpStr = std::string("p_res");
+                me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+                me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+                me::functab->appendInstr( new me::LoadPtr(tmp, res, 0) );
+
+                // -> this one is a hidden in-param
+                in_.push_back(tmp);
+            }
+        }
+
+        /*
+         * set place and type as it is needed by the parent expr
+         */
+        if ( out_.empty() )
+        {
+            place_ = 0;
+            // type_ is inited with 0
+        }
+        else
+        {
+            place_ = (me::Var*) out_[0];
+            type_ = memberFunction_->sig_->getOutParam(0)->getType()->varClone();
+        }
+    }
+
+    // now append ordinary in-params
+    for (size_t i = 0; i < argPlaceList.size(); ++i)
+        in_.push_back( argPlaceList[i] );
+
+    /*
+     * create actual call
+     */
+
+    me::CallInstr* call = new me::CallInstr( 
+            out_.size(), in_.size(), *id_, false);
+            //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
+
+    for (size_t i = 0; i < in_.size(); ++i)
+        call->arg_[i] = me::Arg( in_[i] );
+
+    for (size_t i = 0; i < out_.size(); ++i)
+        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
+
+    me::functab->appendInstr(call); 
 
     return true;
 }

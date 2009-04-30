@@ -55,7 +55,7 @@ public:
 
 protected:
 
-    bool analyze(TypeList& argTypeList, PlaceList& argPlaceList) const;
+    bool analyzeExprList() const;
 
     std::string callToString() const;
 
@@ -131,6 +131,7 @@ protected:
      */
 
     std::string* classId_;
+    Class* class_;
     MemberFunction* memberFunction_;
 };
 

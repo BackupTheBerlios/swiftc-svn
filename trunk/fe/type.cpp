@@ -246,7 +246,10 @@ bool BaseType::isBuiltin() const
 
 bool BaseType::isActuallyPtr() const
 {
-    return !isBuiltin() && (modifier_ == INOUT || modifier_ == CONST_PARAM);
+    return !isBuiltin() 
+        && (modifier_ == INOUT 
+        ||  modifier_ == CONST_PARAM 
+        ||  modifier_ == RETURN_VALUE);
 }
 
 const BaseType* BaseType::isInner() const
