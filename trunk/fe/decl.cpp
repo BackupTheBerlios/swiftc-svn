@@ -57,6 +57,9 @@ bool Decl::analyze()
     local_ = p.first;
     me::Var* meVar = local_->getMeVar();
 
+    if (!p.second)
+        return false;
+
     if (standAlone_)
     {
         me::AssignInstr* ai = new me::AssignInstr(
@@ -64,7 +67,11 @@ bool Decl::analyze()
         me::functab->appendInstr(ai);
 
         place_ = 0;
+
+        return true;
+
     }
+
     if ( type_->isInternalAtomic() )
         place_ = meVar;
     else
@@ -84,7 +91,7 @@ bool Decl::analyze()
         place_ = tmp;
     }
 
-    return p.second;
+    return true;
 }
 
 /*

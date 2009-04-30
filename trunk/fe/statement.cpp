@@ -95,9 +95,6 @@ DeclStatement::~DeclStatement()
 
 bool DeclStatement::analyze()
 {
-    if ( !decl_->analyze() )
-        return false;
-
     const BaseType* bt = dynamic_cast<const BaseType*>( decl_->getType() );
     if (bt)
     {
@@ -112,9 +109,8 @@ bool DeclStatement::analyze()
         }
     }
 
-    me::Var* op = (me::Var*) decl_->getPlace();
-    me::functab->appendInstr( 
-            new me::AssignInstr('=', op, me::functab->newUndef(op->type_)) );
+    if ( !decl_->analyze() )
+        return false;
 
     return true;
 }

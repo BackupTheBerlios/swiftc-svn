@@ -1006,7 +1006,7 @@ std::string CallInstr::toString() const
 {
     std::ostringstream oss;
     oss << commaList( res_.begin(), res_.end() )
-        << " = CALL " << symbol_ << '(' 
+        << " = " << symbol_ << '(' 
         << commaList( arg_.begin(), arg_.end() ) << ')';
 
     return oss.str();

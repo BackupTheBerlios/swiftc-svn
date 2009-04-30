@@ -17,6 +17,11 @@
  * Boston, MA 02110-1301, USA.
  */
 
+
+/* 
+    TODO remove right recursion and favour left recursion 
+*/
+
 %{
 
 #include <iostream>
@@ -341,7 +346,7 @@ operator
 parameter_list
     : /* emtpy */
     | parameter
-    | parameter ',' parameter_list
+    | parameter_list ',' parameter
     ;
 
 parameter
@@ -356,7 +361,7 @@ arrow_return_type_list
 
 return_type_list
     : bare_type ID                      { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
-    | bare_type ID ',' return_type_list { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
+    | return_type_list ',' bare_type ID { $3->modifier() = RETURN_VALUE; symtab->insertRes( new Param($3, $4, currentLine) ); }
     ;
 
 /*
@@ -381,7 +386,7 @@ member_var
 
 statement_list
     : /*emtpy*/                 { $$ = 0; }
-    | statement statement_list  { $$ = $1; $$->next_ = $2; }
+    | statement statement_list  { $$ = $1; $$->next_ = $2; } 
     ;
 
 statement
