@@ -807,10 +807,10 @@ std::string LoadPtr::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= LoadPtr(" 
-        << arg_[0].op_->toString() << ", ";
+        << arg_[0].op_->toString();
 
     if (offset_)
-        oss << offset_->toString(); 
+         oss << ", " << offset_->toString(); 
     
     oss << ')';
 

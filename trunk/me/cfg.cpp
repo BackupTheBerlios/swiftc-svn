@@ -663,9 +663,8 @@ void CFG::constructSSAForm()
     calcCFG();
     calcDomTree();
     calcDomFrontier();
-    // HACK
-    //placePhiFunctions();
-    //renameVars();
+    placePhiFunctions();
+    renameVars();
 }
 
 BBSet CFG::calcIteratedDomFrontier(BBSet bbs)
