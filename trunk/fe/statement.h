@@ -69,16 +69,14 @@ struct Statement : public Node
  */
 struct ExprStatement : public Statement
 {
+    bool simd_;
     Expr* expr_;
 
     /*
      * constructor and destructor
      */
 
-    ExprStatement(Expr* expr, int line)
-        : Statement(line)
-        , expr_(expr)
-    {}
+    ExprStatement(bool simd, Expr* expr, int line);
     virtual ~ExprStatement();
 
     /*
@@ -137,6 +135,8 @@ private:
  */
 struct AssignStatement : public Statement
 {
+    bool simd_;
+
     union
     {
         int kind_;
@@ -150,7 +150,7 @@ struct AssignStatement : public Statement
      * constructor and destructor
      */
 
-    AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line);
+    AssignStatement(bool simd, int kind, Tupel* tupel, ExprList* exprList, int line);
     virtual ~AssignStatement();
 
     /*

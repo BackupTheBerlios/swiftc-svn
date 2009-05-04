@@ -399,14 +399,14 @@ statement
         basic statements
     */
     : decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
-    | expr EOL                          { $$ = new ExprStatement($1, currentLine-1); }
-    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine-1) }
+    | expr EOL                          { $$ = new ExprStatement(false, $1, currentLine-1); }
+    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement(false, '=', $1, $3, currentLine-1) }
 
     /*
         simd statements
     */
-    | SIMD_PREFIX expr EOL                          { $$ = new ExprStatement($2, currentLine-1); }
-    | SIMD_PREFIX tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $2, $4, currentLine-1) }
+    | SIMD_PREFIX expr EOL                          { $$ = new ExprStatement(true, $2, currentLine-1); }
+    | SIMD_PREFIX tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement(true, '=', $2, $4, currentLine-1) }
 
     /*
         control flow statements

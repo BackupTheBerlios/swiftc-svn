@@ -60,6 +60,16 @@ Statement::~Statement()
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructor and destructor
+ */
+
+ExprStatement::ExprStatement(bool simd, Expr* expr, int line)
+    : Statement(line)
+    , simd_(simd)
+    , expr_(expr)
+{}
+
 ExprStatement::~ExprStatement()
 {
     delete expr_;
@@ -76,7 +86,7 @@ bool ExprStatement::analyze()
  * constructor and destructor
  */
 
-DeclStatement::DeclStatement(Decl* decl, int line /*= NO_LINE*/)
+DeclStatement::DeclStatement(Decl* decl, int line)
     : Statement(line)
     , decl_(decl)
 {
@@ -126,8 +136,14 @@ std::string DeclStatement::toString() const
  * constructor and destructor
  */
 
-AssignStatement::AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line /*= NO_LINE*/)
+AssignStatement::AssignStatement(
+        bool simd, 
+        int kind, 
+        Tupel* tupel, 
+        ExprList* exprList, 
+        int line)
     : Statement(line)
+    , simd_(simd)
     , kind_(kind)
     , tupel_(tupel)
     , exprList_(exprList)
@@ -291,7 +307,7 @@ std::string AssignStatement::toString() const
  *  constructor and destructor
  */
 
-WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line /*= NO_LINE*/)
+WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line)
         : Statement(line)
         , expr_(expr)
         , statements_(statements)
@@ -371,7 +387,7 @@ bool WhileStatement::analyze()
  *  constructor and destructor
  */
 
-ScopeStatement::ScopeStatement(Statement* statements, int line /*= NO_LINE*/)
+ScopeStatement::ScopeStatement(Statement* statements, int line)
         : Statement(line)
         , statements_(statements)
 {}
@@ -407,7 +423,7 @@ bool ScopeStatement::analyze()
  * constructor and destructor
  */
 
-IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line /*= NO_LINE*/)
+IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line)
     : Statement(line)
     , expr_(expr)
     , ifBranch_(ifBranch)
@@ -547,7 +563,7 @@ bool IfElStatement::analyze()
  * constructor
  */
 
-CFStatement::CFStatement(int kind, int line /*= NO_LINE*/)
+CFStatement::CFStatement(int kind, int line)
     : Statement(line)
     , kind_(kind)
 {}
