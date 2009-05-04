@@ -56,6 +56,11 @@ bool Type::isBool() const
     return false;
 }
 
+bool Type::isIndex() const
+{
+    return false;
+}
+
 const BaseType* Type::unnestPtr() const
 {
     return 0;
@@ -262,6 +267,11 @@ bool BaseType::isBool() const
     return *id_ == "bool";
 }
 
+bool BaseType::isIndex() const
+{
+    return *id_ == "index";
+}
+
 me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
 {
     me::Op::Type meType = toMeType();
@@ -286,11 +296,6 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
     }
 
     return var;
-}
-
-const BaseType* BaseType::getFirstBaseType() const
-{
-    return this;
 }
 
 me::Reg* BaseType::derefToInnerstPtr(me::Reg* reg) const
@@ -401,12 +406,12 @@ void BaseType::destroyTypeMap()
  * constructor and destructor
  */
 
-Container::Container(int modifier, Type* innerType, int line /*= NO_LINE*/)
+NestedType::NestedType(int modifier, Type* innerType, int line /*= NO_LINE*/)
     : Type(modifier, line)
     , innerType_(innerType)
 {}
 
-Container::~Container()
+NestedType::~NestedType()
 {
     delete innerType_;
 }
@@ -415,26 +420,44 @@ Container::~Container()
  * virtual methods
  */
 
-bool Container::validate() const
+bool NestedType::validate() const
 {
     return innerType_->validate();
 }
 
-bool Container::isBuiltin() const
+bool NestedType::isBuiltin() const
 {
     return true;
 }
 
-const BaseType* Container::isInner() const
+const BaseType* NestedType::isInner() const
 {
     return 0;
+}
+
+const BaseType* NestedType::unnestPtr() const
+{
+    return innerType_->unnestPtr();
+}
+
+bool NestedType::check(const Type* type) const
+{
+    if ( typeid(*this) != typeid(*type) )
+        return false;
+
+    swiftAssert( dynamic_cast<const NestedType*>(type), 
+            "must be castable to NestedType" );
+    
+    const NestedType* nestedType = (const NestedType*) type;
+
+    return innerType_->check(nestedType->innerType_);
 }
 
 /*
  * further methods
  */
 
-Type* Container::getInnerType()
+Type* NestedType::getInnerType()
 {
     return innerType_;
 }
@@ -446,7 +469,7 @@ Type* Container::getInnerType()
  */
 
 Ptr::Ptr(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : Container(modifier, innerType, line)
+    : NestedType(modifier, innerType, line)
 {}
 
 Ptr* Ptr::clone() const
@@ -457,16 +480,6 @@ Ptr* Ptr::clone() const
 /*
  * virtual methods
  */
-
-bool Ptr::check(const Type* type) const
-{
-    const Ptr* ptr = dynamic_cast<const Ptr*>(type);
-
-    if (!ptr)
-        return false;
-    
-    return innerType_->check(ptr->innerType_);
-}
 
 me::Op::Type Ptr::toMeType() const
 {
@@ -497,11 +510,6 @@ bool Ptr::isActuallyPtr() const
     return true;
 }
 
-const BaseType* Ptr::getFirstBaseType() const
-{
-    return innerType_->getFirstBaseType();
-}
-
 me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
 {
     if ( innerType_->isActuallyPtr() )
@@ -524,11 +532,6 @@ me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
 
     // this is already the innerst pointer
     return reg;
-}
-
-const BaseType* Ptr::unnestPtr() const
-{
-    return innerType_->unnestPtr();
 }
 
 bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
@@ -554,6 +557,151 @@ std::string Ptr::toString() const
 {
     std::ostringstream oss;
     oss << "ptr{" << innerType_->toString() << '}';
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * init statics
+ */
+
+me::Struct* Container::meContainer_ = 0;
+
+/*
+ * constructor
+ */
+
+Container::Container(int modifier, Type* innerType, int line /*= NO_LINE*/)
+    : NestedType(modifier, innerType, line)
+{}
+
+/*
+ * virtual methods
+ */
+
+me::Op::Type Container::toMeType() const
+{
+    return me::Op::R_STACK;
+}
+
+me::Op::Type Container::toMeParamType() const
+{
+    return me::Op::R_STACK;
+}
+
+me::Var* Container::createVar(const std::string* id /*= 0*/) const
+{
+#ifdef SWIFT_DEBUG
+    return me::functab->newReg(me::Op::R_STACK, id);
+#else // SWIFT_DEBUG
+    return me::functab->newReg(me::Op::R_STACK);
+#endif // SWIFT_DEBUG
+}
+
+bool Container::isAtomic() const
+{
+    return false;
+}
+
+bool Container::isActuallyPtr() const
+{
+    return false;
+}
+
+me::Reg* Container::derefToInnerstPtr(me::Reg* reg) const
+{
+    // TODO
+    return 0;
+}
+
+bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
+{
+    // TODO
+
+    return true;
+}
+
+const BaseType* Container::unnestPtr() const
+{
+    // TODO
+    return 0;
+}
+
+/*
+ * static methods
+ */
+
+void Container::initMeContainer()
+{
+    // TODO make the choice of R_UINT64 arch independent
+
+#ifdef SWIFT_DEBUG
+
+    meContainer_ = new me::Struct("Container");
+    meContainer_->append( new me::AtomicMember(me::Op::R_PTR, "ptr") );
+    meContainer_->append( new me::AtomicMember(me::Op::R_UINT16, "size") ); 
+
+#else // SWIFT_DEBUG
+
+    meContainer_ = new me::Struct();
+    meContainer_->append( new me::AtomicMember(me::Op::R_PTR) );
+    meContainer_->append( new me::AtomicMember(me::Op::R_UINT16) ); 
+
+#endif // SWIFT_DEBUG
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Array::Array(int modifier, Type* innerType, int line /*= NO_LINE*/)
+    : Container(modifier, innerType, line)
+{}
+
+/*
+ * virtual methods
+ */
+
+Array* Array::clone() const
+{
+    return new Array(modifier_, innerType_->clone(), NO_LINE);
+}
+
+std::string Array::toString() const
+{
+    std::ostringstream oss;
+    oss << "array{" << innerType_->toString() << '}';
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Simd::Simd(int modifier, Type* innerType, int line /*= NO_LINE*/)
+    : Container(modifier, innerType, line)
+{}
+
+/*
+ * virtual methods
+ */
+
+Simd* Simd::clone() const
+{
+    return new Simd(modifier_, innerType_->clone(), NO_LINE);
+}
+
+std::string Simd::toString() const
+{
+    std::ostringstream oss;
+    oss << "simd{" << innerType_->toString() << '}';
 
     return oss.str();
 }

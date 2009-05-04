@@ -75,7 +75,7 @@ struct ExprStatement : public Statement
      * constructor and destructor
      */
 
-    ExprStatement(Expr* expr, int line = NO_LINE)
+    ExprStatement(Expr* expr, int line)
         : Statement(line)
         , expr_(expr)
     {}
@@ -103,7 +103,7 @@ public:
      * constructor and destructor
      */
 
-    DeclStatement(Decl* decl, int line = NO_LINE);
+    DeclStatement(Decl* decl, int line);
     virtual ~DeclStatement();
 
     /*
@@ -150,7 +150,7 @@ struct AssignStatement : public Statement
      * constructor and destructor
      */
 
-    AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line = NO_LINE);
+    AssignStatement(int kind, Tupel* tupel, ExprList* exprList, int line);
     virtual ~AssignStatement();
 
     /*
@@ -179,6 +179,30 @@ struct AssignStatement : public Statement
 /**
  * Represents a while statement.
  */
+struct ScopeStatement : public Statement
+{
+    Statement* statements_; ///< Linked List of statements of the while-loop.
+
+    /*
+     * constructor and destructor
+     */
+
+    ScopeStatement(Statement* statements, int line);
+    virtual ~ScopeStatement();
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * Represents a while statement.
+ */
 struct WhileStatement : public Statement
 {
     Expr* expr_;
@@ -189,7 +213,7 @@ struct WhileStatement : public Statement
      * constructor and destructor
      */
 
-    WhileStatement(Expr* expr, Statement* statements, int line = NO_LINE);
+    WhileStatement(Expr* expr, Statement* statements, int line);
     virtual ~WhileStatement();
 
     /*
@@ -216,7 +240,7 @@ struct IfElStatement : public Statement
      * constructor and destructor
      */
 
-    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line = NO_LINE);
+    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line);
     virtual ~IfElStatement();
 
     /*
@@ -227,6 +251,8 @@ struct IfElStatement : public Statement
     virtual std::string toString() const { return std::string(""); }
 };
 
+//------------------------------------------------------------------------------
+
 struct CFStatement : public Statement
 {
     int kind_;
@@ -235,7 +261,7 @@ struct CFStatement : public Statement
      * constructor
      */
 
-    CFStatement(int kind, int line = NO_LINE);
+    CFStatement(int kind, int line);
 
     /*
      * virtual methods

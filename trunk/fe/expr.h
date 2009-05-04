@@ -261,6 +261,37 @@ struct BinExpr : public Expr
 
 //------------------------------------------------------------------------------
 
+class IndexExpr : public Expr
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    IndexExpr(Expr* postfixExpr, Expr* indexExpr, int line);
+    virtual ~IndexExpr();
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
+    virtual void genSSA();
+    virtual std::string toString() const;
+
+private:
+
+    /*
+     * data
+     */
+
+    Expr* postfixExpr_;
+    Expr* indexExpr_;
+};
+
+//------------------------------------------------------------------------------
+
 struct MemberAccess : public Expr
 {
     Expr* expr_;
@@ -338,8 +369,29 @@ public:
     virtual void genSSA();
 };
 
-} // namespace swift
+//------------------------------------------------------------------------------
+
+class SimdIndex : public Expr
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    SimdIndex(int line);
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+    virtual bool analyze();
+    virtual void genSSA();
+};
 
 //------------------------------------------------------------------------------
+
+} // namespace swift
 
 #endif // SWIFT_EXPR_H

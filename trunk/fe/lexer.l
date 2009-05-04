@@ -144,8 +144,10 @@ protected   { return PROTECTED; }
 package     { return PACKAGE; }
 private     { return PRIVATE; }
 
-nil  { return NIL; }
-self { return SELF; }
+nil   { return NIL; }
+self  { return SELF; }
+%i    { return SIMD_INDEX; }
+simd: { return SIMD_PREFIX; }
 
 {INTEGER}x      { swiftlval.expr_ = new Literal(L_INDEX ); ((Literal*) swiftlval.expr_)->index_    = strtol (yytext, 0, 10); return L_INDEX; }
 

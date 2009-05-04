@@ -109,7 +109,8 @@ public:
     /// Checks whether this Type is the builtin bool type.
     virtual bool isBool() const;
 
-    virtual const BaseType* getFirstBaseType() const = 0;
+    virtual bool isIndex() const;
+
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
@@ -186,8 +187,8 @@ public:
     virtual bool isActuallyPtr() const;
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
+    virtual bool isIndex() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
-    virtual const BaseType* getFirstBaseType() const;
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual const BaseType* unnestPtr() const;
 
@@ -227,7 +228,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-class Container : public Type
+class NestedType : public Type
 {
 public:
 
@@ -235,8 +236,8 @@ public:
      * constructor and destructor
      */
      
-    Container(int modifier, Type* innerType, int line = NO_LINE);
-    ~Container();
+    NestedType(int modifier, Type* innerType, int line = NO_LINE);
+    ~NestedType();
 
     /*
      * virtual methods
@@ -245,6 +246,8 @@ public:
     virtual bool validate() const;
     virtual bool isBuiltin() const;
     virtual const BaseType* isInner() const;
+    virtual const BaseType* unnestPtr() const;
+    virtual bool check(const Type* type) const;
 
     /*
      * further methods
@@ -261,10 +264,9 @@ protected:
     Type* innerType_;
 };
 
-
 //------------------------------------------------------------------------------
 
-class Ptr : public Container
+class Ptr : public NestedType
 {
 public:
 
@@ -279,20 +281,100 @@ public:
      */
 
     virtual Ptr* clone() const;
-    virtual bool check(const Type* type) const;
     virtual bool isAtomic() const;
     virtual bool isActuallyPtr() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Op::Type toMeParamType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
-    virtual const BaseType* getFirstBaseType() const;
+    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
+    virtual bool hasAssignCreate(const TypeList& in, 
+                                 bool hasCreate, 
+                                 int line) const;
+
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+class Container : public NestedType
+{
+public:
+
+    /*
+     * constructor
+     */
+     
+    Container(int modifier, Type* innerType, int line = NO_LINE);
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool isAtomic() const;
+    virtual bool isActuallyPtr() const;
+    virtual me::Op::Type toMeType() const;
+    virtual me::Op::Type toMeParamType() const;
+    virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
                                  int line) const;
 
     virtual const BaseType* unnestPtr() const;
+
+    /*
+     * static methods
+     */
+
+    static void initMeContainer();
+
+protected:
+
+    /*
+     * data
+     */
+
+    static me::Struct* meContainer_;
+};
+
+//------------------------------------------------------------------------------
+
+class Array : public Container
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    Array(int modifier, Type* innerType, int line = NO_LINE);
+
+    /* 
+     * virtual methods
+     */
+
+    virtual Array* clone() const;
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+class Simd : public Container
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    Simd(int modifier, Type* innerType, int line = NO_LINE);
+
+    /* 
+     * virtual methods
+     */
+
+    virtual Simd* clone() const;
     virtual std::string toString() const;
 };
 

@@ -86,6 +86,7 @@ int start(int argc, char** argv)
      */
     me::arch = new be::X64();
     BaseType::initTypeMap();
+    Container::initMeContainer();
     Literal::initTypeMap();
 
     syntaxtree = new SyntaxTree();

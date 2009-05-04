@@ -136,7 +136,7 @@ using namespace swift;
 // type modifiers
 %token VAR CONST CONST_PARAM INOUT RETURN_VALUE
 
-%token SELF
+%token SELF SIMD_INDEX SIMD_PREFIX
 
 // method qualifier
 %token READER WRITER ROUTINE ASSIGN OPERATOR
@@ -178,7 +178,7 @@ using namespace swift;
     types
 */
 
-%type <int_>        method_qualifier operator
+%type <int_>        method_qualifier operator simd_modifier
 %type <type_>       type bare_type
 %type <decl_>       decl
 
@@ -217,21 +217,26 @@ definitions
     *******
 */
 
+simd_modifier
+    : SIMD { $$ = SIMD; }
+    | /**/ { $$ = 0; }
+    ;
+
 class_definition
-    : CLASS ID EOL
+    : simd_modifier CLASS ID EOL
         {
-            $<class_>$ = new Class($2, symtab->module_, currentLine);
+            $<class_>$ = new Class($3, symtab->module_, currentLine);
             symtab->insert($<class_>$);
 #ifdef SWIFT_DEBUG
-            $<class_>$->meStruct_ = me::functab->newStruct(*$2);
+            $<class_>$->meStruct_ = me::functab->newStruct(*$3);
 #else // SWIFT_DEBUG
             $<class_>$->meStruct_ = me::functab->newStruct();
 #endif // SWIFT_DEBUG
         }
         class_body END EOL
         {
-            $$ = $<class_>4;
-            $<class_>$->classMember_= $5;
+            $$ = $<class_>5;
+            $<class_>$->classMember_= $6;
             $<class_>$->autoGenMethods();
         }
     ;
@@ -258,20 +263,20 @@ method_qualifier
     ;
 
 member_function
-    : method_qualifier ID
+    : simd_modifier method_qualifier ID
         {
-            switch ($1)
+            switch ($2)
             {
                 case READER: 
-                    $<memberFunction_>$ = new Reader($2, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Reader($3, symtab->class_, getKeyLine() );
                     break;
 
                 case WRITER: 
-                    $<memberFunction_>$ = new Writer($2, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Writer($3, symtab->class_, getKeyLine() );
                     break;
 
                 case ROUTINE: 
-                    $<memberFunction_>$ = new Routine($2, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Routine($3, symtab->class_, getKeyLine() );
                     break;
 
                 default:
@@ -283,21 +288,21 @@ member_function
         '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$ = $<memberFunction_>3;
-            $$->statements_ = $9;
+            $$ = $<memberFunction_>4;
+            $$->statements_ = $10;
         }
-    | OPERATOR operator
+    | simd_modifier OPERATOR operator
         {
-            $<memberFunction_>$ = new Operator( operatorToString($2), symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Operator( operatorToString($3), symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')' arrow_return_type_list
         EOL statement_list END EOL
         {
-            $$ = $<memberFunction_>3;
-            $$->statements_ = $9;
+            $$ = $<memberFunction_>4;
+            $$->statements_ = $10;
         }
-    | ASSIGN 
+    | simd_modifier ASSIGN 
         {
             $<memberFunction_>$ = new Assign(symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
@@ -305,10 +310,10 @@ member_function
         '(' parameter_list ')'
         EOL statement_list END EOL
         {
-            $$ = $<memberFunction_>2;
-            $$->statements_ = $7;
+            $$ = $<memberFunction_>3;
+            $$->statements_ = $8;
         }
-    | CREATE
+    | simd_modifier CREATE
         {
             $<memberFunction_>$ = new Create(symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
@@ -317,8 +322,8 @@ member_function
         '(' parameter_list')'
         EOL statement_list END EOL
         {
-            $$ = $<memberFunction_>2;
-            $$->statements_ = $7;
+            $$ = $<memberFunction_>3;
+            $$->statements_ = $8;
             symtab->class_->hasCreate_ = true;
         }
     ;
@@ -390,15 +395,33 @@ statement_list
     ;
 
 statement
-    : expr EOL                          { $$ = new ExprStatement($1, currentLine-1); }
-    | decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
+    /*
+        basic statements
+    */
+    : decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
+    | expr EOL                          { $$ = new ExprStatement($1, currentLine-1); }
     | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $1, $3, currentLine-1) }
+
+    /*
+        simd statements
+    */
+    | SIMD_PREFIX expr EOL                          { $$ = new ExprStatement($2, currentLine-1); }
+    | SIMD_PREFIX tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement('=', $2, $4, currentLine-1) }
+
+    /*
+        control flow statements
+    */
 
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine-1); }
 
+    | SCOPE EOL statement_list END EOL      { $$ = new ScopeStatement($3, currentLine-1); }
+
     | IF expr EOL statement_list END EOL                         { $$ = new IfElStatement($2, $4,  0, currentLine-1); }
     | IF expr EOL statement_list ELSE EOL statement_list END EOL { $$ = new IfElStatement($2, $4, $7, currentLine-1); }
-    
+
+    /* 
+        jump statements
+    */
     | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
     | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
     | CONTINUE  EOL { $$ = new CFStatement(CONTINUE, currentLine); }
@@ -477,12 +500,18 @@ postfix_expr
     | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(       $1, $3, $5, currentLine); }
     | ':' ID '(' expr_list ')'              { $$ = new ReaderCall((Expr*) 0, $2, $4, currentLine); }
     | '.' ID '(' expr_list ')'              { $$ = new WriterCall((Expr*) 0, $2, $4, currentLine); }
+
+    /* 
+        index operator 
+    */
+    | postfix_expr '[' expr ']'             { $$ = new IndexExpr($1, $3, currentLine); }
     ;
 
 primary_expr
     : ID               { $$ = new  Id($1, currentLine); }
     | NIL '{' type '}' { $$ = new Nil($3, currentLine); }
     | SELF             { $$ = new Self(currentLine); }
+    | SIMD_INDEX       { $$ = new SimdIndex(currentLine); }
     | L_INDEX          { $$ = $1; }
     | L_INT            { $$ = $1; }
     | L_INT8           { $$ = $1; }
@@ -530,18 +559,21 @@ tupel
     ;
 
 bare_type
-    : ID               { $$ = new BaseType(0, $1, currentLine); }
-    | PTR '{' type '}' { $$ = new Ptr(0, $3, currentLine); }
+    : ID                 { $$ = new BaseType(0, $1, currentLine); }
+    | PTR   '{' type '}' { $$ = new      Ptr(0, $3, currentLine); }
+    | ARRAY '{' type '}' { $$ = new    Array(0, $3, currentLine); }
+    | SIMD  '{' type '}' { $$ = new     Simd(0, $3, currentLine); }
+    ;
 
 type
     : ID                       { $$ = new BaseType(  VAR, $1, currentLine); }
     | CONST ID                 { $$ = new BaseType(CONST, $2, currentLine); }
-    | PTR         '{' type '}' { $$ = new Ptr(  VAR, $3, currentLine); }
-    | CONST PTR   '{' type '}' { $$ = new Ptr(CONST, $4, currentLine); }
-    /*| ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
-    /*| CONST ARRAY '{' type '}' { $$ = new Array($1, $4, currentLine); }*/
-    /*| SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
-    /*| CONST SIMD  '{' type '}' { $$ = new Simd($1, $4, currentLine); }*/
+    | PTR         '{' type '}' { $$ = new      Ptr(  VAR, $3, currentLine); }
+    | CONST PTR   '{' type '}' { $$ = new      Ptr(CONST, $4, currentLine); }
+    | ARRAY       '{' type '}' { $$ = new    Array(  VAR, $3, currentLine); }
+    | CONST ARRAY '{' type '}' { $$ = new    Array(CONST, $4, currentLine); }
+    | SIMD        '{' type '}' { $$ = new     Simd(  VAR, $3, currentLine); }
+    | CONST SIMD  '{' type '}' { $$ = new     Simd(CONST, $4, currentLine); }
     ;
 
 %%

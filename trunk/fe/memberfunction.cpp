@@ -40,7 +40,7 @@ namespace swift {
  * constructor and destructor
  */
 
-MemberFunction::MemberFunction(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+MemberFunction::MemberFunction(std::string* id, Symbol* parent, int line)
     : ClassMember(id, parent, line)
     , rootScope_( new Scope(0) )
     , sig_( new Signature() )
@@ -80,7 +80,8 @@ bool MemberFunction::analyze()
     oss << '$' << counter;
     ++counter;
 
-    me::functab->insertFunction( new std::string(oss.str()), isTrivial() );
+    meId_ = oss.str();
+    me::functab->insertFunction( new std::string(meId_), isTrivial() );
 
     bool result = true;
     result &= sig_->analyze();
@@ -204,7 +205,7 @@ bool MemberFunction::isTrivial() const
  * constructor
  */
 
-Method::Method(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Method::Method(std::string* id, Symbol* parent, int line)
     : MemberFunction(id, parent, line)
 {}
 
@@ -225,7 +226,7 @@ bool Method::specialAnalyze()
  * constructor
  */
 
-Reader::Reader(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Reader::Reader(std::string* id, Symbol* parent, int line)
     : Method(id, parent, line)
 {}
 
@@ -249,7 +250,7 @@ std::string Reader::qualifierString() const
  * constructor
  */
 
-Writer::Writer(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Writer::Writer(std::string* id, Symbol* parent, int line)
     : Method(id, parent, line)
 {}
 
@@ -348,7 +349,7 @@ std::string Assign::qualifierString() const
  * constructor
  */
 
-StaticMethod::StaticMethod(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+StaticMethod::StaticMethod(std::string* id, Symbol* parent, int line)
     : MemberFunction(id, parent, line)
 {}
 
@@ -358,7 +359,7 @@ StaticMethod::StaticMethod(std::string* id, Symbol* parent, int line /*= NO_LINE
  * constructor
  */
 
-Routine::Routine(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Routine::Routine(std::string* id, Symbol* parent, int line)
     : StaticMethod(id, parent, line)
 {}
 
@@ -382,7 +383,7 @@ std::string Routine::qualifierString() const
  * constructor
  */
 
-Operator::Operator(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
+Operator::Operator(std::string* id, Symbol* parent, int line)
     : StaticMethod(id, parent, line)
 {}
 

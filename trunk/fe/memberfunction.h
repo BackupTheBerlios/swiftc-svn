@@ -56,7 +56,7 @@ public:
      * constructor and destructor
      */
 
-    MemberFunction(std::string* id, Symbol* parent, int line = NO_LINE);
+    MemberFunction(std::string* id, Symbol* parent, int line);
     virtual ~MemberFunction();
 
     /*
@@ -98,7 +98,7 @@ public:
      * constructor
      */
 
-    Method(std::string* id, Symbol* parent, int line = NO_LINE);
+    Method(std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -122,7 +122,7 @@ public:
      * constructor
      */
 
-    Reader(std::string* id, Symbol* parent, int line = NO_LINE);
+    Reader(std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -142,7 +142,7 @@ public:
      * constructor
      */
 
-    Writer(std::string* id, Symbol* parent, int line = NO_LINE);
+    Writer(std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -203,7 +203,7 @@ public:
      * constructor
      */
 
-    StaticMethod(std::string* id, Symbol* parent, int line = NO_LINE);
+    StaticMethod(std::string* id, Symbol* parent, int line);
 };
 
 //------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ public:
      * constructor
      */
 
-    Routine(std::string *id, Symbol* parent, int line = NO_LINE);
+    Routine(std::string *id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -236,7 +236,7 @@ public:
      * constructor 
      */
 
-    Operator(std::string* id, Symbol* parent, int line = NO_LINE);
+    Operator(std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods

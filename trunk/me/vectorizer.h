@@ -17,57 +17,22 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef ME_LIVENESS_ANALYSIS
-#define ME_LIVENESS_ANALYSIS
+#ifndef ME_VECTORIZER_H
+#define ME_VECTORIZER_H
 
 #include "me/codepass.h"
 #include "me/forward.h"
 
 namespace me {
 
-// forward declaration
-class IGraph;
-
-class LivenessAnalysis : public CodePass
+class Vectorizer : public CodePass
 {
-private:
-
-    /// Knows during the liveness analysis which basic blocks have already been visted.
-    BBSet walked_;
-
-#ifdef SWIFT_USE_IG
-    IGraph* ig_;
-#endif // SWIFT_USE_IG
-
 public:
 
-    /*
-     * constructor and destructor
-     */
+    Vectorizer(Function* function)
 
-    LivenessAnalysis(Function* function);
-#ifdef SWIFT_USE_IG
-    ~LivenessAnalysis();
-#endif // SWIFT_USE_IG
-
-    /*
-     * methods
-     */
-
-    /** 
-     * @brief Performs the liveness analysis.
-     *
-     * Invokes \a liveOutAtBlock, \a liveInAtInstr and \a liveOutAtInstr.
-     */
-    virtual void process();
-
-private:
-
-    void liveOutAtBlock(BBNode* bbNode, Var* var);
-    void liveInAtInstr (InstrNode* instrNode, Var* var);
-    void liveOutAtInstr(InstrNode* instrNode, Var* var);
 };
 
 } // namespace me
 
-#endif // ME_LIVENESS_ANALYSIS
+#endif // ME_VECTORIZER_H

@@ -22,6 +22,7 @@
 #include <typeinfo>
 
 #include "me/cfg.h"
+#include "me/functab.h"
 
 namespace me {
     

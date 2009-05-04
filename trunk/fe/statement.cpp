@@ -368,6 +368,42 @@ bool WhileStatement::analyze()
 //------------------------------------------------------------------------------
 
 /*
+ *  constructor and destructor
+ */
+
+ScopeStatement::ScopeStatement(Statement* statements, int line /*= NO_LINE*/)
+        : Statement(line)
+        , statements_(statements)
+{}
+
+ScopeStatement::~ScopeStatement()
+{
+    delete statements_;
+}
+
+/*
+ * further methods
+ */
+
+bool ScopeStatement::analyze()
+{
+    bool result = true;
+
+    // update scoping
+    symtab->createAndEnterNewScope();
+
+    // analyze each statement in the loop and keep acount of the result
+    for (Statement* iter = statements_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    symtab->leaveScope();
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
+/*
  * constructor and destructor
  */
 

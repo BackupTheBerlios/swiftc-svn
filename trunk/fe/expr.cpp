@@ -583,6 +583,72 @@ std::string BinExpr::toString() const
  * constructor and destructor
  */
 
+IndexExpr::IndexExpr(Expr* postfixExpr, Expr* indexExpr, int line)
+    : Expr(line)
+    , postfixExpr_(postfixExpr)
+    , indexExpr_(indexExpr)
+{}
+
+IndexExpr::~IndexExpr()
+{
+    delete postfixExpr_;
+    delete indexExpr_;
+}
+
+/*
+ * further methods
+ */
+
+bool IndexExpr::analyze()
+{
+    bool result = true;
+
+    result &= postfixExpr_->analyze();
+    result &= indexExpr_->analyze();
+
+    if (!result)
+        return false;
+
+    const Container* container = 
+        dynamic_cast<const Container*>( postfixExpr_->getType() );
+
+    if (!container)
+    {
+        errorf(line_, "an index expression must only be used "
+                "with an 'array' or 'simd' type");
+
+        return false;
+    }
+
+    if ( !indexExpr_->getType()->isIndex() )
+    {
+        errorf(line_, 
+               "indexing expression must be of type 'index' but '%s' is given",
+               indexExpr_->getType()->toString().c_str() );
+
+        return false;
+    }
+
+    return true;
+}
+
+void IndexExpr::genSSA()
+{}
+
+std::string IndexExpr::toString() const
+{
+    std::ostringstream oss;
+    oss << postfixExpr_->toString() << '[' << indexExpr_->toString() << ']';
+
+    return oss.str();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
 MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
     , expr_(expr)
@@ -797,5 +863,54 @@ std::string Self::toString() const
     return "self";
 }
 
+//------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
+SimdIndex::SimdIndex(int line)
+    : Expr(line)
+{}
+
+/*
+ * virtual methods
+ */
+
+bool SimdIndex::analyze()
+{
+    int selfModifier = INOUT;
+    const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
+
+    if ( methodQualifier == typeid(Routine) )
+    {
+        errorf(line_, "routines do not have a 'self' argument");
+        return false;
+    }
+    else if ( methodQualifier == typeid(Operator) )
+    {
+        errorf(line_, "operators do not have a 'self' argument");
+        return false;
+    }
+    else if ( methodQualifier == typeid(Reader) )
+        selfModifier = CONST_PARAM;
+
+    swiftAssert( dynamic_cast<Method*>(symtab->currentMemberFunction()),
+            "must be castable to Method" );
+
+    type_ = new BaseType(CONST, new std::string("index") );
+    place_ = 0; // TODO
+
+    return true;
+}
+
+void SimdIndex::genSSA() 
+{
+}
+
+std::string SimdIndex::toString() const
+{
+    return "%i";
+}
 
 } // namespace swift
