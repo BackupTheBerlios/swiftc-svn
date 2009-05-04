@@ -1,5 +1,4 @@
 simd class Vec3
-
     real x
     real y
     real z
