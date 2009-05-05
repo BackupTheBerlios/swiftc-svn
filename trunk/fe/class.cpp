@@ -91,7 +91,7 @@ void Class::addDefaultCreate()
 void Class::addCopyCreate()
 {
     // check whether there is already a copy constructor
-    BaseType* newType = new BaseType(CONST_PARAM, this);
+    BaseType* newType = new BaseType(0, this);
     TypeList in;
     in.push_back(newType);
     Method* create = symtab->lookupCreate(this, in, 0);
@@ -103,7 +103,7 @@ void Class::addCopyCreate()
         create = new Create(this);
         create->statements_ = 0;
         symtab->insert(create);
-        symtab->insertParam( new Param(newType, new std::string("arg")) );
+        symtab->insertInParam( new InParam(false, newType, new std::string("arg")) );
 
         prependMember(create);
     }
@@ -139,7 +139,7 @@ void Class::addAssignOperators()
             symtab->insert(assign);
 
             for (size_t i = 0; i < in.size(); ++i)
-                symtab->insertParam( new Param(in[i]->clone(), new std::string("arg")) );
+                symtab->insertInParam( new InParam(false, in[i]->clone(), new std::string("arg")) );
 
             prependMember(assign);
         }

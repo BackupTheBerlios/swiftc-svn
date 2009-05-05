@@ -134,7 +134,7 @@ using namespace swift;
 %token PTR ARRAY SIMD
 
 // type modifiers
-%token VAR CONST CONST_PARAM INOUT RETURN_VALUE
+%token VAR CONST INOUT REF CONST_REF
 
 %token SELF SIMD_INDEX SIMD_PREFIX
 
@@ -355,8 +355,8 @@ parameter_list
     ;
 
 parameter
-    :       bare_type ID { $1->modifier() = CONST_PARAM; symtab->insertParam( new Param($1, $2, currentLine) ); }
-    | INOUT bare_type ID { $2->modifier() = INOUT;       symtab->insertParam( new Param($2, $3, currentLine) ); }
+    :       bare_type ID { symtab->insertInParam( new InParam(false, $1, $2, currentLine) ); }
+    | INOUT bare_type ID { symtab->insertInParam( new InParam( true, $2, $3, currentLine) ); }
     ;
 
 arrow_return_type_list
@@ -365,8 +365,8 @@ arrow_return_type_list
     ;
 
 return_type_list
-    : bare_type ID                      { $1->modifier() = RETURN_VALUE; symtab->insertRes( new Param($1, $2, currentLine) ); }
-    | return_type_list ',' bare_type ID { $3->modifier() = RETURN_VALUE; symtab->insertRes( new Param($3, $4, currentLine) ); }
+    : bare_type ID                      { symtab->insertOutParam( new OutParam($1, $2, currentLine) ); }
+    | return_type_list ',' bare_type ID { symtab->insertOutParam( new OutParam($3, $4, currentLine) ); }
     ;
 
 /*
@@ -425,7 +425,6 @@ statement
     | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
     | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
     | CONTINUE  EOL { $$ = new CFStatement(CONTINUE, currentLine); }
-
     ;
 
 /*

@@ -342,7 +342,7 @@ bool MethodCall::analyze()
             else
             {
                 // -> this one is a hidden in-param
-                swiftAssert( param->getType()->isActuallyPtr(), 
+                swiftAssert( param->getType()->isInternalAtomic(), 
                         "must actually be a pointer" );
 
                 in_.push_back( resPlaceList[i] );
@@ -362,9 +362,9 @@ bool MethodCall::analyze()
             // create place to hold the result and init with undef
 #ifdef SWIFT_DEBUG
             std::string resStr = std::string("res");
-            me::Reg* res = me::functab->newReg( param->getType()->toMeParamType(), &resStr );
+            me::Reg* res = me::functab->newReg( param->getType()->toMeType(), &resStr );
 #else // SWIFT_DEBUG
-            me::Reg* res = me::functab->newReg( param->getType()->toMeParamType() );
+            me::Reg* res = me::functab->newReg( param->getType()->toMeType() );
 #endif // SWIFT_DEBUG
 
             me::AssignInstr* ai = new me::AssignInstr(

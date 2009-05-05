@@ -43,7 +43,7 @@ class Ptr;
  * Terminology: <br>
  * - \em inner types: int, uint, real, ... and user defined types, i.e. all inner
  *   types are \a BaseType instances 
- * - \em atmoic types: int, uint, real, ... and all ptr types, i.e. all types
+ * - \em atomic types: int, uint, real, ... and all ptr types, i.e. all types
  *   which can be represented with \a me::Op::Type <br>
  * - \em builtin types: int, uint, real, all ptr, array and simd types, i.e. all
  *   types where the compiler must provide the implementation <br><br>
@@ -51,7 +51,9 @@ class Ptr;
  * Theses combinations are useful: <br>
  * - \em inner \em atomic types: int, uint, real, ..., i.e all builtin types 
  * known by the \a symtab
- * - TODO
+ * - \em internal \em atomic types: types which are internally represented by
+ *   an atomic value, i.e. all atomic types and other types which are internally
+ *   a reference
  */
 class Type : public Node
 {
@@ -77,7 +79,6 @@ public:
     virtual bool check(const Type* type) const = 0;
 
     virtual me::Op::Type toMeType() const = 0;
-    virtual me::Op::Type toMeParamType() const = 0;
 
     virtual me::Var* createVar(const std::string* id = 0) const = 0;
 
@@ -87,17 +88,7 @@ public:
     /// Is this a type which is built into swift?
     virtual bool isBuiltin() const = 0;
 
-    /**
-     * @brief Is this type represented by a pointer? 
-     *
-     * This means that the Type in question is a \a Ptr or it is a non atomic
-     * type which is a function's parameter passed by reference. The
-     * internal type modifiers \a RETURN_VALUE, \a CONST_PARAM and \a INOUT
-     * indicate this.
-     *
-     * Note that a atomic parameter is not represented by a pointer.
-     */
-    virtual bool isActuallyPtr() const = 0;
+    virtual bool isInternalAtomic() const = 0;
 
     /**
      * @brief Returns 'this' if this a a BaseType.
@@ -127,11 +118,9 @@ public:
 
     Type* constClone() const;
     Type* varClone() const;
-    //Type* param2VarClone() const;
+
     const BaseType* isInnerAtomic() const;
-    const BaseType* isInnerNonAtomic() const;
     bool isNonInnerBuiltin() const;
-    bool isInternalAtomic() const;
 
     int& modifier();
     const int& modifier() const;
@@ -139,8 +128,6 @@ public:
     bool isReadOnly() const;
 
 protected:
-
-    //void modifier2NonParamModfier();
 
     /*
      * data
@@ -152,9 +139,8 @@ protected:
      * One of: <br>
      * - VAR: an ordinary variable with read and write access <br>
      * - CONST: a constant with read-only access <br>
-     * - INOUT: an in-going parameter with read and write access <br>
-     * - CONST_PARAM: an in-going parameter with read-only access <br>
-     * - RETURN_VALUE: a result; always with read and write access <br>
+     * - REF: an internal pointer to location with read and write access <br>
+     * - CONST_REF: an internal pointer to a location with read and write access
      */
     int modifier_;
 };
@@ -181,10 +167,9 @@ public:
     virtual bool validate() const;
     virtual bool check(const Type* type) const;
     virtual me::Op::Type toMeType() const;
-    virtual me::Op::Type toMeParamType() const;
     virtual bool isAtomic() const;
+    virtual bool isInternalAtomic() const;
     virtual bool isBuiltin() const;
-    virtual bool isActuallyPtr() const;
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
     virtual bool isIndex() const;
@@ -282,10 +267,9 @@ public:
 
     virtual Ptr* clone() const;
     virtual bool isAtomic() const;
-    virtual bool isActuallyPtr() const;
+    virtual bool isInternalAtomic() const;
 
     virtual me::Op::Type toMeType() const;
-    virtual me::Op::Type toMeParamType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual bool hasAssignCreate(const TypeList& in, 
@@ -312,9 +296,9 @@ public:
      */
 
     virtual bool isAtomic() const;
-    virtual bool isActuallyPtr() const;
+    virtual bool isInternalAtomic() const;
+
     virtual me::Op::Type toMeType() const;
-    virtual me::Op::Type toMeParamType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual bool hasAssignCreate(const TypeList& in, 

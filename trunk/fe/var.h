@@ -98,13 +98,15 @@ public:
  */
 class Param : public Var
 {
-public:
+protected:
 
     /*
      * constructor
      */
 
-    Param(Type* type, std::string* id, int line = NO_LINE);
+    Param(Type* type, std::string* id, int line);
+
+public:
 
     /*
      * further methods
@@ -112,8 +114,40 @@ public:
 
     /// Check whether this Param has a correct Type.
     bool validateAndCreateVar(); 
+};
 
-    int getModifier() const;
+//------------------------------------------------------------------------------
+
+class InParam : public Param
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    InParam(bool inout, Type* type, std::string* id, int line = NO_LINE);
+
+    /*
+     * private
+     */
+
+private:
+
+    bool inout_;
+};
+
+//------------------------------------------------------------------------------
+
+class OutParam : public Param
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    OutParam(Type* type, std::string* id, int line = NO_LINE);
 };
 
 } // namespace swift

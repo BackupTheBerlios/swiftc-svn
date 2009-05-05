@@ -83,8 +83,8 @@ struct SymbolTable
     bool insert(Class* _class);
     void insert(MemberFunction* memberFunction);
     bool insert(MemberVar* memberVar);
-    void insertParam(Param* param);
-    void insertRes(Param* param);
+    void insertInParam(InParam* param);
+    void insertOutParam(OutParam* param);
     bool insert(Local* local);
 
     /*

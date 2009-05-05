@@ -164,17 +164,14 @@ std::string Signature::toString() const
     return oss.str();
 }
 
-void Signature::appendInParam(Param* param)
+void Signature::appendInParam(InParam* param)
 {
-    swiftAssert(param->getModifier() == CONST_PARAM || param->getModifier() == INOUT,
-            "must be marked as CONST_PARAM or INOUT");
     inParams_.push_back(param);
     inTypes_.push_back( param->getType() );
 }
 
-void Signature::appendOutParam(Param* param)
+void Signature::appendOutParam(OutParam* param)
 {
-    swiftAssert(param->getModifier() == RETURN_VALUE, "must be marked as RETURN_VALUE");
     outParams_.push_back(param);
     outTypes_.push_back( param->getType() );
 }

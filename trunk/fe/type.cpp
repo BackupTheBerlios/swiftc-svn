@@ -86,32 +86,14 @@ Type* Type::varClone() const
     return type;
 }
 
-//Type* Type::param2VarClone() const
-//{
-    //Type* type = this->clone();
-    //type->modifier2NonParamModfier();
-
-    //return type;
-//}
-
 const BaseType* Type::isInnerAtomic() const
 {
     return isAtomic() ? isInner() : 0;
 }
 
-const BaseType* Type::isInnerNonAtomic() const
-{
-    return !isAtomic() ? isInner() : 0;
-}
-
 bool Type::isNonInnerBuiltin() const
 {
     return !isInner() && isBuiltin();
-}
-
-bool Type::isInternalAtomic() const
-{
-    return isAtomic() || isActuallyPtr();
 }
 
 int& Type::modifier()
@@ -126,25 +108,8 @@ const int& Type::modifier() const
 
 bool Type::isReadOnly() const
 {
-    return modifier_ == CONST || modifier_ == CONST_PARAM;
+    return modifier_ == CONST || modifier_ == CONST_REF;
 }
-
-//void Type::modifier2NonParamModfier() const
-//{
-    //switch (modifier_)
-    //{
-        //case CONST_PARAM:
-            //modifier_= CONST;
-            //return;
-        //case RETURN_VALUE:
-        //case INOUT:
-            //modifier_ =  VAR;
-            //return;
-        //default:
-            //// do nothing in this case
-            //return;
-    //}
-//}
 
 //------------------------------------------------------------------------------
 
@@ -224,19 +189,15 @@ me::Op::Type BaseType::toMeType() const
         return typeMap_->find(*id_)->second;
     else
     {
-        if (modifier_ == CONST_PARAM || modifier_ == INOUT)
+        if (modifier_ == CONST_REF || modifier_ == REF)
             return me::Op::R_PTR; // params are passed in pointers
         else
+        {
+            swiftAssert(modifier_ == VAR || modifier_ == CONST, 
+                    "impossible modifier_ value");
             return me::Op::R_STACK;
+        }
     }
-}
-
-me::Op::Type BaseType::toMeParamType() const
-{
-    if (builtin_)
-        return typeMap_->find(*id_)->second;
-    else
-        return me::Op::R_PTR;
 }
 
 bool BaseType::isAtomic() const
@@ -244,17 +205,14 @@ bool BaseType::isAtomic() const
     return builtin_;
 }
 
+bool BaseType::isInternalAtomic() const
+{
+    return builtin_ || modifier_ == CONST_REF || modifier_ == REF;
+}
+
 bool BaseType::isBuiltin() const
 {
     return builtin_;
-}
-
-bool BaseType::isActuallyPtr() const
-{
-    return !isBuiltin() 
-        && (modifier_ == INOUT 
-        ||  modifier_ == CONST_PARAM 
-        ||  modifier_ == RETURN_VALUE);
 }
 
 const BaseType* BaseType::isInner() const
@@ -300,25 +258,26 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
 
 me::Reg* BaseType::derefToInnerstPtr(me::Reg* reg) const
 {
-    if ( isActuallyPtr() )
-        return reg; // reg is a hidden ptr
+    //if ( isActuallyPtr() )
+        //return reg; // reg is a hidden ptr
 
     /*
      * load adress into pointer reg
      */
-    swiftAssert(!builtin_, "LoadPtr not allowed");
+    //swiftAssert(!builtin_, "LoadPtr not allowed");
     
-#ifdef SWIFT_DEBUG
-    std::string str = "tmp";
-    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
-#else // SWIFT_DEBUG
-    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
+//#ifdef SWIFT_DEBUG
+    //std::string str = "tmp";
+    //me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
+//#else // SWIFT_DEBUG
+    //me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+//#endif // SWIFT_DEBUG
 
-    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
-    me::functab->appendInstr(loadPtr);
+    //me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
+    //me::functab->appendInstr(loadPtr);
 
-    return ptr;
+    //return ptr;
+    return 0;
 }
 
 const BaseType* BaseType::unnestPtr() const
@@ -486,11 +445,6 @@ me::Op::Type Ptr::toMeType() const
     return me::Op::R_PTR;
 }
 
-me::Op::Type Ptr::toMeParamType() const
-{
-    return me::Op::R_PTR;
-}
-
 me::Var* Ptr::createVar(const std::string* id /*= 0*/) const
 {
 #ifdef SWIFT_DEBUG
@@ -505,33 +459,34 @@ bool Ptr::isAtomic() const
     return true;
 }
 
-bool Ptr::isActuallyPtr() const
+bool Ptr::isInternalAtomic() const
 {
     return true;
 }
 
 me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
 {
-    if ( innerType_->isActuallyPtr() )
-    {
-        swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
+    //if ( innerType_->isActuallyPtr() )
+    //{
+        //swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
 
-#ifdef SWIFT_DEBUG
-        std::string str = "tmp";
-        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
-#else // SWIFT_DEBUG
-        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
+//#ifdef SWIFT_DEBUG
+        //std::string str = "tmp";
+        //me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
+//#else // SWIFT_DEBUG
+        //me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
+//#endif // SWIFT_DEBUG
 
-        me::Deref* derefInstr = new me::Deref(derefed, reg);
-        me::functab->appendInstr(derefInstr);
+        //me::Deref* derefInstr = new me::Deref(derefed, reg);
+        //me::functab->appendInstr(derefInstr);
 
-        return innerType_->derefToInnerstPtr(derefed);
-    }
-    // else
+        //return innerType_->derefToInnerstPtr(derefed);
+    //}
+    //// else
 
-    // this is already the innerst pointer
-    return reg;
+    //// this is already the innerst pointer
+    //return reg;
+    return 0;
 }
 
 bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
@@ -586,11 +541,6 @@ me::Op::Type Container::toMeType() const
     return me::Op::R_STACK;
 }
 
-me::Op::Type Container::toMeParamType() const
-{
-    return me::Op::R_STACK;
-}
-
 me::Var* Container::createVar(const std::string* id /*= 0*/) const
 {
 #ifdef SWIFT_DEBUG
@@ -605,9 +555,9 @@ bool Container::isAtomic() const
     return false;
 }
 
-bool Container::isActuallyPtr() const
+bool Container::isInternalAtomic() const
 {
-    return false;
+    return modifier_ == CONST_REF || modifier_ == REF;
 }
 
 me::Reg* Container::derefToInnerstPtr(me::Reg* reg) const

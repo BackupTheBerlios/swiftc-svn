@@ -236,7 +236,7 @@ Reader::Reader(std::string* id, Symbol* parent, int line)
 
 int Reader::getSelfModifier() const
 {
-    return CONST_PARAM;
+    return CONST_REF;
 }
 
 std::string Reader::qualifierString() const
@@ -260,7 +260,7 @@ Writer::Writer(std::string* id, Symbol* parent, int line)
 
 int Writer::getSelfModifier() const
 {
-    return INOUT;
+    return REF;
 }
 
 std::string Writer::qualifierString() const
@@ -284,7 +284,7 @@ Create::Create(Symbol* parent, int line /*= NO_LINE*/)
 
 int Create::getSelfModifier() const
 {
-    return INOUT;
+    return REF;
 }
 
 std::string Create::qualifierString() const
@@ -321,21 +321,13 @@ bool Assign::specialAnalyze()
 
         return false;
     }
-    else if (in[0]->modifier() != CONST_PARAM)
-    {
-        swiftAssert(in[0]->modifier() == INOUT, "must be inout here");
-        errorf( line_, "the argument of an assignment "
-            "must not be declared as 'inout'");
-
-        return false;
-    }
 
     return true;
 }
 
 int Assign::getSelfModifier() const
 {
-    return INOUT;
+    return REF;
 }
 
 std::string Assign::qualifierString() const

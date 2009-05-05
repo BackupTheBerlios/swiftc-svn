@@ -126,7 +126,7 @@ void SymbolTable::insert(MemberFunction* memberFunction)
     sig_ = memberFunction_->sig_;
 }
 
-void SymbolTable::insertParam(Param* param)
+void SymbolTable::insertInParam(InParam* param)
 {
     if ( sig_->findParam(param->id_) )
     {
@@ -141,12 +141,12 @@ void SymbolTable::insertParam(Param* param)
     return;
 }
 
-void SymbolTable::insertRes(Param* param)
+void SymbolTable::insertOutParam(OutParam* param)
 {
     Param* found = sig_->findParam(param->id_);
     if (found) 
     {
-        if (found->getModifier() == RETURN_VALUE)
+        if ( typeid(*found) == typeid(OutParam) )
         {
             errorf(param->line_, 
                     "there is already a return value '%s' defined for this procedure",

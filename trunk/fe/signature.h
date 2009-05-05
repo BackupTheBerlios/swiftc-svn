@@ -37,6 +37,8 @@ namespace swift {
 class Local;
 class Method;
 class Param;
+class InParam;
+class OutParam;
 class Scope;
 class Statement;
 
@@ -60,8 +62,8 @@ public:
      * further methods
      */
 
-    void appendInParam(Param* param);
-    void appendOutParam(Param* param);
+    void appendInParam(InParam* param);
+    void appendOutParam(OutParam* param);
 
     /// Analyses this Sig for correct syntax.
     bool analyze() const;
@@ -115,7 +117,8 @@ private:
      * data
      */
 
-    typedef std::vector<Param*> Params;
+    typedef std::vector<InParam*> InParams;
+    typedef std::vector<OutParam*> OutParams;
 
     /**
      * @brief This list stores the \a Param objects. 
@@ -123,7 +126,7 @@ private:
      * The parameters are sorted from left to right as given in the signature
      * of the procedure. 
      */
-    Params inParams_;
+    InParams inParams_;
 
     /**
      * @brief This list stores the \a Param objects. 
@@ -131,7 +134,7 @@ private:
      * The return parameters are sorted from left to right as given in the 
      * signature of the procedure. 
      */
-    Params outParams_;
+    OutParams outParams_;
 
     TypeList inTypes_;
     TypeList outTypes_;

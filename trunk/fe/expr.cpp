@@ -725,14 +725,23 @@ bool MemberAccess::analyze()
         rootStructOffset_ = ma->rootStructOffset_;
     }
     else
-        rootStructOffset_ = structOffset_;
+        rootStructOffset_ = structOffset_; // we are left
 
     // create new place for the right most access if applicable
     if ( !isNeededAsLValue()  && right_)
         place_ = type_->createVar();
 
-    if ( right_ && !isNeededAsLValue()  )
-        genSSA();
+    //if ( right_ && !isNeededAsLValue() )
+        //genSSA();
+    if ( right_ )
+    {
+        // only atomic stores need special handling
+        if ( !isNeededAsLValue() || !type_->isAtomic() )
+        {
+        me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
+        me::functab->appendInstr(load); 
+        }
+    }
 
     return true;
 }
@@ -829,7 +838,7 @@ Self::Self(int line)
 
 bool Self::analyze()
 {
-    int selfModifier = INOUT;
+    int selfModifier = REF;
     const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
 
     if ( methodQualifier == typeid(Routine) )
@@ -843,7 +852,7 @@ bool Self::analyze()
         return false;
     }
     else if ( methodQualifier == typeid(Reader) )
-        selfModifier = CONST_PARAM;
+        selfModifier = CONST_REF;
 
     swiftAssert( dynamic_cast<Method*>(symtab->currentMemberFunction()),
             "must be castable to Method" );
@@ -879,28 +888,6 @@ SimdIndex::SimdIndex(int line)
 
 bool SimdIndex::analyze()
 {
-    int selfModifier = INOUT;
-    const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
-
-    if ( methodQualifier == typeid(Routine) )
-    {
-        errorf(line_, "routines do not have a 'self' argument");
-        return false;
-    }
-    else if ( methodQualifier == typeid(Operator) )
-    {
-        errorf(line_, "operators do not have a 'self' argument");
-        return false;
-    }
-    else if ( methodQualifier == typeid(Reader) )
-        selfModifier = CONST_PARAM;
-
-    swiftAssert( dynamic_cast<Method*>(symtab->currentMemberFunction()),
-            "must be castable to Method" );
-
-    type_ = new BaseType(CONST, new std::string("index") );
-    place_ = 0; // TODO
-
     return true;
 }
 

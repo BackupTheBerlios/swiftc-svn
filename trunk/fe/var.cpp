@@ -70,7 +70,7 @@ Local::Local(Type* type, me::Var* var, std::string* id, int line /*= NO_LINE*/)
  * constructor and destructor
  */
 
-Param::Param(Type* type, std::string* id, int line /*= NO_LINE*/)
+Param::Param(Type* type, std::string* id, int line)
     : Var(type, 0, id, line)
 {}
 
@@ -85,9 +85,35 @@ bool Param::validateAndCreateVar()
     return type_->validate();
 }
 
-int Param::getModifier() const
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+InParam::InParam(bool inout, Type* type, std::string* id, int line /*= NO_LINE*/)
+    : Param(type, id, line)
+    , inout_(inout)
 {
-    return type_->modifier();
+    if ( !type->isAtomic() )
+        type_->modifier() = inout ? REF : CONST_REF;
+    else
+        type_->modifier() = inout ? VAR : CONST;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+OutParam::OutParam(Type* type, std::string* id, int line /*= NO_LINE*/)
+    : Param(type, id, line)
+{
+    if ( !type->isAtomic() )
+        type_->modifier() = REF;
+    else
+        type_->modifier() = VAR;
 }
 
 } // namespace swift
