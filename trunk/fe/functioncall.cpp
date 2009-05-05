@@ -416,7 +416,7 @@ bool MethodCall::analyze()
      */
 
     me::CallInstr* call = new me::CallInstr( 
-            out_.size(), in_.size(), memberFunction_->meId_, false);
+            out_.size(), in_.size(), memberFunction_->sig_->getMeId(), false);
             //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
 
     for (size_t i = 0; i < in_.size(); ++i)

@@ -86,6 +86,7 @@ ADD_EXECUTABLE (swift
     fe/parser.tab.cpp
     fe/parser.tab.hpp
 
+    fe/call.cpp
     fe/class.cpp
     fe/decl.cpp
     fe/error.cpp

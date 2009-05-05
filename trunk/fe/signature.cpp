@@ -196,7 +196,7 @@ Param* Signature::getInParam(size_t i)
 
 Param* Signature::getOutParam(size_t i)
 {
-    swiftAssert(i < outParams_.size(), "outdex out ouf bounds" );
+    swiftAssert(i < outParams_.size(), "index out ouf bounds" );
     return outParams_[i];
 }
 
@@ -208,6 +208,16 @@ const TypeList& Signature::getIn() const
 const TypeList& Signature::getOut() const
 {
     return outTypes_;
+}
+
+std::string Signature::getMeId() const
+{
+    return meId_;
+}
+
+void Signature::setMeId(const std::string& meId)
+{
+    meId_ = meId;
 }
 
 } // namespace swift

@@ -80,8 +80,8 @@ bool MemberFunction::analyze()
     oss << '$' << counter;
     ++counter;
 
-    meId_ = oss.str();
-    me::functab->insertFunction( new std::string(meId_), isTrivial() );
+    sig_->setMeId( oss.str() );
+    me::functab->insertFunction( new std::string(sig_->getMeId()), isTrivial() );
 
     bool result = true;
     result &= sig_->analyze();

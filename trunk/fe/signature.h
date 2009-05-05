@@ -111,6 +111,9 @@ public:
     size_t getNumIn() const;
     size_t getNumOut() const;
 
+    std::string getMeId() const;
+    void setMeId(const std::string& meId);
+
 private:
 
     /*
@@ -138,6 +141,8 @@ private:
 
     TypeList inTypes_;
     TypeList outTypes_;
+
+    std::string meId_; ///< Identifier used by the middle-end for this function.
 };
 
 } // namespace swift

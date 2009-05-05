@@ -82,7 +82,6 @@ public:
     Statement* statements_;///< The statements_ inside this Proc.
     Scope* rootScope_;     ///< The root Scope where vars of this Proc are stored.
     Signature* sig_;       ///< The signature of this Method.
-    std::string meId_;     ///< Identifier used by the middle-end for this function.
 
     Params hiddenIn_;
     Params hiddenOut_;
