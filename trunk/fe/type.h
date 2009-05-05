@@ -90,6 +90,8 @@ public:
 
     virtual bool isInternalAtomic() const = 0;
 
+    virtual bool isActuallyPtr() const = 0;
+
     /**
      * @brief Returns 'this' if this a a BaseType.
      *
@@ -128,6 +130,8 @@ public:
     bool isReadOnly() const;
 
 protected:
+
+    me::Reg* loadPtr(me::Reg* reg) const;
 
     /*
      * data
@@ -173,6 +177,7 @@ public:
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
     virtual bool isIndex() const;
+    virtual bool isActuallyPtr() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
     virtual const BaseType* unnestPtr() const;
@@ -268,6 +273,7 @@ public:
     virtual Ptr* clone() const;
     virtual bool isAtomic() const;
     virtual bool isInternalAtomic() const;
+    virtual bool isActuallyPtr() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
@@ -297,6 +303,7 @@ public:
 
     virtual bool isAtomic() const;
     virtual bool isInternalAtomic() const;
+    virtual bool isActuallyPtr() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;

@@ -61,11 +61,6 @@ bool Type::isIndex() const
     return false;
 }
 
-const BaseType* Type::unnestPtr() const
-{
-    return 0;
-}
-
 /*
  * further methods
  */
@@ -109,6 +104,21 @@ const int& Type::modifier() const
 bool Type::isReadOnly() const
 {
     return modifier_ == CONST || modifier_ == CONST_REF;
+}
+
+me::Reg* Type::loadPtr(me::Reg* reg) const
+{
+#ifdef SWIFT_DEBUG
+    std::string str = "tmp";
+    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
+#else // SWIFT_DEBUG
+    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
+    me::functab->appendInstr(loadPtr);
+
+    return ptr;
 }
 
 //------------------------------------------------------------------------------
@@ -189,7 +199,7 @@ me::Op::Type BaseType::toMeType() const
         return typeMap_->find(*id_)->second;
     else
     {
-        if (modifier_ == CONST_REF || modifier_ == REF)
+        if ( isActuallyPtr() )
             return me::Op::R_PTR; // params are passed in pointers
         else
         {
@@ -207,7 +217,7 @@ bool BaseType::isAtomic() const
 
 bool BaseType::isInternalAtomic() const
 {
-    return builtin_ || modifier_ == CONST_REF || modifier_ == REF;
+    return builtin_ || isActuallyPtr();
 }
 
 bool BaseType::isBuiltin() const
@@ -228,6 +238,11 @@ bool BaseType::isBool() const
 bool BaseType::isIndex() const
 {
     return *id_ == "index";
+}
+
+bool BaseType::isActuallyPtr() const
+{
+    return modifier_ == CONST_REF || modifier_ == REF;
 }
 
 me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
@@ -258,26 +273,13 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
 
 me::Reg* BaseType::derefToInnerstPtr(me::Reg* reg) const
 {
-    //if ( isActuallyPtr() )
-        //return reg; // reg is a hidden ptr
+    if ( isActuallyPtr() )
+        return reg; // reg is a hidden ptr
 
-    /*
-     * load adress into pointer reg
-     */
-    //swiftAssert(!builtin_, "LoadPtr not allowed");
+    // load adress into pointer reg
+    swiftAssert(!builtin_, "LoadPtr not allowed");
     
-//#ifdef SWIFT_DEBUG
-    //std::string str = "tmp";
-    //me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
-//#else // SWIFT_DEBUG
-    //me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
-//#endif // SWIFT_DEBUG
-
-    //me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
-    //me::functab->appendInstr(loadPtr);
-
-    //return ptr;
-    return 0;
+    return loadPtr(reg);
 }
 
 const BaseType* BaseType::unnestPtr() const
@@ -464,29 +466,33 @@ bool Ptr::isInternalAtomic() const
     return true;
 }
 
+bool Ptr::isActuallyPtr() const
+{
+    return true;
+}
+
 me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
 {
-    //if ( innerType_->isActuallyPtr() )
-    //{
-        //swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
+    if ( innerType_->isActuallyPtr() )
+    {
+        swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
 
-//#ifdef SWIFT_DEBUG
-        //std::string str = "tmp";
-        //me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
-//#else // SWIFT_DEBUG
-        //me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
-//#endif // SWIFT_DEBUG
+#ifdef SWIFT_DEBUG
+        std::string str = "tmp";
+        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
+#else // SWIFT_DEBUG
+        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
 
-        //me::Deref* derefInstr = new me::Deref(derefed, reg);
-        //me::functab->appendInstr(derefInstr);
+        me::Deref* derefInstr = new me::Deref(derefed, reg);
+        me::functab->appendInstr(derefInstr);
 
-        //return innerType_->derefToInnerstPtr(derefed);
-    //}
-    //// else
+        return innerType_->derefToInnerstPtr(derefed);
+    }
+    // else
 
-    //// this is already the innerst pointer
-    //return reg;
-    return 0;
+    // this is already the innerst pointer
+    return reg;
 }
 
 bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
@@ -560,22 +566,25 @@ bool Container::isInternalAtomic() const
     return modifier_ == CONST_REF || modifier_ == REF;
 }
 
+bool Container::isActuallyPtr() const
+{
+    return false;
+}
+
 me::Reg* Container::derefToInnerstPtr(me::Reg* reg) const
 {
-    // TODO
-    return 0;
+    return loadPtr(reg);
 }
 
 bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
 {
     // TODO
-
     return true;
 }
 
 const BaseType* Container::unnestPtr() const
 {
-    // TODO
+    swiftAssert(false, "unreachable code");
     return 0;
 }
 
