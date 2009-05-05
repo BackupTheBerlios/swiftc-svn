@@ -102,7 +102,6 @@ bool Call::emitCall()
 
     }
 
-    // TODO
     PlaceList argPlaceList = exprList_->getPlaceList();
 
     // now append ordinary in-params
@@ -130,6 +129,10 @@ bool Call::emitCall()
 
 void Call::emitStores()
 {
+    if (tupel_)
+    {
+        // TODO
+    }
 }
 
 me::Var* Call::getPrimaryPlace()

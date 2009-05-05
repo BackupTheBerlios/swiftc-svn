@@ -19,6 +19,7 @@
 
 #include "fe/functioncall.h"
 
+#include "fe/call.h"
 #include "fe/decl.h"
 #include "fe/error.h"
 #include "fe/exprlist.h"
@@ -298,134 +299,22 @@ bool MethodCall::analyze()
         ? exprList_->getTypeList() 
         : TypeList(); // use empty TypeList when there is no ExprList
 
-    PlaceList argPlaceList = exprList_
-        ? exprList_->getPlaceList()
-        : PlaceList(); // use empty PlaceList when there is no ExprList
-
     memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
 
     if (!memberFunction_)
         return false;
 
-    /*
-     * fill in_ and out_
-     */
+    Call call(exprList_, tupel_, memberFunction_->sig_);
 
-    //if ( !MemberFunctionCall::analyze(argTypeList) )
-        //return false;
+    if ( !call.emitCall() )
+        return false;
 
-    swiftAssert( memberFunction_->sig_->getNumIn() == argPlaceList.size(),
-            "sizes must match here" );
-
-    /*
-     * are there locations to put the results or do we have to create them? 
-     */
-
-    if (tupel_)
+    if (!tupel_)
     {
-        PlaceList resPlaceList = tupel_->getPlaceList();
-
-        swiftAssert( memberFunction_->sig_->getNumOut() == resPlaceList.size(),
-                "sizes must match here" );
-
-        // examine results
-        Tupel* tupelIter = tupel_;
-        for (size_t i = 0; i < memberFunction_->sig_->getNumOut(); ++i)
-        {
-            const Param* param = memberFunction_->sig_->getOutParam(i);
-
-            if ( param->getType()->isAtomic() )
-            {
-                // -> this one is an ordinary out-param
-                out_.push_back( (me::Var*) resPlaceList[i] );
-            }
-            else
-            {
-                // -> this one is a hidden in-param
-                swiftAssert( param->getType()->isInternalAtomic(), 
-                        "must actually be a pointer" );
-
-                in_.push_back( resPlaceList[i] );
-            }
-
-            tupelIter = tupelIter->next();
-        }
+        // set place and type as it is needed by the parent expr
+        place_ = call.getPrimaryPlace();
+        type_ = call.getPrimaryType();
     }
-    else
-    {
-        // no tupel given -> create results
-
-        for (size_t i = 0; i < memberFunction_->sig_->getNumOut(); ++i)
-        {
-            const Param* param = memberFunction_->sig_->getOutParam(i);
-
-            // create place to hold the result and init with undef
-#ifdef SWIFT_DEBUG
-            std::string resStr = std::string("res");
-            me::Reg* res = me::functab->newReg( param->getType()->toMeType(), &resStr );
-#else // SWIFT_DEBUG
-            me::Reg* res = me::functab->newReg( param->getType()->toMeType() );
-#endif // SWIFT_DEBUG
-
-            me::AssignInstr* ai = new me::AssignInstr(
-                    '=', res, me::functab->newUndef(res->type_) );
-            me::functab->appendInstr(ai);
-
-            if ( param->getType()->isAtomic() )
-            {
-                // -> this one is an ordinary out-param
-                out_.push_back(res);
-            }
-            else
-            {
-#ifdef SWIFT_DEBUG
-                std::string tmpStr = std::string("p_res");
-                me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
-#else // SWIFT_DEBUG
-                me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-
-                me::functab->appendInstr( new me::LoadPtr(tmp, res, 0) );
-
-                // -> this one is a hidden in-param
-                in_.push_back(tmp);
-            }
-        }
-
-        /*
-         * set place and type as it is needed by the parent expr
-         */
-        if ( out_.empty() )
-        {
-            place_ = 0;
-            // type_ is inited with 0
-        }
-        else
-        {
-            place_ = (me::Var*) out_[0];
-            type_ = memberFunction_->sig_->getOutParam(0)->getType()->varClone();
-        }
-    }
-
-    // now append ordinary in-params
-    for (size_t i = 0; i < argPlaceList.size(); ++i)
-        in_.push_back( argPlaceList[i] );
-
-    /*
-     * create actual call
-     */
-
-    me::CallInstr* call = new me::CallInstr( 
-            out_.size(), in_.size(), memberFunction_->sig_->getMeId(), false);
-            //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
-
-    for (size_t i = 0; i < in_.size(); ++i)
-        call->arg_[i] = me::Arg( in_[i] );
-
-    for (size_t i = 0; i < out_.size(); ++i)
-        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
-
-    me::functab->appendInstr(call); 
 
     return true;
 }
