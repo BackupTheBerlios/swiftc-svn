@@ -121,12 +121,6 @@ public:
 protected:
 
     /*
-     * further methods
-     */
-
-    bool analyze(Class* _class, const TypeList& argTypeList);
-
-    /*
      * data
      */
 
@@ -192,10 +186,10 @@ public:
 
     virtual bool analyze();
     virtual std::string toString() const;
-    //virtual bool specialAnalyze() = 0;
+    virtual bool handleReadOnlyBaseType() const = 0;
     virtual std::string concatentationStr() const = 0;
 
-private:
+protected:
 
     /*
      * data
@@ -223,7 +217,7 @@ public:
      * virtual methods
      */
 
-    //virtual bool specialAnalyze();
+    virtual bool handleReadOnlyBaseType() const;
     virtual std::string concatentationStr() const;
 
 protected:
@@ -253,8 +247,7 @@ public:
     /*
      * virtual methods
      */
-
-    //virtual bool specialAnalyze();
+    virtual bool handleReadOnlyBaseType() const;
     virtual std::string concatentationStr() const;
 };
 

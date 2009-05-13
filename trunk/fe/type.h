@@ -104,7 +104,7 @@ public:
 
     virtual bool isIndex() const;
 
-    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const = 0;
+    virtual me::Reg* derefToInnerstPtr(me::Var* var) const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
 
@@ -131,7 +131,7 @@ public:
 
 protected:
 
-    me::Reg* loadPtr(me::Reg* reg) const;
+    me::Reg* loadPtr(me::Var* var) const;
 
     /*
      * data
@@ -179,7 +179,7 @@ public:
     virtual bool isIndex() const;
     virtual bool isActuallyPtr() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
-    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
+    virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual const BaseType* unnestPtr() const;
 
     virtual bool hasAssignCreate(const TypeList& in, 
@@ -277,7 +277,7 @@ public:
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
-    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
+    virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
                                  int line) const;
@@ -307,7 +307,7 @@ public:
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
-    virtual me::Reg* derefToInnerstPtr(me::Reg* ptr) const;
+    virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
                                  int line) const;

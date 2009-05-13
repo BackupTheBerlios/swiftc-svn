@@ -300,7 +300,7 @@ struct MemberAccess : public Expr
     me::StructOffset* structOffset_;
     me::StructOffset* rootStructOffset_;
     me::MemVar* memPlace_;
-
+    bool storeNecessary_;
 
     /*
      * constructor and destructor
@@ -316,6 +316,12 @@ struct MemberAccess : public Expr
     virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    void emitStoreIfApplicable();
 };
 
 //------------------------------------------------------------------------------

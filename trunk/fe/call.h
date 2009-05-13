@@ -29,6 +29,7 @@
 namespace me {
     class Op;
     class Var;
+    class Reg;
 }
 
 namespace swift {
@@ -57,6 +58,8 @@ public:
 
     me::Var* getPrimaryPlace();
     Type* getPrimaryType();
+
+    void addSelf(me::Reg*);
 
 private:
 

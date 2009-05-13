@@ -12,7 +12,7 @@ class SDL
     SDL_Surface *surface
 
     # function to release/destroy our resources and restoring the old desktop 
-    routine Quit( int returnCode )
+    routine quit(int returnCode)
         # clean up the window */
         c_call SDL_Quit()
 
@@ -48,6 +48,7 @@ class SDL
             glLoadIdentity( )
 
             return( TRUE )
+        end
     end
 
     # general OpenGL initialization function 

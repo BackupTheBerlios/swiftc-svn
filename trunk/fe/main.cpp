@@ -86,7 +86,6 @@ int start(int argc, char** argv)
      */
     me::arch = new be::X64();
     BaseType::initTypeMap();
-    Container::initMeContainer();
     Literal::initTypeMap();
 
     syntaxtree = new SyntaxTree();
@@ -97,6 +96,8 @@ int start(int argc, char** argv)
 
     error = new ErrorHandler(cmdLineParser.filename_);
     me::functab = new me::FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
+
+    Container::initMeContainer(); // needs inited functab
 
     me::constpool = new me::ConstPool();
 
@@ -158,9 +159,9 @@ int start(int argc, char** argv)
      */
     me::functab->buildUpME();
 
-    me::functab->dumpSSA();
-    me::functab->dumpDot();
-    return 0;
+    //me::functab->dumpSSA();
+    //me::functab->dumpDot();
+    //return 0;
 
     /*
      * build up back-end and generate assembly code

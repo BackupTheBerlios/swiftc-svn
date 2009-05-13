@@ -654,6 +654,7 @@ MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     , expr_(expr)
     , id_(id)
     , right_(true)
+    , storeNecessary_(false)
 {}
 
 MemberAccess::~MemberAccess()
@@ -727,20 +728,31 @@ bool MemberAccess::analyze()
     else
         rootStructOffset_ = structOffset_; // we are left
 
-    // create new place for the right most access if applicable
-    if ( !isNeededAsLValue()  && right_)
-        place_ = type_->createVar();
-
-    //if ( right_ && !isNeededAsLValue() )
-        //genSSA();
     if ( right_ )
     {
+        /*
+         * create new place for the right most access 
+         */
+        if ( !isNeededAsLValue() && type_->isAtomic() )
+            place_ = type_->createVar();
+        else 
+        {
+#ifdef SWIFT_DEBUG
+            std::string tmpStr = std::string("p_") + *id_;
+            place_ = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+            place_ = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+        }
+
         // only atomic stores need special handling
         if ( !isNeededAsLValue() || !type_->isAtomic() )
         {
-        me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
-        me::functab->appendInstr(load); 
+            me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
+            me::functab->appendInstr(load); 
         }
+        else
+            storeNecessary_ = true;
     }
 
     return true;
@@ -748,8 +760,25 @@ bool MemberAccess::analyze()
 
 void MemberAccess::genSSA()
 {
-    me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
-    me::functab->appendInstr(load); 
+}
+
+void MemberAccess::emitStoreIfApplicable()
+{
+    MemberAccess* ma = dynamic_cast<MemberAccess*>(expr_);
+    if (ma)
+        ma->emitStoreIfApplicable();
+    else
+    {
+        // this is the root
+        if (!storeNecessary_)
+            return;
+
+        me::Store* store = new me::Store( 
+                memPlace_,              // memory variable
+                place_,                 // argument 
+                ma->rootStructOffset_); // offset 
+        me::functab->appendInstr(store);
+    }
 }
 
 //void MemberAccess::genStores()

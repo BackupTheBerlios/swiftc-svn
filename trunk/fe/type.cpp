@@ -31,6 +31,7 @@
 #include "fe/symtab.h"
 
 #include "me/arch.h"
+#include "me/functab.h"
 #include "me/ssa.h"
 #include "me/struct.h"
 
@@ -106,7 +107,7 @@ bool Type::isReadOnly() const
     return modifier_ == CONST || modifier_ == CONST_REF;
 }
 
-me::Reg* Type::loadPtr(me::Reg* reg) const
+me::Reg* Type::loadPtr(me::Var* var) const
 {
 #ifdef SWIFT_DEBUG
     std::string str = "tmp";
@@ -115,7 +116,7 @@ me::Reg* Type::loadPtr(me::Reg* reg) const
     me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, reg, 0);
+    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, var, 0);
     me::functab->appendInstr(loadPtr);
 
     return ptr;
@@ -271,15 +272,19 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
     return var;
 }
 
-me::Reg* BaseType::derefToInnerstPtr(me::Reg* reg) const
+me::Reg* BaseType::derefToInnerstPtr(me::Var* var) const
 {
     if ( isActuallyPtr() )
-        return reg; // reg is a hidden ptr
+    {
+        // reg is a hidden ptr
+        swiftAssert( typeid(*var) == typeid(me::Reg), "must be a Reg here" );
+        return (me::Reg*) var; 
+    }
 
     // load adress into pointer reg
     swiftAssert(!builtin_, "LoadPtr not allowed");
     
-    return loadPtr(reg);
+    return loadPtr(var);
 }
 
 const BaseType* BaseType::unnestPtr() const
@@ -471,11 +476,13 @@ bool Ptr::isActuallyPtr() const
     return true;
 }
 
-me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
+me::Reg* Ptr::derefToInnerstPtr(me::Var* var) const
 {
+    swiftAssert( typeid(*var) == typeid(me::Reg), "TODO: must be a Reg here" );
+
     if ( innerType_->isActuallyPtr() )
     {
-        swiftAssert(reg->type_ == me::Op::R_PTR, "must be a ptr");
+        swiftAssert(var->type_ == me::Op::R_PTR, "must be a ptr");
 
 #ifdef SWIFT_DEBUG
         std::string str = "tmp";
@@ -484,7 +491,7 @@ me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
         me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-        me::Deref* derefInstr = new me::Deref(derefed, reg);
+        me::Deref* derefInstr = new me::Deref(derefed, (me::Reg*) var);
         me::functab->appendInstr(derefInstr);
 
         return innerType_->derefToInnerstPtr(derefed);
@@ -492,7 +499,7 @@ me::Reg* Ptr::derefToInnerstPtr(me::Reg* reg) const
     // else
 
     // this is already the innerst pointer
-    return reg;
+    return (me::Reg*) var;
 }
 
 bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
@@ -571,9 +578,9 @@ bool Container::isActuallyPtr() const
     return false;
 }
 
-me::Reg* Container::derefToInnerstPtr(me::Reg* reg) const
+me::Reg* Container::derefToInnerstPtr(me::Var* var) const
 {
-    return loadPtr(reg);
+    return loadPtr(var);
 }
 
 bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
@@ -598,15 +605,19 @@ void Container::initMeContainer()
 
 #ifdef SWIFT_DEBUG
 
-    meContainer_ = new me::Struct("Container");
-    meContainer_->append( new me::AtomicMember(me::Op::R_PTR, "ptr") );
-    meContainer_->append( new me::AtomicMember(me::Op::R_UINT16, "size") ); 
+    meContainer_ = me::functab->newStruct("Container");
+    me::functab->enterStruct(meContainer_);
+    me::functab->appendMember( new me::AtomicMember(me::Op::R_PTR, "ptr") );
+    me::functab->appendMember( new me::AtomicMember(me::Op::R_UINT64, "size") ); 
+    me::functab->leaveStruct();
 
 #else // SWIFT_DEBUG
 
-    meContainer_ = new me::Struct();
-    meContainer_->append( new me::AtomicMember(me::Op::R_PTR) );
-    meContainer_->append( new me::AtomicMember(me::Op::R_UINT16) ); 
+    meContainer_ = me::functab->newStruct();
+    me::functab->enterStruct(meContainer_);
+    me::functab->appendMember( new me::AtomicMember(me::Op::R_PTR) );
+    me::functab->appendMember( new me::AtomicMember(me::Op::R_UINT64) ); 
+    me::functab->leaveStruct();
 
 #endif // SWIFT_DEBUG
 }

@@ -1,7 +1,28 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
 #include "fe/call.h"
 
+#include "fe/expr.h"
 #include "fe/exprlist.h"
 #include "fe/signature.h"
+#include "fe/syntaxtree.h"
 #include "fe/tupel.h"
 #include "fe/type.h"
 #include "fe/var.h"
@@ -99,10 +120,11 @@ bool Call::emitCall()
                 in_.push_back(tmp);
             }
         }
-
     }
 
-    PlaceList argPlaceList = exprList_->getPlaceList();
+    PlaceList argPlaceList = exprList_ 
+        ?  exprList_->getPlaceList() 
+        : PlaceList(); // use empty PlaceList when there is no ExprList
 
     // now append ordinary in-params
     for (size_t i = 0; i < argPlaceList.size(); ++i)
@@ -124,6 +146,11 @@ bool Call::emitCall()
 
     me::functab->appendInstr(call); 
 
+    /*
+     * create necessary stores
+     */
+    emitStores();
+
     return true;
 }
 
@@ -131,7 +158,18 @@ void Call::emitStores()
 {
     if (tupel_)
     {
-        // TODO
+        for (Tupel* iter = tupel_; iter != 0; iter = iter->next())
+        {
+            Expr* expr = dynamic_cast<Expr*>( iter->typeNode() );
+            if (!expr)
+                continue;
+
+            MemberAccess* ma = dynamic_cast<MemberAccess*>(expr);
+            if (!ma)
+                continue;
+
+            ma->emitStoreIfApplicable();
+        }
     }
 }
 
@@ -143,6 +181,11 @@ me::Var* Call::getPrimaryPlace()
 Type* Call::getPrimaryType()
 {
     return out_.empty() ? 0 : sig_->getOutParam(0)->getType()->varClone();
+}
+
+void Call::addSelf(me::Reg* self)
+{
+    in_.push_back(self);
 }
 
 } // namespace swift

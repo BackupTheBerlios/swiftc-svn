@@ -161,14 +161,6 @@ MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int 
     : FunctionCall(id, exprList, line)
 {}
 
-/*
- * further methods
- */
-
-//bool MemberFunctionCall::analyze(const TypeList& argTypeList)
-//{
-//}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -249,6 +241,12 @@ MethodCall::~MethodCall()
 
 bool MethodCall::analyze()
 {
+    TypeList argTypeList = exprList_ 
+        ? exprList_->getTypeList() 
+        : TypeList(); // use empty TypeList when there is no ExprList
+
+    me::Reg* self;
+
     if (expr_) 
     {
         if  ( !expr_->analyze() )
@@ -256,14 +254,15 @@ bool MethodCall::analyze()
 
         const BaseType* bt = expr_->getType()->unnestPtr();
 
-        if ( bt->isReadOnly() && typeid(*this) == typeid(WriterCall) )
-        {
-            errorf( line_, "'writer' used on read-only location '%s'",
-                    expr_->toString().c_str() );
+        if ( bt->isReadOnly() && !handleReadOnlyBaseType() )
             return false;
-        }
 
         class_ = bt->lookupClass();
+        swiftAssert( dynamic_cast<const me::Var*>(expr_->getPlace()),
+                "must be castable to Var" );
+
+        memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+        self = expr_->getType()->derefToInnerstPtr( (me::Var*) expr_->getPlace() );
     }
     else
     {
@@ -272,11 +271,8 @@ bool MethodCall::analyze()
         const std::type_info& currentMethodQualifier = 
             typeid( *symtab->currentMemberFunction() );
 
-        if ( currentMethodQualifier == typeid(Reader) && typeid(*this) == typeid(WriterCall) )
-        {
-            errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
+        if ( currentMethodQualifier == typeid(Reader) && !handleReadOnlyBaseType() )
             return false;
-        }
         else if ( currentMethodQualifier == typeid(Routine) ) 
         {
             errorf(line_, "routines do not have a 'self' argument");
@@ -287,6 +283,9 @@ bool MethodCall::analyze()
             errorf(line_, "operators do not have a 'self' argument");
             return false;
         }
+
+        memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+        self = ((Method*) memberFunction_)->self_;
     }
 
     if (!tupel_)
@@ -295,16 +294,11 @@ bool MethodCall::analyze()
             return false;
     }
 
-    TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList() 
-        : TypeList(); // use empty TypeList when there is no ExprList
-
-    memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
-
     if (!memberFunction_)
         return false;
 
     Call call(exprList_, tupel_, memberFunction_->sig_);
+    call.addSelf(self);
 
     if ( !call.emitCall() )
         return false;
@@ -338,15 +332,15 @@ ReaderCall::ReaderCall(Expr* expr, std::string* id, ExprList* exprList, int line
  * virtual methods
  */
 
+bool ReaderCall::handleReadOnlyBaseType() const
+{
+    return true;
+}
+
 std::string ReaderCall::concatentationStr() const
 {
     return ":";
 }
-
-//bool ReaderCall::specialAnalyze() const
-//{
-    //return true;
-//}
 
 //------------------------------------------------------------------------------
 
@@ -362,15 +356,21 @@ WriterCall::WriterCall(Expr* expr, std::string* id, ExprList* exprList, int line
  * virtual methods
  */
 
+bool WriterCall::handleReadOnlyBaseType() const
+{
+    if (expr_)
+        errorf( line_, "'writer' used on read-only location '%s'",
+                expr_->toString().c_str() );
+    else
+        errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
+
+    return false;
+}
+
 std::string WriterCall::concatentationStr() const
 {
     return ".";
 }
-
-//bool WriterCall::specialAnalyze() const
-//{
-    //return true;
-//}
 
 //------------------------------------------------------------------------------
 

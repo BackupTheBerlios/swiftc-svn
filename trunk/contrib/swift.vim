@@ -4,7 +4,7 @@ syn sync lines=250
 syn keyword swiftBoolean        true false
 syn keyword swiftConditional	if else elseif
 syn keyword swiftConstant	nil self
-syn keyword swiftLabel		case goto label 
+syn keyword swiftLabel		case goto label return break continue
 syn keyword swiftOperator	and div downto in mod not of or packed with
 syn keyword swiftRepeat	        for while do 
 syn keyword swiftStatement	routine function reader writer operator create assign scope

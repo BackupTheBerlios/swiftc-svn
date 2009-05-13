@@ -164,11 +164,6 @@ struct AssignStatement : public Statement
      * further methods
      */
 
-    void genMove();
-    //void genConstructorCall(Class* _class, Method* method);
-    //void genAssignCall(Class* _class, Method* method);
-    //void genSSA();
-
     bool analyzeFunctionCall();
     bool analyzeAssignCreate();
     bool constCheck();

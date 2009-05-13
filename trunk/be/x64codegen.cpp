@@ -169,7 +169,7 @@ void X64CodeGen::process()
     ofs_ << ".LFE" << counter << ":\n";
     ofs_ << "\t.size\t" << "swift_" << counter << ", .-" << "swift_" << counter << '\n';
 
-    counter++;
+    ++counter;
     ofs_ << '\n';
 }
 

@@ -411,7 +411,7 @@ void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
                 } // if comparison
             } // if AssignInstr
 
-            return ;
+            return;
         } // if var defined in previous instruction
     } // if bi->getOP() is a Var
     else 

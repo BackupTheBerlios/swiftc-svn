@@ -23,6 +23,7 @@
 #include <sstream>
 #include <typeinfo>
 
+#include "fe/call.h"
 #include "fe/class.h"
 #include "fe/decl.h"
 #include "fe/error.h"
@@ -92,7 +93,6 @@ DeclStatement::DeclStatement(Decl* decl, int line)
 {
     decl_->setAsStandAlone();
 }
-
 
 DeclStatement::~DeclStatement()
 {
@@ -242,18 +242,18 @@ bool AssignStatement::analyzeFunctionCall()
     if ( !((Expr*) fc)->analyze() )
         return false;
 
-    /*
-     * gen stores
-     * 
-     * TODO
-     */
-
     return true;
 }
 
 bool AssignStatement::analyzeAssignCreate()
 {
     const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
+
+    bool result = exprList_->analyze();
+    result &= tupel_->analyze();
+
+    if (!result)
+        return false;
 
     TypeList in = exprList_->getTypeList();
     TypeList out = tupel_->getTypeList();
@@ -263,11 +263,16 @@ bool AssignStatement::analyzeAssignCreate()
 
     if ( out[0]->isBuiltin() )
     {
-        genMove();
+        swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+                "must be a Var here" );
+
+        me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
+        me::Op*  rhsPlace = exprList_->getPlaceList()[0];
+
+        me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
+
         return true;
     }
-
-
 
     swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
@@ -278,18 +283,11 @@ bool AssignStatement::analyzeAssignCreate()
     if (!assignCreate)
         return false;
 
+    Call call(exprList_, tupel_, assignCreate->sig_);
+    //call.addSelf( TODO );
+    call.emitCall();
+
     return true;
-}
-
-void AssignStatement::genMove()
-{
-    swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
-            "must be a Var here" );
-
-    me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
-    me::Op*  rhsPlace = exprList_->getPlaceList()[0];
-
-    me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
 }
 
 /*

@@ -738,7 +738,7 @@ void Spiller::combine(BBNode* bbNode)
             vdu->defs_.append( DefUse(phiRes, iter, bbNode) );
             swiftAssert( phiRes->typeCheck(typeMask_), "wrong var type" );
             spills_[phiRes] = vdu;
-            spillMap_[phiRes] = phiRes; // phi-spills map to them selves
+            spillMap_[phiRes] = phiRes; // phi-spills map to themselves
 
             for (size_t i = 0; i < phi->arg_.size(); ++i)
             {
@@ -784,7 +784,7 @@ void Spiller::combine(BBNode* bbNode)
         VarVec reloads( inB.size() );
         VarVec::iterator end = std::set_difference( 
                 inB.begin(), inB.end(), outP.begin(), outP.end(), reloads.begin() );
-        reloads.erase( end, reloads.end() );// truncate properly
+        reloads.erase( end, reloads.end() ); // truncate properly
 
         // for each reload
         for (size_t i = 0;  i < reloads.size(); ++i)
