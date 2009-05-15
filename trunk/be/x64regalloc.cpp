@@ -643,6 +643,7 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
 
         case me::Op::R_INT64:
         case me::Op::R_UINT64:
+        case me::Op::R_PTR:
             switch (color)
             {
                 case RAX: oss << "rax"; break;

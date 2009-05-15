@@ -41,6 +41,7 @@ struct Spill;
 struct Reload;
 struct Load;
 struct Store;
+struct LoadPtr;
 
 } // namespace be
 

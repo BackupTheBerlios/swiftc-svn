@@ -220,6 +220,7 @@ int meType2beType(me::Op::Type type)
         case me::Op::R_UINT8:  return X64_UINT8;
         case me::Op::R_UINT16: return X64_UINT16;
         case me::Op::R_UINT32: return X64_UINT32;
+        case me::Op::R_PTR:
         case me::Op::R_UINT64: return X64_UINT64;
 
         case me::Op::R_USAT8:  return X64_USAT8;
@@ -575,6 +576,18 @@ int x64lex()
                 x64lval.store_ = store;
                 return X64_STORE;
             }
+            else if ( instrTypeId == typeid(me::LoadPtr) )
+            {
+                // TODO
+                location = END;
+                return X64_NOP;
+            }
+            else if ( instrTypeId == typeid(me::CallInstr) )
+            {
+                // TODO
+                location = END;
+                return X64_NOP;
+            }
             else
             {
                 swiftAssert( instrTypeId == typeid(me::NOP), "must be a NOP" );
@@ -617,7 +630,7 @@ int x64lex()
                 case me::Op::R_REAL32: return X64_REAL32;
                 case me::Op::R_REAL64: return X64_REAL64;
 
-                case me::Op::R_PTR:    return X64_PTR;
+                case me::Op::R_PTR:    return X64_UINT64;
                 case me::Op::R_STACK:  return X64_STACK;
 
                 case me::Op::S_INT8:   return X64_SIMD_INT8;

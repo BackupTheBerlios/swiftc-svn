@@ -284,7 +284,7 @@ bool AssignStatement::analyzeAssignCreate()
         return false;
 
     Call call(exprList_, tupel_, assignCreate->sig_);
-    //call.addSelf( TODO );
+    //call.addSelf( tupel_-> );
     call.emitCall();
 
     return true;
