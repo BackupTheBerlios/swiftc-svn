@@ -149,13 +149,6 @@ bool Call::emitCall()
     /*
      * create necessary stores
      */
-    emitStores();
-
-    return true;
-}
-
-void Call::emitStores()
-{
     if (tupel_)
     {
         for (Tupel* iter = tupel_; iter != 0; iter = iter->next())
@@ -171,6 +164,8 @@ void Call::emitStores()
             ma->emitStoreIfApplicable();
         }
     }
+
+    return true;
 }
 
 me::Var* Call::getPrimaryPlace()

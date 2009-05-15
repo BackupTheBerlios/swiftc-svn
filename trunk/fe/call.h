@@ -54,7 +54,6 @@ public:
      */
 
     bool emitCall();
-    void emitStores();
 
     me::Var* getPrimaryPlace();
     Type* getPrimaryType();

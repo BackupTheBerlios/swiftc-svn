@@ -51,6 +51,11 @@ me::Op::Type X64::getPreferedIndex() const
     return me::Op::R_UINT64;
 }
 
+int X64::getSimdWidth() const
+{
+    return 16;
+}
+
 int X64::getPtrSize() const
 {
     return 8;

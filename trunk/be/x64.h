@@ -44,6 +44,7 @@ public:
     virtual me::Op::Type getPreferedUInt() const;
     virtual me::Op::Type getPreferedReal() const;
     virtual me::Op::Type getPreferedIndex() const;
+    virtual int getSimdWidth() const;
     virtual int getPtrSize() const;
 
     /*

@@ -67,6 +67,7 @@ public:
     virtual Op::Type getPreferedUInt() const = 0;
     virtual Op::Type getPreferedReal() const = 0;
     virtual Op::Type getPreferedIndex() const = 0;
+    virtual int getSimdWidth() const = 0;
     virtual int getPtrSize() const = 0;
 
     /*

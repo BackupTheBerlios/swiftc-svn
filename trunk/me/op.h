@@ -57,37 +57,60 @@ struct Op
     /// Types of pseudo registers / constants
     enum Type
     {
-        R_BOOL      = 1 <<  0,
+        R_BOOL   = 1 <<  0,
 
         // integers
-        R_INT8      = 1 <<  1,
-        R_INT16     = 1 <<  2,
-        R_INT32     = 1 <<  3,
-        R_INT64     = 1 <<  4,
-        R_SAT8      = 1 <<  5,
-        R_SAT16     = 1 <<  6,
+        R_INT8   = 1 <<  1,
+        R_INT16  = 1 <<  2,
+        R_INT32  = 1 <<  3,
+        R_INT64  = 1 <<  4,
+        R_SAT8   = 1 <<  5,
+        R_SAT16  = 1 <<  6,
 
         // unsigned integers
-        R_UINT8     = 1 <<  7,
-        R_UINT16    = 1 <<  8,
-        R_UINT32    = 1 <<  9,
-        R_UINT64    = 1 << 10,
-        R_USAT8     = 1 << 11,
-        R_USAT16    = 1 << 12,
+        R_UINT8  = 1 <<  7,
+        R_UINT16 = 1 <<  8,
+        R_UINT32 = 1 <<  9,
+        R_UINT64 = 1 << 10,
+        R_USAT8  = 1 << 11,
+        R_USAT16 = 1 << 12,
 
         // floating points
-        R_REAL32    = 1 << 13,
-        R_REAL64    = 1 << 14,
+        R_REAL32 = 1 << 13,
+        R_REAL64 = 1 << 14,
 
         // pointers
-        R_PTR       = 1 << 15, ///< A pointer to an arbitrary location.
+        R_PTR    = 1 << 15, ///< A pointer to an arbitrary location.
 
         /** 
          * @brief A variable on the local stack frame. 
          *
          * This is not a spilled local. See \a Memory for details.
          */
-        R_STACK     = 1 << 16, 
+        R_STACK  = 1 << 16, 
+
+        /*
+         * simd types
+         */
+
+        S_INT8   = -R_INT8,
+        S_INT16  = -R_INT16,
+        S_INT32  = -R_INT32,
+        S_INT64  = -R_INT64,
+        S_SAT8   = -R_SAT8,
+        S_SAT16  = -R_SAT16,
+
+        // unsigned integers
+        S_UINT8  = -R_UINT8,
+        S_UINT16 = -R_UINT16,
+        S_UINT32 = -R_UINT32,
+        S_UINT64 = -R_UINT64,
+        S_USAT8  = -R_USAT8,
+        S_USAT16 = -R_USAT16,
+
+        // floating points
+        S_REAL32  = -R_REAL32,
+        S_REAL64  = -R_REAL64
     };
 
     Type type_;
@@ -96,10 +119,8 @@ struct Op
      * constructor and destructor
      */
 
-    Op(Type type)
-        : type_(type)
-    {}
-    virtual ~Op() {}
+    Op(Type type);
+    virtual ~Op();
 
     /*
      * further methods
@@ -126,6 +147,13 @@ struct Op
     virtual Reg* isSpilled(int typeMask);
 
     virtual std::string toString() const = 0;
+
+    /*
+     * static methods
+     */
+
+    static int sizeOf(Type type);
+    static Type toSimdType(Type type);
 };
 
 //------------------------------------------------------------------------------

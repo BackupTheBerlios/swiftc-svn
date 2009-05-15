@@ -781,28 +781,6 @@ void MemberAccess::emitStoreIfApplicable()
     }
 }
 
-//void MemberAccess::genStores()
-//{
-    //swiftAssert( dynamic_cast<me::Var*>(place_),
-            //"expr_->place must be a me::Reg*" );
-
-    //if ( typeid(*expr_) == typeid(MemberAccess))
-    //{
-        //MemberAccess* ma = (MemberAccess*) expr_;
-
-        //me::Store* store = new me::Store( 
-                //(me::Var*) ma->place_,              // memory variable
-                //(me::Var*) exprList_->expr_->place_,// argument 
-                //ma->rootStructOffset_);             // offset 
-        //me::functab->appendInstr(store);
-    //}
-    //else
-    //{
-        //me::functab->appendInstr( 
-                //new me::AssignInstr(kind_ , (me::Reg*) expr_->place_, exprList_->expr_->place_) );
-    //}
-//}
-
 std::string MemberAccess::toString() const
 {
     return expr_->toString() + "." + *id_;

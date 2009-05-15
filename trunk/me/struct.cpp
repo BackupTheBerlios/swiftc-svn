@@ -39,44 +39,6 @@ namespace {
 
 int namecounter = 0;
 
-int type2size(me::Op::Type type)
-{
-    switch (type)
-    {
-        case me::Op::R_BOOL: 
-        case me::Op::R_INT8:
-        case me::Op::R_UINT8:
-        case me::Op::R_SAT8:
-        case me::Op::R_USAT8:
-            return 1;
-
-        case me::Op::R_INT16:
-        case me::Op::R_UINT16:
-        case me::Op::R_SAT16:
-        case me::Op::R_USAT16:
-            return 2;
-
-        case me::Op::R_INT32:
-        case me::Op::R_UINT32:
-        case me::Op::R_REAL32:
-            return 4;
-
-        case me::Op::R_INT64:
-        case me::Op::R_UINT64:
-        case me::Op::R_REAL64:
-            return 8;
-
-        case me::Op::R_PTR:
-            return me::arch->getPtrSize();
-
-        case me::Op::R_STACK:
-            swiftAssert(false, "illegal switch-case-value");
-            return 0;
-    }
-
-    return 0;
-}
-
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -142,7 +104,7 @@ AtomicMember::AtomicMember(Op::Type type)
 
 void AtomicMember::analyze()
 {
-    size_ = type2size(type_);
+    size_ = Op::sizeOf(type_);
 }
 
 //------------------------------------------------------------------------------
@@ -170,7 +132,7 @@ ArrayMember::ArrayMember(Op::Type type, size_t num)
 
 void ArrayMember::analyze()
 {
-    size_ = type2size(type_) * num_;
+    size_ = Op::sizeOf(type_) * num_;
 }
     
 //------------------------------------------------------------------------------

@@ -55,8 +55,6 @@ public:
 
 protected:
 
-    bool analyzeExprList() const;
-
     std::string callToString() const;
 
     /*

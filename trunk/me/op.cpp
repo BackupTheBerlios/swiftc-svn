@@ -20,7 +20,7 @@
 #include "me/op.h"
 
 #include <iostream>
-#include <cmath> // for fmod
+#include <cmath>
 
 #include "utils/stringhelper.h"
 
@@ -29,6 +29,21 @@
 namespace me {
 
 //------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+Op::Op(Type type)
+    : type_(type)
+{}
+
+Op::~Op() 
+{}
+
+/*
+ * further methods
+ */
 
 bool Op::typeCheck(int typeMask) const
 {
@@ -63,6 +78,58 @@ Reg* Op::isSpilled()
 Reg* Op::isSpilled(int /*typeMask*/)
 {
     return 0;
+}
+
+/*
+ * static methods
+ */
+
+int Op::sizeOf(Type type)
+{
+    switch (type)
+    {
+        case R_BOOL: // TODO really?
+        case R_INT8:
+        case R_SAT8:
+        case R_UINT8:
+        case R_USAT8:
+            return 1;
+
+        case R_INT16:
+        case R_SAT16:
+        case R_UINT16:
+        case R_USAT16:
+            return 2;
+
+        case R_INT32:
+        case R_UINT32:
+        case R_REAL32:
+            return 4;
+
+        case R_INT64:
+        case R_UINT64:
+        case R_REAL64:
+            return 8;
+
+        case R_PTR:
+            return arch->getPtrSize();
+
+        case R_STACK:
+            swiftAssert(false, "unreachable code");
+            return -1;
+
+        default:
+            swiftAssert(type < 0, "must a an simd type here");
+            return sizeOf( (Type) -type );
+    }
+
+    swiftAssert(false, "unreachable code");
+    return -1;
+}
+
+Op::Type Op::toSimdType(Type type)
+{
+    return (Type) -type;
 }
 
 //------------------------------------------------------------------------------

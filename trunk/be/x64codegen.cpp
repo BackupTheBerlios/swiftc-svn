@@ -619,6 +619,23 @@ int x64lex()
 
                 case me::Op::R_PTR:    return X64_PTR;
                 case me::Op::R_STACK:  return X64_STACK;
+
+                case me::Op::S_INT8:   return X64_SIMD_INT8;
+                case me::Op::S_INT16:  return X64_SIMD_INT16;
+                case me::Op::S_INT32:  return X64_SIMD_INT32;
+                case me::Op::S_INT64:  return X64_SIMD_INT64;
+                case me::Op::S_SAT8:   return X64_SIMD_SAT8;
+                case me::Op::S_SAT16:  return X64_SIMD_SAT16;
+
+                case me::Op::S_UINT8:  return X64_SIMD_UINT8;
+                case me::Op::S_UINT16: return X64_SIMD_UINT16;
+                case me::Op::S_UINT32: return X64_SIMD_UINT32;
+                case me::Op::S_UINT64: return X64_SIMD_UINT64;
+                case me::Op::S_USAT8:  return X64_SIMD_USAT8;
+                case me::Op::S_USAT16: return X64_SIMD_USAT16;
+
+                case me::Op::S_REAL32: return X64_SIMD_REAL32;
+                case me::Op::S_REAL64: return X64_SIMD_REAL64;
             }
         }
         case OP1:

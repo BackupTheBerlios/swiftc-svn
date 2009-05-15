@@ -74,11 +74,6 @@ void FunctionCall::setTupel(Tupel* tupel)
     tupel_ = tupel;
 }
 
-bool FunctionCall::analyzeExprList() const
-{
-    return true;
-}
-
 std::string FunctionCall::callToString() const
 {
     return *id_ + '(' + (exprList_ ? exprList_->toString() : "") + ')';
@@ -111,27 +106,52 @@ CCall::~CCall()
 
 bool CCall::analyze()
 {
-    TypeList argTypeList;
-    PlaceList argPlaceList;
-    // TODO
-    //bool result = FunctionCall::analyze(argTypeList, argPlaceList);
-    bool result;
+    TypeList argTypeList = exprList_ 
+        ? exprList_->getTypeList() 
+        : TypeList(); // use empty TypeList when there is no ExprList
 
-    if (returnType_)
+    if ( !returnType_->validate() )
+        return false;
+
+    if (tupel_)
     {
-        result &= returnType_->validate();
-
-        if (result)
-        {
-            me::Var* var = returnType_->createVar();
-            place_ = var;
-            type_ = returnType_->varClone();
-        }
+        if ( exprList_ && !exprList_->analyze() )
+            return false;
     }
-    else
-        type_ = 0;
 
-    return result;
+    PlaceList argPlaceList = exprList_ 
+        ?  exprList_->getPlaceList() 
+        : PlaceList(); // use empty PlaceList when there is no ExprList
+
+    // append in-params
+    for (size_t i = 0; i < argPlaceList.size(); ++i)
+        in_.push_back( argPlaceList[i] );
+
+    if (tupel_)
+        out_.push_back( (me::Var*) tupel_->typeNode()->getPlace() );
+    else if (returnType_)
+        out_.push_back( returnType_->createVar() );
+
+    // set place and type as it is needed by the parent expr
+    place_ = out_.empty() ? 0 : out_[0];
+    type_  = returnType_;
+
+    /*
+     * create actual call
+     */
+
+    me::CallInstr* call = new me::CallInstr( 
+            out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
+
+    for (size_t i = 0; i < in_.size(); ++i)
+        call->arg_[i] = me::Arg( in_[i] );
+
+    for (size_t i = 0; i < out_.size(); ++i)
+        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
+
+    me::functab->appendInstr(call); 
+
+    return true;
 }
 
 std::string CCall::toString() const
@@ -186,14 +206,9 @@ RoutineCall::~RoutineCall()
 
 bool RoutineCall::analyze()
 {
-    TypeList argTypeList;
-    PlaceList argPlaceList;
-    // TODO
-    //bool result = FunctionCall::analyze(argTypeList, argPlaceList);
-    bool result;
-
-    if (!result)
-        return false;
+    TypeList argTypeList = exprList_ 
+        ? exprList_->getTypeList() 
+        : TypeList(); // use empty TypeList when there is no ExprList
 
     if (classId_)
     {
@@ -209,8 +224,29 @@ bool RoutineCall::analyze()
     else
         class_ = symtab->currentClass();
 
-    // TODO
-    //return MemberFunctionCall::analyze(argTypeList);
+    memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+
+    if (!tupel_)
+    {
+        if ( exprList_ && !exprList_->analyze() )
+            return false;
+    }
+
+    if (!memberFunction_)
+        return false;
+
+    Call call(exprList_, tupel_, memberFunction_->sig_);
+
+    if ( !call.emitCall() )
+        return false;
+
+    if (!tupel_)
+    {
+        // set place and type as it is needed by the parent expr
+        place_ = call.getPrimaryPlace();
+        type_ = call.getPrimaryType();
+    }
+
     return true;
 }
 
