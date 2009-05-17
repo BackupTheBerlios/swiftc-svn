@@ -488,7 +488,7 @@ postfix_expr
     /* 
         routines 
     */
-  /*|                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3,       0, currentLine); }*/
+    /*|                 ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $1, $3, currentLine); }*/
     |    DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall((std::string*) 0, $2, $4, currentLine); }
     | ID DOUBLE_COLON ID '(' expr_list ')'  { $$ = new RoutineCall(              $1, $3, $5, currentLine); }
 

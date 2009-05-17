@@ -984,11 +984,13 @@ std::string SetResults::toString() const
  * constructor
  */
 
-CallInstr::CallInstr(size_t numRes, 
-                     size_t numArgs, 
+CallInstr::CallInstr(size_t numLhs, 
+                     size_t numRhs, 
                      const std::string& symbol,
                      bool vararg /*= false*/)
-    : InstrBase(numRes, numArgs)
+    : InstrBase(numLhs, numRhs)
+    , numLhs_(numLhs)
+    , numRhs_(numRhs)
     , symbol_(symbol)
     , vararg_(vararg)
 {}
@@ -1005,9 +1007,9 @@ bool CallInstr::isVarArg() const
 std::string CallInstr::toString() const
 {
     std::ostringstream oss;
-    oss << commaList( res_.begin(), res_.end() )
+    oss << commaList( res_.begin(), res_.begin() + numLhs_ )
         << " = " << symbol_ << '(' 
-        << commaList( arg_.begin(), arg_.end() ) << ')';
+        << commaList( arg_.begin(), arg_.begin() + numRhs_ ) << ')';
 
     return oss.str();
 }

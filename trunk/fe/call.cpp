@@ -54,9 +54,6 @@ bool Call::emitCall()
     {
         PlaceList resPlaceList = tupel_->getPlaceList();
 
-        swiftAssert( sig_->getNumOut() == resPlaceList.size(),
-                "sizes must match here" );
-
         // examine results
         Tupel* tupelIter = tupel_;
         for (size_t i = 0; i < sig_->getNumOut(); ++i)
@@ -123,7 +120,7 @@ bool Call::emitCall()
     }
 
     PlaceList argPlaceList = exprList_ 
-        ?  exprList_->getPlaceList() 
+        ? exprList_->getPlaceList() 
         : PlaceList(); // use empty PlaceList when there is no ExprList
 
     // now append ordinary in-params
@@ -136,7 +133,6 @@ bool Call::emitCall()
 
     me::CallInstr* call = new me::CallInstr( 
             out_.size(), in_.size(), sig_->getMeId(), false);
-            //out_.size(), in_.size(), *id_, kind_ == 'v' ? true : false );
 
     for (size_t i = 0; i < in_.size(); ++i)
         call->arg_[i] = me::Arg( in_[i] );

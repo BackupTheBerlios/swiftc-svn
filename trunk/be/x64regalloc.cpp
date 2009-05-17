@@ -486,9 +486,9 @@ void X64RegAlloc::targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB)
     for (size_t i = 0; i < ci->res_.size(); ++i)
     {
         if ( ci->res_[i].var_->isReal() )
-            ci->arg_[0].constraint_ = xmmReturnRegs[xmmReturnCounter++];
+            ci->res_[i].constraint_ = xmmReturnRegs[xmmReturnCounter++];
         else
-            ci->arg_[0].constraint_ = intReturnRegs[intReturnCounter++];
+            ci->res_[i].constraint_ = intReturnRegs[intReturnCounter++];
     }
 
     bool fixPointers = false;

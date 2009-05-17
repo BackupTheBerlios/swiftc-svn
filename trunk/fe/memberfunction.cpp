@@ -81,6 +81,7 @@ bool MemberFunction::analyze()
     ++counter;
 
     sig_->setMeId( oss.str() );
+    std::cout << sig_ << ": " << sig_->getMeId() << std::endl;
     me::functab->insertFunction( new std::string(sig_->getMeId()), isTrivial() );
 
     bool result = true;
@@ -166,7 +167,7 @@ bool MemberFunction::analyze()
 bool MemberFunction::specialAnalyze()
 {
     /* 
-     * all other hidden args (non atomic return values) 
+     * append all other hidden args (non atomic return values) 
      * or append regular results if applicable
      */
     for (size_t i = 0; i < sig_->getNumOut(); ++i)

@@ -284,7 +284,9 @@ bool AssignStatement::analyzeAssignCreate()
         return false;
 
     Call call(exprList_, tupel_, assignCreate->sig_);
-    //call.addSelf( tupel_-> );
+    swiftAssert( typeid(*tupel_->typeNode()->getPlace()) == typeid(me::Reg),
+            "must be a Reg here" );
+    call.addSelf( (me::Reg*) tupel_->typeNode()->getPlace() );
     call.emitCall();
 
     return true;

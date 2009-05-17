@@ -683,12 +683,12 @@ struct CallInstr : public InstrBase
     /**
      * Creates a \a Function static call to a symbol.
      * 
-     * @param numRes The number of results.
-     * @param numArgs  The number of arguments.
+     * @param numLhs The number of results.
+     * @param numRhs  The number of arguments.
      * @param symbol The symbol used for calling
      */
-    CallInstr(size_t numRes, 
-              size_t numArgs, 
+    CallInstr(size_t numLhs, 
+              size_t numRhs, 
               const std::string& symbol, 
               bool vararg = false);
 
@@ -703,13 +703,13 @@ struct CallInstr : public InstrBase
      * data
      */
 
+    /// Since dummy values can be added the original number of results must be stored.
+    size_t numLhs_;
+    /// Since dummy values can be added the original number of arguments must be stored.
+    size_t numRhs_;
+
     std::string symbol_;
     bool vararg_;
-
-    /// Since dummy values can be added the original number of results must be stored.
-    size_t numRes_;
-    /// Since dummy values can be added the original number of arguments must be stored.
-    size_t numArg_;
 };
 
 } // namespace me

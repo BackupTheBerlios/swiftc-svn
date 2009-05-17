@@ -683,9 +683,6 @@ int x64lex()
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
 
-                if ( !currentInstr->res_.empty() && ((me::Reg*) currentInstr->res_[0].var_)->isSpilled() )
-                    return X64_REG_2;
-
                 if ( !currentInstr->res_.empty() && currentInstr->res_[0].var_->color_ == reg->color_ )
                     lastOp = X64_REG_1;
                 else
@@ -734,7 +731,7 @@ int x64lex()
                     * - op1 == reg, op1.color == op2.color_    -> reg2
                     * - op1 == reg1                            -> reg2
                     * - op1 == const                           -> reg2
-                    * else -> reg3
+                    * - else                                   -> reg3
                     */
                     if ( currentInstr->res_[0].var_->color_ == reg->color_ )
                         lastOp = X64_REG_1;
