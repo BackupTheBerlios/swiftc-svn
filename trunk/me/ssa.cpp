@@ -1007,9 +1007,17 @@ bool CallInstr::isVarArg() const
 std::string CallInstr::toString() const
 {
     std::ostringstream oss;
+
+    // use this for a more verbose output
+#if 0
+    oss << commaList( res_.begin(), res_.end() )
+        << " = " << symbol_ << '(' 
+        << commaList( arg_.begin(), arg_.end() ) << ')';
+#else
     oss << commaList( res_.begin(), res_.begin() + numLhs_ )
         << " = " << symbol_ << '(' 
         << commaList( arg_.begin(), arg_.begin() + numRhs_ ) << ')';
+#endif
 
     return oss.str();
 }
