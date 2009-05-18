@@ -87,11 +87,11 @@ void X64CodeGen::process()
 
     // TODO check whether these regs are used anyway
     // save registers which should be preserved during function calls
-    ofs_ << "\tpushq %rbx" << std::endl;
-    ofs_ << "\tpushq %r12" << std::endl;
-    ofs_ << "\tpushq %r13" << std::endl;
-    ofs_ << "\tpushq %r14" << std::endl;
-    ofs_ << "\tpushq %r15" << std::endl;
+    ofs_ << "\tpushq\t%rbx" << std::endl;
+    ofs_ << "\tpushq\t%r12" << std::endl;
+    ofs_ << "\tpushq\t%r13" << std::endl;
+    ofs_ << "\tpushq\t%r14" << std::endl;
+    ofs_ << "\tpushq\t%r15" << std::endl;
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -156,11 +156,11 @@ void X64CodeGen::process()
     }
 
     // restore saved registers
-    ofs_ << "\tpopq %r15" << std::endl;
-    ofs_ << "\tpopq %r14" << std::endl;
-    ofs_ << "\tpopq %r13" << std::endl;
-    ofs_ << "\tpopq %r12" << std::endl;
-    ofs_ << "\tpopq %rbx" << std::endl;
+    ofs_ << "\tpopq\t%r15" << std::endl;
+    ofs_ << "\tpopq\t%r14" << std::endl;
+    ofs_ << "\tpopq\t%r13" << std::endl;
+    ofs_ << "\tpopq\t%r12" << std::endl;
+    ofs_ << "\tpopq\t%rbx" << std::endl;
 
     // function epilogue
     ofs_ << "\tleave\n";
@@ -580,6 +580,7 @@ int x64lex()
             {
                 me::LoadPtr* loadPtr = (me::LoadPtr*) currentInstr;
                 x64lval.loadPtr_ = loadPtr;
+                location = OP1;
                 return X64_LOAD_PTR;
             }
             else if ( instrTypeId == typeid(me::CallInstr) )
@@ -684,7 +685,15 @@ int x64lex()
                 me::Reg* reg = (me::Reg*) op;
                 x64lval.reg_ = reg;
 
-                if ( !currentInstr->res_.empty() && currentInstr->res_[0].var_->color_ == reg->color_ )
+                if ( reg->isSpilled() )
+                    lastOp = X64_REG_1;
+                else if ( currentInstr->res_.empty() )
+                    lastOp = X64_REG_1;
+                else if ( typeid(*currentInstr->res_[0].var_) != typeid(me::Reg) )
+                    lastOp = X64_REG_1;
+                else if ( currentInstr->res_[0].var_->isSpilled() )
+                    lastOp = X64_REG_1;
+                else if ( currentInstr->res_[0].var_->color_ == reg->color_ )
                     lastOp = X64_REG_1;
                 else
                     lastOp = X64_REG_2;

@@ -276,8 +276,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
                 swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                         "must be a Const here");
 
-                bool res = arg2Reg(iter, 0);
-                swiftAssert( res, "must be true" );
+                swiftAssert( arg2Reg(iter, 0), "must be true" );
                 currentBB->value_->fixPointers();
             }
             else if (opType1 == me::InstrBase::VARIABLE)

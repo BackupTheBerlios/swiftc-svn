@@ -298,7 +298,7 @@ Reg::Reg(Type type, int varNr, const std::string* id /*= 0*/)
     : Var(type, varNr, id)
     , isSpilled_(false)
 {
-    swiftAssert(type_ != R_STACK, "Use a StackVar for this type");
+    swiftAssert(type_ != R_STACK, "Use a MemVar for this type");
 }
 
 Reg* Reg::clone(int varNr) const
@@ -318,6 +318,7 @@ Reg::Reg(Type type, int varNr)
 Reg* Reg::clone(int varNr) const
 {
     Reg* reg = new Reg(type_, varNr);
+    reg->isSpilled_ = isSpilled_;
     return reg;
 }
 

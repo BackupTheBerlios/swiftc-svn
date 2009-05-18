@@ -794,7 +794,7 @@ LoadPtr::~LoadPtr()
 
 int LoadPtr::getOffset() const
 {
-    return offset_->getOffset();
+    return offset_ ? offset_->getOffset() : 0;
 }
 
 Reg* LoadPtr::resReg()

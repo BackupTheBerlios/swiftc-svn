@@ -204,9 +204,9 @@ load_restore
     ;
 
 load_ptr
-    : X64_LOAD_PTR any_type X64_MEM_VAR
+    : X64_LOAD_PTR X64_MEM_VAR
     { 
-        /*EMIT("mov" << suffix($2) << '\t' << memvar2str($3, $1->getOffset()) << ", " << reg2str($1->resReg()))*/
+        EMIT("movq\t" << memvar2str($2, $1->getOffset()) << ", " << reg2str($1->resReg()))
     }
     ;
 

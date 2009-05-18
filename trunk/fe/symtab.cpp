@@ -148,8 +148,6 @@ void SymbolTable::insertInParam(InParam* param)
     }
 
     sig_->appendInParam(param);
-
-    return;
 }
 
 void SymbolTable::insertOutParam(OutParam* param)
