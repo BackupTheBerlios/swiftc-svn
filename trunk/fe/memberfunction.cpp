@@ -61,27 +61,6 @@ bool MemberFunction::analyze()
 {
     symtab->enterMemberFunction(this);
 
-    /*
-     * build a function name for the me::functab consisting of the class name,
-     * the method name and a counted number to prevent name clashes
-     * due to overloading
-     */
-    std::ostringstream oss;
-
-    oss << *symtab->class_->id_ << '$';
-
-    //if (methodQualifier_ == OPERATOR)
-        //oss << "operator";
-    //else
-        oss << *id_;
-
-    static int counter = 0;
-
-    oss << '$' << counter;
-    ++counter;
-
-    sig_->setMeId( oss.str() );
-    std::cout << sig_ << ": " << sig_->getMeId() << std::endl;
     me::functab->insertFunction( new std::string(sig_->getMeId()), isTrivial() );
 
     bool result = true;

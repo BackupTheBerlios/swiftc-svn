@@ -27,21 +27,22 @@ namespace me {
 struct StackLayout;
 
 // it is important to declare all union members of YYSTYPE here
-struct Op;
-struct Undef;
 struct Const;
 struct MemVar;
+struct Op;
 struct Reg;
+struct Undef;
 
-struct LabelInstr;
-struct GotoInstr;
-struct BranchInstr;
 struct AssignInstr;
-struct Spill;
-struct Reload;
+struct BranchInstr;
+struct CallInstr;
+struct GotoInstr;
+struct LabelInstr;
 struct Load;
-struct Store;
 struct LoadPtr;
+struct Reload;
+struct Spill;
+struct Store;
 
 } // namespace be
 

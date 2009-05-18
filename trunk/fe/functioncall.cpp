@@ -225,7 +225,6 @@ bool RoutineCall::analyze()
         class_ = symtab->currentClass();
 
     memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
-    std::cout << memberFunction_->sig_ << ": " << memberFunction_->sig_->getMeId() << std::endl;
 
     if (!tupel_)
     {

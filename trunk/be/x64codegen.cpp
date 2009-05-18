@@ -578,15 +578,16 @@ int x64lex()
             }
             else if ( instrTypeId == typeid(me::LoadPtr) )
             {
-                // TODO
-                location = END;
-                return X64_NOP;
+                me::LoadPtr* loadPtr = (me::LoadPtr*) currentInstr;
+                x64lval.loadPtr_ = loadPtr;
+                return X64_LOAD_PTR;
             }
             else if ( instrTypeId == typeid(me::CallInstr) )
             {
-                // TODO
+                me::CallInstr* call = (me::CallInstr*) currentInstr;
+                x64lval.call_ = call;
                 location = END;
-                return X64_NOP;
+                return X64_CALL;
             }
             else
             {

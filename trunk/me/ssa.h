@@ -561,7 +561,7 @@ struct LoadPtr : public InstrBase
      */
 
     int getOffset() const;
-    Reg* result();
+    Reg* resReg();
     std::string toString() const;
 };
 

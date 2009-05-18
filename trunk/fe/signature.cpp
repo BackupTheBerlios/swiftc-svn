@@ -217,7 +217,6 @@ std::string Signature::getMeId() const
 
 void Signature::setMeId(const std::string& meId)
 {
-    std::cout << "fjdkjdfkjfdk" << std::endl;
     meId_ = meId;
 }
 

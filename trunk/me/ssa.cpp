@@ -797,7 +797,7 @@ int LoadPtr::getOffset() const
     return offset_->getOffset();
 }
 
-Reg* LoadPtr::result()
+Reg* LoadPtr::resReg()
 {
     swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
     return (Reg*) res_[0].var_;

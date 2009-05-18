@@ -40,20 +40,21 @@ using namespace be;
 {
     int int_;
 
-    me::Undef* undef_;
-    me::Const* const_;
+    me::Const*  const_;
     me::MemVar* memVar_;
-    me::Reg*   reg_;
+    me::Reg*    reg_;
+    me::Undef*  undef_;
 
-    me::LabelInstr*  label_;
-    me::GotoInstr*   goto_;
-    me::BranchInstr* branch_;
     me::AssignInstr* assign_;
-    me::Spill*       spill_;
-    me::Reload*      reload_;
+    me::BranchInstr* branch_;
+    me::CallInstr*   call_;
+    me::GotoInstr*   goto_;
+    me::LabelInstr*  label_;
+    me::LoadPtr*     loadPtr_;
     me::Load*        load_;
+    me::Reload*      reload_;
+    me::Spill*       spill_;
     me::Store*       store_;
-    me::Load*        loadPtr_;
 }
 
 /*
@@ -61,15 +62,16 @@ using namespace be;
 */
 
 /* instructions */
-%token <label_>  X64_LABEL
-%token <goto_>   X64_GOTO
-%token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
-%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
-%token <spill_>  X64_SPILL
-%token <reload_> X64_RELOAD
-%token <load_>   X64_LOAD
+%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
+%token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
+%token <call_>   X64_CALL
+%token <goto_>   X64_GOTO
+%token <label_>  X64_LABEL
 %token <loadPtr_> X64_LOAD_PTR
+%token <load_>   X64_LOAD
+%token <reload_> X64_RELOAD
+%token <spill_>  X64_SPILL
 %token <store_>  X64_STORE
 %token X64_NOP
 
@@ -112,6 +114,7 @@ instruction
     | spill_reload
     | load_restore
     | load_ptr
+    | call
     ;
 
 jump_instruction
@@ -172,6 +175,12 @@ jump_instruction
     }
     ;
 
+call
+    : X64_CALL
+    {
+        EMIT("call\t" << $1->symbol_)
+    }
+
 spill_reload
     : X64_SPILL any_type X64_REG_1
     {
@@ -197,7 +206,7 @@ load_restore
 load_ptr
     : X64_LOAD_PTR any_type X64_MEM_VAR
     { 
-        EMIT("mov" << suffix($2) << '\t' << memvar2str($3, $1->getOffset()) << ", " << reg2str($1->resReg())) 
+        /*EMIT("mov" << suffix($2) << '\t' << memvar2str($3, $1->getOffset()) << ", " << reg2str($1->resReg()))*/
     }
     ;
 

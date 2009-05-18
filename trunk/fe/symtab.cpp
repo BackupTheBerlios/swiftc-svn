@@ -124,6 +124,17 @@ void SymbolTable::insert(MemberFunction* memberFunction)
 
     // set current signature scope
     sig_ = memberFunction_->sig_;
+
+    /*
+     * build a function name for the me::functab consisting of the class name,
+     * the method name and a counted number to prevent name clashes
+     * due to overloading
+     */
+    static int counter = 0;
+    std::ostringstream oss;
+
+    oss << *class_->id_ << '$' << *memberFunction->id_ << '$' << counter++;
+    sig_->setMeId( oss.str() );
 }
 
 void SymbolTable::insertInParam(InParam* param)
