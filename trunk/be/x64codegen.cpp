@@ -239,6 +239,11 @@ int meType2beType(me::Op::Type type)
 
 void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
 {
+    if ( me::Op::isReal(type) )
+        type = me::Op::R_REAL64;
+    else
+        type = me::Op::R_INT64;
+
     me::Reg op1(type, -1);
     me::Reg op2(type, -1);
     op1.color_ = r1;

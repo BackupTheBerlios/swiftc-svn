@@ -319,14 +319,16 @@ bool Id::analyze()
         errorf(line_, "'%s' was not declared in this scope", id_->c_str());
         return false;
     }
-    // else
 
-    type_  = var_->getType()->clone();
+    type_ = var_->getType()->clone();
 
     if ( type_->isInternalAtomic() )
         place_ = var_->getMeVar();
     else
     {
+        // mark type as reference
+        type_->modifier() = REF;
+
 #ifdef SWIFT_DEBUG
         std::string tmpStr = std::string("p_") + var_->getMeVar()->id_;
         me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);

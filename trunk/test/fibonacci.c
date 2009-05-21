@@ -8,3 +8,8 @@ int main(int argc, char** argv)
     printf( "%i\n", swift_1(atoi(argv[1])) );
     return 0;
 }
+
+void hello_world(int n)
+{
+    printf("hello world, result: %i\n", n);
+}

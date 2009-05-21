@@ -22,6 +22,8 @@ class Fibbonacci
 
             counter = counter - 1
         end
+
+        c_call hello_world(result)
     end
 
 end

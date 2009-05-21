@@ -6,10 +6,14 @@
 #define TRUE  1
 #define FALSE 0
 
+class SDL_Surface
+    int dummy_
+end
+
 class SDL
 
     # This is our SDL surface 
-    SDL_Surface *surface
+    ptr{SDL_Surface} surface
 
     # function to release/destroy our resources and restoring the old desktop 
     routine quit(int returnCode)

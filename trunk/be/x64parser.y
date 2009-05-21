@@ -129,7 +129,7 @@ jump_instruction
         else
             EMIT("jmp\t" << $1->falseLabel()->asmName())
     }
-    | X64_BRANCH bool_type X64_REG_2 /* test r1, r1; jz falseLabel; jmp trueLabel */
+    | X64_BRANCH bool_type X64_REG_1 /* test r1, r1; jz falseLabel; jmp trueLabel */
     { 
         if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
         {
@@ -148,7 +148,7 @@ jump_instruction
         if ($3->value_.bool_) 
             EMIT("jmp\t" << $1->trueLabel()->asmName())
     }
-    | X64_BRANCH_TRUE bool_type X64_REG_2 
+    | X64_BRANCH_TRUE bool_type X64_REG_1 
     { 
         if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
         {
@@ -163,7 +163,7 @@ jump_instruction
         if (!$3->value_.bool_) 
             EMIT("jmp\t" << $1->falseLabel()->asmName())
     }
-    | X64_BRANCH_FALSE bool_type X64_REG_2 
+    | X64_BRANCH_FALSE bool_type X64_REG_1 
     { 
         if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
         {
@@ -206,7 +206,7 @@ load_restore
 load_ptr
     : X64_LOAD_PTR X64_MEM_VAR
     { 
-        EMIT("movq\t" << memvar2str($2, $1->getOffset()) << ", " << reg2str($1->resReg()))
+        EMIT("leaq\t" << memvar2str($2, $1->getOffset()) << ", " << reg2str($1->resReg()))
     }
     ;
 

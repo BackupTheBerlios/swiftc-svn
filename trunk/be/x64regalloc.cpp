@@ -455,6 +455,7 @@ void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
             case me::Op::R_UINT64:
             case me::Op::R_USAT8:
             case me::Op::R_USAT16:
+            case me::Op::R_PTR:
                 sp->res_[i].constraint_ = intRegs[intCounter++];
                 break;
 

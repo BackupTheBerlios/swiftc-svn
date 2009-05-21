@@ -110,14 +110,11 @@ bool CCall::analyze()
         ? exprList_->getTypeList() 
         : TypeList(); // use empty TypeList when there is no ExprList
 
-    if ( !returnType_->validate() )
+    if ( returnType_ && !returnType_->validate() )
         return false;
 
-    if (tupel_)
-    {
-        if ( exprList_ && !exprList_->analyze() )
-            return false;
-    }
+    if ( exprList_ && !exprList_->analyze() )
+        return false;
 
     PlaceList argPlaceList = exprList_ 
         ?  exprList_->getPlaceList() 

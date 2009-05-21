@@ -50,7 +50,7 @@ int swift::getKeyLine()
 
 %}
 
-ID          [a-zA-Z][a-zA-Z0-9_]*
+ID          [_a-zA-Z][a-zA-Z0-9_]*
 DIGIT       [0-9]
 
 FLOAT       {DIGIT}+\.{DIGIT}*|{DIGIT}*\.{DIGIT}+
