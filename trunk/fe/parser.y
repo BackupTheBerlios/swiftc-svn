@@ -461,11 +461,11 @@ mul_expr
 
 un_expr
     : postfix_expr          { $$ = $1; }
-    | '^' un_expr           { $$ = new UnExpr('^', $2, currentLine); }
-    /*| '&' un_expr           { $$ = new UnExpr('&', $2, currentLine); }*/
-    | '-' un_expr           { $$ = new UnExpr('-', $2, currentLine); }
-    | '+' un_expr           { $$ = new UnExpr('+', $2, currentLine); }
-    | '!' un_expr           { $$ = new UnExpr('!', $2, currentLine); }
+    | '^' un_expr           { $$ = new UnExpr(   '^', $2, currentLine); }
+    | '&' un_expr           { $$ = new UnExpr(   '&', $2, currentLine); }
+    | '-' un_expr           { $$ = new UnExpr(   '-', $2, currentLine); }
+    | '+' un_expr           { $$ = new UnExpr(   '+', $2, currentLine); }
+    | NOT_OP un_expr        { $$ = new UnExpr(NOT_OP, $2, currentLine); }
     ;
 
 postfix_expr
@@ -480,10 +480,10 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2,  C_CALL, $3, $5, currentLine); }
-    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall(       $2, VC_CALL, $3, $5, currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0,  C_CALL, $2, $4, currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall((Type*) 0, VC_CALL, $2, $4, currentLine); }
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall($2,  C_CALL, $3, $5, currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall($2, VC_CALL, $3, $5, currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall( 0,  C_CALL, $2, $4, currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall( 0, VC_CALL, $2, $4, currentLine); }
 
     /* 
         routines 

@@ -307,8 +307,8 @@ MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
     {
         if (line)
         {
-            errorf(line, "there is no %s '%s(%s)' defined in class '%s'",
-                    memberFunction->qualifierString().c_str(), 
+            errorf(line, "there is no member function '%s(%s)' defined in class '%s'",
+                    //memberFunction->qualifierString().c_str(), 
                     id->c_str(), 
                     in.toString().c_str(), 
                     _class->id_->c_str());

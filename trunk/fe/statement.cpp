@@ -105,6 +105,9 @@ DeclStatement::~DeclStatement()
 
 bool DeclStatement::analyze()
 {
+    if ( !decl_->analyze() )
+        return false;
+
     const BaseType* bt = dynamic_cast<const BaseType*>( decl_->getType() );
     if (bt)
     {
@@ -118,9 +121,6 @@ bool DeclStatement::analyze()
             return false;
         }
     }
-
-    if ( !decl_->analyze() )
-        return false;
 
     return true;
 }
@@ -232,9 +232,11 @@ bool AssignStatement::analyzeFunctionCall()
 
     bool result = fc->analyzeArgs();
     result &= tupel_->analyze();
-    result &= constCheck();
 
     if (!result)
+        return false;
+
+    if ( !constCheck() )
         return false;
 
     fc->setTupel(tupel_);
@@ -353,12 +355,15 @@ bool WhileStatement::analyze()
         }
     }
 
-    // create labels
-    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* trueLabelNode;
+    me::InstrNode* nextLabelNode;
 
     if (result)
     {
+        // create labels
+        trueLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+        nextLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+
         // generate instructions as you can see above if types are correct
         me::functab->appendInstr( new me::BranchInstr(expr_->getPlace(), trueLabelNode, nextLabelNode) );
         me::functab->appendInstrNode(trueLabelNode);
@@ -371,9 +376,12 @@ bool WhileStatement::analyze()
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
         result &= iter->analyze();
 
-    // generate instructions as you can see above
-    me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
-    me::functab->appendInstrNode(nextLabelNode);
+    if (result)
+    {
+        // generate instructions as you can see above
+        me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
+        me::functab->appendInstrNode(nextLabelNode);
+    }
 
     // return to parent scope
     symtab->leaveScope();
@@ -455,9 +463,15 @@ bool IfElStatement::analyze()
         }
     }
 
-    // create labels
-    me::InstrNode* trueLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
-    me::InstrNode* nextLabelNode  = new me::InstrList::Node( new me::LabelInstr() );
+    me::InstrNode* trueLabelNode;
+    me::InstrNode* nextLabelNode;
+
+    if (result)
+    {
+        // create labels
+        trueLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+        nextLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+    }
 
     if (!elBranch_)
     {
@@ -509,10 +523,12 @@ bool IfElStatement::analyze()
          *     //...
          */
 
-        me::InstrNode* falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+        me::InstrNode* falseLabelNode;
 
         if (result)
         {
+            falseLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+
             // generate me::BranchInstr if types are correct
             me::functab->appendInstr( new me::BranchInstr(expr_->getPlace(), trueLabelNode, falseLabelNode) );
             me::functab->appendInstrNode(trueLabelNode);

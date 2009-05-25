@@ -188,11 +188,6 @@ struct Id : public Expr
  */
 struct UnExpr : public Expr
 {
-    enum
-    {
-        NOT
-    };
-
     union
     {
         int kind_;

@@ -272,6 +272,62 @@ std::string mul2str(int type)
     return "error";
 }
 
+// TODO not is not correct
+std::string op_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false*/)
+{
+    std::ostringstream oss;
+    oss << '$';
+    int kind = ai->kind_;
+
+    me::Const::Value box;
+
+    /*
+     * signed integers
+     */
+
+    switch (cst->type_)
+    {
+
+#define OP_CONST_CASE(type, member, box_member)\
+    case me::Op::type :\
+        switch (kind)\
+        {\
+            case me::AssignInstr::UNARY_MINUS: box.member = -cst->value_.member; break;\
+            case me::AssignInstr::NOT:         box.member = !cst->value_.member; break;\
+            default:\
+                swiftAssert(false, "unreachable code"); \
+        }\
+        if (mem)\
+        {\
+            me::Const newCst(cst->type_);\
+            newCst.value_ = box;\
+            return mcst2str(&newCst);\
+        }\
+        oss << box.box_member;\
+        return oss.str();\
+
+        OP_CONST_CASE(R_INT8,  int8_,  int32_)
+        OP_CONST_CASE(R_INT16, int16_, int16_)
+        OP_CONST_CASE(R_INT32, int32_, int32_)
+        OP_CONST_CASE(R_INT64, int64_, int64_)
+
+        OP_CONST_CASE(R_UINT8,  uint8_ , uint32_) 
+        OP_CONST_CASE(R_UINT16, uint16_, uint16_)
+        OP_CONST_CASE(R_UINT32, uint32_, uint32_)
+        OP_CONST_CASE(R_UINT64, uint64_, uint64_)
+
+        OP_CONST_CASE(R_REAL32, real32_, uint32_)
+        OP_CONST_CASE(R_REAL64, real64_, uint64_)
+
+#undef CONST_OP_CONST_CASE
+
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return "error";
+}
+
 std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem /*= false*/)
 {
     swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );

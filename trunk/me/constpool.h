@@ -56,7 +56,6 @@ public:
     UInt32Map uint32_;
     UInt64Map uint64_;
 
-
     ConstPool();
 
     void insert(bool value);

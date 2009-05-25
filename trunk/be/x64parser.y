@@ -64,6 +64,7 @@ using namespace be;
 /* instructions */
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
 %token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
+%token <assign_> X64_UNARY_MINUS X64_NOT
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
 %token <goto_>   X64_GOTO
@@ -77,10 +78,9 @@ using namespace be;
 
 /* types */
 %token X64_BOOL 
-%token  X64_INT8  X64_INT16  X64_INT32  X64_INT64   X64_SAT8  X64_SAT16
+%token  X64_INT8  X64_INT16  X64_INT32  X64_INT64  X64_SAT8  X64_SAT16
 %token X64_UINT8 X64_UINT16 X64_UINT32 X64_UINT64 X64_USAT8 X64_USAT16 
 %token X64_REAL32 X64_REAL64
-/*%token X64_PTR X64_STACK*/
 %token X64_STACK
 
 /* simd types */
@@ -215,6 +215,7 @@ assign_instruction
     | int_add
     | int_mul
     | int_sub
+    | int_not
     | sint_no8_div
     | uint_no8_div
     | int_cmp
@@ -223,6 +224,25 @@ assign_instruction
     | real_sub
     | real_div
     | real_cmp
+    ;
+
+int_not
+    : X64_NOT int_or_bool_type X64_UNDEF 
+    { 
+        /* emit no code: not X64_UNDEF, %r1 */ 
+    }
+    | X64_NOT int_or_bool_type X64_CONST 
+    { 
+        EMIT("not" << suffix($2) << '\t' << cst2str($3) << ", " << reg2str($1->resReg())) 
+    }
+    | X64_NOT int_or_bool_type X64_REG_1 
+    { 
+        EMIT("not" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
+    }
+    | X64_NOT int_or_bool_type X64_REG_2 
+    { 
+        EMIT("not" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
+    }
     ;
 
 int_mov

@@ -544,7 +544,6 @@ int x64lex()
                 {
                     case '=': return X64_MOV;
                     case '+': return X64_ADD;
-                    case '-': return X64_SUB;
                     case '*': return X64_MUL;
                     case '/': return X64_DIV;
                     case me::AssignInstr::EQ: return X64_EQ;
@@ -553,6 +552,16 @@ int x64lex()
                     case '>': return X64_G;
                     case me::AssignInstr::LE: return X64_LE;
                     case me::AssignInstr::GE: return X64_GE;
+                    
+                    case '-': 
+                        if ( ai->arg_.size() == 2 )
+                            return X64_SUB;
+                        else
+                        {
+                            swiftAssert( ai->arg_.size() == 1, "must be unary" );
+                            return X64_UNARY_MINUS;
+                        }
+
                     default:
                         swiftAssert(false, "unreachable code");
                 }

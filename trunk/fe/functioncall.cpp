@@ -131,7 +131,7 @@ bool CCall::analyze()
 
     // set place and type as it is needed by the parent expr
     place_ = out_.empty() ? 0 : out_[0];
-    type_  = returnType_;
+    type_  = returnType_ ? returnType_->clone() : 0;
 
     /*
      * create actual call
