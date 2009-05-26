@@ -712,6 +712,17 @@ struct CallInstr : public InstrBase
     bool vararg_;
 };
 
+//------------------------------------------------------------------------------
+
+struct Malloc : public CallInstr
+{
+    /*
+     * constructor
+     */
+
+    Malloc(size_t size);
+};
+
 } // namespace me
 
 #endif // ME_SSA_H

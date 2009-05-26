@@ -231,7 +231,7 @@ void X64RegAlloc::registerTargeting()
             targetAssignInstr(iter, currentBB);
         else if ( typeid(*instr) == typeid(me::Store) )
             targetStore(iter, currentBB);
-        else if ( typeid(*instr) == typeid(me::CallInstr) )
+        else if ( dynamic_cast<me::CallInstr*>(instr) )
             targetCallInstr(iter, currentBB);
     } // for each instruction
 }

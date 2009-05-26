@@ -683,49 +683,70 @@ bool MemberAccess::analyze()
     if ( expr_ && !expr_->analyze() )
         return false;
 
+    Class* _class;
+
     // pass-through places
-    if (!ma)
+    if (!expr_)
     {
-        if (expr_)
+        MemberFunction* mf = symtab->currentMemberFunction();
+        Method* method = dynamic_cast<Method*>(mf);
+
+        if (!method)
         {
-            swiftAssert(expr_->getPlace()->type_ == me::Op::R_STACK, "must be a stack location")
-            memPlace_ = (me::MemVar*) expr_->getPlace();
+            errorf( line_, "%ss do not have a 'self' argument", 
+                    mf->qualifierString().c_str() );
+            return false;
         }
-        else
-        {
-            // TODO
-            memPlace_ = 0;
-        }
+
+        rootVar_ = method->self_;
+        place_   = method->self_;
+        type_ = method->createSelfType();
+        _class = symtab->currentClass();
     }
     else
-        memPlace_ = ma->memPlace_; // pass-through
+    {
+        if (!ma)
+        {
+            const Type* exprType = expr_->getType();
+            me::Var* exprPlace = dynamic_cast<me::Var*>( expr_->getPlace() );
+            if (!exprPlace)
+            {
+                errorf(line_, "trying to access a literal");
+                return false;
+            }
 
-    place_ = expr_->getPlace(); // pass-through
+            if ( exprType->isActuallyPtr() )
+                rootVar_ = exprType->derefToInnerstPtr(exprPlace);
+            else
+                rootVar_ = exprPlace;
+
+        }
+        else
+            rootVar_ = ma->rootVar_; // pass-through
+
+        place_ = expr_->getPlace(); // pass-through
+        _class = expr_->getType()->unnestPtr()->lookupClass();
+    }
 
     /*
-     * In a chain of member accesses there are two special accesses:
+     * In a chain of member accesses there are three special accesses:
      * - the left most one -> ma = 0
      * - the right most one -> right = true
+     * - one access is an indirect access
      */
 
-    swiftAssert( typeid(*expr_->getType()) == typeid(BaseType), "TODO" );
-    const BaseType* exprBT = (const BaseType*) expr_->getType();
-
     // get type and member var
-    const std::string* typeId = exprBT->getId();
-    Class* _class = exprBT->lookupClass();
     Class::MemberVarMap::const_iterator iter = _class->memberVars_.find(id_);
 
     if ( iter == _class->memberVars_.end() )
     {
         errorf( line_, "class '%s' does not have a member named %s", 
-                typeId->c_str(), id_->c_str() );
+                _class->id_->c_str(), id_->c_str() );
 
         return false;
     }
 
     MemberVar* member = iter->second;
-    // TODO
     type_ = member->type_->clone();
 
     structOffset_ = new me::StructOffset(_class->meStruct_, member->meMember_);
@@ -734,6 +755,7 @@ bool MemberAccess::analyze()
     {
         ma->structOffset_->next_ = structOffset_;
         rootStructOffset_ = ma->rootStructOffset_;
+        // TODO new chain
     }
     else
         rootStructOffset_ = structOffset_; // we are left
@@ -758,7 +780,7 @@ bool MemberAccess::analyze()
         // only atomic stores need special handling
         if ( !isNeededAsLValue() || !type_->isAtomic() )
         {
-            me::Load* load = new me::Load( (me::Var*) place_, memPlace_, rootStructOffset_ );
+            me::Load* load = new me::Load( (me::Var*) place_, rootVar_, rootStructOffset_ );
             me::functab->appendInstr(load); 
         }
         else
@@ -784,7 +806,7 @@ void MemberAccess::emitStoreIfApplicable()
             return;
 
         me::Store* store = new me::Store( 
-                memPlace_,              // memory variable
+                rootVar_,              // memory variable
                 place_,                 // argument 
                 ma->rootStructOffset_); // offset 
         me::functab->appendInstr(store);

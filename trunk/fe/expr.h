@@ -287,14 +287,27 @@ private:
 
 //------------------------------------------------------------------------------
 
+/**
+ * @brief Represents an access of a class member.
+ *
+ * A chain of member accesses can be calcuated in one offset
+ * if all accesses are compile time known offsets. Otherwise the accesses must
+ * be split. \a rootVar_ holds the place of the left most place of each chain
+ * which holds the root of each access.
+ */
 struct MemberAccess : public Expr
 {
     Expr* expr_;
     std::string* id_;
     bool right_;
+
+    /// The StructOffset of the current access.
     me::StructOffset* structOffset_;
+    /// The StructOffset of the left most place in each chain.
     me::StructOffset* rootStructOffset_;
-    me::MemVar* memPlace_;
+    /// The place of the left most place in each chain.
+    me::Var* rootVar_; 
+
     bool storeNecessary_;
 
     /*

@@ -106,6 +106,12 @@ public:
     virtual bool specialAnalyze();
     virtual int getSelfModifier() const = 0;
 
+    /*
+     * further methods
+     */
+
+    BaseType* createSelfType() const;
+
 // protected: TODO
 
     me::Reg* self_;

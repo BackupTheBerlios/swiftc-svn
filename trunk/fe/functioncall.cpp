@@ -323,6 +323,7 @@ bool MethodCall::analyze()
     {
         class_ = symtab->currentClass();
 
+        // TODO get rid of if else and use virtual members
         const std::type_info& currentMethodQualifier = 
             typeid( *symtab->currentMemberFunction() );
 

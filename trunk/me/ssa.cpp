@@ -28,6 +28,7 @@
 
 #include "utils/stringhelper.h"
 
+#include "me/arch.h"
 #include "me/functab.h"
 #include "me/op.h"
 #include "me/offset.h"
@@ -1021,5 +1022,20 @@ std::string CallInstr::toString() const
 
     return oss.str();
 }
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Malloc::Malloc(size_t size)
+    : CallInstr(1, 1, "malloc")
+{
+    Const* cst = functab->newConst( arch->getPreferedIndex() );
+    cst->value_.index_ = size;
+    arg_[0] = Arg(cst);
+}
+
 
 } // namespace me

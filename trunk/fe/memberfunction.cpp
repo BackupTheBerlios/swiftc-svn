@@ -189,15 +189,29 @@ Method::Method(std::string* id, Symbol* parent, int line)
     : MemberFunction(id, parent, line)
 {}
 
+/*
+ * virtual methods
+ */
+
 bool Method::specialAnalyze()
 {
-    BaseType self( getSelfModifier(), symtab->currentClass() );
-    self_ = (me::Reg*) self.createVar(); 
+    BaseType* selfType = createSelfType();
+    self_ = (me::Reg*) selfType->createVar(); 
+    delete selfType;
 
     // the self pointer is the first (hidden) argument
     me::functab->appendArg(self_);
 
     return MemberFunction::specialAnalyze();
+}
+
+/*
+ * further methods
+ */
+
+BaseType* Method::createSelfType() const
+{
+    return new BaseType( getSelfModifier(), symtab->currentClass() );
 }
 
 //------------------------------------------------------------------------------
