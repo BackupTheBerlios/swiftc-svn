@@ -4,22 +4,22 @@ class SDL_Surface
 end
 
 class SDL_VideoInfo
-	uint hw_available #1;	# Flag: Can you create hardware surfaces? 
-	uint wm_available #1;	# Flag: Can you talk to a window manager?
-	uint UnusedBits1  #6;
-	uint UnusedBits2  #1;
-	uint blit_hw      #1;	# Flag: Accelerated blits HW --> HW
-	uint blit_hw_CC   #1;	# Flag: Accelerated blits with Colorkey
-	uint blit_hw_A    #1;	# Flag: Accelerated blits with Alpha
-	uint blit_sw      #1;	# Flag: Accelerated blits SW --> HW
-	uint blit_sw_CC   #1;	# Flag: Accelerated blits with Colorkey
-	uint blit_sw_A    #1;	# Flag: Accelerated blits with Alpha
-	uint blit_fill    #1;	# Flag: Accelerated color fill
-	uint UnusedBits3  #16;
-	uint video_mem       	# The total amount of video memory (in K)
-	ptr{int} dummy_         # SDL_PixelFormat *vfmt;	# Value: The format of the video surface 
-	int    current_w 	    # Value: The current video mode width
-	int    current_h 	    # Value: The current video mode height
+    uint hw_available #1;	# Flag: Can you create hardware surfaces? 
+    uint wm_available #1;	# Flag: Can you talk to a window manager?
+    uint UnusedBits1  #6;
+    uint UnusedBits2  #1;
+    uint blit_hw      #1;	# Flag: Accelerated blits HW --> HW
+    uint blit_hw_CC   #1;	# Flag: Accelerated blits with Colorkey
+    uint blit_hw_A    #1;	# Flag: Accelerated blits with Alpha
+    uint blit_sw      #1;	# Flag: Accelerated blits SW --> HW
+    uint blit_sw_CC   #1;	# Flag: Accelerated blits with Colorkey
+    uint blit_sw_A    #1;	# Flag: Accelerated blits with Alpha
+    uint blit_fill    #1;	# Flag: Accelerated color fill
+    uint UnusedBits3  #16;
+    uint video_mem       	# The total amount of video memory (in K)
+    ptr{int} dummy_         # SDL_PixelFormat *vfmt;	# Value: The format of the video surface 
+    int    current_w 	    # Value: The current video mode width
+    int    current_h 	    # Value: The current video mode height
 end
 
 class App
@@ -97,7 +97,7 @@ class App
     end
 
     # Here goes our drawing code 
-    routine drawGLScene()
+    writer drawGLScene()
         # Clear The Screen And The Depth Buffer 
         c_call glClear() # TODO GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 
@@ -198,6 +198,8 @@ class App
     end
 
     routine main() -> int result
+        App app
+
         # Flags to pass to SDL_SetVideoMode 
         int videoFlags
         # main loop variable 
@@ -247,7 +249,7 @@ class App
         int counter = 0
 
         while counter < 10000
-            c_call drawGLScene()
+            app.drawGLScene()
             counter = counter + 1
         end
 
