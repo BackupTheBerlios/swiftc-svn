@@ -203,6 +203,12 @@ RoutineCall::~RoutineCall()
 
 bool RoutineCall::analyze()
 {
+    if (!tupel_)
+    {
+        if ( exprList_ && !exprList_->analyze() )
+            return false;
+    }
+
     TypeList argTypeList = exprList_ 
         ? exprList_->getTypeList() 
         : TypeList(); // use empty TypeList when there is no ExprList
@@ -223,11 +229,6 @@ bool RoutineCall::analyze()
 
     memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
 
-    if (!tupel_)
-    {
-        if ( exprList_ && !exprList_->analyze() )
-            return false;
-    }
 
     if (!memberFunction_)
         return false;
@@ -286,16 +287,37 @@ bool MethodCall::analyze()
             return false;
 
         const BaseType* bt = expr_->getType()->unnestPtr();
+        class_ = bt->lookupClass();
 
         if ( bt->isReadOnly() && !handleReadOnlyBaseType() )
             return false;
 
-        class_ = bt->lookupClass();
-        swiftAssert( dynamic_cast<const me::Var*>(expr_->getPlace()),
-                "must be castable to Var" );
+        if ( bt->isBuiltin() )
+        {
+            // TODO
+            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
 
-        memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
-        self = expr_->getType()->derefToInnerstPtr( (me::Var*) expr_->getPlace() );
+            if (!memberFunction_)
+                return false;
+
+            if (!tupel_)
+            {
+                // set place and type as it is needed by the parent expr
+                place_ = memberFunction_->sig_->getOutParam(0)->getType()->createVar();
+                type_ = memberFunction_->sig_->getOutParam(0)->getType()->clone();
+            }
+            // TODO
+
+            return true;
+        }
+        else
+        {
+            swiftAssert( dynamic_cast<const me::Var*>(expr_->getPlace()),
+                    "must be castable to Var" );
+
+            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+            self = expr_->getType()->derefToInnerstPtr( (me::Var*) expr_->getPlace() );
+        }
     }
     else
     {

@@ -85,6 +85,8 @@ class int
     reader to_usat16() -> usat16 result
     end
 
+    reader to_real() -> real result
+    end
     reader to_real32() -> real32 result
     end
     reader to_real64() -> real64 result

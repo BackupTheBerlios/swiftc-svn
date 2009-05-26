@@ -27,8 +27,8 @@ class App
     ptr{SDL_Surface} surface_
 
     # rotational vars for the triangle and quad, respectively 
-    real rtri
-    real rquad
+    real rtri_
+    real rquad_
 
     # function to release/destroy our resources and restoring the old desktop */
     routine quit(int returnCode)
@@ -42,26 +42,28 @@ class App
     # function to reset our viewport after a window resize
     routine resizeWindow(int width, int height)
         # Height / width ration 
-        real ratio
     
         # protect against a divide by zero 
         if (height == 0)
             height = 1
         end
 
-        ratio = width.toReal() / height.toReal()
 
         # setup our viewport 
         c_call glViewport(0, 0, width, height)
 
         # change to the projection matrix and set our viewing volume
+
+        uint GL_PROJECTION = 5889u
         c_call glMatrixMode(GL_PROJECTION)
         c_call glLoadIdentity()
 
         # set our perspective 
-        c_call gluPerspective(45.0, ratio, 0.1, 100.0) # TODO doubles???
+        real64 ratio = width:to_real64() / height:to_real64()
+        c_call gluPerspective(45.0q, ratio, 0.1q, 100.0q)
 
         # make sure we're chaning the model view and not the projection 
+        uint GL_MODELVIEW = 5890u
         c_call glMatrixMode(GL_MODELVIEW)
 
         # reset The View 
@@ -71,6 +73,7 @@ class App
     # general OpenGL initialization function 
     routine initGL()
         # Enable smooth shading 
+        uint GL_SMOOTH = 7425u
         c_call glShadeModel(GL_SMOOTH)
 
         # Set the background black 
@@ -80,12 +83,16 @@ class App
         c_call glClearDepth(1.0)
 
         # Enables Depth Testing 
+        uint GL_DEPTH_TEST = 2929u
         c_call glEnable(GL_DEPTH_TEST)
 
         # The Type Of Depth Test To Do 
+        uint GL_LEQUAL = 515u
         c_call glDepthFunc(GL_LEQUAL)
 
         # Really Nice Perspective Calculations 
+        uint GL_PERSPECTIVE_CORRECTION_HINT = 3152u
+        uint GL_NICEST = 4354u
         c_call glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
     end
 
@@ -99,8 +106,9 @@ class App
         c_call glTranslatef(-1.5, 0.0, -6.0)
 
         # Rotate The Triangle On The Y axis
-        c_call glRotatef(rtri, 0.0, 1.0, 0.0)
+        c_call glRotatef(.rtri_, 0.0, 1.0, 0.0)
 
+        uint GL_TRIANGLES = 4u
         c_call glBegin(GL_TRIANGLES)        # Drawing Using Triangles      
         c_call glColor3f(  1.0,  0.0,  0.0) # Red                          
         c_call glVertex3f( 0.0,  1.0,  0.0) # Top Of Triangle (Front)      
@@ -136,11 +144,12 @@ class App
         c_call glTranslatef(1.5, 0.0, -6.0)
 
         # Rotate The Quad On The X axis
-        c_call glRotatef(rquad, 1.0, 0.0, 0.0)
+        c_call glRotatef(.rquad_, 1.0, 0.0, 0.0)
 
         # Set The Color To Blue One Time Only 
         c_call glColor3f(0.5, 0.5, 1.0)
 
+        uint GL_QUADS = 7u
         c_call glBegin(GL_QUADS)            # Draw A Quad                     
         c_call glColor3f(  0.0,  1.0,  0.0) # Set The Color To Green          
         c_call glVertex3f( 1.0,  1.0, -1.0) # Top Right Of The Quad (Top)     
@@ -183,24 +192,23 @@ class App
         c_call SDL_GL_SwapBuffers()
 
         # Increase The Rotation Variable For The Triangle
-        rtri = rtri + 0.2
+        .rtri_ = .rtri_ + 0.2
         # Decrease The Rotation Variable For The Quad
-        rquad = rquad + 0.15
+        .rquad_ = .rquad_ + 0.15
     end
 
     routine main() -> int result
         # Flags to pass to SDL_SetVideoMode 
         int videoFlags
         # main loop variable 
-        int done = FALSE
-        # used to collect events 
-        SDL_Event event
+        bool done = false
+
         # this holds some info about our display 
         ptr{const SDL_VideoInfo} videoInfo
         # whether or not the window is active 
-        bool isActive = TRUE
 
         # initialize SDL 
+        uint SDL_INIT_VIDEO = 20u
         c_call int SDL_Init(SDL_INIT_VIDEO)
 
         # Fetch the video info 
@@ -224,10 +232,11 @@ class App
         #     videoFlags |= SDL_HWACCEL
 
         # Sets up OpenGL double buffering 
+        int SDL_GL_DOUBLEBUFFER = 5
         c_call SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 )
 
-        # get a SDL surface 
-        surface_ = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
+        # get a SDL surface
+        .surface_ = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
 
         # initialize OpenGL 
         ::initGL()
@@ -235,50 +244,15 @@ class App
         # resize the initial window 
         ::resizeWindow(640, 480)
 
-        # wait for events  
-        while not done
-            # handle the events in the queue 
+        int counter = 0
 
-            while  c_call int SDL_PollEvent(&event) > 0
-                if event.type == SDL_ACTIVEEVENT 
-                    # Something's happend with our focus
-                    # If we lost focus or we are iconified, we
-                    # shouldn't draw the screen
-                    
-                    if event.active.gain == 0
-                        isActive = false
-                    else
-                        isActive = true
-                    end
-
-                    break			    
-                else 
-                    if event.type == SDL_VIDEORESIZE
-                        # handle resize event
-                        surface = c_call ptr{SDL_Surface} SDL_SetVideoMode(event.resize.w, event.resize.h, 16, videoFlags)
-
-                        c_call resizeWindow( event.resize.w, event.resize.h )
-                        break
-                    else
-                        if event.type == SDL_QUIT
-                            # handle quit requests
-                            done = true
-                            break
-                        else
-                            break
-                        end
-                    end
-                end
-            end
-
-            # draw the scene 
-            if (isActive)
-                c_call drawGLScene()
-            end
+        while counter < 10000
+            c_call drawGLScene()
+            counter = counter + 1
         end
 
         # clean ourselves up and exit 
-        ::Quit(0)
+        ::quit(0)
 
         # should never get here 
         result = 0

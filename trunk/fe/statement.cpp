@@ -263,6 +263,13 @@ bool AssignStatement::analyzeAssignCreate()
     if ( out[0]->isNonInnerBuiltin() )
         return out[0]->hasAssignCreate(in, decl, line_);
 
+    const BaseType* bt = (const BaseType*) out[0];
+    Class* _class = bt->lookupClass();
+    Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
+
+    if (!assignCreate)
+        return false;
+
     if ( out[0]->isBuiltin() )
     {
         swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
@@ -277,13 +284,6 @@ bool AssignStatement::analyzeAssignCreate()
     }
 
     swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
-
-    const BaseType* bt = (const BaseType*) out[0];
-    Class* _class = bt->lookupClass();
-    Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
-
-    if (!assignCreate)
-        return false;
 
     Call call(exprList_, tupel_, assignCreate->sig_);
     swiftAssert( typeid(*tupel_->typeNode()->getPlace()) == typeid(me::Reg),

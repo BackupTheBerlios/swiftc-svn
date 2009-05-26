@@ -680,14 +680,22 @@ bool MemberAccess::analyze()
      * The accesses are traversed from right to left to this point and from
      * left to right beyond this point.
      */
-    if ( !expr_->analyze() )
+    if ( expr_ && !expr_->analyze() )
         return false;
 
     // pass-through places
     if (!ma)
     {
-        swiftAssert(expr_->getPlace()->type_ == me::Op::R_STACK, "must be a stack location")
-        memPlace_ = (me::MemVar*) expr_->getPlace();
+        if (expr_)
+        {
+            swiftAssert(expr_->getPlace()->type_ == me::Op::R_STACK, "must be a stack location")
+            memPlace_ = (me::MemVar*) expr_->getPlace();
+        }
+        else
+        {
+            // TODO
+            memPlace_ = 0;
+        }
     }
     else
         memPlace_ = ma->memPlace_; // pass-through
