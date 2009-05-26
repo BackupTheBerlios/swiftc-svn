@@ -24,7 +24,6 @@ class Fibbonacci
         end
     end
 
-
     # routine main()
     #     int result = ::fibbonaci(12)
     #     vc_call printf("fib(12) = %i", result)

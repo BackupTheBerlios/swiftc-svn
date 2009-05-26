@@ -4,22 +4,22 @@ class SDL_Surface
 end
 
 class SDL_VideoInfo
-    uint hw_available #1;	# Flag: Can you create hardware surfaces? 
-    uint wm_available #1;	# Flag: Can you talk to a window manager?
-    uint UnusedBits1  #6;
-    uint UnusedBits2  #1;
-    uint blit_hw      #1;	# Flag: Accelerated blits HW --> HW
-    uint blit_hw_CC   #1;	# Flag: Accelerated blits with Colorkey
-    uint blit_hw_A    #1;	# Flag: Accelerated blits with Alpha
-    uint blit_sw      #1;	# Flag: Accelerated blits SW --> HW
-    uint blit_sw_CC   #1;	# Flag: Accelerated blits with Colorkey
-    uint blit_sw_A    #1;	# Flag: Accelerated blits with Alpha
-    uint blit_fill    #1;	# Flag: Accelerated color fill
-    uint UnusedBits3  #16;
+    uint hw_available #:1 	# Flag: Can you create hardware surfaces? 
+    uint wm_available #:1 	# Flag: Can you talk to a window manager?
+    uint UnusedBits1  #:6 
+    uint UnusedBits2  #:1 
+    uint blit_hw      #:1 	# Flag: Accelerated blits HW --> HW
+    uint blit_hw_CC   #:1 	# Flag: Accelerated blits with Colorkey
+    uint blit_hw_A    #:1 	# Flag: Accelerated blits with Alpha
+    uint blit_sw      #:1 	# Flag: Accelerated blits SW --> HW
+    uint blit_sw_CC   #:1 	# Flag: Accelerated blits with Colorkey
+    uint blit_sw_A    #:1 	# Flag: Accelerated blits with Alpha
+    uint blit_fill    #:1 	# Flag: Accelerated color fill
+    uint UnusedBits3  #:16 
     uint video_mem       	# The total amount of video memory (in K)
     ptr{int} dummy_         # SDL_PixelFormat *vfmt;	# Value: The format of the video surface 
-    int    current_w 	    # Value: The current video mode width
-    int    current_h 	    # Value: The current video mode height
+    int current_w 	        # Value: The current video mode width
+    int current_h 	        # Value: The current video mode height
 end
 
 class App
@@ -47,7 +47,6 @@ class App
         if (height == 0)
             height = 1
         end
-
 
         # setup our viewport 
         c_call glViewport(0, 0, width, height)
