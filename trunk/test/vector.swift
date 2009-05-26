@@ -33,7 +33,7 @@ simd class Vec3
 
         simd: vecs1 = Vec3::cross(vecs2, vecs3)
 
-        simd: vecs1 = vecs2 + %i.to_real()
+        simd: vecs1 = vecs2 + @.to_real()
 
         result = 0
     end

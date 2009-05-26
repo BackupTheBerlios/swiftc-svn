@@ -914,7 +914,7 @@ void SimdIndex::genSSA()
 
 std::string SimdIndex::toString() const
 {
-    return "%i";
+    return "@";
 }
 
 } // namespace swift

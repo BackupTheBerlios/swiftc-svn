@@ -136,7 +136,7 @@ using namespace swift;
 // type modifiers
 %token VAR CONST INOUT REF CONST_REF
 
-%token SELF SIMD_INDEX SIMD_PREFIX
+%token SELF SIMD_PREFIX
 
 // method qualifier
 %token READER WRITER ROUTINE ASSIGN OPERATOR
@@ -510,7 +510,7 @@ primary_expr
     : ID               { $$ = new  Id($1, currentLine); }
     | NIL '{' type '}' { $$ = new Nil($3, currentLine); }
     | SELF             { $$ = new Self(currentLine); }
-    | SIMD_INDEX       { $$ = new SimdIndex(currentLine); }
+    | '@'              { $$ = new SimdIndex(currentLine); }
     | L_INDEX          { $$ = $1; }
     | L_INT            { $$ = $1; }
     | L_INT8           { $$ = $1; }
