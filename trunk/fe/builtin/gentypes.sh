@@ -62,7 +62,7 @@ do
     echo >> $FILE
 
     # substitute int with $TYPE
-    sed s/int/${TYPE}/g <int.swift >temp # the flag 'g' means: replace globally and not only the first occurance
+    sed s/int/${TYPE}/g <int.swift >temp
 
     # append to the proper file
     cat temp >> $FILE
@@ -87,7 +87,7 @@ do
     echo >> $FILE
 
     # substitute real with $TYPE
-    sed s/real/${TYPE}/g <real.swift >temp # the flag 'g' means: replace globally and not only the first occurance
+    sed s/real/${TYPE}/g <real.swift >temp
 
     # append to the proper file
     cat temp >> $FILE

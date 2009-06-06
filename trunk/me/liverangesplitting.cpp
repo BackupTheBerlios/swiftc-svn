@@ -69,6 +69,16 @@ void LiveRangeSplitting::process()
     cfg_->calcDomTree();
     cfg_->calcDomFrontier();
 
+    // fix bbNode entry in def-use information
+    VDUMAP_EACH(iter, phis_)
+    {
+        DEFUSELIST_EACH(defIter, iter->second->defs_)
+            defIter->value_.bbNode_ = findBBNode(defIter->value_.instrNode_);
+
+        DEFUSELIST_EACH(useIter, iter->second->uses_)
+            useIter->value_.bbNode_ = findBBNode(useIter->value_.instrNode_);
+    }
+
     // reconstruct SSA form for the newly inserted phi instructions
     VDUMAP_EACH(iter, phis_)
         cfg_->reconstructSSAForm(iter->second);
@@ -125,12 +135,27 @@ void LiveRangeSplitting::liveRangeSplit(InstrNode* instrNode, BBNode* bbNode)
             vdu = iter->second;
 
         vdu->defs_.append( DefUse(newVar, phiNode, bbNode) ); // newly created definition
-        vdu->uses_.append( DefUse(var, phiNode, bbNode) ); // newly created use
+        vdu->uses_.append( DefUse(newVar, phiNode, bbNode) ); // newly created use
     }
 
     bb->fixPointers();
     swiftAssert( bb->hasConstrainedInstr(),
             "this must be the constrained instruction" );
+}
+
+BBNode* LiveRangeSplitting::findBBNode(InstrNode* instrNode)
+{
+    while (true)
+    {
+        LabelInstr* label = dynamic_cast<LabelInstr*>(instrNode->value_);
+        if (label)
+            return cfg_->labelNode2BBNode_[instrNode];
+
+        // iterate backwards
+        instrNode = instrNode->prev();
+    }
+
+    return 0;
 }
 
 } // namespace me

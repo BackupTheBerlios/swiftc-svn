@@ -64,6 +64,7 @@ namespace swift {
 Expr::Expr(int line)
     : TypeNode(0, line)
     , neededAsLValue_(false)
+    , doNotLoadPtr_(false)
 {}
 
 /*
@@ -79,9 +80,9 @@ void Expr::neededAsLValue()
     neededAsLValue_ = true;
 }
 
-bool Expr::isNeededAsLValue() const
+void Expr::doNotLoadPtr()
 {
-    return neededAsLValue_;
+    doNotLoadPtr_ = true;
 }
 
 //------------------------------------------------------------------------------
@@ -114,7 +115,7 @@ me::Op::Type Literal::toType() const
 
 bool Literal::analyze()
 {
-    if ( isNeededAsLValue() )
+    if ( neededAsLValue_ )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -164,7 +165,7 @@ void Literal::genSSA()
 
     switch (kind_)
     {
-        case L_INDEX:   literal->value_.index_     = index_;   break;
+        //case L_INDEX:   literal->value_.index_     = index_;   break;
 
         case L_INT8:    literal->value_.int8_      = int8_;    break;
         case L_INT16:   literal->value_.int16_     = int16_;   break;
@@ -326,18 +327,23 @@ bool Id::analyze()
         place_ = var_->getMeVar();
     else
     {
-        // mark type as reference
-        type_->modifier() = REF;
+        if (doNotLoadPtr_)
+            place_ = var_->getMeVar();
+        else
+        {
+            // mark type as reference
+            type_->modifier() = REF;
 
 #ifdef SWIFT_DEBUG
-        std::string tmpStr = std::string("p_") + var_->getMeVar()->id_;
-        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+            std::string tmpStr = std::string("p_") + var_->getMeVar()->id_;
+            me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
 #else // SWIFT_DEBUG
-        me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
+            me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-        me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
-        place_ = tmp;
+            me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
+            place_ = tmp;
+        }
     }
 
     return true;
@@ -373,7 +379,7 @@ UnExpr::~UnExpr()
 
 bool UnExpr::analyze()
 {
-    if ( isNeededAsLValue() )
+    if ( neededAsLValue_ )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -491,7 +497,7 @@ std::string BinExpr::getOpString() const
 
 bool BinExpr::analyze()
 {
-    if ( isNeededAsLValue() )
+    if ( neededAsLValue_ )
     {
         errorf(line_, "lvalue required as left operand of assignment");
         return false;
@@ -655,8 +661,7 @@ MemberAccess::MemberAccess(Expr* expr, std::string* id, int line /*= NO_LINE*/)
     : Expr(line)
     , expr_(expr)
     , id_(id)
-    , right_(true)
-    , storeNecessary_(false)
+    , right_(true) // assume that we are right in the beginning until proven wrong
 {}
 
 MemberAccess::~MemberAccess()
@@ -673,21 +678,32 @@ bool MemberAccess::analyze()
 {
     MemberAccess* ma = dynamic_cast<MemberAccess*>(expr_);
 
+    // obviously ma is not right
     if (ma)
-        ma->right_ = false;
+        ma->right_ = false; 
 
     /*
      * The accesses are traversed from right to left to this point and from
      * left to right beyond this point.
      */
-    if ( expr_ && !expr_->analyze() )
-        return false;
+    if (expr_) 
+    {
+        // try to work with the original var
+        expr_->doNotLoadPtr();
+        
+        if ( !expr_->analyze() )
+            return false;
+    }
 
     Class* _class;
 
-    // pass-through places
+    /*
+     * pass-through places
+     */
     if (!expr_)
     {
+        // -> access via implicit 'self'
+
         MemberFunction* mf = symtab->currentMemberFunction();
         Method* method = dynamic_cast<Method*>(mf);
 
@@ -700,8 +716,7 @@ bool MemberAccess::analyze()
 
         rootVar_ = method->self_;
         place_   = method->self_;
-        type_ = method->createSelfType();
-        _class = symtab->currentClass();
+        _class   = symtab->currentClass();
     }
     else
     {
@@ -719,12 +734,14 @@ bool MemberAccess::analyze()
                 rootVar_ = exprType->derefToInnerstPtr(exprPlace);
             else
                 rootVar_ = exprPlace;
-
         }
         else
-            rootVar_ = ma->rootVar_; // pass-through
+        {
+            // -> access via another MemberAccess
+            rootVar_ = ma->rootVar_;
+        }
 
-        place_ = expr_->getPlace(); // pass-through
+        place_ = expr_->getPlace();
         _class = expr_->getType()->unnestPtr()->lookupClass();
     }
 
@@ -762,10 +779,16 @@ bool MemberAccess::analyze()
 
     if ( right_ )
     {
+        if ( neededAsLValue_ && type_->isAtomic() )
+        {
+            storeNecessary_ = true;
+            return true;
+        }
+
         /*
          * create new place for the right most access 
          */
-        if ( !isNeededAsLValue() && type_->isAtomic() )
+        if ( !neededAsLValue_ && type_->isAtomic() )
             place_ = type_->createVar();
         else 
         {
@@ -777,14 +800,8 @@ bool MemberAccess::analyze()
 #endif // SWIFT_DEBUG
         }
 
-        // only atomic stores need special handling
-        if ( !isNeededAsLValue() || !type_->isAtomic() )
-        {
-            me::Load* load = new me::Load( (me::Var*) place_, rootVar_, rootStructOffset_ );
-            me::functab->appendInstr(load); 
-        }
-        else
-            storeNecessary_ = true;
+        me::Load* load = new me::Load( (me::Var*) place_, rootVar_, rootStructOffset_ );
+        me::functab->appendInstr(load); 
     }
 
     return true;
@@ -794,11 +811,11 @@ void MemberAccess::genSSA()
 {
 }
 
-void MemberAccess::emitStoreIfApplicable()
+void MemberAccess::emitStoreIfApplicable(Expr* expr)
 {
     MemberAccess* ma = dynamic_cast<MemberAccess*>(expr_);
     if (ma)
-        ma->emitStoreIfApplicable();
+        ma->emitStoreIfApplicable(expr);
     else
     {
         // this is the root
@@ -806,9 +823,9 @@ void MemberAccess::emitStoreIfApplicable()
             return;
 
         me::Store* store = new me::Store( 
-                rootVar_,              // memory variable
-                place_,                 // argument 
-                ma->rootStructOffset_); // offset 
+                rootVar_,           // memory variable
+                expr->getPlace(),   // argument 
+                rootStructOffset_); // offset 
         me::functab->appendInstr(store);
     }
 }

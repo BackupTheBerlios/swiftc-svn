@@ -123,13 +123,10 @@ struct Op
     virtual ~Op();
 
     /*
-     * further methods
+     * virtual methods
      */
 
     virtual bool typeCheck(int typeMask) const;
-
-    bool isReal() const;
-    static bool isReal(Type type);
 
     virtual Reg* isReg(int typeMask);
 
@@ -148,10 +145,19 @@ struct Op
 
     virtual std::string toString() const = 0;
 
+    virtual Op* toSimd() const = 0;
+
+    /*
+     * further methods
+     */
+
+    bool isReal() const;
+
     /*
      * static methods
      */
 
+    static bool isReal(Type type);
     static int sizeOf(Type type);
     static Type toSimdType(Type type);
 };
@@ -166,10 +172,20 @@ struct Op
  */
 struct Undef : public Op
 {
+
+    /*
+     * constructor
+     */
+
     Undef(Type type)
         : Op(type)
     {}
 
+    /*
+     * virtual methods
+     */
+
+    virtual Undef* toSimd() const;
     virtual std::string toString() const;
 };
 
@@ -184,28 +200,28 @@ struct Const : public Op
 {
     union Value
     {
-        size_t      index_;
+        //size_t   index_;
 
-        int8_t      int8_;
-        int16_t     int16_;
-        int32_t     int32_;
-        int64_t     int64_;
-        int8_t      sat8_;
-        int16_t     sat16_;
+        int8_t   int8_;
+        int16_t  int16_;
+        int32_t  int32_;
+        int64_t  int64_;
+        int8_t   sat8_;
+        int16_t  sat16_;
 
-        uint8_t     uint8_;
-        uint16_t    uint16_;
-        uint32_t    uint32_;
-        uint64_t    uint64_;
-        uint8_t     usat8_;
-        uint16_t    usat16_;
+        uint8_t  uint8_;
+        uint16_t uint16_;
+        uint32_t uint32_;
+        uint64_t uint64_;
+        uint8_t  usat8_;
+        uint16_t usat16_;
 
-        float       real32_;
-        double      real64_;
+        float    real32_;
+        double   real64_;
 
-        bool        bool_;
+        bool     bool_;
 
-        void*       ptr_;
+        void*    ptr_;
     };
 
     Value value_;
@@ -217,9 +233,10 @@ struct Const : public Op
     Const(Type type);
 
     /*
-     * further methods
+     * virtual methods
      */
 
+    virtual Const* toSimd() const;
     virtual std::string toString() const;
 };
 
@@ -280,7 +297,13 @@ struct Var : public Op
 
 #endif // SWIFT_DEBUG
 
+    /*
+     * virtual methods
+     */
+
     virtual Var* clone(int varNr) const = 0;
+
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -299,8 +322,6 @@ struct Var : public Op
      * accesses or so.
      */
     size_t var2Index() const;
-
-    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -325,16 +346,16 @@ struct Reg : public Var
     Reg(Type type, int varNr);
 #endif // SWIFT_DEBUG
 
-    virtual Reg* clone(int varNr) const;
-
     /*
-     * further methods
+     * virtual methods
      */
 
+    virtual Reg* clone(int varNr) const;
     virtual Reg* isReg(int typeMask);
     virtual Reg* isSpilled();
     virtual Reg* isSpilled(int typeMask);
     virtual Reg* colorReg(int typeMask);
+    virtual Reg* toSimd() const;
     virtual std::string toString() const;
 };
 
@@ -359,6 +380,7 @@ struct MemVar : public Var
      */
 
     virtual MemVar* clone(int varNr) const;
+    virtual MemVar* toSimd() const;
     virtual std::string toString() const;
 };
 

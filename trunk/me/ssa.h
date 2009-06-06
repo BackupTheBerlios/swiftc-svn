@@ -54,12 +54,17 @@ struct Res
     int  oldVarNr_;   ///< Left hand side old varNrs.
     int  constraint_;
 
+    /*
+     * constructors
+     */
+
     Res() {}
-    Res(Var* var, int oldVarNr, int constraint = NO_CONSTRAINT)
-        : var_(var)
-        , oldVarNr_(oldVarNr)
-        , constraint_(constraint)
-    {}
+    Res(Var* var, int oldVarNr, int constraint = NO_CONSTRAINT);
+    Res(Var* var);
+
+    /*
+     * further methods
+     */
 
     std::string toString() const;
 };
@@ -71,11 +76,16 @@ struct Arg
     Op* op_;
     int constraint_;
 
+    /*
+     * constructors
+     */
+
     Arg() {}
-    Arg(Op* op, int constraint = NO_CONSTRAINT)
-        : op_(op)
-        , constraint_(constraint)
-    {}
+    Arg(Op* op, int constraint = NO_CONSTRAINT);
+
+    /*
+     * further methods
+     */
 
     std::string toString() const;
 };
@@ -99,11 +109,18 @@ struct InstrBase
     bool constrained_;
 
     /*
-     * destructor
+     * constructor and destructor
      */
 
     InstrBase(size_t numLhs, size_t numRhs);
     virtual ~InstrBase();
+
+    /*
+     * virtual methods
+     */
+
+    virtual InstrBase* toSimd() const = 0;
+    virtual std::string toString() const = 0;
 
     /*
      * further methods
@@ -166,6 +183,12 @@ struct InstrBase
     
     OpType getOpType(size_t i) const;
 
+    std::string livenessString() const;
+
+    /*
+     * static methods
+     */
+
     /**
      * Computes whether this \p instr ist the first instruction which does not
      * have \p var in the \a liveOut_.
@@ -175,10 +198,6 @@ struct InstrBase
      * @param var The Var which should be tested.
      */
     static bool isLastUse(InstrNode* instrNode, Var* var);
-
-    virtual std::string toString() const = 0;
-
-    std::string livenessString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -193,14 +212,53 @@ struct LabelInstr : public InstrBase
     static int counter_;
     std::string label_;
 
+    /*
+     * constructor
+     */
+
     LabelInstr();
 
-    virtual std::string toString() const
-    {
-        return label_;
-    }
+    /*
+     * virtual methods
+     */
+
+    virtual LabelInstr* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
+     * further methods
+     */
 
     std::string asmName() const;
+};
+
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief A no operation instruction
+ *
+ * This instruction can be used to artificially increase the live span of
+ * the args.
+ */
+struct NOP : public InstrBase
+{
+    /*
+     * constructors
+     */
+
+    /** 
+     * @brief Constructor with on Var arg as use.
+     * 
+     * @param op The Var which should be used here. 
+     */
+    NOP(Op* op);
+
+    /*
+     * virtual methods
+     */
+
+    virtual NOP* toSimd() const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -229,10 +287,11 @@ struct PhiInstr : public InstrBase
     int oldResultNr() const;
 
     /*
-     * further methods
+     * virtual methods
      */
 
-    std::string toString() const;
+    virtual PhiInstr* toSimd() const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -297,10 +356,18 @@ struct AssignInstr : public InstrBase
     };
 
     /*
-     * constructor
+     * constructors
      */
 
     AssignInstr(int kind, Var* result, Op* op1, Op* op2 = 0);
+    AssignInstr(int kind);
+
+    /*
+     * virtual methods
+     */
+
+    virtual AssignInstr* toSimd() const;
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -312,36 +379,9 @@ struct AssignInstr : public InstrBase
     bool isArithmetic() const;
     bool isComparison() const;
 
-    std::string toString() const;
-
     std::string getOpString() const;
 };
 
-/** 
- * @brief A no operation instruction
- *
- * This instruction can be used to artificially increase the live span of
- * the args.
- */
-struct NOP : public InstrBase
-{
-    /*
-     * constructors
-     */
-
-    /** 
-     * @brief Constructor with on Var arg as use.
-     * 
-     * @param op The Var which should be used here. 
-     */
-    NOP(Op* op);
-
-    /*
-     * further methods
-     */
-
-    virtual std::string toString() const;
-};
 //------------------------------------------------------------------------------
 
 /** 
@@ -386,9 +426,10 @@ struct GotoInstr : public JumpInstr
     const LabelInstr* label() const;
 
     /*
-     * further methods
+     * virtual methods
      */
 
+    GotoInstr* toSimd() const;
     virtual std::string toString() const;
 };
 
@@ -414,6 +455,13 @@ struct BranchInstr : public JumpInstr
     BranchInstr(Op* boolOp, InstrNode* trueLabel, InstrNode* falseLabel);
 
     /*
+     * virtual methods
+     */
+
+    virtual BranchInstr* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * getters
      */
 
@@ -425,12 +473,6 @@ struct BranchInstr : public JumpInstr
 
     Op* getOp();
     const Op* getOp() const;
-
-    /*
-     * further methods
-     */
-
-    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -444,13 +486,18 @@ struct Spill : public InstrBase
     Spill(Var* result, Var* arg);
 
     /*
-     * further methods
+     * virtual methods
+     */
+
+    virtual Spill* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
+     * virtual methods
      */
 
     Var* resVar();
     Reg* resReg();
-
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -464,13 +511,18 @@ struct Reload : public InstrBase
     Reload(Var* result, Var* arg);
 
     /*
+     * virtual methods
+     */
+
+    virtual Reload* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     Var* resVar();
     Reg* resReg();
-
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -513,9 +565,15 @@ struct Load : public InstrBase
      * further methods
      */
 
+    virtual Load* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
+     * further methods
+     */
+
     int getOffset() const;
     Reg* resReg();
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -557,12 +615,18 @@ struct LoadPtr : public InstrBase
     virtual ~LoadPtr();
 
     /*
+     * virtual methods
+     */
+    
+    virtual LoadPtr* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     int getOffset() const;
     Reg* resReg();
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -576,11 +640,17 @@ struct Deref : public InstrBase
     Deref(Reg* result, Reg* ptr);
 
     /*
+     * virtual methods
+     */
+
+    virtual Deref* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     Reg* result();
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -620,12 +690,18 @@ struct Store : public InstrBase
     virtual ~Store();
 
     /*
+     * virtual methods
+     */
+
+    virtual Store* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     int getOffset() const;
     MemVar* resMemVar();
-    std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -639,10 +715,11 @@ struct SetParams : public InstrBase
     SetParams(size_t numLhs);
 
     /*
-     * further methods
+     * virtual methods
      */
 
-    std::string toString() const;
+    virtual SetParams* toSimd() const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -656,10 +733,11 @@ struct SetResults : public InstrBase
     SetResults(size_t numRhs);
 
     /*
-     * further methods
+     * virtual methods
      */
 
-    std::string toString() const;
+    virtual SetResults* toSimd() const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -693,11 +771,17 @@ struct CallInstr : public InstrBase
               bool vararg = false);
 
     /*
+     * virtual methods
+     */
+
+    virtual CallInstr* toSimd() const;
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     bool isVarArg() const;
-    virtual std::string toString() const;
 
     /*
      * data
@@ -720,7 +804,29 @@ struct Malloc : public CallInstr
      * constructor
      */
 
-    Malloc(size_t size);
+    Malloc(Reg* ptr, size_t size);
+};
+
+//------------------------------------------------------------------------------
+
+struct Free : public CallInstr
+{
+    /*
+     * constructor
+     */
+
+    Free(Reg* ptr);
+};
+
+//------------------------------------------------------------------------------
+
+struct Memcpy : public CallInstr
+{
+    /*
+     * constructor
+     */
+
+    Memcpy(Reg* src, Reg* dst);
 };
 
 } // namespace me

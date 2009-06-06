@@ -106,4 +106,24 @@ bool ExprList::moreThanOne() const
     return next_;
 }
 
+Expr* ExprList::getExpr()
+{
+    return expr_;
+}
+
+const Expr* ExprList::getExpr() const
+{
+    return expr_;
+}
+
+ExprList* ExprList::next()
+{
+    return next_;
+}
+
+const ExprList* ExprList::next() const
+{
+    return next_;
+}
+
 } // namespace swift

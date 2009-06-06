@@ -173,7 +173,7 @@ void X64RegAlloc::process()
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
-
+    
     /*
      * coloring
      */
@@ -187,9 +187,6 @@ void X64RegAlloc::process()
     // color spill slots
     me::Coloring(function_, R_TYPE_MASK | F_TYPE_MASK, X64::QUADWORDS).process();
     //me::Coloring(function_, V_TYPE_MASK, X64::OCTWORDS).process();
-
-    // calculate all offsets and the like
-    function_->stackLayout_->arangeStackLayout();
 }
 
 bool X64RegAlloc::arg2Reg(me::InstrNode* iter, size_t i)

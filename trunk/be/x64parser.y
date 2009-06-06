@@ -64,7 +64,7 @@ using namespace be;
 /* instructions */
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
 %token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
-%token <assign_> X64_UNARY_MINUS X64_NOT
+%token <assign_> X64_UN_MINUS
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
 %token <goto_>   X64_GOTO
@@ -91,7 +91,7 @@ using namespace be;
 /* operands */
 %token <undef_>  X64_UNDEF
 %token <const_>  X64_CONST X64_CST_0 X64_CST_1
-%token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3 
+%token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3
 %token <memVar_> X64_MEM_VAR
 
 %start instruction
@@ -100,7 +100,7 @@ using namespace be;
     types
 */
 
-%type <int_> bool_type int_type sint_no8_type uint_no8_type int8_type real_type int_or_bool_type any_type
+%type <int_> bool_type int_type sint_no8_type sint_type uint_no8_type int8_type real_type int_or_bool_type any_type
 %type <assign_> add_or_mul cmp
 %type <reg_> any_reg
 
@@ -112,7 +112,7 @@ instruction
     | jump_instruction
     | assign_instruction
     | spill_reload
-    | load_restore
+    | load_store
     | load_ptr
     | call
     ;
@@ -192,14 +192,22 @@ spill_reload
     }
     ;
 
-load_restore
+load_store
     : X64_LOAD any_type X64_MEM_VAR
     { 
         EMIT("mov" << suffix($2) << '\t' << memvar2str($3, $1->getOffset()) << ", " << reg2str($1->resReg())) 
     }
+    | X64_LOAD any_type any_reg
+    { 
+        EMIT("mov" << suffix($2) << '\t' << ptr2str($3, $1->getOffset()) << ", " << reg2str($1->resReg()))
+    }
     | X64_STORE any_type any_reg X64_MEM_VAR
     { 
         EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << memvar2str($4, $1->getOffset()))
+    }
+    | X64_STORE any_type any_reg any_reg
+    { 
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << ptr2str($4, $1->getOffset()))
     }
     ;
 
@@ -215,34 +223,16 @@ assign_instruction
     | int_add
     | int_mul
     | int_sub
-    | int_not
+    | sint_un_minus
     | sint_no8_div
     | uint_no8_div
     | int_cmp
     | real_mov
     | real_add_mul
     | real_sub
+    | real_un_minus
     | real_div
     | real_cmp
-    ;
-
-int_not
-    : X64_NOT int_or_bool_type X64_UNDEF 
-    { 
-        /* emit no code: not X64_UNDEF, %r1 */ 
-    }
-    | X64_NOT int_or_bool_type X64_CONST 
-    { 
-        EMIT("not" << suffix($2) << '\t' << cst2str($3) << ", " << reg2str($1->resReg())) 
-    }
-    | X64_NOT int_or_bool_type X64_REG_1 
-    { 
-        EMIT("not" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
-    }
-    | X64_NOT int_or_bool_type X64_REG_2 
-    { 
-        EMIT("not" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
-    }
     ;
 
 int_mov
@@ -406,6 +396,22 @@ int_sub
     }
     ;
 
+sint_un_minus
+    : X64_UN_MINUS sint_type X64_CONST /* mov -c, r1 */
+    { 
+          EMIT("mov" << suffix($2) << '\t' << un_minus_cst($1, $3) << ", " << reg2str($1->resReg())) 
+    } 
+    | X64_UN_MINUS sint_type X64_REG_1 /* xor neg_mask, r1 */
+    { 
+          EMIT("xor" << suffix($2) << '\t' << neg_mask($2) << ", " << reg2str($1->resReg())) 
+    }
+    | X64_UN_MINUS sint_type X64_REG_2 X64_CONST /* mov r2, r1; xor neg_mask, r1 */ 
+    { 
+          EMIT("mov" << suffix($2) << '\t' <<     reg2str($3) << ", " << reg2str($1->resReg()))
+          EMIT("xor" << suffix($2) << '\t' << neg_mask($2) << ", " << reg2str($1->resReg())) 
+    }
+    ;
+
     /*
         r1 must be RAX
         RDX must be free here
@@ -418,7 +424,7 @@ sint_no8_div
     { 
           EMIT("mov" << suffix($2) << '\t' << cst_op_cst($1, $3, $4, true) << ", " << reg2str($1->resReg())) 
     }
-    | X64_DIV sint_no8_type X64_CONST X64_REG_2 /* mov sg_cst(c), rdx; mov c, r1; idiv r2 */
+    | X64_DIV sint_no8_type X64_CONST X64_REG_2 /* mov sgn_cst(c), rdx; mov c, r1; idiv r2 */
     { 
           EMIT("mov"  << suffix($2) << '\t' << sgn_cst2str($3) << ", " << rdx2str(($2)))
           EMIT("mov"  << suffix($2) << '\t' << cst2str($3) << ", " << reg2str($1->resReg())) 
@@ -609,7 +615,7 @@ real_sub
     | X64_SUB real_type X64_CONST X64_REG_1 /* sub c, r1; xor signmask, r1 */
     {
         EMIT(instr2str($1) << suffix($2) << '\t' << mcst2str($3) << ", " << reg2str($4))  
-        EMIT("xor" << suffix($2) << '\t' << neg_mask($2) << ", " << reg2str($4)) 
+        EMIT("xor" << suffix($2) << '\t' << neg_mask($2, true) << ", " << reg2str($4)) 
     }
     | X64_SUB real_type X64_CONST X64_REG_2 /* mov c, r1; sub r2, r1 */ 
     {
@@ -645,6 +651,22 @@ real_sub
     {
         EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
         EMIT("sub" << suffix($2) << '\t' << reg2str($4) << ", " << reg2str($1->resReg())) 
+    }
+    ;
+
+real_un_minus
+    : X64_UN_MINUS real_type X64_CONST /* mov -c, r1 */
+    { 
+          EMIT("mov" << suffix($2) << '\t' << un_minus_cst($1, $3, true) << ", " << reg2str($1->resReg())) 
+    } 
+    | X64_UN_MINUS real_type X64_REG_1 /* xor neg_mask, r1 */
+    { 
+          EMIT("xor" << suffix($2) << '\t' << neg_mask($2, true) << ", " << reg2str($1->resReg())) 
+    }
+    | X64_UN_MINUS real_type X64_REG_2 X64_CONST /* mov r2, r1; xor neg_mask, r1 */ 
+    { 
+          EMIT("mov" << suffix($2) << '\t' <<     reg2str($3) << ", " << reg2str($1->resReg()))
+          EMIT("xor" << suffix($2) << '\t' << neg_mask($2, true) << ", " << reg2str($1->resReg())) 
     }
     ;
 
@@ -737,6 +759,11 @@ sint_no8_type
     : X64_INT16 { $$ = X64_INT16; }
     | X64_INT32 { $$ = X64_INT32; }
     | X64_INT64 { $$ = X64_INT64; }
+    ;
+
+sint_type
+    : X64_INT8 { $$ = X64_INT8; }
+    | sint_no8_type
     ;
 
 uint_no8_type

@@ -19,7 +19,36 @@
 
 #include "me/vectorizer.h"
 
+#include "me/cfg.h"
+#include "me/functab.h"
+
 namespace me {
 
+Vectorizer::Vectorizer(Function* function)
+    : CodePass(function)
+    , simdFunction_( me::functab->insertFunction(
+                new std::string(*function->id_ + "simd"), false) )
+{
+}
+
+void Vectorizer::process()
+{
+    // for each instruction
+    INSTRLIST_EACH(iter, cfg_->instrList_)
+    {
+        //InstrBase* instr = iter->value_;
+
+        //if ( typeid(*instr) == typeid(LabelInstr) )
+        //{
+            //currentBB = cfg_->labelNode2BBNode_[iter];
+            //continue;
+        //}
+
+        //if ( instr->isConstrained() )
+            //liveRangeSplit(iter, currentBB);
+    }
+
+    cfg_->constructSSAForm();
+}
 
 } // namespace me

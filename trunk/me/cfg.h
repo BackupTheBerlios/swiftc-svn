@@ -54,7 +54,6 @@ struct CFG : public Graph<BasicBlock>
     BBNode* entry_;
     BBNode* exit_;
 
-
     BBNode** idoms_;
 
     typedef std::map<InstrNode*, BBNode*> LabelNode2BBNodeMap;

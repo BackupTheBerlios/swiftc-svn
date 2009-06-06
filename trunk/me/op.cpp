@@ -25,6 +25,7 @@
 #include "utils/stringhelper.h"
 
 #include "me/arch.h"
+#include "me/functab.h"
 
 namespace me {
 
@@ -134,6 +135,13 @@ Op::Type Op::toSimdType(Type type)
 
 //------------------------------------------------------------------------------
 
+Undef* Undef::toSimd() const
+{
+    return new Undef( toSimdType(type_) );
+}
+
+//------------------------------------------------------------------------------
+
 /*
  * constructor and destructor
  */
@@ -144,8 +152,16 @@ Const::Const(Type type)
 }
 
 /*
- * further methods
+ * virtual methods
  */
+
+Const* Const::toSimd() const
+{
+    Const* cst = new Const( toSimdType(type_) );
+    cst->value_ = value_;
+
+    return cst;
+}
 
 std::string Const::toString() const
 {
@@ -348,6 +364,15 @@ Reg* Reg::colorReg(int typeMask)
     return ( !isSpilled() && typeCheck(typeMask) ) ? this : 0;
 }
 
+Reg* Reg::toSimd() const
+{
+#ifdef SWIFT_DEBUG
+    return functab->newSSAReg( toSimdType(type_), new std::string("s_" + id_) );
+#else // SWIFT_DEBUG
+    return functab->newSSAReg( toSimdType(type_) );
+#endif // SWIFT_DEBUG
+}
+
 std::string Reg::toString() const
 {
     std::ostringstream oss;
@@ -396,6 +421,16 @@ MemVar* MemVar::clone(int varNr) const
 }
 
 #endif // SWIFT_DEBUG
+
+MemVar* MemVar::toSimd() const
+{
+#ifdef SWIFT_DEBUG
+    //return functab->newSSAMemVar( memory->toSimd(), new std::string("s_" + id_) );
+#else // SWIFT_DEBUG
+    //return functab->newSSAMemVar( memory->toSimd() );
+#endif // SWIFT_DEBUG
+    return 0;
+}
 
 std::string MemVar::toString() const
 {

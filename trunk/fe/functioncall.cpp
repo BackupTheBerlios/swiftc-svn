@@ -113,7 +113,7 @@ bool CCall::analyze()
     if ( returnType_ && !returnType_->validate() )
         return false;
 
-    if ( exprList_ && !exprList_->analyze() )
+    if ( !tupel_ && exprList_ && !exprList_->analyze() )
         return false;
 
     PlaceList argPlaceList = exprList_ 
@@ -124,9 +124,7 @@ bool CCall::analyze()
     for (size_t i = 0; i < argPlaceList.size(); ++i)
         in_.push_back( argPlaceList[i] );
 
-    if (tupel_)
-        out_.push_back( (me::Var*) tupel_->typeNode()->getPlace() );
-    else if (returnType_)
+    if (returnType_)
         out_.push_back( returnType_->createVar() );
 
     // set place and type as it is needed by the parent expr
@@ -144,9 +142,12 @@ bool CCall::analyze()
         call->arg_[i] = me::Arg( in_[i] );
 
     for (size_t i = 0; i < out_.size(); ++i)
-        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
+        call->res_[i] = me::Res( out_[i] );
 
     me::functab->appendInstr(call); 
+
+    //if (tupel_)
+        //tupel_->emitStoreIfApplicable(this);
 
     return true;
 }
@@ -229,7 +230,6 @@ bool RoutineCall::analyze()
 
     memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
 
-
     if (!memberFunction_)
         return false;
 
@@ -244,6 +244,8 @@ bool RoutineCall::analyze()
         place_ = call.getPrimaryPlace();
         type_ = call.getPrimaryType();
     }
+    //else
+        //tupel_->emitStoreIfApplicable(this);
 
     return true;
 }

@@ -20,6 +20,7 @@
 #include "fe/tupel.h"
 
 #include "fe/expr.h"
+#include "fe/exprlist.h"
 
 namespace swift {
 
@@ -121,6 +122,13 @@ std::string Tupel::toString() const
 bool Tupel::moreThanOne() const
 {
     return next_;
+}
+
+void Tupel::emitStoreIfApplicable(Expr* expr)
+{
+    MemberAccess* ma = dynamic_cast<MemberAccess*>( typeNode() );
+    if (ma)
+        ma->emitStoreIfApplicable(expr);
 }
 
 } // namespace swift

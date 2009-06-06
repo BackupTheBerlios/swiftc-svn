@@ -53,38 +53,24 @@ std::string* operatorToString(int _operator)
 
     switch (_operator)
     {
-        case AND_OP:
-            *str = "and";
-            break;
-        case OR_OP:
-            *str = "or";
-            break;
-        case XOR_OP:
-            *str = "xor";
-            break;
-        case NOT_OP:
-            *str = "not";
-            break;
-        case EQ_OP:
-            *str = "==";
-            break;
-        case NE_OP:
-            *str = "<>";
-            break;
-        case LE_OP:
-            *str = "<=";
-            break;
-        case GE_OP:
-            *str = ">=";
-            break;
-        case MOD_OP:
-            *str = "mod";
-            break;
-        case DIV_OP:
-            *str = "div";
-            break;
+        case AND_OP: *str = "and"; break;
+        case OR_OP: *str = "or"; break;
+        case XOR_OP: *str = "xor"; break;
+        case NOT_OP: *str = "not"; break;
+        case EQ_OP: *str = "eq"; break;
+        case NE_OP: *str = "ne"; break;
+        case LE_OP: *str = "le"; break;
+        case GE_OP: *str = "ge"; break;
+        case MOD_OP: *str = "mod"; break;
+        case DIV_OP: *str = "div"; break;
+        case '+': *str = "add"; break;
+        case '-': *str = "sub"; break;
+        case '*': *str = "mul"; break;
+        case '/': *str = "div"; break;
+        case '<': *str = "l"; break;
+        case '>': *str = "g"; break;
         default:
-            *str = (char) _operator;
+            swiftAssert(false, "unreachable code");
     }
 
     return str;
@@ -237,7 +223,7 @@ class_definition
         {
             $$ = $<class_>5;
             $<class_>$->classMember_= $6;
-            $<class_>$->autoGenMethods();
+            /*$<class_>$->autoGenMethods();*/
         }
     ;
 

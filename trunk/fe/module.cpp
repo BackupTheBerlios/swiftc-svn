@@ -23,6 +23,7 @@
 #include <typeinfo>
 
 #include "fe/class.h"
+#include "fe/symtab.h"
 #include "fe/type.h"
 
 #include "me/functab.h"
@@ -56,6 +57,21 @@ bool Module::analyze()
     /*
      * analyze data structures first
      */
+
+    // for each class
+    for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
+    {
+        if ( typeid(*iter->value_) == typeid(Class) )
+        {
+            Class* _class = (Class*) iter->value_;
+            me::functab->enterStruct(_class->meStruct_);
+            symtab->enterClass(_class);
+            _class->autoGenMethods();
+
+            symtab->leaveClass();
+            me::functab->leaveStruct();
+        } // if type == Class
+    } // for each class
 
     // for each class
     for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())

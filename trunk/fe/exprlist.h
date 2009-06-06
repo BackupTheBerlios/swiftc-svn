@@ -68,8 +68,11 @@ public:
     PlaceList getPlaceList();
     int getModifier() const;
     FunctionCall* getFunctionCall();
-
     bool moreThanOne() const;
+    Expr* getExpr();
+    const Expr* getExpr() const;
+    ExprList* next();
+    const ExprList* next() const;
 
 private:
 

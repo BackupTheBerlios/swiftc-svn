@@ -49,6 +49,7 @@ public:
 private:
 
     void liveRangeSplit(InstrNode* instrNode, BBNode* bbNode);
+    BBNode* findBBNode(InstrNode* instrNode);
 };
 
 } // namespace me

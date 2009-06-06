@@ -40,6 +40,7 @@ std::string suffix(int);
 
 std::string reg2str(me::Reg* reg);
 std::string memvar2str(me::MemVar* memVar, int offset);
+std::string ptr2str(me::Reg* reg, int offset);
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string jcc(me::BranchInstr* bi, bool neg = false);
@@ -57,8 +58,9 @@ std::string mul2str(int type);
 std::string div2str(int type);
 
 std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem = false);
+std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem = false);
 
-std::string neg_mask(int type);
+std::string neg_mask(int type, bool mem = false);
 
 }
 

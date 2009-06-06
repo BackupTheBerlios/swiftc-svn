@@ -62,6 +62,11 @@ bool Type::isIndex() const
     return false;
 }
 
+bool Type::isInt() const
+{
+    return false;
+}
+
 /*
  * further methods
  */
@@ -239,6 +244,11 @@ bool BaseType::isBool() const
 bool BaseType::isIndex() const
 {
     return *id_ == "index";
+}
+
+bool BaseType::isInt() const
+{
+    return *id_ == "int";
 }
 
 bool BaseType::isActuallyPtr() const

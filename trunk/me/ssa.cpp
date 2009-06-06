@@ -38,15 +38,52 @@ namespace me {
 
 //------------------------------------------------------------------------------
 
+/*
+ * constructors
+ */
+
+Res::Res(Var* var, int oldVarNr, int constraint /*= NO_CONSTRAINT*/)
+    : var_(var)
+    , oldVarNr_(oldVarNr)
+    , constraint_(constraint)
+{}
+
+Res::Res(Var* var)
+    : var_(var)
+    , oldVarNr_(var->varNr_)
+    , constraint_(NO_CONSTRAINT)
+{}
+
+/*
+ * further methods
+ */
+
 std::string Res::toString() const
 {
     return var_->toString();
 }
 
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Arg::Arg(Op* op, int constraint /*= NO_CONSTRAINT*/)
+    : op_(op)
+    , constraint_(constraint)
+{}
+
+/*
+ * further methods
+ */
+
 std::string Arg::toString() const
 {
     return op_->toString();
 }
+
+//------------------------------------------------------------------------------
 
 template<class T>
 std::string commaList(T begin, T end)
@@ -242,8 +279,14 @@ std::string InstrBase::livenessString() const
 
 //------------------------------------------------------------------------------
 
-// init static
+/*
+ * init statics
+ */
 int LabelInstr::counter_ = 1;
+
+/*
+ * constructor
+ */
 
 LabelInstr::LabelInstr()
     : InstrBase(0, 0)
@@ -254,6 +297,24 @@ LabelInstr::LabelInstr()
 
     ++counter_;
 }
+
+/*
+ * virtual methods
+ */
+
+LabelInstr* LabelInstr::toSimd() const
+{
+    return new LabelInstr();
+}
+
+std::string LabelInstr::toString() const
+{
+    return label_;
+}
+
+/*
+ * further methods
+ */
 
 std::string LabelInstr::asmName() const
 {
@@ -273,8 +334,13 @@ NOP::NOP(Op* op)
 }
 
 /*
- * further methods
+ * virtual methods
  */
+
+NOP* NOP::toSimd() const
+{
+    return new NOP( arg_[0].op_->toSimd() );
+}
 
 std::string NOP::toString() const
 {
@@ -296,9 +362,7 @@ PhiInstr::PhiInstr(Var* result, size_t numRhs)
     , sourceBBs_( new BBNode*[numRhs] )
 {
     // init result
-    res_[0].var_ = result;
-    res_[0].oldVarNr_ = result->varNr_;
-    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
 
     // fill everthing with zero -- needed for some debugging
     memset(sourceBBs_, 0, sizeof(BBNode*) * numRhs);
@@ -329,8 +393,18 @@ int PhiInstr::oldResultNr() const
 }
 
 /*
-    further methods
-*/
+ * virtual methods
+ */
+
+PhiInstr* PhiInstr::toSimd() const
+{
+    // is this a trivial phi function?
+    //if (arg_.size() == 1)
+        //return new PhiInstr( result()->toSimd(), arg_[0].op_->toSimd() );
+
+    // no -> a more complex analysis
+    return 0;
+}
 
 std::string PhiInstr::toString() const
 {
@@ -362,23 +436,76 @@ std::string PhiInstr::toString() const
 //------------------------------------------------------------------------------
 
 /*
- * constructor
+ * constructors
  */
 
 AssignInstr::AssignInstr(int kind, Var* result, Op* op1, Op* op2 /*= 0*/)
-    // an AssignInstr always have exactly one result and one or two args
     : InstrBase(1, op2 ? 2 : 1) 
     , kind_(kind)
 {
-    res_[0].var_ = result;
-    res_[0].oldVarNr_= result->varNr_;
-    res_[0].constraint_= NO_CONSTRAINT;
-
-    arg_[0].op_ = op1;
-    arg_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
+    arg_[0] = Arg(op1);
 
     if (op2)
-        arg_[1].op_ = op2;
+        arg_[1] = Arg(op2);
+}
+
+AssignInstr::AssignInstr(int kind)
+    : InstrBase(0, 0)
+    , kind_(kind)
+{}
+
+/*
+ * virtual methods
+ */
+
+AssignInstr* AssignInstr::toSimd() const
+{
+    // TODO
+    return 0;
+}
+
+std::string AssignInstr::toString() const
+{
+    std::string opString = getOpString();
+    std::ostringstream oss;
+    oss << res_[0].var_->toString();
+
+    for (size_t i = 1; i < res_.size(); ++i)
+        oss << ", " << res_[i].var_->toString();
+
+    oss << '\t';
+
+    // FIXME not accurate with dummy args
+
+    // is this a binary, an unary instruction or an assignment?
+    if (arg_.size() >= 2)
+    {
+        // it is a binary instruction
+        oss << "= " << arg_[0].op_->toString() << " " << opString << " " << arg_[1].op_->toString();
+
+        for (size_t i = 2; i < arg_.size(); ++i)
+            oss << ", " << arg_[i].op_->toString();
+    }
+    else
+    {
+        if ( kind_ == NOT || kind_ == UNARY_MINUS || kind_ == '^' )
+        {
+            // it is an unary instruction
+            oss << "= " << opString;
+        }
+        else
+        {
+            // it is an assignment
+            oss << opString;
+        }
+        oss << ' ' << arg_[0].op_->toString();
+    }
+
+    if ( isConstrained() )
+        oss << " (c)";
+
+    return oss.str();
 }
 
 /*
@@ -455,49 +582,6 @@ bool AssignInstr::isArithmetic() const
             kind_ == '*' || kind_ == '/');
 }
 
-std::string AssignInstr::toString() const
-{
-    std::string opString = getOpString();
-    std::ostringstream oss;
-    oss << res_[0].var_->toString();
-
-    for (size_t i = 1; i < res_.size(); ++i)
-        oss << ", " << res_[i].var_->toString();
-
-    oss << '\t';
-
-    // FIXME not accurate with dummy args
-
-    // is this a binary, an unary instruction or an assignment?
-    if (arg_.size() >= 2)
-    {
-        // it is a binary instruction
-        oss << "= " << arg_[0].op_->toString() << " " << opString << " " << arg_[1].op_->toString();
-
-        for (size_t i = 2; i < arg_.size(); ++i)
-            oss << ", " << arg_[i].op_->toString();
-    }
-    else
-    {
-        if ( kind_ == NOT || kind_ == UNARY_MINUS || kind_ == '^' )
-        {
-            // it is an unary instruction
-            oss << "= " << opString;
-        }
-        else
-        {
-            // it is an assignment
-            oss << opString;
-        }
-        oss << ' ' << arg_[0].op_->toString();
-    }
-
-    if ( isConstrained() )
-        oss << " (c)";
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -542,8 +626,14 @@ const LabelInstr* GotoInstr::label() const
 }
 
 /*
- * further methods
+ * virtual methods
  */
+
+GotoInstr* GotoInstr::toSimd() const
+{
+    // TODO
+    return 0;
+}
 
 std::string GotoInstr::toString() const
 {
@@ -610,8 +700,14 @@ const Op* BranchInstr::getOp() const
 }
 
 /*
- * further methods
+ * virtual methods
  */
+
+BranchInstr* BranchInstr::toSimd() const
+{
+    // TODO
+    return 0;
+}
 
 std::string BranchInstr::toString() const
 {
@@ -633,18 +729,21 @@ Spill::Spill(Var* result, Var* arg)
     : InstrBase(1, 1)
 {
     swiftAssert( result->isSpilled(), "result must be a memory var" );
-    res_[0].var_ = result;
-    res_[0].oldVarNr_ = result->varNr_;
-    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
 
     swiftAssert( !arg->isSpilled(), "arg must not be a memory var" );
-    arg_[0].op_  = arg;
-    arg_[0].constraint_  = NO_CONSTRAINT;
+    arg_[0] = Arg(arg);
 }
 
 /*
- * further methods
+ * virtual methods
  */
+
+Spill* Spill::toSimd() const
+{
+    //return new Spill( res_[0]->toSimd(), arg_[0]->toSimd() );
+    return 0;
+}
 
 std::string Spill::toString() const
 {
@@ -653,6 +752,10 @@ std::string Spill::toString() const
 
     return oss.str();
 }
+
+/*
+ * further methods
+ */
 
 Var* Spill::resVar()
 {
@@ -676,13 +779,29 @@ Reload::Reload(Var* result, Var* arg)
     : InstrBase(1, 1)
 {
     swiftAssert( !result->isSpilled(), "result must not be a memory var" );
-    res_[0].var_ = result;
-    res_[0].oldVarNr_ = result->varNr_;
-    res_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
 
     swiftAssert( arg->isSpilled(), "arg must be a memory var" );
-    arg_[0].op_ = arg;
-    arg_[0].constraint_  = NO_CONSTRAINT;
+    arg_[0] = Arg(arg);
+}
+
+/*
+ * virtual methods
+ */
+
+Reload* Reload::toSimd() const
+{
+    //return new Reload( res_[0]->toSimd(), arg_[0]->toSimd() );
+    return 0;
+}
+
+std::string Reload::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= reload(" 
+        << arg_[0].op_->toString() << ")";
+
+    return oss.str();
 }
 
 /*
@@ -702,15 +821,6 @@ Reg* Reload::resReg()
 }
 
 
-std::string Reload::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].var_->toString() << "\t= reload(" 
-        << arg_[0].op_->toString() << ")";
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -724,17 +834,33 @@ Load::Load(Var* result, Var* location, Offset* offset)
     swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
             "must be an R_PTR");
 
-    res_[0].var_ = result;
-    res_[0].constraint_ = NO_CONSTRAINT;
-    res_[0].oldVarNr_ = result->varNr_;
-
-    arg_[0].op_ = location;
-    arg_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
+    arg_[0] = Arg(location);
 }
 
 Load::~Load()
 {
     delete offset_;
+}
+/*
+ * virtual methods
+ */
+
+Load* Load::toSimd() const
+{
+    // TODO
+    //return new Load();
+    return 0;
+}
+
+std::string Load::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= Load(" 
+        << arg_[0].op_->toString() << ", "
+        << offset_->toString() << ')';
+
+    return oss.str();
 }
 
 /*
@@ -752,16 +878,6 @@ Reg* Load::resReg()
     return (Reg*) res_[0].var_;
 }
 
-std::string Load::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].var_->toString() << "\t= Load(" 
-        << arg_[0].op_->toString() << ", "
-        << offset_->toString() << ')';
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -776,17 +892,37 @@ LoadPtr::LoadPtr(Reg* result, Var* location, Offset* offset)
     swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
             "must be an R_PTR");
 
-    res_[0].var_ = result;
-    res_[0].constraint_ = NO_CONSTRAINT;
-    res_[0].oldVarNr_ = result->varNr_;
-
-    arg_[0].op_ = location;
-    arg_[0].constraint_ = NO_CONSTRAINT;
+    res_[0] = Res(result);
+    arg_[0] = Arg(location);
 }
 
 LoadPtr::~LoadPtr()
 {
     delete offset_;
+}
+
+/*
+ * virtual methods
+ */
+
+LoadPtr* LoadPtr::toSimd() const
+{
+    // TODO
+    return 0;
+}
+
+std::string LoadPtr::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= LoadPtr(" 
+        << arg_[0].op_->toString();
+
+    if (offset_)
+         oss << ", " << offset_->toString(); 
+    
+    oss << ')';
+
+    return oss.str();
 }
 
 /*
@@ -804,20 +940,6 @@ Reg* LoadPtr::resReg()
     return (Reg*) res_[0].var_;
 }
 
-std::string LoadPtr::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].var_->toString() << "\t= LoadPtr(" 
-        << arg_[0].op_->toString();
-
-    if (offset_)
-         oss << ", " << offset_->toString(); 
-    
-    oss << ')';
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -829,12 +951,27 @@ Deref::Deref(Reg* result, Reg* ptr)
 {
     swiftAssert(ptr->type_ == Op::R_PTR, "must be an R_PTR");
 
-    res_[0].var_ = result;
-    res_[0].constraint_ = NO_CONSTRAINT;
-    res_[0].oldVarNr_ = result->varNr_;
+    res_[0] = Res(result);
+    arg_[0] = Arg(ptr);
+}
 
-    arg_[0].op_ = ptr;
-    arg_[0].constraint_ = NO_CONSTRAINT;
+/*
+ * virtual methods
+ */
+
+Deref* Deref::toSimd() const
+{
+    // TODO
+    return 0;
+}
+
+std::string Deref::toString() const
+{
+    std::ostringstream oss;
+    oss << res_[0].var_->toString() << "\t= Deref(" 
+        << arg_[0].op_->toString() << ", " << ')';
+
+    return oss.str();
 }
 
 /*
@@ -848,17 +985,7 @@ Reg* Deref::result()
     return (Reg*) res_[0].var_;
 }
 
-std::string Deref::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].var_->toString() << "\t= Deref(" 
-        << arg_[0].op_->toString() << ", " << ')';
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
-
 
 /*
  * constructor and destructor
@@ -868,28 +995,57 @@ Store::Store(Var* location, Op* arg, Offset* offset)
     : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
     , offset_(offset)
 {
-    arg_[0].op_ = arg;
-    arg_[0].constraint_ = NO_CONSTRAINT;
+    // -> store to an arbitrary location in memory
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+            "must be an R_PTR or R_STACK");
+
+    arg_[0] = Arg(arg);
+    arg_[1] = Arg(location);
 
     if (location->type_ == Op::R_STACK)
     {
         // -> store to a location on the stack
-        res_[0].var_ = location;
-        res_[0].constraint_ = NO_CONSTRAINT;
-        res_[0].oldVarNr_ = location->varNr_;
+        res_[0] = Res(location);
     }
-
-    // -> store to an arbitrary location in memory
-    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
-            "must be an R_PTR");
-
-    arg_[1].op_ = location;
-    arg_[1].constraint_ = NO_CONSTRAINT;
 }
 
 Store::~Store()
 {
     delete offset_;
+}
+
+/*
+ * virtual methods
+ */
+
+Store* Store::toSimd() const
+{
+    // TODO
+    return 0;
+}
+
+std::string Store::toString() const
+{
+    std::ostringstream oss;
+
+    if ( res_.empty() )
+    {
+        // -> store to an arbitrary location in memory
+        oss << "Store("
+            << arg_[0].op_->toString() << ", "
+            << arg_[1].op_->toString();
+    }
+    else
+    {
+        // -> store to a location on the stack
+        oss << res_[0].var_->toString() << "\t= Store(" 
+            << arg_[0]. op_->toString() << ", "
+            << arg_[1]. op_->toString();
+    }
+
+    oss << ", (" << offset_->toString() << ')';
+
+    return oss.str();
 }
 
 /*
@@ -907,30 +1063,6 @@ MemVar* Store::resMemVar()
     return (MemVar*) res_[0].var_;
 }
 
-std::string Store::toString() const
-{
-    std::ostringstream oss;
-
-    if ( res_.empty() )
-    {
-        // -> store to an arbitrary location in memory
-        oss << "\t\tStore("
-            << arg_[0].op_->toString() << ", "
-            << arg_[1].op_->toString();
-    }
-    else
-    {
-        // -> store to a location on the stack
-        oss << res_[0].var_->toString() << "\t= Store(" 
-            << arg_[0]. op_->toString() << ", "
-            << arg_[1]. op_->toString();
-    }
-
-    oss << ", (" << offset_->toString() << ')';
-
-    return oss.str();
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -942,8 +1074,14 @@ SetParams::SetParams(size_t numLhs)
 {}
 
 /*
- * further methods
+ * virtual methods
  */
+
+SetParams* SetParams::toSimd() const
+{
+    // TODO
+    return 0;
+}
 
 std::string SetParams::toString() const
 {
@@ -966,8 +1104,14 @@ SetResults::SetResults(size_t numRhs)
 {}
 
 /*
- * further methods
+ * virtual methods
  */
+
+SetResults* SetResults::toSimd() const
+{
+    // TODO
+    return 0;
+}
 
 std::string SetResults::toString() const
 {
@@ -997,12 +1141,13 @@ CallInstr::CallInstr(size_t numLhs,
 {}
 
 /*
- * further methods
+ * virtual methods
  */
 
-bool CallInstr::isVarArg() const
+CallInstr* CallInstr::toSimd() const
 {
-    return vararg_;
+    // TODO
+    return 0;
 }
 
 std::string CallInstr::toString() const
@@ -1023,19 +1168,58 @@ std::string CallInstr::toString() const
     return oss.str();
 }
 
+/*
+ * further methods
+ */
+
+bool CallInstr::isVarArg() const
+{
+    return vararg_;
+}
+
 //------------------------------------------------------------------------------
 
 /*
  * constructor
  */
 
-Malloc::Malloc(size_t size)
+Malloc::Malloc(Reg* ptr, size_t size)
     : CallInstr(1, 1, "malloc")
 {
+    swiftAssert(ptr->type_ == Op::R_PTR, "must be a Ptr here");
     Const* cst = functab->newConst( arch->getPreferedIndex() );
-    cst->value_.index_ = size;
+    cst->value_.uint64_ = size; // TODO make this arch independently
     arg_[0] = Arg(cst);
+    res_[0] = Res(ptr);
 }
 
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Free::Free(Reg* ptr)
+    : CallInstr(1, 1, "free")
+{
+    swiftAssert(ptr->type_ == Op::R_PTR, "must be a Ptr here");
+    arg_[0] = Arg(ptr);
+    res_[0] = Res(ptr);
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Memcpy::Memcpy(Reg* src, Reg* dst)
+    : CallInstr(0, 2, "memcpy")
+{
+    swiftAssert(src->type_ == Op::R_PTR, "must be a Ptr here");
+    swiftAssert(dst->type_ == Op::R_PTR, "must be a Ptr here");
+    arg_[0] = Arg(src);
+    arg_[1] = Arg(dst);
+}
 
 } // namespace me

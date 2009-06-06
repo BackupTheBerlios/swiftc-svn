@@ -70,7 +70,7 @@ public:
      */
 
     void neededAsLValue();
-    bool isNeededAsLValue() const;
+    void doNotLoadPtr();
 
 protected:
 
@@ -78,9 +78,8 @@ protected:
      * data
      */
 
-private:
-
-    bool  neededAsLValue_;
+    bool neededAsLValue_;
+    bool doNotLoadPtr_;
 };
 
 //------------------------------------------------------------------------------
@@ -308,8 +307,6 @@ struct MemberAccess : public Expr
     /// The place of the left most place in each chain.
     me::Var* rootVar_; 
 
-    bool storeNecessary_;
-
     /*
      * constructor and destructor
      */
@@ -329,7 +326,7 @@ struct MemberAccess : public Expr
      * further methods
      */
 
-    void emitStoreIfApplicable();
+    void emitStoreIfApplicable(Expr* expr);
 };
 
 //------------------------------------------------------------------------------

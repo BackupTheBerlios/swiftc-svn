@@ -139,7 +139,6 @@ public:
     void targetSetResults(me::InstrNode* iter, me::BBNode* currentBB);
     void targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB);
 
-
     static std::string reg2String(const me::Reg* reg);
 };
 

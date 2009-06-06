@@ -80,8 +80,17 @@ std::string reg2str(me::Reg* reg)
 std::string memvar2str(me::MemVar* memVar, int offset)
 {
     std::ostringstream oss;
-    oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 8) + offset
+    oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 16) - offset
         << "(%rbp)";
+
+    return oss.str();
+}
+
+std::string ptr2str(me::Reg* reg, int offset)
+{
+    std::ostringstream oss;
+    swiftAssert(reg->type_ == me::Op::R_PTR, "must be an R_PTR here");
+    oss << offset << '(' << reg2str(reg) << ')';
 
     return oss.str();
 }
@@ -272,13 +281,13 @@ std::string mul2str(int type)
     return "error";
 }
 
-// TODO not is not correct
-std::string op_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false*/)
+std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false*/)
 {
+    swiftAssert(ai->kind_ == me::AssignInstr::UNARY_MINUS, "must be unary minus here");
+    swiftAssert(ai->arg_.size() == 1, "must be unary minus here");
+
     std::ostringstream oss;
     oss << '$';
-    int kind = ai->kind_;
-
     me::Const::Value box;
 
     /*
@@ -290,13 +299,7 @@ std::string op_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false*/)
 
 #define OP_CONST_CASE(type, member, box_member)\
     case me::Op::type :\
-        switch (kind)\
-        {\
-            case me::AssignInstr::UNARY_MINUS: box.member = -cst->value_.member; break;\
-            case me::AssignInstr::NOT:         box.member = !cst->value_.member; break;\
-            default:\
-                swiftAssert(false, "unreachable code"); \
-        }\
+        box.member = -cst->value_.member;\
         if (mem)\
         {\
             me::Const newCst(cst->type_);\
@@ -337,10 +340,6 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     int kind = ai->kind_;
 
     me::Const::Value box;
-
-    /*
-     * signed integers
-     */
 
     switch (cst1->type_)
     {
@@ -481,24 +480,57 @@ std::string jcc(me::BranchInstr* bi, bool neg /*= false*/)
     return "error";
 }
 
-std::string neg_mask(int type)
+std::string neg_mask(int type, bool mem /*= false*/)
 {
     std::ostringstream oss;
     oss << ".LCS";
 
-    switch (type)
+    if (mem)
     {
-        case X64_REAL32:
-            oss << "32";
-            break;
-        case X64_REAL64:
-            oss << "64";
-            break;
-        default:
-            swiftAssert(false, "unreachable code"); 
+        switch (type)
+        {
+            case X64_INT8:
+                oss << "8";
+                break;
+            case X64_INT16:
+                oss << "16";
+                break;
+            case X64_INT32:
+            case X64_REAL32:
+                oss << "32";
+                break;
+            case X64_INT64:
+            case X64_REAL64:
+                oss << "64";
+                break;
+            default:
+                swiftAssert(false, "unreachable code"); 
+        }
+    }
+    else
+    {
+        switch (type)
+        {
+            case X64_INT8:
+                oss << 0x80;
+                break;
+            case X64_INT16:
+                oss << 0x8000;
+                break;
+            case X64_INT32:
+            case X64_REAL32:
+                oss << 0x80000000;
+                break;
+            case X64_INT64:
+            case X64_REAL64:
+                oss << 0x80000000;
+                break;
+            default:
+                swiftAssert(false, "unreachable code"); 
+        }
     }
 
-    return "error";
+    return oss.str();
 }
 
 } // namespace be

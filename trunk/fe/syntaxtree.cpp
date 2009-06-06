@@ -104,6 +104,7 @@ std::string Symbol::getFullName() const
 TypeNode::TypeNode(Type* type, int line /*= NO_LINE*/)
     : Node(line)
     , type_(type)
+    , storeNecessary_(false)
 {}
 
 TypeNode::~TypeNode()
@@ -128,6 +129,11 @@ const me::Op* TypeNode::getPlace() const
 me::Op* TypeNode::getPlace()
 {
     return place_;
+}
+
+bool TypeNode::isStoreNecessary() const
+{
+    return storeNecessary_;
 }
 
 //------------------------------------------------------------------------------
@@ -156,6 +162,5 @@ bool SyntaxTree::analyze()
 
     return result;
 }
-
 
 } // namespace swift

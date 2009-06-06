@@ -40,17 +40,25 @@ void StackLayout::insertColor(size_t place, int color)
 
 void StackLayout::appendMemVar(MemVar* memVar)
 {
-    int offset = arch->calcAlignedStackOffset(memSlotsSize_, memVar->memory_->size_);
-    memSlotsSize_ = offset + memVar->memory_->size_;
-    MemSlot ms = {memVar, offset};
+    MemSlot ms = {memVar, 0};
     color2MemSlot_.push_back(ms);
 
-    // set color to the index in the vector
+    // set color to last index of the vector
     memVar->color_ = color2MemSlot_.size() - 1;
 }
 
 void StackLayout::arangeStackLayout()
 {
+    /*
+     * calculate mem slots
+     */
+    for (size_t i = 0; i < color2MemSlot_.size(); ++i)
+    {
+        MemSlot& ms = color2MemSlot_[i];
+        ms.offset_ = arch->calcAlignedStackOffset(memSlotsSize_, ms.memVar_->memory_->size_);
+        memSlotsSize_ = ms.offset_ + ms.memVar_->memory_->size_;
+    }
+
     // fill itemSize_ for each place
     for (size_t i = 0; i < arch->getNumStackPlaces(); ++i)
         places_[i].itemSize_ = arch->getItemSize(i);
@@ -63,10 +71,16 @@ void StackLayout::arangeStackLayout()
         places_[0].offset_ = 0;
     else
     {
-        // firstPlaceOffset = align( lastMemSlot-offset + lastMemSlot-size, first-item-size )
         MemSlot& lastMemSlot= *color2MemSlot_.rbegin();
+
+        /* 
+         * firstPlaceOffset = align( 
+         *      lastMemSlot-offset + lastMemSlot-size, 
+         *      first-item-size )
+         */
         places_[0].offset_ = arch->calcAlignedStackOffset(
-                lastMemSlot.offset_ + lastMemSlot.memVar_->memory_->size_, places_[0].itemSize_);
+                lastMemSlot.offset_ + lastMemSlot.memVar_->memory_->size_, 
+                places_[0].itemSize_);
     }
 
     swiftAssert( !places_.empty(), "places_ must not be empty" );

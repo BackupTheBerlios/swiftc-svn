@@ -20,6 +20,8 @@
 #ifndef ME_DEFUSE_H
 #define ME_DEFUSE_H
 
+#include <string>
+
 #include "utils/list.h"
 #include "utils/graph.h"
 #include "utils/map.h"
@@ -32,19 +34,23 @@ namespace me {
 /// This class can be used to reference def and use information
 struct DefUse
 {
-    DefUse() {}
-    DefUse(Var* var, InstrNode* instrNode, BBNode* bbNode)
-        : var_(var)
-        , instrNode_(instrNode)
-        , bbNode_(bbNode)
-    {}
+    /*
+     * constructors
+     */
 
-    void set(Var* var, InstrNode* instrNode, BBNode* bbNode)
-    {
-        var_        = var;
-        instrNode_  = instrNode;
-        bbNode_     = bbNode;
-    }
+    DefUse() {}
+    DefUse(Var* var, InstrNode* instrNode, BBNode* bbNode);
+
+    /*
+     * further methods
+     */
+
+    void set(Var* var, InstrNode* instrNode, BBNode* bbNode);
+    std::string toString() const;
+
+    /*
+     * data
+     */
 
     Var* var_;              /// < The var which is referenced here.
     InstrNode* instrNode_;  ///< The instruction which is referenced here.
@@ -58,15 +64,24 @@ typedef List<DefUse> DefUseList;
 #define DEFUSELIST_EACH(iter, defUseList) \
     for (me::DefUseList::Node* (iter) = (defUseList).first(); (iter) != (defUseList).sentinel(); (iter) = (iter)->next())
 
+#define DEFUSELIST_CONST_EACH(iter, defUseList) \
+    for (const me::DefUseList::Node* (iter) = (defUseList).first(); (iter) != (defUseList).sentinel(); (iter) = (iter)->next())
+
 //-------------------------------------------------------------------------------
 
 struct VarDefUse
 {
+    std::string toString() const;
+
+    /*
+     * data
+     */
+
     DefUseList defs_;
     DefUseList uses_;
 };
 
-//------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 
 /// Keeps vars with their definitions und uses.
 typedef Map<Var*, VarDefUse*> VDUMap;

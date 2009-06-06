@@ -196,7 +196,13 @@ void Coloring::colorRecursive(BBNode* bbNode)
         
         swiftAssert( constrainedInstr->isConstrained(), "must be constrained");
         swiftAssert( bb->liveIn_.empty(), 
-                "liveIn should be empty with a constrained instruction" );
+                "liveIn must be empty within a constrained instruction" );
+
+        if (!bb->liveIn_.empty())
+        {
+            VARSET_EACH(iter, bb->liveIn_)
+                std::cout << (*iter)->toString() << std::endl;
+        }
 
         VarSet alreadyColored;
         colorConstraintedInstr(constrainedInstrNode, alreadyColored);

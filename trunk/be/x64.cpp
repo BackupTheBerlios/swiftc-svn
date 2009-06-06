@@ -124,25 +124,51 @@ void X64::regAlloc(me::Function* function)
 
 void X64::dumpConstants(std::ofstream& ofs)
 {
+    /*
+     * byte constants 
+     */
+
     UINT8MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ":\n";
         ofs << ".byte " << iter->first << '\n';
     }
+
+    // sign mask for int8
+    ofs << ".LCS8:\n";
+    ofs << ".byte " << 0x80 << '\n';
+
+    /*
+     * short constants 
+     */
+
     UINT16MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ":\n";
         ofs << ".short " << iter->first << '\n';
     }
+
+    // sign mask for int16
+    ofs << ".LCS16:\n";
+    ofs << ".short " << 0x8000 << '\n';
+
+    /*
+     * long constants 
+     */
+
     UINT32MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ":\n";
         ofs << ".long " << iter->first << '\n';
     }
 
-    // sign mask for real32
+    // sign mask for int32 and real32
     ofs << ".LCS32:\n";
     ofs << ".long " << 0x80000000 << '\n';
+
+    /*
+     * quad constants 
+     */
 
     UINT64MAP_EACH(iter)
     {
@@ -150,7 +176,7 @@ void X64::dumpConstants(std::ofstream& ofs)
         ofs << ".quad " << iter->first << '\n';
     }
 
-    // sign mask for real64
+    // sign mask for int64 and real64
     ofs << ".LCS64:\n";
     ofs << ".quad " << 0x8000000000000000ULL << '\n';
 

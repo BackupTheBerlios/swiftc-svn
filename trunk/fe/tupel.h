@@ -69,6 +69,7 @@ public:
     const TypeNode* typeNode() const;
     TypeNode* typeNode();
     bool moreThanOne() const;
+    void emitStoreIfApplicable(Expr* expr);
 
 private:
 

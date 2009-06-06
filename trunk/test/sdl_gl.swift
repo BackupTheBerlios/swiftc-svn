@@ -78,11 +78,11 @@ class App
         c_call glLoadIdentity()
 
         # set our perspective 
-        real64 ratio = width:to_real64() / height:to_real64()
+        real64 ratio = 640.0q / 480.0q #= width:to_real64() / height:to_real64() TODO
         c_call gluPerspective(45.0q, ratio, 0.1q, 100.0q)
 
         # make sure we're chaning the model view and not the projection 
-        uint GL_MODELVIEW = 5890u
+        uint GL_MODELVIEW = 5888u
         c_call glMatrixMode(GL_MODELVIEW)
 
         # reset The View 
@@ -99,7 +99,7 @@ class App
         c_call glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Depth buffer setup 
-        c_call glClearDepth(1.0)
+        c_call glClearDepth(1.0q)
 
         # Enables Depth Testing 
         uint GL_DEPTH_TEST = 2929u
@@ -118,7 +118,7 @@ class App
     # Here goes our drawing code 
     writer drawGLScene()
         # Clear The Screen And The Depth Buffer 
-        c_call glClear() # TODO GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
+        c_call glClear(16640u) # TODO GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 
         # Move Left 1.5 Units And Into The Screen 6.0 
         c_call glLoadIdentity()
@@ -217,15 +217,18 @@ class App
     end
 
     routine main() -> int result
+        ::start()
+        result = 0
+    end
+
+    routine start() -> int result
         App app
 
-        # Flags to pass to SDL_SetVideoMode 
-        int videoFlags
         # main loop variable 
         bool done = false
 
         # initialize SDL 
-        uint SDL_INIT_VIDEO = 20u
+        uint SDL_INIT_VIDEO = 32u
         c_call int SDL_Init(SDL_INIT_VIDEO)
 
         # Fetch the video info 
@@ -250,10 +253,13 @@ class App
 
         # Sets up OpenGL double buffering 
         int SDL_GL_DOUBLEBUFFER = 5
-        c_call SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 )
+        int dummmy = c_call int SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1)
+
+        # Flags to pass to SDL_SetVideoMode 
+        uint videoFlags = 536870935u
 
         # get a SDL surface
-        .surface_ = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
+        app.surface_ = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
 
         # initialize OpenGL 
         ::initGL()

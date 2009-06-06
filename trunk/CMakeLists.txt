@@ -115,6 +115,7 @@ ADD_EXECUTABLE (swift
     me/coloring.cpp
     me/constpool.cpp
     me/copyinsertion.cpp
+    me/defuse.cpp
     me/defusecalc.cpp
     me/functab.cpp
     me/livenessanalysis.cpp
@@ -126,6 +127,7 @@ ADD_EXECUTABLE (swift
     me/stackcoloring.cpp
     me/stacklayout.cpp
     me/struct.cpp
+    me/vectorizer.cpp
 
     be/x64.cpp
     be/x64codegen.cpp

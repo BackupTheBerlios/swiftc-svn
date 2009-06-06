@@ -100,7 +100,12 @@ struct Function
 
     StackLayout* stackLayout_;
 
-    bool ignore_;
+    bool ignore_; // TODO needed?
+    bool isMain_;
+
+#ifdef SWIFT_DEBUG
+    static bool mainSet_;
+#endif // SWIFT_DEBUG
 
     /*
      * constructor and destructor
@@ -136,12 +141,16 @@ struct Function
     Const* newConst(Op::Type type);
     Undef* newUndef(Op::Type type);
 
-    inline void insert(Var* var);
+    void insert(Var* var);
 
     bool ignore() const;
 
-    void appendArg(me::Var* arg);
-    void appendRes(me::Var* res);
+    void appendArg(Var* arg);
+    void appendRes(Var* res);
+    void buildFunctionEntry();
+    void buildFunctionExit();
+    bool isMain() const;
+    void setAsMain();
 
     std::string getId() const;
 
@@ -219,11 +228,14 @@ struct FunctionTable
 
     void genCode();
 
-    void appendArg(me::Var* arg);
-    void appendRes(me::Var* res);
+    void appendArg(Var* arg);
+    void appendRes(Var* res);
+    void buildFunctionEntry();
+    void buildFunctionExit();
 
     std::string getId() const;
 
+    void setAsMain();
 
     /*
      * struct handling
@@ -240,7 +252,6 @@ struct FunctionTable
 #endif // SWIFT_DEBUG
 
     void appendMember(Member* member);
-
 };
 
 typedef FunctionTable FuncTab;

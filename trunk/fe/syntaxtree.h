@@ -134,6 +134,7 @@ public:
     const Type* getType() const;
     const me::Op* getPlace() const;
     me::Op* getPlace();
+    bool isStoreNecessary() const;
 
 protected:
 
@@ -143,6 +144,7 @@ protected:
 
     Type* type_;
     me::Op* place_;
+    bool storeNecessary_;
 };
 
 //------------------------------------------------------------------------------

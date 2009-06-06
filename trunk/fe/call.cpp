@@ -138,28 +138,9 @@ bool Call::emitCall()
         call->arg_[i] = me::Arg( in_[i] );
 
     for (size_t i = 0; i < out_.size(); ++i)
-        call->res_[i] = me::Res( out_[i], out_[i]->varNr_ );
+        call->res_[i] = me::Res( out_[i] );
 
     me::functab->appendInstr(call); 
-
-    /*
-     * create necessary stores
-     */
-    if (tupel_)
-    {
-        for (Tupel* iter = tupel_; iter != 0; iter = iter->next())
-        {
-            Expr* expr = dynamic_cast<Expr*>( iter->typeNode() );
-            if (!expr)
-                continue;
-
-            MemberAccess* ma = dynamic_cast<MemberAccess*>(expr);
-            if (!ma)
-                continue;
-
-            ma->emitStoreIfApplicable();
-        }
-    }
 
     return true;
 }

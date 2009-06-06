@@ -72,44 +72,7 @@ bool MemberFunction::analyze()
     if ( !specialAnalyze() )
         return false;;
 
-    // build function entry
-    me::SetParams* setParams = 0;
-    
-    // for each ingoing param
-    for (size_t i = 0; i < sig_->getNumIn(); ++i) 
-    {
-        Param* param = sig_->getInParam(i);
-        me::Var* var = param->getMeVar();
-
-        if (setParams)
-            setParams->res_.push_back( me::Res(var, var->varNr_) );
-        else
-        {
-            setParams = new me::SetParams(0);
-            setParams->res_.push_back( me::Res(var, var->varNr_) );
-        }
-    }
-
-    me::AssignInstr* returnValues = 0;
-
-    // for each result
-    for (size_t i = 0; i < sig_->getNumOut(); ++i) 
-    {
-        Param* param = sig_->getOutParam(i);
-        me::Var* var = param->getMeVar();
-
-        // TODO default constructor call
-        if (returnValues)
-            returnValues->res_.push_back( me::Res(var, var->varNr_) );
-        else
-            returnValues = new me::AssignInstr( '=', var, me::functab->newUndef(var->type_) );
-    }
-
-    if (setParams)
-        me::functab->appendInstr(setParams);
-
-    if (returnValues)
-        me::functab->appendInstr(returnValues);
+    me::functab->buildFunctionEntry();
 
     // analyze each statement
     for (Statement* iter = statements_; iter != 0; iter = iter->next_)
@@ -118,22 +81,7 @@ bool MemberFunction::analyze()
     // insert the last label since every function must end with one
     me::functab->appendInstrNode( me::functab->getLastLabelNode() );
 
-    // is there at least one result?
-    if ( sig_->getNumOut() > 0 )
-    {
-        // build function exit
-        me::SetResults* setResults = new me::SetResults(0); // start with 0 args
-        
-        for (size_t i = 0; i < sig_->getNumOut(); ++i)
-        {
-            Param* param = sig_->getOutParam(i);
-
-            me::Var* var = param->getMeVar();
-            setResults->arg_.push_back( me::Arg(var) );
-        }
-
-        me::functab->appendInstr(setResults);
-    }
+    me::functab->buildFunctionExit();
 
     // insert the last label since every function must end with one
     me::functab->appendInstr( new me::LabelInstr() );
@@ -196,8 +144,10 @@ Method::Method(std::string* id, Symbol* parent, int line)
 bool Method::specialAnalyze()
 {
     BaseType* selfType = createSelfType();
-    self_ = (me::Reg*) selfType->createVar(); 
+    std::string* selfStr = new std::string("self");
+    self_ = (me::Reg*) selfType->createVar(selfStr); 
     delete selfType;
+    delete selfStr;
 
     // the self pointer is the first (hidden) argument
     me::functab->appendArg(self_);
@@ -355,7 +305,15 @@ Routine::Routine(std::string* id, Symbol* parent, int line)
 
 bool Routine::specialAnalyze()
 {
-    return true;
+    if ( *id_ == "main" 
+            && sig_->getNumIn() == 0 
+            && sig_->getNumOut() == 1 
+            && sig_->getOutParam(0)->getType()->isInt() ) 
+    {
+        me::functab->setAsMain();
+    }
+
+    return MemberFunction::specialAnalyze();
 }
 
 std::string Routine::qualifierString() const
@@ -381,6 +339,7 @@ bool Operator::specialAnalyze()
 {
     const TypeList&  in = sig_->getIn();
     const TypeList& out = sig_->getOut();
+
     /*
      * check signature
      */
@@ -456,7 +415,7 @@ bool Operator::specialAnalyze()
         }
     }
 
-    return true;
+    return MemberFunction::specialAnalyze();
 }
 
 std::string Operator::qualifierString() const

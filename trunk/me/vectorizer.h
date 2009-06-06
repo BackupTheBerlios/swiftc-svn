@@ -29,8 +29,25 @@ class Vectorizer : public CodePass
 {
 public:
 
-    Vectorizer(Function* function)
+    /*
+     * constructor
+     */
 
+    Vectorizer(Function* function);
+
+    /*
+     * virtual methods
+     */
+
+    void process();
+
+private:
+
+    Function* simdFunction_;
+
+    /// Maps src labels to new labels.
+    typedef std::map<InstrNode*, InstrNode*> LabelNode2LabelNode;
+    LabelNode2LabelNode labelNode2LabelNode_;
 };
 
 } // namespace me

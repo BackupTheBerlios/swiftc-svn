@@ -72,16 +72,21 @@ X64CodeGen::X64CodeGen(me::Function* function, std::ofstream& ofs)
 void X64CodeGen::process()
 {
     static int counter = 1;
+    std::string id;
+
+    if ( function_->isMain() )
+        id = "main";
+    else
+        id = *function_->id_;
+
+    function_->stackLayout_->arangeStackLayout();
 
     // function prologue
     ofs_ << "\t.p2align 4,,15\n"
-         << ".globl swift_" << counter << '\n'
-         << "\t.type\tswift_" << counter << ", @function\n"
-         << "swift_" << counter << ":\n"
+         << ".globl " << id << '\n'
+         << "\t.type\t" << id << ", @function\n"
+         << id << ":\n"
          << ".LFB" << counter << ":\n";
-
-    //ofs_ << '\n';
-    //ofs_ << *function_->id_ << ":\n";
 
     ofs_ << "\tenter\t$0, $" << function_->stackLayout_->size_ << '\n';
 
@@ -155,6 +160,7 @@ void X64CodeGen::process()
         x64parse();
     }
 
+    // function epilogue
     // restore saved registers
     ofs_ << "\tpopq\t%r15" << std::endl;
     ofs_ << "\tpopq\t%r14" << std::endl;
@@ -162,12 +168,13 @@ void X64CodeGen::process()
     ofs_ << "\tpopq\t%r12" << std::endl;
     ofs_ << "\tpopq\t%rbx" << std::endl;
 
-    // function epilogue
+    // clean up
     ofs_ << "\tleave\n";
+
     ofs_ << "\tret\n";
 
     ofs_ << ".LFE" << counter << ":\n";
-    ofs_ << "\t.size\t" << "swift_" << counter << ", .-" << "swift_" << counter << '\n';
+    ofs_ << "\t.size\t" << id << ", .-" << id << '\n';
 
     ++counter;
     ofs_ << '\n';
@@ -239,10 +246,10 @@ int meType2beType(me::Op::Type type)
 
 void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
 {
-    if ( me::Op::isReal(type) )
-        type = me::Op::R_REAL64;
-    else
-        type = me::Op::R_INT64;
+    //if ( me::Op::isReal(type) )
+        //type = me::Op::R_REAL64;
+    //else
+        //type = me::Op::R_INT64;
 
     me::Reg op1(type, -1);
     me::Reg op2(type, -1);
@@ -421,14 +428,15 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             
         /*
          * -> we have a non-trivial cycle:
-         * R1 -> R2 -> R3 -> ... -> Rn -> r1
+         * R1 -> R2 -> R3 -> ... -> Rn -> R1
          *
          * -> generate these moves:
          *  mov r1, free
-         *  mov r2, r1
-         *  mov r3, r2
+         *  mov rn, r1
          *  ...
-         *  mov rn, free
+         *  mov r2, r3
+         *  mov r1, r2
+         *  mov free, r1
          */
 
         // mov r1, free
@@ -450,26 +458,27 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         genMove(type, node->value_->color_, tmpRegColor);
 
         std::vector<RegGraph::Node*> toBeErased;
-        toBeErased.push_back(node);
+        //toBeErased.push_back(node);
 
         // iterate over the cycle
-        RegGraph::Node* predIter = node; // current node
-        RegGraph::Node* cylcleIter = node->succ_.first()->value_; // start with next node
-        while (cylcleIter != node) // until we reach r1 again
+        RegGraph::Node* dst = node; // current node
+        RegGraph::Node* src = node->pred_.first()->value_; // start with pred node
+        while (src != node) // until we reach r1 again
         {
             // mov r_current, r_pred
-            genMove(type, cylcleIter->value_->color_, predIter->value_->color_);
+            genMove(type, src->value_->color_, dst->value_->color_);
 
             // remember for erasion
-            toBeErased.push_back(cylcleIter);
+            toBeErased.push_back(src);
 
-            // go to next node
-            predIter = predIter->succ_.first()->value_;
-            cylcleIter = cylcleIter->succ_.first()->value_;
+            // go to pred node
+            dst = src;
+            src = src->pred_.first()->value_;
         }
 
         // mov free, rn
-        genMove(type, tmpRegColor, predIter->value_->color_);
+        genMove(type, tmpRegColor, dst->value_->color_);
+        toBeErased.push_back(node);
 
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)
@@ -545,6 +554,7 @@ int x64lex()
                     case '=': return X64_MOV;
                     case '+': return X64_ADD;
                     case '*': return X64_MUL;
+                    case '-': return X64_SUB;
                     case '/': return X64_DIV;
                     case me::AssignInstr::EQ: return X64_EQ;
                     case me::AssignInstr::NE: return X64_NE;
@@ -552,15 +562,7 @@ int x64lex()
                     case '>': return X64_G;
                     case me::AssignInstr::LE: return X64_LE;
                     case me::AssignInstr::GE: return X64_GE;
-                    
-                    case '-': 
-                        if ( ai->arg_.size() == 2 )
-                            return X64_SUB;
-                        else
-                        {
-                            swiftAssert( ai->arg_.size() == 1, "must be unary" );
-                            return X64_UNARY_MINUS;
-                        }
+                    case me::AssignInstr::UNARY_MINUS: return X64_UN_MINUS;
 
                     default:
                         swiftAssert(false, "unreachable code");
@@ -691,7 +693,7 @@ int x64lex()
             {
                 x64lval.memVar_ = (me::MemVar*) op;
                 lastOp = X64_MEM_VAR;
-                location = END; // HACK?
+                //location = END; // HACK?
             }
             else 
             {
@@ -738,10 +740,20 @@ int x64lex()
             {
                 if ( typeid(*currentInstr) == typeid(me::Store) )
                 {
-                    swiftAssert( typeid(*op) == typeid(me::MemVar), "must be a MemVar here");
-                    me::MemVar* memVar = (me::MemVar*) op;
-                    x64lval.memVar_ = memVar;
-                    lastOp = X64_MEM_VAR;
+                    me::MemVar* memVar = dynamic_cast<me::MemVar*>(op);
+                    if (memVar)
+                    {
+                        x64lval.memVar_ = memVar;
+                        lastOp = X64_MEM_VAR;
+                    }
+                    else
+                    {
+                        swiftAssert( typeid(*op) == typeid(me::Reg), 
+                                "must be a Reg here");
+                        me::Reg* reg = (me::Reg*) op;
+                        x64lval.reg_ = reg;
+                        lastOp = X64_REG_2;
+                    }
                 }
                 else
                 {

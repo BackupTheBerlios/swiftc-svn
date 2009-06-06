@@ -63,6 +63,8 @@ int main(int argc, char** argv)
     MemMgr::init();
 #endif // SWIFT_DEBUG
 
+    //MemMgr::setBreakpoint(32859);
+
     int result = start(argc, argv);
 
 #ifdef SWIFT_DEBUG
@@ -179,8 +181,8 @@ int start(int argc, char** argv)
 
         me::DefUseCalc(function).process();
         me::LivenessAnalysis(function).process();
-        me::StackColoring(function).process();
         me::arch->regAlloc(function);
+        me::StackColoring(function).process();
     }
 
     // finally generate assembly code

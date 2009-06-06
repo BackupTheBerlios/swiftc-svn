@@ -52,6 +52,7 @@ Function::Function(std::string* id, size_t stackPlaces, bool ignore)
     , lastLabelNode_( new InstrNode(new LabelInstr()) )
     , stackLayout_( new StackLayout(stackPlaces) )
     , ignore_(ignore)
+    , isMain_(false)
 {}
 
 Function::~Function()
@@ -223,6 +224,7 @@ void Function::dumpSSA(ofstream& ofs)
         ofs << iter->value_->toString() << endl;
     }
 
+#if 0
     // print idoms
     ofs << endl << "IDOMS:" << endl;
     ofs << cfg_->dumpIdoms() << endl;
@@ -234,6 +236,7 @@ void Function::dumpSSA(ofstream& ofs)
     // print dominance frontier
     ofs << endl << "DOMINANCE FRONTIER:" << endl;
     ofs << cfg_->dumpDomFrontier() << endl;
+#endif
 }
 
 void Function::dumpDot(const string& baseFilename)
@@ -241,14 +244,75 @@ void Function::dumpDot(const string& baseFilename)
     cfg_->dumpDot(baseFilename);
 }
 
-void Function::appendArg(me::Var* arg)
+void Function::appendArg(Var* arg)
 {
     arg_.push_back(arg);
 }
 
-void Function::appendRes(me::Var* res)
+void Function::appendRes(Var* res)
 {
     res_.push_back(res);
+}
+
+void Function::buildFunctionEntry()
+{
+    if ( !arg_.empty() )
+    {
+        SetParams* setParams = new SetParams( arg_.size() );
+
+        // for each ingoing param
+        for (size_t i = 0; i < arg_.size(); ++i) 
+        {
+            Var* var = arg_[i];
+            setParams->res_[i] = Res(var);
+        }
+
+        functab->appendInstr(setParams);
+    }
+
+    if ( !res_.empty() )
+    {
+        // this one will init the return values of the function
+        AssignInstr* returnValues = new AssignInstr('=');
+        returnValues->arg_.push_back( Arg(newUndef(Op::R_INT32)) ); // simply use a dummy type
+
+        // for each result
+        for (size_t i = 0; i < res_.size(); ++i) 
+        {
+            Var* var = res_[i];
+            returnValues->res_.push_back( Res(var, var->varNr_) );
+        }
+
+        functab->appendInstr(returnValues);
+    }
+}
+
+bool Function::isMain() const
+{
+    return isMain_;
+}
+
+void Function::setAsMain()
+{
+    swiftAssert(!mainSet_, "already one main function set");
+    isMain_ = true;
+}
+
+void Function::buildFunctionExit()
+{
+    // is there at least one result?
+    if ( res_.empty() > 0 )
+        return;
+
+    SetResults* setResults = new SetResults( res_.size() );
+    
+    for (size_t i = 0; i < res_.size(); ++i)
+    {
+        Var* var = res_[i];
+        setResults->arg_[i] = Arg(var);
+    }
+
+    functab->appendInstr(setResults);
 }
 
 std::string Function::getId() const
@@ -257,6 +321,16 @@ std::string Function::getId() const
 }
 
 //------------------------------------------------------------------------------
+
+#ifdef SWIFT_DEBUG
+
+/*
+ * init statics
+ */
+
+bool Function::mainSet_ = false;
+
+#endif // SWIFT_DEBUG
 
 /*
  * constructor and destructor
@@ -294,7 +368,7 @@ FunctionTable::~FunctionTable()
 
 Function* FunctionTable::insertFunction(string* id, bool ignore)
 {
-    currentFunction_ = new Function( id, me::arch->getNumStackPlaces(), ignore );
+    currentFunction_ = new Function( id, arch->getNumStackPlaces(), ignore );
     functions_.insert( make_pair(id, currentFunction_) );
 
     return currentFunction_;
@@ -429,14 +503,24 @@ InstrNode* FunctionTable::getLastLabelNode()
     return currentFunction_->lastLabelNode_;
 }
 
-void FunctionTable::appendArg(me::Var* arg)
+void FunctionTable::appendArg(Var* arg)
 {
     currentFunction_->arg_.push_back(arg);
 }
 
-void FunctionTable::appendRes(me::Var* res)
+void FunctionTable::appendRes(Var* res)
 {
     currentFunction_->res_.push_back(res);
+}
+
+void FunctionTable::buildFunctionEntry()
+{
+    currentFunction_->buildFunctionEntry();
+}
+
+void FunctionTable::buildFunctionExit()
+{
+    currentFunction_->buildFunctionExit();
 }
 
 std::string FunctionTable::getId() const
@@ -444,6 +528,10 @@ std::string FunctionTable::getId() const
     return *currentFunction_->id_;
 }
 
+void FunctionTable::setAsMain()
+{
+    currentFunction_->setAsMain();
+}
 
 /*
  * struct handling

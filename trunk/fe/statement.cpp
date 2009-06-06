@@ -218,6 +218,8 @@ bool AssignStatement::constCheck()
 
 bool AssignStatement::analyzeFunctionCall()
 {
+    // it is guaranteed here that exprList_ has exactly one element
+
     // if the rhs has only one item it has already been checked that fc is valid
     FunctionCall* fc = exprList_->getFunctionCall();
 
@@ -243,6 +245,8 @@ bool AssignStatement::analyzeFunctionCall()
 
     if ( !((Expr*) fc)->analyze() )
         return false;
+
+    tupel_->emitStoreIfApplicable(fc);
 
     return true;
 }
@@ -270,26 +274,39 @@ bool AssignStatement::analyzeAssignCreate()
     if (!assignCreate)
         return false;
 
-    if ( out[0]->isBuiltin() )
+    if ( out[0]->isAtomic() )
     {
-        swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
-                "must be a Var here" );
+        if ( !tupel_->typeNode()->isStoreNecessary() )
+        {
+            swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+                    "must be a Var here" );
 
-        me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
-        me::Op*  rhsPlace = exprList_->getPlaceList()[0];
+            me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
+            me::Op*  rhsPlace = exprList_->getPlaceList()[0];
 
-        me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
+            me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
+        }
+    }
+    else
+    {
+        if ( !assignCreate->isTrivial() )
+        {
+            swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
-        return true;
+            Call call(exprList_, tupel_, assignCreate->sig_);
+            swiftAssert( typeid(*tupel_->typeNode()->getPlace()) == typeid(me::Reg),
+                    "must be a Reg here" );
+            call.addSelf( (me::Reg*) tupel_->typeNode()->getPlace() );
+            call.emitCall();
+
+            swiftAssert( !tupel_->typeNode()->isStoreNecessary(),
+                    "can't emit store" );
+        }
+        // else -> do nothing
     }
 
-    swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
-
-    Call call(exprList_, tupel_, assignCreate->sig_);
-    swiftAssert( typeid(*tupel_->typeNode()->getPlace()) == typeid(me::Reg),
-            "must be a Reg here" );
-    call.addSelf( (me::Reg*) tupel_->typeNode()->getPlace() );
-    call.emitCall();
+    if ( !exprList_->moreThanOne() )
+        tupel_->emitStoreIfApplicable( exprList_->getExpr() );
 
     return true;
 }

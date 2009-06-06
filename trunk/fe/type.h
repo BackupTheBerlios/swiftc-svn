@@ -104,6 +104,8 @@ public:
 
     virtual bool isIndex() const;
 
+    virtual bool isInt() const;
+
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
@@ -177,6 +179,7 @@ public:
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
     virtual bool isIndex() const;
+    virtual bool isInt() const;
     virtual bool isActuallyPtr() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const;

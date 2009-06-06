@@ -22,11 +22,19 @@ class Fibbonacci
 
             counter = counter - 1
         end
+
     end
 
-    # routine main()
-    #     int result = ::fibbonaci(12)
-    #     vc_call printf("fib(12) = %i", result)
-    # end
+    routine start()
+        int fib = ::fibbonaci(12)
+        c_call print_double(5.0q)
+        c_call print_int(fib)
+    end
+
+    routine main() -> int result
+    
+        ::start()
+        result = 0
+    end
 
 end

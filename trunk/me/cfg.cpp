@@ -587,7 +587,9 @@ void CFG::rename(BBNode* bb, std::vector< std::stack<Var*> >& names)
 
                 if ( var && !var->isSSA() )
                 {
-                    swiftAssert( !names[ var->var2Index() ].empty(), "stack is empty here");
+                    swiftAssert( !names[ var->var2Index() ].empty(), 
+                            "stack is empty here, this normally means "
+                            "that the programm is not in SSA form");
                     instr->arg_[i].op_ = names[ var->var2Index() ].top();
                 }
             }
@@ -923,9 +925,7 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
             vdu->defs_.append( DefUse(newVar, instrNode, bbNode) );
 
             for (size_t i = 0; i < phi->arg_.size(); ++i)
-            {
                 phi->arg_[i].op_ = findDef(i, instrNode, bbNode, vdu, iDF);
-            }
 
             return phi->result();
         }
@@ -938,8 +938,10 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
         instrNode = bb->end_->prev();
     }
 
+    // unreachable
     return 0;
 }
+
 /*
  * dump methods
  */
@@ -963,7 +965,13 @@ std::string CFG::dumpIdoms() const
     std::ostringstream oss;
 
     for (size_t i = 0; i < size(); ++i)
-        oss << '\t' << postOrder_[i]->value_->name() << " -> " << idoms_[i]->value_->name() << std::endl;
+    {
+        oss << '\t' 
+            << postOrder_[i]->value_->name() 
+            << " -> " 
+            << idoms_[i]->value_->name() 
+            << std::endl;
+    }
 
     return oss.str();
 }
