@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./swift $1
+gcc -ggdb -c test/lib.c -o test/lib.o
+as $1.asm -o $1.o
+gcc test/lib.o $1.o -o $2 -lSDL -lGL -lGLU
