@@ -41,29 +41,6 @@ struct CTOffset : public Offset
 
 //------------------------------------------------------------------------------
 
-struct RTOffset : public Offset
-{
-};
-
-//------------------------------------------------------------------------------
-
-struct SimpleTypeOffset : public CTOffset
-{
-    /*
-     * constructor 
-     */
-
-    SimpleTypeOffset(Op::Type type);
-
-    /*
-     * further methods
-     */
-
-    virtual int getOffset() const;
-};
-
-//------------------------------------------------------------------------------
-
 struct CTArrayOffset : public CTOffset
 {
     /*
@@ -97,7 +74,24 @@ struct StructOffset : public CTOffset
 
 //------------------------------------------------------------------------------
 
+struct RTOffset : public Offset
+{
+};
 
+//------------------------------------------------------------------------------
+
+struct RTArrayOffset : public RTOffset
+{
+    size_t index_;
+    Member* member_;
+
+    RTArrayOffset(size_t index, Member* member);
+
+    virtual int getOffset() const;
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
 
 } // namespace me
 

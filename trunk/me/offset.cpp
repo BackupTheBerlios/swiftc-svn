@@ -45,4 +45,31 @@ std::string StructOffset::toString() const
     return oss.str();
 }
 
+//------------------------------------------------------------------------------
+
+RTArrayOffset::RTArrayOffset(size_t index, Member* member)
+    : index_(index) 
+    , member_(member)
+{}
+
+int RTArrayOffset::getOffset() const
+{
+    return member_->size_ * index_;
+}
+
+std::string RTArrayOffset::toString() const
+{
+    std::ostringstream oss;
+    oss << '(';
+
+#ifdef SWIFT_DEBUG
+    oss << member_->id_ << "[" << getOffset();
+#else // SWIFT_DEBUG
+    oss << member_->nr_ << "[" << getOffset();
+#endif // SWIFT_DEBUG
+
+    oss << "])";
+    return oss.str();
+}
+
 } // namespace me

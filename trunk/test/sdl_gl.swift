@@ -1,54 +1,18 @@
-
 class SDL_Surface
-    int dummy_
+    int dummy
 end
 
-# typedef struct SDL_VideoInfo {
-# 	Uint32 hw_available :1;	/* Flag: Can you create hardware surfaces? */
-# 	Uint32 wm_available :1;	/* Flag: Can you talk to a window manager? */
-# 	Uint32 UnusedBits1  :6;
-# 	Uint32 UnusedBits2  :1;
-# 	Uint32 blit_hw      :1;	/* Flag: Accelerated blits HW --> HW */
-# 	Uint32 blit_hw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
-# 	Uint32 blit_hw_A    :1;	/* Flag: Accelerated blits with Alpha */
-# 	Uint32 blit_sw      :1;	/* Flag: Accelerated blits SW --> HW */
-# 	Uint32 blit_sw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
-# 	Uint32 blit_sw_A    :1;	/* Flag: Accelerated blits with Alpha */
-# 	Uint32 blit_fill    :1;	/* Flag: Accelerated color fill */
-# 	Uint32 UnusedBits3  :16;
-# 	Uint32 video_mem;	/* The total amount of video memory (in K) */
-# 	SDL_PixelFormat *vfmt;	/* Value: The format of the video surface */
-# 	int    current_w;	/* Value: The current video mode width */
-# 	int    current_h;	/* Value: The current video mode height */
-# } SDL_VideoInfo;
-
-# get around this: TODO
 class SDL_VideoInfo
-    uint hw_available
-    uint wm_available #:1 	# Flag: Can you talk to a window manager?
-    uint UnusedBits1  #:6 
-    uint UnusedBits2  #:1 
-    uint blit_hw      #:1 	# Flag: Accelerated blits HW --> HW
-    uint blit_hw_CC   #:1 	# Flag: Accelerated blits with Colorkey
-    uint blit_hw_A    #:1 	# Flag: Accelerated blits with Alpha
-    uint blit_sw      #:1 	# Flag: Accelerated blits SW --> HW
-    uint blit_sw_CC   #:1 	# Flag: Accelerated blits with Colorkey
-    uint blit_sw_A    #:1 	# Flag: Accelerated blits with Alpha
-    uint blit_fill    #:1 	# Flag: Accelerated color fill
-    uint UnusedBits3  #:16 
-    uint video_mem       	# The total amount of video memory (in K)
-    ptr{int} dummy_         # SDL_PixelFormat *vfmt;	# Value: The format of the video surface 
-    int current_w 	        # Value: The current video mode width
-    int current_h 	        # Value: The current video mode height
+    int dummy
 end
 
 class App
     # This is our SDL surface
-    ptr{SDL_Surface} surface_
+    ptr{SDL_Surface} surface
 
     # rotational vars for the triangle and quad, respectively 
-    real rtri_
-    real rquad_
+    real rtri
+    real rquad
 
     # function to release/destroy our resources and restoring the old desktop */
     routine quit(int returnCode)
@@ -125,7 +89,7 @@ class App
         c_call glTranslatef(-1.5, 0.0, -6.0)
 
         # Rotate The Triangle On The Y axis
-        c_call glRotatef(.rtri_, 0.0, 1.0, 0.0)
+        c_call glRotatef(.rtri, 0.0, 1.0, 0.0)
 
         uint GL_TRIANGLES = 4u
         c_call glBegin(GL_TRIANGLES)        # Drawing Using Triangles      
@@ -163,7 +127,7 @@ class App
         c_call glTranslatef(1.5, 0.0, -6.0)
 
         # Rotate The Quad On The X axis
-        c_call glRotatef(.rquad_, 1.0, 0.0, 0.0)
+        c_call glRotatef(.rquad, 1.0, 0.0, 0.0)
 
         # Set The Color To Blue One Time Only 
         c_call glColor3f(0.5, 0.5, 1.0)
@@ -211,9 +175,9 @@ class App
         c_call SDL_GL_SwapBuffers()
 
         # Increase The Rotation Variable For The Triangle
-        .rtri_ = .rtri_ + 0.2
+        .rtri = .rtri + 0.2
         # Decrease The Rotation Variable For The Quad
-        .rquad_ = .rquad_ + 0.15
+        .rquad = .rquad + 0.15
     end
 
     routine main() -> int result
@@ -234,32 +198,15 @@ class App
         # Fetch the video info 
         ptr{const SDL_VideoInfo} videoInfo = c_call ptr{SDL_VideoInfo} SDL_GetVideoInfo()
 
-        # the flags to pass to SDL_SetVideoMode 
-        # videoFlags  = SDL_OPENGL          /* Enable OpenGL in SDL */
-        # videoFlags |= SDL_GL_DOUBLEBUFFER /* Enable double buffering */
-        # videoFlags |= SDL_HWPALETTE       /* Store the palette in hardware */
-        # videoFlags |= SDL_RESIZABLE       /* Enable window resizing */
-
-        # This checks to see if surfaces can be stored in memory 
-        # if ( videoInfo.hw_available )
-        #     videoFlags |= SDL_HWSURFACE
-        # else
-        #     videoFlags |= SDL_SWSURFACE
-        # end
-
-        # This checks if hardware blits can be done 
-        # if ( videoInfo.blit_hw )
-        #     videoFlags |= SDL_HWACCEL
-
         # Sets up OpenGL double buffering 
         int SDL_GL_DOUBLEBUFFER = 5
         int dummmy = c_call int SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1)
 
         # Flags to pass to SDL_SetVideoMode 
-        uint videoFlags = 536870935u
+        uint videoFlags = 536870935u # SDL_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_HWPALETTE | SDL_RESIZABLE | SDL_HWSURFACE | SDL_HWACCEL
 
         # get a SDL surface
-        app.surface_ = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
+        app.surface = c_call ptr{SDL_Surface} SDL_SetVideoMode(640, 480, 16, videoFlags)
 
         # initialize OpenGL 
         ::initGL()

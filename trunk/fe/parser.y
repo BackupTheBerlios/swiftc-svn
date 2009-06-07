@@ -29,6 +29,7 @@
 #include "fe/class.h"
 #include "fe/decl.h"
 #include "fe/error.h"
+#include "fe/access.h"
 #include "fe/expr.h"
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
@@ -458,10 +459,11 @@ postfix_expr
     : primary_expr                          { $$ = $1; }
 
     /* 
-        member access 
+        accesses
     */
     | postfix_expr '.' ID                   { $$ = new MemberAccess($1, $3, currentLine); }
     | '.' ID                                { $$ = new MemberAccess( 0, $2, currentLine); }
+    | postfix_expr '[' expr ']'             { $$ = new IndexExpr($1, $3, currentLine); }
 
     /* 
         c_call 
@@ -485,11 +487,6 @@ postfix_expr
     | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(       $1, $3, $5, currentLine); }
     | ':' ID '(' expr_list ')'              { $$ = new ReaderCall((Expr*) 0, $2, $4, currentLine); }
     | '.' ID '(' expr_list ')'              { $$ = new WriterCall((Expr*) 0, $2, $4, currentLine); }
-
-    /* 
-        index operator 
-    */
-    | postfix_expr '[' expr ']'             { $$ = new IndexExpr($1, $3, currentLine); }
     ;
 
 primary_expr
