@@ -23,7 +23,7 @@
 #include "fe/exprlist.h"
 #include "fe/signature.h"
 #include "fe/syntaxtree.h"
-#include "fe/tupel.h"
+#include "fe/tuple.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -33,9 +33,9 @@ namespace swift {
  * constructor
  */
 
-Call::Call(ExprList* exprList, Tupel* tupel, Signature* sig)
+Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig)
     : exprList_(exprList)
-    , tupel_(tupel)
+    , tuple_(tuple)
     , sig_(sig)
 {}
 
@@ -50,12 +50,12 @@ bool Call::emitCall()
      */
 
     // are there locations to put the results or do we have to create them? 
-    if (tupel_)
+    if (tuple_)
     {
-        PlaceList resPlaceList = tupel_->getPlaceList();
+        PlaceList resPlaceList = tuple_->getPlaceList();
 
         // examine results
-        Tupel* tupelIter = tupel_;
+        Tuple* tupleIter = tuple_;
         for (size_t i = 0; i < sig_->getNumOut(); ++i)
         {
             const Param* param = sig_->getOutParam(i);
@@ -74,12 +74,12 @@ bool Call::emitCall()
                 in_.push_back( resPlaceList[i] );
             }
 
-            tupelIter = tupelIter->next();
+            tupleIter = tupleIter->next();
         }
     }
     else
     {
-        // no tupel given -> create results
+        // no tuple given -> create results
 
         for (size_t i = 0; i < sig_->getNumOut(); ++i)
         {

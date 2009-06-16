@@ -50,7 +50,7 @@ public:
      * further methods
      */
 
-    void setTupel(Tupel* tupel);
+    void setTuple(Tuple* tuple);
     bool analyzeArgs();
 
 protected:
@@ -63,7 +63,7 @@ protected:
 
     std::string* id_;
     ExprList* exprList_;
-    Tupel* tupel_;
+    Tuple* tuple_;
 
     std::vector<me::Op*> in_;
     std::vector<me::Var*> out_;

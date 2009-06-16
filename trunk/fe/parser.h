@@ -36,7 +36,7 @@ class MemberFunction;
 class Module;
 class Param;
 class Statement;
-class Tupel;
+class Tuple;
 class Type;
 
 //------------------------------------------------------------------------------

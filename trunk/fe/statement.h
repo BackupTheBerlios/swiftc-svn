@@ -34,7 +34,7 @@ namespace swift {
 class Expr;
 class ExprList;
 class Local;
-class Tupel;
+class Tuple;
 
 //------------------------------------------------------------------------------
 
@@ -143,14 +143,14 @@ struct AssignStatement : public Statement
         char c_; ///< '=', others will follow.
     };
 
-    Tupel* tupel_;       ///< The lvalue.
+    Tuple* tuple_;       ///< The lvalue.
     ExprList* exprList_; ///< The rvalue.
 
     /*
      * constructor and destructor
      */
 
-    AssignStatement(bool simd, int kind, Tupel* tupel, ExprList* exprList, int line);
+    AssignStatement(bool simd, int kind, Tuple* tuple, ExprList* exprList, int line);
     virtual ~AssignStatement();
 
     /*

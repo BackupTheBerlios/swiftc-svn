@@ -33,7 +33,7 @@
 #include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
-#include "fe/tupel.h"
+#include "fe/tuple.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -139,19 +139,19 @@ std::string DeclStatement::toString() const
 AssignStatement::AssignStatement(
         bool simd, 
         int kind, 
-        Tupel* tupel, 
+        Tuple* tuple, 
         ExprList* exprList, 
         int line)
     : Statement(line)
     , simd_(simd)
     , kind_(kind)
-    , tupel_(tupel)
+    , tuple_(tuple)
     , exprList_(exprList)
 {}
 
 AssignStatement::~AssignStatement()
 {
-    delete tupel_;
+    delete tuple_;
     delete exprList_;
 }
 
@@ -163,7 +163,7 @@ bool AssignStatement::analyze()
 {
     if ( exprList_->moreThanOne() )
     {
-        if ( tupel_->moreThanOne() )
+        if ( tuple_->moreThanOne() )
         {
             errorf(line_, "either the left-hand side or the right-hand side of an "
                     "assignment statement must have exactly one element");
@@ -189,7 +189,7 @@ bool AssignStatement::analyze()
 bool AssignStatement::constCheck()
 {
     // check whether there is a const type in out
-    for (const Tupel* iter = tupel_; iter != 0; iter = iter->next())
+    for (const Tuple* iter = tuple_; iter != 0; iter = iter->next())
     {
         const TypeNode* typeNode = iter->typeNode();
 
@@ -233,7 +233,7 @@ bool AssignStatement::analyzeFunctionCall()
     }
 
     bool result = fc->analyzeArgs();
-    result &= tupel_->analyze();
+    result &= tuple_->analyze();
 
     if (!result)
         return false;
@@ -241,24 +241,24 @@ bool AssignStatement::analyzeFunctionCall()
     if ( !constCheck() )
         return false;
 
-    fc->setTupel(tupel_);
+    fc->setTuple(tuple_);
 
     if ( !((Expr*) fc)->analyze() )
         return false;
 
-    tupel_->emitStoreIfApplicable(fc);
+    tuple_->emitStoreIfApplicable(fc);
 
     return true;
 }
 
 void AssignStatement::atomicAssignment()
 {
-    if ( !tupel_->typeNode()->isStoreNecessary() )
+    if ( !tuple_->typeNode()->isStoreNecessary() )
     {
-        swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+        swiftAssert( dynamic_cast<me::Var*>(tuple_->getPlaceList()[0]), 
                 "must be a Var here" );
 
-        me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
+        me::Var* lhsPlace = (me::Var*) tuple_->getPlaceList()[0];
         me::Op*  rhsPlace = exprList_->getPlaceList()[0];
 
         me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
@@ -267,16 +267,16 @@ void AssignStatement::atomicAssignment()
 
 bool AssignStatement::analyzeAssignCreate()
 {
-    const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
+    const Decl* decl = dynamic_cast<const Decl*>(tuple_->typeNode());
 
     bool result = exprList_->analyze();
-    result &= tupel_->analyze();
+    result &= tuple_->analyze();
 
     if (!result)
         return false;
 
     TypeList in = exprList_->getTypeList();
-    TypeList out = tupel_->getTypeList();
+    TypeList out = tuple_->getTypeList();
     
     if ( out[0]->isNonInnerBuiltin() )
     {
@@ -299,10 +299,10 @@ bool AssignStatement::analyzeAssignCreate()
         {
             if (decl)
             {
-                swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+                swiftAssert( dynamic_cast<me::Var*>(tuple_->getPlaceList()[0]), 
                         "must be a Var here" );
 
-                me::Var* location = (me::Var*) tupel_->getPlaceList()[0];
+                me::Var* location = (me::Var*) tuple_->getPlaceList()[0];
                 me::Op* numElems = exprList_->getPlaceList()[0];
 
                 // create temporaries
@@ -358,20 +358,20 @@ bool AssignStatement::analyzeAssignCreate()
         {
             swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
-            Call call(exprList_, tupel_, assignCreate->sig_);
-            swiftAssert( typeid(*tupel_->typeNode()->getPlace()) == typeid(me::Reg),
+            Call call(exprList_, tuple_, assignCreate->sig_);
+            swiftAssert( typeid(*tuple_->typeNode()->getPlace()) == typeid(me::Reg),
                     "must be a Reg here" );
-            call.addSelf( (me::Reg*) tupel_->typeNode()->getPlace() );
+            call.addSelf( (me::Reg*) tuple_->typeNode()->getPlace() );
             call.emitCall();
 
-            swiftAssert( !tupel_->typeNode()->isStoreNecessary(),
+            swiftAssert( !tuple_->typeNode()->isStoreNecessary(),
                     "can't emit store" );
         }
         // else -> do nothing
     }
 
     if ( !exprList_->moreThanOne() )
-        tupel_->emitStoreIfApplicable( exprList_->getExpr() );
+        tuple_->emitStoreIfApplicable( exprList_->getExpr() );
 
     return true;
 }
@@ -382,7 +382,7 @@ bool AssignStatement::analyzeAssignCreate()
 
 std::string AssignStatement::toString() const
 {
-    return tupel_->toString() + " = " + exprList_->toString();
+    return tuple_->toString() + " = " + exprList_->toString();
 }
 
 //------------------------------------------------------------------------------

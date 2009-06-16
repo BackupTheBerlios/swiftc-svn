@@ -36,7 +36,7 @@ namespace swift {
 
 class ExprList;
 class Signature;
-class Tupel;
+class Tuple;
 class Type;
 
 class Call
@@ -47,7 +47,7 @@ public:
      * constructor
      */
 
-    Call(ExprList* exprList, Tupel* tupel, Signature* sig);
+    Call(ExprList* exprList, Tuple* tuple, Signature* sig);
 
     /*
      * further methods
@@ -67,7 +67,7 @@ private:
      */
 
     ExprList* exprList_; ///< Right hand side arguments.
-    Tupel* tupel_; ///< Left hand side if present.
+    Tuple* tuple_; ///< Left hand side if present.
     Signature* sig_;
 
     std::vector<me::Op*> in_;

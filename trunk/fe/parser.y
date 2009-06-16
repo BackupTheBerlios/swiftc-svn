@@ -38,7 +38,7 @@
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
-#include "fe/tupel.h"
+#include "fe/tuple.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -100,7 +100,7 @@ using namespace swift;
     swift::MemberFunction*  memberFunction_;
     swift::Module*          module_;
     swift::Statement*       statement_;
-    swift::Tupel*           tupel_;
+    swift::Tuple*           tuple_;
     swift::Type*            type_;
 };
 
@@ -176,7 +176,7 @@ using namespace swift;
 
 %type <expr_>     expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <exprList_> expr_list expr_list_not_empty
-%type <tupel_>    tupel
+%type <tuple_>    tuple
 
 %type <statement_>  statement_list statement
 
@@ -387,13 +387,13 @@ statement
     */
     : decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
     | expr EOL                          { $$ = new ExprStatement(false, $1, currentLine-1); }
-    | tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement(false, '=', $1, $3, currentLine-1) }
+    | tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(false, '=', $1, $3, currentLine-1) }
 
     /*
         simd statements
     */
     | SIMD_PREFIX expr EOL                          { $$ = new ExprStatement(true, $2, currentLine-1); }
-    | SIMD_PREFIX tupel '=' expr_list_not_empty EOL { $$ = new AssignStatement(true, '=', $2, $4, currentLine-1) }
+    | SIMD_PREFIX tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(true, '=', $2, $4, currentLine-1) }
 
     /*
         control flow statements
@@ -533,11 +533,11 @@ decl
     : type ID { $$ = new Decl($1, $2, currentLine); }
     ;
 
-tupel
-    : expr           { $$ = new Tupel($1,  0, currentLine); }
-    | decl           { $$ = new Tupel($1,  0, currentLine); }
-    | expr ',' tupel { $$ = new Tupel($1, $3, currentLine); }
-    | decl ',' tupel { $$ = new Tupel($1, $3, currentLine); }
+tuple
+    : expr           { $$ = new Tuple($1,  0, currentLine); }
+    | decl           { $$ = new Tuple($1,  0, currentLine); }
+    | expr ',' tuple { $$ = new Tuple($1, $3, currentLine); }
+    | decl ',' tuple { $$ = new Tuple($1, $3, currentLine); }
     ;
 
 bare_type

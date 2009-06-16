@@ -26,7 +26,7 @@
 #include "fe/memberfunction.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
-#include "fe/tupel.h"
+#include "fe/tuple.h"
 #include "fe/type.h"
 
 namespace swift {
@@ -41,7 +41,7 @@ FunctionCall::FunctionCall(std::string* id, ExprList* exprList, int line)
     : Expr(line)
     , id_(id)
     , exprList_(exprList)
-    , tupel_(0)
+    , tuple_(0)
 {}
 
 FunctionCall::~FunctionCall()
@@ -69,9 +69,9 @@ bool FunctionCall::analyzeArgs()
         : true; // true when there is no ExprList
 }
 
-void FunctionCall::setTupel(Tupel* tupel)
+void FunctionCall::setTuple(Tuple* tuple)
 {
-    tupel_ = tupel;
+    tuple_ = tuple;
 }
 
 std::string FunctionCall::callToString() const
@@ -113,7 +113,7 @@ bool CCall::analyze()
     if ( returnType_ && !returnType_->validate() )
         return false;
 
-    if ( !tupel_ && exprList_ && !exprList_->analyze() )
+    if ( !tuple_ && exprList_ && !exprList_->analyze() )
         return false;
 
     PlaceList argPlaceList = exprList_ 
@@ -146,8 +146,8 @@ bool CCall::analyze()
 
     me::functab->appendInstr(call); 
 
-    //if (tupel_)
-        //tupel_->emitStoreIfApplicable(this);
+    //if (tuple_)
+        //tuple_->emitStoreIfApplicable(this);
 
     return true;
 }
@@ -204,7 +204,7 @@ RoutineCall::~RoutineCall()
 
 bool RoutineCall::analyze()
 {
-    if (!tupel_)
+    if (!tuple_)
     {
         if ( exprList_ && !exprList_->analyze() )
             return false;
@@ -233,19 +233,19 @@ bool RoutineCall::analyze()
     if (!memberFunction_)
         return false;
 
-    Call call(exprList_, tupel_, memberFunction_->sig_);
+    Call call(exprList_, tuple_, memberFunction_->sig_);
 
     if ( !call.emitCall() )
         return false;
 
-    if (!tupel_)
+    if (!tuple_)
     {
         // set place and type as it is needed by the parent expr
         place_ = call.getPrimaryPlace();
         type_ = call.getPrimaryType();
     }
     //else
-        //tupel_->emitStoreIfApplicable(this);
+        //tuple_->emitStoreIfApplicable(this);
 
     return true;
 }
@@ -302,7 +302,7 @@ bool MethodCall::analyze()
             if (!memberFunction_)
                 return false;
 
-            if (!tupel_)
+            if (!tuple_)
             {
                 // set place and type as it is needed by the parent expr
                 place_ = memberFunction_->sig_->getOutParam(0)->getType()->createVar();
@@ -346,7 +346,7 @@ bool MethodCall::analyze()
         self = ((Method*) memberFunction_)->self_;
     }
 
-    if (!tupel_)
+    if (!tuple_)
     {
         if ( exprList_ && !exprList_->analyze() )
             return false;
@@ -355,13 +355,13 @@ bool MethodCall::analyze()
     if (!memberFunction_)
         return false;
 
-    Call call(exprList_, tupel_, memberFunction_->sig_);
+    Call call(exprList_, tuple_, memberFunction_->sig_);
     call.addSelf(self);
 
     if ( !call.emitCall() )
         return false;
 
-    if (!tupel_)
+    if (!tuple_)
     {
         // set place and type as it is needed by the parent expr
         place_ = call.getPrimaryPlace();
