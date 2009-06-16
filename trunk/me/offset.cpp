@@ -20,14 +20,43 @@ Offset::~Offset()
 
 //------------------------------------------------------------------------------
 
+/*
+ * virtual methods
+ */
+
+std::pair<Reg*, size_t> CTOffset::getOffset()
+{
+    return std::make_pair( (Reg*) 0, getCTOffset() );
+}
+
+std::pair<const Reg*, size_t> CTOffset::getOffset() const
+{
+    return std::make_pair( (const Reg*) 0, getCTOffset() );
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
 StructOffset::StructOffset(Struct* _struct, Member* member)
     : struct_(_struct) 
     , member_(member)
 {}
 
-int StructOffset::getOffset() const
+/*
+ * virtual methods
+ */
+
+size_t StructOffset::getCTOffset() const
 {
-    return next_ ? next_->getOffset() + member_->offset_ : member_->offset_;
+    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
+            "next_ must be castable to CTArrayOffset if present" );
+
+    return next_ 
+        ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
+        : member_->offset_;
 }
 
 std::string StructOffset::toString() const
@@ -36,9 +65,9 @@ std::string StructOffset::toString() const
     oss << '(';
 
 #ifdef SWIFT_DEBUG
-    oss << struct_->id_ << ", " << member_->id_ << ", " << getOffset();
+    oss << struct_->id_ << ", " << member_->id_ << ", " << getCTOffset();
 #else // SWIFT_DEBUG
-    oss << struct_->nr_ << ", " << getOffset();
+    oss << struct_->nr_ << ", " << getCTOffset();
 #endif // SWIFT_DEBUG
 
     oss << ')';
@@ -47,14 +76,53 @@ std::string StructOffset::toString() const
 
 //------------------------------------------------------------------------------
 
-RTArrayOffset::RTArrayOffset(size_t index, Member* member)
+/*
+ * virtual methods
+ */
+
+std::pair<Reg*, size_t> RTOffset::getOffset()
+{
+    return getRTOffset();
+}
+
+std::pair<const Reg*, size_t> RTOffset::getOffset() const
+{
+    return getRTOffset();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
+RTArrayOffset::RTArrayOffset(Reg* index, Member* member)
     : index_(index) 
     , member_(member)
 {}
 
-int RTArrayOffset::getOffset() const
+/*
+ * virtual methods
+ */
+
+std::pair<Reg*, size_t> RTArrayOffset::getRTOffset() 
 {
-    return member_->size_ * index_;
+    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
+            "next_ must be castable to CTArrayOffset if present" );
+
+    return std::make_pair( index_,
+            next_ ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
+                  : member_->offset_ );
+}
+
+std::pair<const Reg*, size_t> RTArrayOffset::getRTOffset() const
+{
+    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
+            "next_ must be castable to CTArrayOffset if present" );
+
+    return std::make_pair( index_,
+            next_ ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
+                  : member_->offset_ );
 }
 
 std::string RTArrayOffset::toString() const
@@ -62,10 +130,11 @@ std::string RTArrayOffset::toString() const
     std::ostringstream oss;
     oss << '(';
 
+    // TODO
 #ifdef SWIFT_DEBUG
-    oss << member_->id_ << "[" << getOffset();
+    //oss << member_->id_ << "[" << getRTOffset()->toString();
 #else // SWIFT_DEBUG
-    oss << member_->nr_ << "[" << getOffset();
+    //oss << member_->nr_ << "[" << getRTOffset()->toString();
 #endif // SWIFT_DEBUG
 
     oss << "])";

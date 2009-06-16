@@ -323,6 +323,8 @@ bool AssignStatement::analyzeAssignCreate()
                     new me::AssignInstr('*', size, numElems, constainerSize);
                 me::functab->appendInstr(mul);
 
+                // TODO for simd containers: find next boundary
+
                 // malloc
                 me::functab->appendInstr( new me::Malloc(ptr, size) );
 

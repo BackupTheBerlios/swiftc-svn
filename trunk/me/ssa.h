@@ -572,11 +572,13 @@ struct Load : public InstrBase
      * further methods
      */
 
-    int getOffset() const;
+    size_t getOffset() const;
     Reg* resReg();
 };
 
 //------------------------------------------------------------------------------
+
+// TODO maybe inherit from Load
 
 /** 
  * @brief Load from a stack location or an arbitrary memory location.
@@ -625,7 +627,7 @@ struct LoadPtr : public InstrBase
      * further methods
      */
 
-    int getOffset() const;
+    size_t getOffset() const;
     Reg* resReg();
 };
 
@@ -700,7 +702,7 @@ struct Store : public InstrBase
      * further methods
      */
 
-    int getOffset() const;
+    size_t getOffset() const;
     MemVar* resMemVar();
 };
 

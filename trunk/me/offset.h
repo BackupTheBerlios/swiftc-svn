@@ -2,6 +2,7 @@
 #define ME_OFFSET_H
 
 #include <string>
+#include <utility>
 
 #include "me/op.h"
 
@@ -26,34 +27,54 @@ struct Offset
     virtual ~Offset();
 
     /*
-     * further methods
+     * virtual methods
      */
 
-    virtual int getOffset() const = 0;
+    virtual std::pair<Reg*, size_t> getOffset() = 0;
+    virtual std::pair<const Reg*, size_t> getOffset() const = 0;
+
     virtual std::string toString() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
-struct CTOffset : public Offset
+class CTOffset : public Offset
 {
+public:
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::pair<Reg*, size_t> getOffset();
+    virtual std::pair<const Reg*, size_t> getOffset() const;
+
+    virtual size_t getCTOffset() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
-struct CTArrayOffset : public CTOffset
+class CTArrayOffset : public CTOffset
 {
+public:
+
     /*
      * constructor 
      */
 
-    CTArrayOffset();
+    CTArrayOffset(size_t index, Member* member);
 
     /*
      * further methods
      */
 
-    virtual int getOffset() const;
+    virtual size_t getCTOffset() const;
+
+private:
+
+    /*
+     * data
+     */
 };
 
 //------------------------------------------------------------------------------
@@ -68,26 +89,39 @@ struct StructOffset : public CTOffset
 
     StructOffset(Struct* _struct, Member* member);
 
-    virtual int getOffset() const;
+    virtual size_t getCTOffset() const;
     virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
 
-struct RTOffset : public Offset
+class RTOffset : public Offset
 {
+public:
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::pair<Reg*, size_t> getOffset();
+    virtual std::pair<const Reg*, size_t> getOffset() const;
+
+    virtual std::pair<Reg*, size_t> getRTOffset() = 0;
+    virtual std::pair<const Reg*, size_t> getRTOffset() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
 struct RTArrayOffset : public RTOffset
 {
-    size_t index_;
+    Reg* index_;
     Member* member_;
 
-    RTArrayOffset(size_t index, Member* member);
+    RTArrayOffset(Reg* index, Member* member);
 
-    virtual int getOffset() const;
+    virtual std::pair<Reg*, size_t> getRTOffset();
+    virtual std::pair<const Reg*, size_t> getRTOffset() const;
+
     virtual std::string toString() const;
 };
 

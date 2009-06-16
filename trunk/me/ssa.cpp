@@ -867,9 +867,10 @@ std::string Load::toString() const
  * further methods
  */
 
-int Load::getOffset() const
+size_t Load::getOffset() const
 {
-    return offset_->getOffset();
+    // TODO
+    return offset_->getOffset().second;
 }
 
 Reg* Load::resReg()
@@ -929,9 +930,10 @@ std::string LoadPtr::toString() const
  * further methods
  */
 
-int LoadPtr::getOffset() const
+size_t LoadPtr::getOffset() const
 {
-    return offset_ ? offset_->getOffset() : 0;
+    // TODO
+    return offset_ ? offset_->getOffset().second : 0;
 }
 
 Reg* LoadPtr::resReg()
@@ -1052,9 +1054,10 @@ std::string Store::toString() const
  * further methods
  */
 
-int Store::getOffset() const
+size_t Store::getOffset() const
 {
-    return offset_->getOffset();
+    // TODO
+    return offset_->getOffset().second;
 }
 
 MemVar* Store::resMemVar()

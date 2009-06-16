@@ -1,6 +1,8 @@
 #ifndef SWIFT_BOX_H
 #define SWIFT_BOX_H
 
+#include <ostream>
+
 #include "utils/types.h"
 
 union Box
