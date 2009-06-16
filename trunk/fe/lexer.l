@@ -148,30 +148,30 @@ nil   { return NIL; }
 self  { return SELF; }
 simd: { return SIMD_PREFIX; }
 
-{INTEGER}x      { swiftlval.expr_ = new Literal(L_INDEX ); ((Literal*) swiftlval.expr_)->index_    = strtol (yytext, 0, 10); return L_INDEX; }
+{INTEGER}x      { swiftlval.expr_ = new Literal(L_INDEX ); ((Literal*) swiftlval.expr_)->box_.size_    = strtol (yytext, 0, 10); return L_INDEX; }
 
-{INTEGER}       { swiftlval.expr_ = new Literal(L_INT,    currentLine); ((Literal*) swiftlval.expr_)->int_    = strtol (yytext, 0, 10); return L_INT; }
-{INTEGER}b      { swiftlval.expr_ = new Literal(L_INT8,   currentLine); ((Literal*) swiftlval.expr_)->int8_   = strtol (yytext, 0, 10); return L_INT8; }
-{INTEGER}w      { swiftlval.expr_ = new Literal(L_INT16,  currentLine); ((Literal*) swiftlval.expr_)->int16_  = strtol (yytext, 0, 10); return L_INT16; }
-{INTEGER}d      { swiftlval.expr_ = new Literal(L_INT32,  currentLine); ((Literal*) swiftlval.expr_)->int32_  = strtol (yytext, 0, 10); return L_INT32; }
-{INTEGER}q      { swiftlval.expr_ = new Literal(L_INT64,  currentLine); ((Literal*) swiftlval.expr_)->int64_  = strtoll(yytext, 0, 10); return L_INT64; }
-{INTEGER}sb     { swiftlval.expr_ = new Literal(L_SAT8,   currentLine); ((Literal*) swiftlval.expr_)->sat8_   = strtol (yytext, 0, 10); return L_SAT8; }
-{INTEGER}sw     { swiftlval.expr_ = new Literal(L_SAT16,  currentLine); ((Literal*) swiftlval.expr_)->sat16_  = strtol (yytext, 0, 10); return L_SAT16; }
+{INTEGER}       { swiftlval.expr_ = new Literal(L_INT,    currentLine); ((Literal*) swiftlval.expr_)->box_.int_    = strtol (yytext, 0, 10); return L_INT; }
+{INTEGER}b      { swiftlval.expr_ = new Literal(L_INT8,   currentLine); ((Literal*) swiftlval.expr_)->box_.int8_   = strtol (yytext, 0, 10); return L_INT8; }
+{INTEGER}w      { swiftlval.expr_ = new Literal(L_INT16,  currentLine); ((Literal*) swiftlval.expr_)->box_.int16_  = strtol (yytext, 0, 10); return L_INT16; }
+{INTEGER}d      { swiftlval.expr_ = new Literal(L_INT32,  currentLine); ((Literal*) swiftlval.expr_)->box_.int32_  = strtol (yytext, 0, 10); return L_INT32; }
+{INTEGER}q      { swiftlval.expr_ = new Literal(L_INT64,  currentLine); ((Literal*) swiftlval.expr_)->box_.int64_  = strtoll(yytext, 0, 10); return L_INT64; }
+{INTEGER}sb     { swiftlval.expr_ = new Literal(L_SAT8,   currentLine); ((Literal*) swiftlval.expr_)->box_.sat8_   = strtol (yytext, 0, 10); return L_SAT8; }
+{INTEGER}sw     { swiftlval.expr_ = new Literal(L_SAT16,  currentLine); ((Literal*) swiftlval.expr_)->box_.sat16_  = strtol (yytext, 0, 10); return L_SAT16; }
 
-{INTEGER}u      { swiftlval.expr_ = new Literal(L_UINT,   currentLine); ((Literal*) swiftlval.expr_)->uint_   = strtoul (yytext, 0, 10); return L_UINT; }
-{INTEGER}ub     { swiftlval.expr_ = new Literal(L_UINT8,  currentLine); ((Literal*) swiftlval.expr_)->uint8_  = strtoul (yytext, 0, 10); return L_UINT8; }
-{INTEGER}uw     { swiftlval.expr_ = new Literal(L_UINT16, currentLine); ((Literal*) swiftlval.expr_)->uint16_ = strtoul (yytext, 0, 10); return L_UINT16; }
-{INTEGER}ud     { swiftlval.expr_ = new Literal(L_UINT32, currentLine); ((Literal*) swiftlval.expr_)->uint32_ = strtoul (yytext, 0, 10); return L_UINT32; }
-{INTEGER}uq     { swiftlval.expr_ = new Literal(L_UINT64, currentLine); ((Literal*) swiftlval.expr_)->uint64_ = strtoull(yytext, 0, 10); return L_UINT64; }
-{INTEGER}usb    { swiftlval.expr_ = new Literal(L_USAT8,  currentLine); ((Literal*) swiftlval.expr_)->usat8_  = strtoul (yytext, 0, 10); return L_USAT8; }
-{INTEGER}usw    { swiftlval.expr_ = new Literal(L_USAT16, currentLine); ((Literal*) swiftlval.expr_)->usat16_ = strtoul (yytext, 0, 10); return L_USAT16; }
+{INTEGER}u      { swiftlval.expr_ = new Literal(L_UINT,   currentLine); ((Literal*) swiftlval.expr_)->box_.uint_   = strtoul (yytext, 0, 10); return L_UINT; }
+{INTEGER}ub     { swiftlval.expr_ = new Literal(L_UINT8,  currentLine); ((Literal*) swiftlval.expr_)->box_.uint8_  = strtoul (yytext, 0, 10); return L_UINT8; }
+{INTEGER}uw     { swiftlval.expr_ = new Literal(L_UINT16, currentLine); ((Literal*) swiftlval.expr_)->box_.uint16_ = strtoul (yytext, 0, 10); return L_UINT16; }
+{INTEGER}ud     { swiftlval.expr_ = new Literal(L_UINT32, currentLine); ((Literal*) swiftlval.expr_)->box_.uint32_ = strtoul (yytext, 0, 10); return L_UINT32; }
+{INTEGER}uq     { swiftlval.expr_ = new Literal(L_UINT64, currentLine); ((Literal*) swiftlval.expr_)->box_.uint64_ = strtoull(yytext, 0, 10); return L_UINT64; }
+{INTEGER}usb    { swiftlval.expr_ = new Literal(L_USAT8,  currentLine); ((Literal*) swiftlval.expr_)->box_.usat8_  = strtoul (yytext, 0, 10); return L_USAT8; }
+{INTEGER}usw    { swiftlval.expr_ = new Literal(L_USAT16, currentLine); ((Literal*) swiftlval.expr_)->box_.usat16_ = strtoul (yytext, 0, 10); return L_USAT16; }
 
-{FLOAT}         { swiftlval.expr_ = new Literal(L_REAL,   currentLine); ((Literal*) swiftlval.expr_)->real_   = strtod(yytext, 0); return L_REAL; }
-{FLOAT}d        { swiftlval.expr_ = new Literal(L_REAL32, currentLine); ((Literal*) swiftlval.expr_)->real32_ = strtod(yytext, 0); return L_REAL32; }
-{FLOAT}q        { swiftlval.expr_ = new Literal(L_REAL64, currentLine); ((Literal*) swiftlval.expr_)->real64_ = strtod(yytext, 0); return L_REAL64; }
+{FLOAT}         { swiftlval.expr_ = new Literal(L_REAL,   currentLine); ((Literal*) swiftlval.expr_)->box_.float_   = strtod(yytext, 0); return L_REAL; }
+{FLOAT}d        { swiftlval.expr_ = new Literal(L_REAL32, currentLine); ((Literal*) swiftlval.expr_)->box_.float_ = strtod(yytext, 0); return L_REAL32; }
+{FLOAT}q        { swiftlval.expr_ = new Literal(L_REAL64, currentLine); ((Literal*) swiftlval.expr_)->box_.double_ = strtod(yytext, 0); return L_REAL64; }
 
-true            { swiftlval.expr_ = new Literal(L_TRUE,   currentLine); ((Literal*) swiftlval.expr_)->bool_   = true;   return L_TRUE; }
-false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Literal*) swiftlval.expr_)->bool_   = false;  return L_TRUE; }
+true            { swiftlval.expr_ = new Literal(L_TRUE,   currentLine); ((Literal*) swiftlval.expr_)->box_.bool_   = true;   return L_TRUE; }
+false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Literal*) swiftlval.expr_)->box_.bool_   = false;  return L_TRUE; }
 
 {ID} { keyLine = currentLine; swiftlval.id_ = new std::string(yytext); return ID; }
 

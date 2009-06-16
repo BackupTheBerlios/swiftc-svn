@@ -21,6 +21,8 @@
 
 #include "be/x64codegenhelpers.h"
 
+#include "utils/box.h"
+
 #include "me/constpool.h"
 #include "me/stacklayout.h"
 
@@ -105,24 +107,24 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_UINT8:
         {
             me::ConstPool::UInt8Map::iterator iter =
-                me::constpool->uint8_.find(cst->value_.uint8_);
+                me::constpool->uint8_.find(cst->box_.uint8_);
 
             if ( iter == me::constpool->uint8_.end() )
-                me::constpool->insert(cst->value_.uint8_);
+                me::constpool->insert(cst->box_.uint8_);
 
-            oss << ".LC" << me::constpool->uint8_[cst->value_.uint8_];
+            oss << ".LC" << me::constpool->uint8_[cst->box_.uint8_];
             break;
         }
         case me::Op::R_INT16:
         case me::Op::R_UINT16:
         {
             me::ConstPool::UInt16Map::iterator iter =
-                me::constpool->uint16_.find(cst->value_.uint16_);
+                me::constpool->uint16_.find(cst->box_.uint16_);
 
             if ( iter == me::constpool->uint16_.end() )
-                me::constpool->insert(cst->value_.uint16_);
+                me::constpool->insert(cst->box_.uint16_);
 
-            oss << ".LC" << me::constpool->uint16_[cst->value_.uint16_];
+            oss << ".LC" << me::constpool->uint16_[cst->box_.uint16_];
             break;
         }
         case me::Op::R_INT32:
@@ -130,12 +132,12 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_REAL32:
         {
             me::ConstPool::UInt32Map::iterator iter =
-                me::constpool->uint32_.find(cst->value_.uint32_);
+                me::constpool->uint32_.find(cst->box_.uint32_);
 
             if ( iter == me::constpool->uint32_.end() )
-                me::constpool->insert(cst->value_.uint32_);
+                me::constpool->insert(cst->box_.uint32_);
 
-            oss << ".LC" << me::constpool->uint32_[cst->value_.uint32_];
+            oss << ".LC" << me::constpool->uint32_[cst->box_.uint32_];
             break;
         }
         case me::Op::R_INT64:
@@ -143,12 +145,12 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_REAL64:
         {
             me::ConstPool::UInt64Map::iterator iter =
-                me::constpool->uint64_.find(cst->value_.uint64_);
+                me::constpool->uint64_.find(cst->box_.uint64_);
 
             if ( iter == me::constpool->uint64_.end() )
-                me::constpool->insert(cst->value_.uint64_);
+                me::constpool->insert(cst->box_.uint64_);
 
-            oss << ".LC" << me::constpool->uint64_[cst->value_.uint64_];
+            oss << ".LC" << me::constpool->uint64_[cst->box_.uint64_];
             break;
         }
         default:
@@ -178,22 +180,22 @@ std::string sgn_cst2str(me::Const* cst)
     switch (cst->type_)
     {
         case me::Op::R_INT8 : 
-            if (cst->value_.int16_ < 0)  
+            if (cst->box_.int16_ < 0)  
                 return "$255"; 
             else 
                 return "$0";
         case me::Op::R_INT16: 
-            if (cst->value_.int16_ < 0) 
+            if (cst->box_.int16_ < 0) 
                 return  "$65535"; 
             else 
                 return "$0";
         case me::Op::R_INT32: 
-            if (cst->value_.int32_ < 0) 
+            if (cst->box_.int32_ < 0) 
                 return  "$4294967295"; 
             else 
                 return "$0";
         case me::Op::R_INT64: 
-            if (cst->value_.int64_ < 0) 
+            if (cst->box_.int64_ < 0) 
                 return  "$18446744073709551615"; 
             else 
                 return "$0";
@@ -240,7 +242,7 @@ std::string cst2str(me::Const* cst)
 {
     std::ostringstream oss;
     oss << '$';
-    oss << cst->value_.uint64_;
+    oss << cst->box_.uint64_;
 
     return oss.str();
 }
@@ -288,7 +290,7 @@ std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false
 
     std::ostringstream oss;
     oss << '$';
-    me::Const::Value box;
+    Box box;
 
     /*
      * signed integers
@@ -299,11 +301,11 @@ std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false
 
 #define OP_CONST_CASE(type, member, box_member)\
     case me::Op::type :\
-        box.member = -cst->value_.member;\
+        box.member = -cst->box_.member;\
         if (mem)\
         {\
             me::Const newCst(cst->type_);\
-            newCst.value_ = box;\
+            newCst.box_ = box;\
             return mcst2str(&newCst);\
         }\
         oss << box.box_member;\
@@ -319,8 +321,8 @@ std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false
         OP_CONST_CASE(R_UINT32, uint32_, uint32_)
         OP_CONST_CASE(R_UINT64, uint64_, uint64_)
 
-        OP_CONST_CASE(R_REAL32, real32_, uint32_)
-        OP_CONST_CASE(R_REAL64, real64_, uint64_)
+        OP_CONST_CASE(R_REAL32, float_, uint32_)
+        OP_CONST_CASE(R_REAL64, double_, uint64_)
 
 #undef CONST_OP_CONST_CASE
 
@@ -339,7 +341,7 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     oss << '$';
     int kind = ai->kind_;
 
-    me::Const::Value box;
+    Box box;
 
     switch (cst1->type_)
     {
@@ -348,29 +350,29 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     case me::Op::type :\
         switch (kind)\
         {\
-            case '+': box.member = cst1->value_.member + cst2->value_.member; break;\
-            case '-': box.member = cst1->value_.member - cst2->value_.member; break;\
-            case '*': box.member = cst1->value_.member * cst2->value_.member; break;\
-            case '/': box.member = cst1->value_.member / cst2->value_.member; break;\
+            case '+': box.member = cst1->box_.member + cst2->box_.member; break;\
+            case '-': box.member = cst1->box_.member - cst2->box_.member; break;\
+            case '*': box.member = cst1->box_.member * cst2->box_.member; break;\
+            case '/': box.member = cst1->box_.member / cst2->box_.member; break;\
             case me::AssignInstr::EQ:\
-                if (cst1->value_.member == cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member == cst2->box_.member) return "$1"; else return "$0";\
             case me::AssignInstr::NE:\
-                if (cst1->value_.member != cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member != cst2->box_.member) return "$1"; else return "$0";\
             case '<':\
-                if (cst1->value_.member <  cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member <  cst2->box_.member) return "$1"; else return "$0";\
             case me::AssignInstr::LE:\
-                if (cst1->value_.member <= cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member <= cst2->box_.member) return "$1"; else return "$0";\
             case '>':\
-                if (cst1->value_.member >  cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member >  cst2->box_.member) return "$1"; else return "$0";\
             case me::AssignInstr::GE:\
-                if (cst1->value_.member >= cst2->value_.member) return "$1"; else return "$0";\
+                if (cst1->box_.member >= cst2->box_.member) return "$1"; else return "$0";\
             default:\
                 swiftAssert(false, "unreachable code"); \
         }\
         if (mem)\
         {\
             me::Const cst(cst1->type_);\
-            cst.value_ = box;\
+            cst.box_ = box;\
             return mcst2str(&cst);\
         }\
         oss << box.box_member;\
@@ -386,8 +388,8 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
         CONST_OP_CONST_CASE(R_UINT32, uint32_, uint32_)
         CONST_OP_CONST_CASE(R_UINT64, uint64_, uint64_)
 
-        CONST_OP_CONST_CASE(R_REAL32, real32_, uint32_)
-        CONST_OP_CONST_CASE(R_REAL64, real64_, uint64_)
+        CONST_OP_CONST_CASE(R_REAL32, float_, uint32_)
+        CONST_OP_CONST_CASE(R_REAL64, double_, uint64_)
 
 #undef CONST_OP_CONST_CASE
 

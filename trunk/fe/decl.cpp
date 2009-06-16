@@ -60,19 +60,18 @@ bool Decl::analyze()
     if (!p.second)
         return false;
 
+    // init with special value undef
+    me::AssignInstr* ai = new me::AssignInstr(
+            '=', meVar, me::functab->newUndef(meVar->type_) );
+    me::functab->appendInstr(ai);
+
     if (standAlone_)
     {
-        me::AssignInstr* ai = new me::AssignInstr(
-                '=', meVar, me::functab->newUndef(meVar->type_) );
-        me::functab->appendInstr(ai);
-
         place_ = 0;
-
         return true;
-
     }
 
-    if ( type_->isInternalAtomic() )
+    if ( type_->isBuiltin() ) // special implementation for all builtin types
         place_ = meVar;
     else
     {
@@ -83,9 +82,6 @@ bool Decl::analyze()
         me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-        me::AssignInstr* ai = new me::AssignInstr(
-                '=', meVar, me::functab->newUndef(meVar->type_) );
-        me::functab->appendInstr(ai);
         me::functab->appendInstr( new me::LoadPtr(tmp, meVar, 0) );
 
         place_ = tmp;

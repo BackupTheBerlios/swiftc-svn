@@ -599,7 +599,7 @@ int x64lex()
                 location = OP1;
                 return X64_LOAD_PTR;
             }
-            else if ( instrTypeId == typeid(me::CallInstr) )
+            else if ( dynamic_cast<me::CallInstr*>(currentInstr) )
             {
                 me::CallInstr* call = (me::CallInstr*) currentInstr;
                 x64lval.call_ = call;

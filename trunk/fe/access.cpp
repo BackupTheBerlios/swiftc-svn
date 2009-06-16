@@ -215,8 +215,8 @@ void MemberAccess::emitStoreIfApplicable(Expr* expr)
             return;
 
         me::Store* store = new me::Store( 
-                rootVar_,           // memory variable
                 expr->getPlace(),   // argument 
+                rootVar_,           // memory variable
                 rootStructOffset_); // offset 
         me::functab->appendInstr(store);
     }

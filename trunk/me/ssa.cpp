@@ -991,7 +991,7 @@ Reg* Deref::result()
  * constructor and destructor
  */
 
-Store::Store(Var* location, Op* arg, Offset* offset)
+Store::Store(Op* arg, Var* location, Offset* offset)
     : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
     , offset_(offset)
 {
@@ -1183,14 +1183,14 @@ bool CallInstr::isVarArg() const
  * constructor
  */
 
-Malloc::Malloc(Reg* ptr, size_t size)
+Malloc::Malloc(Reg* ptr, Op* size)
     : CallInstr(1, 1, "malloc")
 {
     swiftAssert(ptr->type_ == Op::R_PTR, "must be a Ptr here");
-    Const* cst = functab->newConst( arch->getPreferedIndex() );
-    cst->value_.uint64_ = size; // TODO make this arch independently
-    arg_[0] = Arg(cst);
+    swiftAssert(size->type_ == Op::R_UINT64, "must be a Ptr here");// TODO make this arch independently
+    swiftAssert(typeid(*size) != typeid(MemVar), "must be a Ptr here");
     res_[0] = Res(ptr);
+    arg_[0] = Arg(size);
 }
 
 //------------------------------------------------------------------------------

@@ -686,7 +686,7 @@ struct Store : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    Store(Var* location, Op* arg, Offset* offset);
+    Store(Op* arg, Var* location, Offset* offset);
     virtual ~Store();
 
     /*
@@ -804,7 +804,7 @@ struct Malloc : public CallInstr
      * constructor
      */
 
-    Malloc(Reg* ptr, size_t size);
+    Malloc(Reg* ptr, Op* size);
 };
 
 //------------------------------------------------------------------------------

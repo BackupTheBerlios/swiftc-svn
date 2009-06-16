@@ -20,6 +20,8 @@
 #ifndef SWIFT_EXPR_H
 #define SWIFT_EXPR_H
 
+#include "utils/box.h"
+
 #include "fe/syntaxtree.h"
 
 #include "me/op.h"
@@ -87,34 +89,7 @@ protected:
 struct Literal : public Expr
 {
     int kind_;
-
-    union {
-        size_t      index_;
-
-        int         int_;
-        int8_t      int8_;
-        int16_t     int16_;
-        int32_t     int32_;
-        int64_t     int64_;
-        int8_t      sat8_;
-        int16_t     sat16_;
-
-        uint        uint_;
-        uint8_t     uint8_;
-        uint16_t    uint16_;
-        uint32_t    uint32_;
-        uint64_t    uint64_;
-        uint8_t     usat8_;
-        uint16_t    usat16_;
-
-        float       real_;
-        float       real32_;
-        double      real64_;
-
-        bool        bool_;
-
-        void*       ptr_;
-    };
+    Box box_;
 
     /*
      * constructor

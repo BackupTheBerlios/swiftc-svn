@@ -316,12 +316,17 @@ public:
                                  int line) const;
 
     virtual const BaseType* unnestPtr() const;
+    virtual std::string toString() const;
+    virtual std::string containerStr() const = 0;
 
     /*
      * static methods
      */
 
     static void initMeContainer();
+    static me::Offset* createContainerPtrOffset();
+    static me::Offset* createContainerSizeOffset();
+    static size_t getContainerSize();
 
 protected:
 
@@ -330,6 +335,8 @@ protected:
      */
 
     static me::Struct* meContainer_;
+    static me::Member* meContainerPtr_;
+    static me::Member* meContainerSize_;
 };
 
 //------------------------------------------------------------------------------
@@ -349,7 +356,7 @@ public:
      */
 
     virtual Array* clone() const;
-    virtual std::string toString() const;
+    virtual std::string containerStr() const;
 };
 
 //------------------------------------------------------------------------------
@@ -369,7 +376,7 @@ public:
      */
 
     virtual Simd* clone() const;
-    virtual std::string toString() const;
+    virtual std::string containerStr() const;
 };
 
 //------------------------------------------------------------------------------

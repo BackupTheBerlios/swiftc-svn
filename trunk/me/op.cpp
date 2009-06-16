@@ -148,7 +148,7 @@ Undef* Undef::toSimd() const
 Const::Const(Type type)
     : Op(type)
 {
-    value_.uint64_ = 0; // clear all bits
+    box_.uint64_ = 0; // clear all bits
 }
 
 /*
@@ -158,7 +158,7 @@ Const::Const(Type type)
 Const* Const::toSimd() const
 {
     Const* cst = new Const( toSimdType(type_) );
-    cst->value_ = value_;
+    cst->box_ = box_;
 
     return cst;
 }
@@ -169,22 +169,22 @@ std::string Const::toString() const
 
     switch (type_)
     {
-        case R_INT8:    oss << int(value_.int8_)    << "b";     break;
-        case R_INT16:   oss << value_.int16_        << "w";     break;
-        case R_INT32:   oss << value_.int32_        << "d";     break;
-        case R_INT64:   oss << value_.int64_        << "q";     break;
-        case R_SAT8:    oss << int(value_.sat8_)    << "sb";    break;
-        case R_SAT16:   oss << value_.sat16_        << "sw";    break;
+        case R_INT8:   oss << int(box_.int8_)  << "b";   break;
+        case R_INT16:  oss << box_.int16_      << "w";   break;
+        case R_INT32:  oss << box_.int32_      << "d";   break;
+        case R_INT64:  oss << box_.int64_      << "q";   break;
+        case R_SAT8:   oss << int(box_.int8_)  << "sb";  break;
+        case R_SAT16:  oss << box_.int16_      << "sw";  break;
 
-        case R_UINT8:   oss << int(value_.uint8_)   << "ub";    break;
-        case R_UINT16:  oss << value_.uint16_       << "uw";    break;
-        case R_UINT32:  oss << value_.uint32_       << "ud";    break;
-        case R_UINT64:  oss << value_.uint64_       << "uq";    break;
-        case R_USAT8:   oss << int(value_.usat8_)   << "usb";   break;
-        case R_USAT16:  oss << value_.usat16_       << "usw";   break;
+        case R_UINT8:  oss << int(box_.uint8_) << "ub";  break;
+        case R_UINT16: oss << box_.uint16_     << "uw";  break;
+        case R_UINT32: oss << box_.uint32_     << "ud";  break;
+        case R_UINT64: oss << box_.uint64_     << "uq";  break;
+        case R_USAT8:  oss << int(box_.uint8_) << "usb"; break;
+        case R_USAT16: oss << box_.uint16_     << "usw"; break;
 
         case R_BOOL:
-            if (value_.bool_)
+            if (box_.bool_)
                 oss << "true";
             else
                 oss << "false";
@@ -193,15 +193,15 @@ std::string Const::toString() const
         // -> hence it is real32 or real64
 
         case R_REAL32:
-            oss << value_.real32_;
-            if ( fmod(value_.real32_, 1.0) == 0.0 )
+            oss << box_.float_;
+            if ( fmod(box_.float_, 1.0) == 0.0 )
                 oss << ".d";
             else
                 oss << "d";
             break;
         case R_REAL64:
-            oss << value_.real64_;
-            if ( fmod(value_.real64_, 1.0) == 0.0 )
+            oss << box_.double_;
+            if ( fmod(box_.double_, 1.0) == 0.0 )
                 oss << ".q";
             else
                 oss << "q"; // FIXME

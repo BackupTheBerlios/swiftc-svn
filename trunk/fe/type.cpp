@@ -33,6 +33,7 @@
 #include "me/arch.h"
 #include "me/functab.h"
 #include "me/ssa.h"
+#include "me/offset.h"
 #include "me/struct.h"
 
 namespace swift {
@@ -516,9 +517,9 @@ bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
 {
     std::string methodStr = hasCreate ? "constructer" : "assignment";
 
-    if ( in.size() > 1 )
+    if ( in.size() != 1 )
     {
-        errorf(line, "a 'ptr' %s takes only one argument", methodStr.c_str() );
+        errorf(line, "a 'ptr' %s takes exactly one argument", methodStr.c_str() );
         return false;
     }
 
@@ -546,6 +547,8 @@ std::string Ptr::toString() const
  */
 
 me::Struct* Container::meContainer_ = 0;
+me::Member* Container::meContainerPtr_ = 0;
+me::Member* Container::meContainerSize_ = 0;
 
 /*
  * constructor
@@ -567,9 +570,9 @@ me::Op::Type Container::toMeType() const
 me::Var* Container::createVar(const std::string* id /*= 0*/) const
 {
 #ifdef SWIFT_DEBUG
-    return me::functab->newReg(me::Op::R_STACK, id);
+    return me::functab->newMemVar(meContainer_, id);
 #else // SWIFT_DEBUG
-    return me::functab->newReg(me::Op::R_STACK);
+    return me::functab->newMemVar(meContainer_);
 #endif // SWIFT_DEBUG
 }
 
@@ -595,7 +598,35 @@ me::Reg* Container::derefToInnerstPtr(me::Var* var) const
 
 bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
 {
-    // TODO
+    std::string methodStr = hasCreate ? "constructer" : "assignment";
+
+    if ( in.size() != 1 )
+    {
+        errorf(line, "a '%s' container %s takes exactly one argument", 
+                containerStr().c_str(),
+                methodStr.c_str() );
+        return false;
+    }
+
+    if (hasCreate)
+    {
+        if ( in[0]->isIndex() )
+            return true;
+
+        else
+        {
+            errorf( line_, "'%s' container constructor expects one argument of class 'index'", 
+                    containerStr().c_str() );
+        }
+    }
+    else if ( !check(in[0]) )
+    {
+        errorf( line_, "types do not match in '%s' container %s", 
+                containerStr().c_str(),
+                methodStr.c_str() );
+        return false;
+    }
+
     return true;
 }
 
@@ -603,6 +634,14 @@ const BaseType* Container::unnestPtr() const
 {
     swiftAssert(false, "unreachable code");
     return 0;
+}
+
+std::string Container::toString() const
+{
+    std::ostringstream oss;
+    oss << containerStr() << '{' << innerType_->toString() << '}';
+
+    return oss.str();
 }
 
 /*
@@ -616,20 +655,39 @@ void Container::initMeContainer()
 #ifdef SWIFT_DEBUG
 
     meContainer_ = me::functab->newStruct("Container");
-    me::functab->enterStruct(meContainer_);
-    me::functab->appendMember( new me::AtomicMember(me::Op::R_PTR, "ptr") );
-    me::functab->appendMember( new me::AtomicMember(me::Op::R_UINT64, "size") ); 
-    me::functab->leaveStruct();
+    meContainerPtr_  = new me::AtomicMember(me::Op::R_PTR, "ptr");
+    meContainerSize_ = new me::AtomicMember(me::Op::R_UINT64, "size");
 
 #else // SWIFT_DEBUG
 
     meContainer_ = me::functab->newStruct();
-    me::functab->enterStruct(meContainer_);
-    me::functab->appendMember( new me::AtomicMember(me::Op::R_PTR) );
-    me::functab->appendMember( new me::AtomicMember(me::Op::R_UINT64) ); 
-    me::functab->leaveStruct();
+    meContainerPtr_  = new me::AtomicMember(me::Op::R_PTR);
+    meContainerSize_ = new me::AtomicMember(me::Op::R_UINT64);
 
 #endif // SWIFT_DEBUG
+
+    me::functab->enterStruct(meContainer_);
+    me::functab->appendMember(meContainerPtr_);
+    me::functab->appendMember(meContainerSize_); 
+    me::functab->leaveStruct();
+
+    meContainer_->analyze();
+}
+
+
+me::Offset* Container::createContainerPtrOffset()
+{
+    return new me::StructOffset(meContainer_, meContainerPtr_);
+}
+
+me::Offset* Container::createContainerSizeOffset()
+{
+    return new me::StructOffset(meContainer_, meContainerPtr_);
+}
+
+size_t Container::getContainerSize()
+{
+    return meContainer_->size_;
 }
 
 //------------------------------------------------------------------------------
@@ -651,12 +709,9 @@ Array* Array::clone() const
     return new Array(modifier_, innerType_->clone(), NO_LINE);
 }
 
-std::string Array::toString() const
+std::string Array::containerStr() const
 {
-    std::ostringstream oss;
-    oss << "array{" << innerType_->toString() << '}';
-
-    return oss.str();
+    return "array";
 }
 
 //------------------------------------------------------------------------------
@@ -678,12 +733,9 @@ Simd* Simd::clone() const
     return new Simd(modifier_, innerType_->clone(), NO_LINE);
 }
 
-std::string Simd::toString() const
+std::string Simd::containerStr() const
 {
-    std::ostringstream oss;
-    oss << "simd{" << innerType_->toString() << '}';
-
-    return oss.str();
+    return "simd";
 }
 
 } // namespace swift

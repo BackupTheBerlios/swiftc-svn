@@ -24,6 +24,7 @@
 #include <string>
 #include <sstream>
 
+#include "utils/box.h"
 #include "utils/list.h"
 #include "utils/types.h"
 
@@ -198,33 +199,7 @@ struct Undef : public Op
  */
 struct Const : public Op
 {
-    union Value
-    {
-        //size_t   index_;
-
-        int8_t   int8_;
-        int16_t  int16_;
-        int32_t  int32_;
-        int64_t  int64_;
-        int8_t   sat8_;
-        int16_t  sat16_;
-
-        uint8_t  uint8_;
-        uint16_t uint16_;
-        uint32_t uint32_;
-        uint64_t uint64_;
-        uint8_t  usat8_;
-        uint16_t usat16_;
-
-        float    real32_;
-        double   real64_;
-
-        bool     bool_;
-
-        void*    ptr_;
-    };
-
-    Value value_;
+    Box box_;
 
     /*
      * constructor and destructor

@@ -19,30 +19,14 @@
 
 #include "me/constpool.h"
 
+#include "utils/box.h"
+
 namespace me {
 
 //------------------------------------------------------------------------------
 
 // init global
 ConstPool* constpool = 0;
-
-//------------------------------------------------------------------------------
-
-// internal helper
-template<class From, class To>
-To convert(From from)
-{
-    union Converter
-    {
-        From from_;
-        To to_;
-    };
-
-    Converter conv;
-    conv.from_ = from;
-
-    return conv.to_;
-}
 
 //------------------------------------------------------------------------------
 

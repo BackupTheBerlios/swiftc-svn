@@ -251,6 +251,20 @@ bool AssignStatement::analyzeFunctionCall()
     return true;
 }
 
+void AssignStatement::atomicAssignment()
+{
+    if ( !tupel_->typeNode()->isStoreNecessary() )
+    {
+        swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+                "must be a Var here" );
+
+        me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
+        me::Op*  rhsPlace = exprList_->getPlaceList()[0];
+
+        me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
+    }
+}
+
 bool AssignStatement::analyzeAssignCreate()
 {
     const Decl* decl = dynamic_cast<const Decl*>(tupel_->typeNode());
@@ -265,7 +279,67 @@ bool AssignStatement::analyzeAssignCreate()
     TypeList out = tupel_->getTypeList();
     
     if ( out[0]->isNonInnerBuiltin() )
-        return out[0]->hasAssignCreate(in, decl, line_);
+    {
+        result = out[0]->hasAssignCreate(in, decl, line_);
+
+        if (!result)
+            return false;
+
+        const Ptr* ptr = dynamic_cast<const Ptr*>( out[0] );
+        if (ptr)
+        {
+            atomicAssignment();
+            return true;
+        }
+
+        // TODO make all this R_UINT64 stuff arch independent
+
+        const Container* container = dynamic_cast<const Container*>( out[0] );
+        if (container)
+        {
+            if (decl)
+            {
+                swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
+                        "must be a Var here" );
+
+                me::Var* location = (me::Var*) tupel_->getPlaceList()[0];
+                me::Op* numElems = exprList_->getPlaceList()[0];
+
+                // create temporaries
+#ifdef SWIFT_DEBUG
+                std::string ptrStr = "ptr_" + location->id_;
+                std::string sizeStr = "size_" + location->id_;
+                me::Reg* ptr  = me::functab->newReg(me::Op::R_PTR, &ptrStr);
+                me::Reg* size = me::functab->newReg(me::Op::R_UINT64, &sizeStr);
+#else // SWIFT_DEBUG
+                me::Reg* ptr  = me::functab->newReg(me::Op::R_PTR);
+                me::Reg* size = me::functab->newReg(me::Op::R_UINT64);
+#endif // SWIFT_DEBUG
+
+                // calculate size
+                me::Const* constainerSize = me::functab->newConst(me::Op::R_UINT64);
+                constainerSize->box_.uint64_ = Container::getContainerSize();
+                me::AssignInstr* mul = 
+                    new me::AssignInstr('*', size, numElems, constainerSize);
+                me::functab->appendInstr(mul);
+
+                // malloc
+                me::functab->appendInstr( new me::Malloc(ptr, size) );
+
+                // store ptr
+                me::Store* store = new me::Store( 
+                        ptr, location, Container::createContainerPtrOffset() );
+                me::functab->appendInstr(store);
+            }
+            else
+            {
+                // make a memcpy here
+                swiftAssert(false, "TODO");
+            }
+
+            return true;
+        }
+    }
 
     const BaseType* bt = (const BaseType*) out[0];
     Class* _class = bt->lookupClass();
@@ -275,18 +349,7 @@ bool AssignStatement::analyzeAssignCreate()
         return false;
 
     if ( out[0]->isAtomic() )
-    {
-        if ( !tupel_->typeNode()->isStoreNecessary() )
-        {
-            swiftAssert( dynamic_cast<me::Var*>(tupel_->getPlaceList()[0]), 
-                    "must be a Var here" );
-
-            me::Var* lhsPlace = (me::Var*) tupel_->getPlaceList()[0];
-            me::Op*  rhsPlace = exprList_->getPlaceList()[0];
-
-            me::functab->appendInstr( new me::AssignInstr(kind_ , lhsPlace, rhsPlace) );
-        }
-    }
+        atomicAssignment();
     else
     {
         if ( !assignCreate->isTrivial() )
@@ -327,9 +390,9 @@ std::string AssignStatement::toString() const
  */
 
 WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line)
-        : Statement(line)
-        , expr_(expr)
-        , statements_(statements)
+    : Statement(line)
+    , expr_(expr)
+    , statements_(statements)
 {}
 
 WhileStatement::~WhileStatement()

@@ -167,6 +167,10 @@ struct AssignStatement : public Statement
     bool analyzeFunctionCall();
     bool analyzeAssignCreate();
     bool constCheck();
+
+private:
+
+    void atomicAssignment();
 };
 
 //------------------------------------------------------------------------------

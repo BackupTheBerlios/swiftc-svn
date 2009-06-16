@@ -161,38 +161,9 @@ void Literal::genSSA()
 {
     // create appropriate Var
     me::Const* literal = me::functab->newConst( toType() );
+    literal->box_ = box_;
     place_ = literal;
-
-    switch (kind_)
-    {
-        //case L_INDEX:   literal->value_.index_     = index_;   break;
-
-        case L_INT8:    literal->value_.int8_      = int8_;    break;
-        case L_INT16:   literal->value_.int16_     = int16_;   break;
-        case L_INT: // TODO do this arch independently
-        case L_INT32:   literal->value_.int32_     = int32_;   break;
-        case L_INT64:   literal->value_.int64_     = int64_;   break;
-        case L_SAT8:    literal->value_.sat8_      = sat8_;    break;
-        case L_SAT16:   literal->value_.sat16_     = sat16_;   break;
-
-        case L_UINT8:   literal->value_.uint8_     = uint8_;   break;
-        case L_UINT16:  literal->value_.uint16_    = uint16_;  break;
-        case L_UINT: // TODO do this arch independently
-        case L_UINT32:  literal->value_.uint32_    = uint32_;  break;
-        case L_UINT64:  literal->value_.uint64_    = uint64_;  break;
-        case L_USAT8:   literal->value_.usat8_     = usat8_;   break;
-        case L_USAT16:  literal->value_.usat16_    = usat16_;  break;
-
-        case L_REAL: // TODO do this arch independently
-        case L_REAL32:  literal->value_.real32_    = real32_;  break;
-        case L_REAL64:  literal->value_.real64_    = real64_;  break;
-
-        case L_TRUE:
-        case L_FALSE:   literal->value_.bool_      = bool_;    break;
-
-        default:
-            swiftAssert(false, "illegal switch-case-value");
-    }
+    //TODO do int stuff arch independently
 }
 
 std::string Literal::toString() const
@@ -201,23 +172,23 @@ std::string Literal::toString() const
 
     switch (kind_)
     {
-        case L_INDEX:   oss << index_       << "x";     break;
+        case L_INDEX:   oss << box_.size_       << "x";     break;
 
-        case L_INT:     oss << int_;                    break;
-        case L_INT8:    oss << int(int8_)   << "b";     break;
-        case L_INT16:   oss << int16_       << "w";     break;
-        case L_INT32:   oss << int32_       << "d";     break;
-        case L_INT64:   oss << int64_       << "q";     break;
-        case L_SAT8:    oss << int(sat8_)   << "sb";    break;
-        case L_SAT16:   oss << sat16_       << "sw";    break;
+        case L_INT:     oss << box_.int_;                    break;
+        case L_INT8:    oss << int(box_.int8_)   << "b";     break;
+        case L_INT16:   oss << box_.int16_       << "w";     break;
+        case L_INT32:   oss << box_.int32_       << "d";     break;
+        case L_INT64:   oss << box_.int64_       << "q";     break;
+        case L_SAT8:    oss << int(box_.int8_)   << "sb";    break;
+        case L_SAT16:   oss << box_.int16_       << "sw";    break;
 
-        case L_UINT:    oss << uint_;                   break;
-        case L_UINT8:   oss << int(uint8_)  << "ub";    break;
-        case L_UINT16:  oss << uint16_      << "uw";    break;
-        case L_UINT32:  oss << uint32_      << "ud";    break;
-        case L_UINT64:  oss << uint64_      << "uq";    break;
-        case L_USAT8:   oss << int(usat8_)  << "usb";   break;
-        case L_USAT16:  oss << usat16_      << "usw";   break;
+        case L_UINT:    oss << box_.uint_;                   break;
+        case L_UINT8:   oss << int(box_.uint8_)  << "ub";    break;
+        case L_UINT16:  oss << box_.uint16_      << "uw";    break;
+        case L_UINT32:  oss << box_.uint32_      << "ud";    break;
+        case L_UINT64:  oss << box_.uint64_      << "uq";    break;
+        case L_USAT8:   oss << int(box_.uint8_)  << "usb";   break;
+        case L_USAT16:  oss << box_.uint16_      << "usw";   break;
 
         case L_TRUE:    oss << "true";                  break;
         case L_FALSE:   oss << "false";                 break;
@@ -225,18 +196,18 @@ std::string Literal::toString() const
         // hence it is real, real32 or real64
 
         case L_REAL:
-            oss << real_;
+            oss << box_.float_;
         break;
         case L_REAL32:
-            oss << real32_;
-            if ( fmod(real32_, 1.0) == 0.0 )
+            oss << box_.float_;
+            if ( fmod(box_.float_, 1.0) == 0.0 )
                 oss << ".d";
             else
                 oss << "d";
             break;
         case L_REAL64:
-            oss << real64_;
-            if ( fmod(real64_, 1.0) == 0.0 )
+            oss << box_.double_;
+            if ( fmod(box_.double_, 1.0) == 0.0 )
                 oss << ".q";
             else
                 oss << "q"; // FIXME
@@ -613,7 +584,7 @@ bool Nil::analyze()
     type_ = new Ptr( CONST, innerType_->clone() );
 
     me::Const* literal = me::functab->newConst(me::Op::R_PTR);
-    literal->value_.ptr_ = 0;
+    literal->box_.ptr_ = 0;
     place_ = literal;
 
     return true;
