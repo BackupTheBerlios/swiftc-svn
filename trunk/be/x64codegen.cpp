@@ -88,7 +88,15 @@ void X64CodeGen::process()
          << id << ":\n"
          << ".LFB" << counter << ":\n";
 
-    ofs_ << "\tenter\t$0, $" << function_->stackLayout_->size_ << '\n';
+
+    int stackSize = function_->stackLayout_->size_;
+    if (stackSize)
+        ofs_ << "\tenter\t$0, $" << stackSize << '\n';
+    else
+    {
+        ofs_ << "\tpushq\t%rbp\n"
+             << "\tmovq\t%rsp, %rbp\n";
+    }
 
     // save registers which should be preserved during function calls
     const me::Colors& usedColors = function_->usedColors_;
@@ -169,12 +177,12 @@ void X64CodeGen::process()
     if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpopq\t%rbx\n";
 
     // clean up
-    ofs_ << "\tleave\n";
+    ofs_ << "\tmovq\t%rbp, %rsp\n"
+         << "\tpopq\t%rbp\n"
+         << "\tret\n";
 
-    ofs_ << "\tret\n";
-
-    ofs_ << ".LFE" << counter << ":\n";
-    ofs_ << "\t.size\t" << id << ", .-" << id << '\n';
+    ofs_ << ".LFE" << counter << ":\n"
+         << "\t.size\t" << id << ", .-" << id << '\n';
 
     ++counter;
     ofs_ << '\n';
