@@ -90,13 +90,13 @@ void X64CodeGen::process()
 
     ofs_ << "\tenter\t$0, $" << function_->stackLayout_->size_ << '\n';
 
-    // TODO check whether these regs are used anyway
     // save registers which should be preserved during function calls
-    ofs_ << "\tpushq\t%rbx" << std::endl;
-    ofs_ << "\tpushq\t%r12" << std::endl;
-    ofs_ << "\tpushq\t%r13" << std::endl;
-    ofs_ << "\tpushq\t%r14" << std::endl;
-    ofs_ << "\tpushq\t%r15" << std::endl;
+    const me::Colors& usedColors = function_->usedColors_;
+    if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpushq\t%rbx\n";
+    if ( usedColors.contains(X64RegAlloc::R12) ) ofs_ << "\tpushq\t%r12\n";
+    if ( usedColors.contains(X64RegAlloc::R13) ) ofs_ << "\tpushq\t%r13\n";
+    if ( usedColors.contains(X64RegAlloc::R14) ) ofs_ << "\tpushq\t%r14\n";
+    if ( usedColors.contains(X64RegAlloc::R15) ) ofs_ << "\tpushq\t%r15\n";
 
     me::BBNode* currentNode = 0;
     bool phisInserted = false;
@@ -162,11 +162,11 @@ void X64CodeGen::process()
 
     // function epilogue
     // restore saved registers
-    ofs_ << "\tpopq\t%r15" << std::endl;
-    ofs_ << "\tpopq\t%r14" << std::endl;
-    ofs_ << "\tpopq\t%r13" << std::endl;
-    ofs_ << "\tpopq\t%r12" << std::endl;
-    ofs_ << "\tpopq\t%rbx" << std::endl;
+    if ( usedColors.contains(X64RegAlloc::R15) ) ofs_ << "\tpopq\t%r15\n";
+    if ( usedColors.contains(X64RegAlloc::R14) ) ofs_ << "\tpopq\t%r14\n";
+    if ( usedColors.contains(X64RegAlloc::R13) ) ofs_ << "\tpopq\t%r13\n";
+    if ( usedColors.contains(X64RegAlloc::R12) ) ofs_ << "\tpopq\t%r12\n";
+    if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpopq\t%rbx\n";
 
     // clean up
     ofs_ << "\tleave\n";
@@ -283,8 +283,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
      * collect free registers
      */
 
-    me::Colors intFree = *X64RegAlloc::getIntColors();
     me::Colors xmmFree = *X64RegAlloc::getXmmColors();;
+    me::Colors intFree = *X64RegAlloc::getIntColors();
 
     // erase all not spilled regs which are in the live-out of the last instruction of prevNode
     VARSET_EACH(iter, prevNode->value_->end_->prev_->value_->liveOut_) 
@@ -305,6 +305,20 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             intFree.erase( (*iter)->color_ );
         }
     }
+
+    const me::Colors& usedColors = function_->usedColors_;
+    // use these ones only if they are used anyway
+    if ( intFree.contains(X64RegAlloc::RBX) && !usedColors.contains(X64RegAlloc::RBX) ) 
+            intFree.erase(X64RegAlloc::RBX);
+    if ( intFree.contains(X64RegAlloc::R12) && !usedColors.contains(X64RegAlloc::R12) ) 
+            intFree.erase(X64RegAlloc::R12);
+    if ( intFree.contains(X64RegAlloc::R13) && !usedColors.contains(X64RegAlloc::R13) ) 
+            intFree.erase(X64RegAlloc::R13);
+    if ( intFree.contains(X64RegAlloc::R14) && !usedColors.contains(X64RegAlloc::R14) ) 
+            intFree.erase(X64RegAlloc::R14);
+    if ( intFree.contains(X64RegAlloc::R15) && !usedColors.contains(X64RegAlloc::R15) ) 
+            intFree.erase(X64RegAlloc::R15);
+
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;

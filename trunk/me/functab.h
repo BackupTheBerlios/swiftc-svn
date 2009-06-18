@@ -45,6 +45,8 @@ struct Struct;
 struct Member;
 struct StackLayout;
 
+typedef Set<int> Colors;
+
 //------------------------------------------------------------------------------
 
 /**
@@ -106,6 +108,9 @@ struct Function
 #ifdef SWIFT_DEBUG
     static bool mainSet_;
 #endif // SWIFT_DEBUG
+
+    /// All used colors in this function.
+    Colors usedColors_;
 
     /*
      * constructor and destructor

@@ -252,6 +252,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
                 IntVec freeColors = reservoir_.difference(occupied);
                 swiftAssert( !freeColors.empty(), "must not be empty" );
                 phiRes->color_ = freeColors[0];
+                function_->usedColors_.insert( freeColors[0] ); // remember color as used
 
                 // pointless definitions should be optimized away
                 if ( phi->liveOut_.contains(phiRes) )
@@ -350,16 +351,20 @@ void Coloring::colorRecursive(BBNode* bbNode)
             // try to use a color which has just been freed here
             if ( !freeHere.empty() )
             {
-                colors.insert(freeHere[0]);
-                reg->color_ = freeHere[0];
+                int color = freeHere[0];
+                colors.insert(color);
+                reg->color_ = color;
+                function_->usedColors_.insert(color); // remember color as used
             }
             else
             {
                 IntVec freeColors = reservoir_.difference(colors);
                 swiftAssert( !freeColors.empty(), "must not be empty" );
 
-                colors.insert(freeColors[0]);
-                reg->color_ = freeColors[0];
+                int color = freeColors[0];
+                colors.insert(color);
+                reg->color_ = color;
+                function_->usedColors_.insert(color); // remember color as used
             }
 
             // pointless definitions should be optimized away
@@ -430,6 +435,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
 
         // set color
         reg->color_ = constraint;
+        function_->usedColors_.insert(constraint); // remember color as used
 
         if ( liveThrough.contains(reg) )
         {
@@ -462,6 +468,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
 
         // set color
         reg->color_ = constraint;
+        function_->usedColors_.insert(constraint); // remember color as used
     }
 
     // for each unconstrained arg which does not live through
@@ -473,13 +480,17 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
         IntVec c_d_without_c_a = colorsD.difference(colorsA);
 
         if ( !c_d_without_c_a.empty() )
+        {
             reg->color_ = c_d_without_c_a[0];
+            function_->usedColors_.insert( c_d_without_c_a[0] ); // remember color as used
+        }
         else
         {
             // -> there is none -> use a fresh color
             IntVec free_without_c_a = freeColors.difference(colorsA);
             swiftAssert( !free_without_c_a.empty(), "must not be empty" );
             reg->color_ = free_without_c_a[0];
+            function_->usedColors_.insert( free_without_c_a[0] ); // remember color as used
         }
     }
 
@@ -491,13 +502,17 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
         IntVec c_a_without_c_d = colorsA.difference(colorsD);
 
         if ( !c_a_without_c_d.empty() )
+        {
             reg->color_ = c_a_without_c_d[0];
+            function_->usedColors_.insert( c_a_without_c_d[0] ); // remember color as used
+        }
         else
         {
             // -> there is none -> use a fresh color
             IntVec free_without_c_d = freeColors.difference(colorsA);
             swiftAssert( !free_without_c_d.empty(), "must not be empty" );
             reg->color_ = free_without_c_d[0];
+            function_->usedColors_.insert( free_without_c_d[0] ); // remember color as used
         }
     }
 
@@ -518,6 +533,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
         IntVec free = freeColors.difference(c_d_union_c_a);
         swiftAssert( !free.empty(), "must not be empty" );
         reg->color_ = free[0];
+        function_->usedColors_.insert( free[0] ); // remember color as used
     }
 }
 
