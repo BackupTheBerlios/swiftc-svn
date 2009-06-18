@@ -22,6 +22,7 @@
 
 #include <fstream>
 #include <typeinfo>
+#include <utility>
 
 #include "utils/graph.h"
 #include "utils/list.h"
@@ -572,7 +573,7 @@ struct Load : public InstrBase
      * further methods
      */
 
-    size_t getOffset() const;
+    std::pair<Reg*, size_t> getOffset(); 
     Reg* resReg();
 };
 
@@ -627,7 +628,7 @@ struct LoadPtr : public InstrBase
      * further methods
      */
 
-    size_t getOffset() const;
+    std::pair<Reg*, size_t> getOffset(); 
     Reg* resReg();
 };
 
@@ -702,7 +703,7 @@ struct Store : public InstrBase
      * further methods
      */
 
-    size_t getOffset() const;
+    std::pair<Reg*, size_t> getOffset(); 
     MemVar* resMemVar();
 };
 

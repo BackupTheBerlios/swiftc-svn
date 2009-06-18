@@ -693,7 +693,6 @@ int x64lex()
             {
                 x64lval.memVar_ = (me::MemVar*) op;
                 lastOp = X64_MEM_VAR;
-                //location = END; // HACK?
             }
             else 
             {

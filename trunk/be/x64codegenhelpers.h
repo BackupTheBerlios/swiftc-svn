@@ -21,6 +21,7 @@
 #define BE_X64_CODE_GEN_HELPERS_H
 
 #include <string>
+#include <utility>
 
 #include "be/x64regalloc.h"
 
@@ -39,8 +40,8 @@ namespace be {
 std::string suffix(int);
 
 std::string reg2str(me::Reg* reg);
-std::string memvar2str(me::MemVar* memVar, int offset);
-std::string ptr2str(me::Reg* reg, int offset);
+std::string memvar2str(me::MemVar* memVar, std::pair<me::Reg*, size_t> pOffset);
+std::string ptr2str(me::Reg* reg, std::pair<me::Reg*, size_t> pOffset);
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string jcc(me::BranchInstr* bi, bool neg = false);

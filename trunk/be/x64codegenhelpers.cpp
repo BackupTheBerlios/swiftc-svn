@@ -79,20 +79,40 @@ std::string reg2str(me::Reg* reg)
         return X64RegAlloc::reg2String(reg);
 }
 
-std::string memvar2str(me::MemVar* memVar, int offset)
+std::string memvar2str(me::MemVar* memVar, std::pair<me::Reg*, size_t> pOffset)
 {
+    size_t offset = pOffset.second;
+    me::Reg* indexReg = pOffset.first;
+
     std::ostringstream oss;
     oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 16) - offset
-        << "(%rbp)";
+        << "(%rbp";
+
+    if (indexReg)
+        oss << ", " << reg2str(indexReg);
+
+    oss << ')';
 
     return oss.str();
 }
 
-std::string ptr2str(me::Reg* reg, int offset)
+std::string ptr2str(me::Reg* reg, std::pair<me::Reg*, size_t> pOffset)
 {
-    std::ostringstream oss;
     swiftAssert(reg->type_ == me::Op::R_PTR, "must be an R_PTR here");
-    oss << offset << '(' << reg2str(reg) << ')';
+    std::ostringstream oss;
+
+    size_t offset = pOffset.second;
+    me::Reg* indexReg = pOffset.first;
+
+    if (offset)
+        oss << offset;
+
+    oss << '(' << reg2str(reg);
+
+    if (indexReg)
+        oss << ", " << reg2str(indexReg);
+
+    oss << ')';
 
     return oss.str();
 }

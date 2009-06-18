@@ -12,12 +12,14 @@ namespace me {
  * forward declarations
  */
 struct Member;
+struct CTOffset;
 
 //------------------------------------------------------------------------------
 
 struct Offset
 {
-    Offset* next_;
+    /// Only a root Offset instance is allowed to be  a RTOffset instance.
+    CTOffset* next_;
 
     /*
      * constructor and destructor

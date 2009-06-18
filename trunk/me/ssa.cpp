@@ -867,10 +867,9 @@ std::string Load::toString() const
  * further methods
  */
 
-size_t Load::getOffset() const
+std::pair<Reg*, size_t> Load::getOffset() 
 {
-    // TODO
-    return offset_->getOffset().second;
+    return offset_->getOffset();
 }
 
 Reg* Load::resReg()
@@ -930,10 +929,10 @@ std::string LoadPtr::toString() const
  * further methods
  */
 
-size_t LoadPtr::getOffset() const
+std::pair<Reg*, size_t> LoadPtr::getOffset()
 {
-    // TODO
-    return offset_ ? offset_->getOffset().second : 0;
+    return offset_ ? offset_->getOffset()
+                   : std::make_pair( (Reg*) 0, 0UL );
 }
 
 Reg* LoadPtr::resReg()
@@ -1054,10 +1053,9 @@ std::string Store::toString() const
  * further methods
  */
 
-size_t Store::getOffset() const
+std::pair<Reg*, size_t> Store::getOffset()
 {
-    // TODO
-    return offset_->getOffset().second;
+    return offset_->getOffset();
 }
 
 MemVar* Store::resMemVar()

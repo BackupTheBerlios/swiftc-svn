@@ -51,12 +51,8 @@ StructOffset::StructOffset(Struct* _struct, Member* member)
 
 size_t StructOffset::getCTOffset() const
 {
-    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
-            "next_ must be castable to CTArrayOffset if present" );
-
-    return next_ 
-        ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
-        : member_->offset_;
+    return next_ ?  next_->getCTOffset() + member_->offset_ 
+                 : member_->offset_;
 }
 
 std::string StructOffset::toString() const
@@ -107,21 +103,15 @@ RTArrayOffset::RTArrayOffset(Reg* index, Member* member)
 
 std::pair<Reg*, size_t> RTArrayOffset::getRTOffset() 
 {
-    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
-            "next_ must be castable to CTArrayOffset if present" );
-
     return std::make_pair( index_,
-            next_ ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
+            next_ ?  next_->getCTOffset() + member_->offset_ 
                   : member_->offset_ );
 }
 
 std::pair<const Reg*, size_t> RTArrayOffset::getRTOffset() const
 {
-    swiftAssert( !next_ || dynamic_cast<const CTOffset*>(next_),
-            "next_ must be castable to CTArrayOffset if present" );
-
     return std::make_pair( index_,
-            next_ ?  ((const CTOffset*) next_)->getCTOffset() + member_->offset_ 
+            next_ ? next_->getCTOffset() + member_->offset_ 
                   : member_->offset_ );
 }
 
