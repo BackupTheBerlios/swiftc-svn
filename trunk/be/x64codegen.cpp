@@ -409,7 +409,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                     "must have exactly one predecessor" );
             RegGraph::Node* p = n->pred_.first()->value_;
 
-            me::Op::Type type = n->value_->type_;
+            me::Op::Type type = p->value_->type_;
             int n_color = n->value_->color_; // save color
             genMove(type, p->value_->color_, n_color);
 
@@ -488,7 +488,6 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         genMove(type, node->value_->color_, tmpRegColor);
 
         std::vector<RegGraph::Node*> toBeErased;
-        //toBeErased.push_back(node);
 
         // iterate over the cycle
         RegGraph::Node* dst = node; // current node
