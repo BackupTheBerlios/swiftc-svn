@@ -104,13 +104,11 @@ void X64CodeGen::process()
     if ( (stackSize + numPushes) % 16)
         stackSize = ((stackSize  + numPushes + 15) & 0xFFFFFFF0) - numPushes;
 
+    ofs_ << "\tpushq\t%rbp\n"
+         << "\tmovq\t%rsp, %rbp\n";
+
     if (stackSize)
-        ofs_ << "\tenter\t$" << stackSize << ", $0\n";
-    else
-    {
-        ofs_ << "\tpushq\t%rbp\n"
-             << "\tmovq\t%rsp, %rbp\n";
-    }
+        ofs_ << "\tsubq\t$" << stackSize << ", %rsp\n";
 
     // save registers which should be preserved during function calls
     if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpushq\t%rbx\n";
