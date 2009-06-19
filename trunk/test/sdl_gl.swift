@@ -181,11 +181,6 @@ class App
     end
 
     routine main() -> int result
-        ::start()
-        result = 0
-    end
-
-    routine start() -> int result
         App app
 
         # main loop variable 

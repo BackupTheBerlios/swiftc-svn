@@ -25,15 +25,9 @@ class Fibbonacci
 
     end
 
-    routine start()
-        int fib = ::fibbonaci(12)
-        c_call print_double(5.0q)
-        c_call print_int(fib)
-    end
-
     routine main() -> int result
-    
-        ::start()
+        int fib = ::fibbonaci(12)
+        c_call print_int(fib)
         result = 0
     end
 

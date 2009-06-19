@@ -88,10 +88,24 @@ void X64CodeGen::process()
          << id << ":\n"
          << ".LFB" << counter << ":\n";
 
+    const me::Colors& usedColors = function_->usedColors_;
 
+    // count number of pushes
+    int numPushes = 0;
+    if ( usedColors.contains(X64RegAlloc::RBX) ) ++numPushes;
+    if ( usedColors.contains(X64RegAlloc::R12) ) ++numPushes;
+    if ( usedColors.contains(X64RegAlloc::R13) ) ++numPushes;
+    if ( usedColors.contains(X64RegAlloc::R14) ) ++numPushes;
+    if ( usedColors.contains(X64RegAlloc::R15) ) ++numPushes;
+
+    // align stack
+    numPushes = numPushes & 0x00000001 ? 8 : 0;
     int stackSize = function_->stackLayout_->size_;
+    if ( (stackSize + numPushes) % 16)
+        stackSize = ((stackSize  + numPushes + 15) & 0xFFFFFFF0) - numPushes;
+
     if (stackSize)
-        ofs_ << "\tenter\t$0, $" << stackSize << '\n';
+        ofs_ << "\tenter\t$" << stackSize << ", $0\n";
     else
     {
         ofs_ << "\tpushq\t%rbp\n"
@@ -99,7 +113,6 @@ void X64CodeGen::process()
     }
 
     // save registers which should be preserved during function calls
-    const me::Colors& usedColors = function_->usedColors_;
     if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpushq\t%rbx\n";
     if ( usedColors.contains(X64RegAlloc::R12) ) ofs_ << "\tpushq\t%r12\n";
     if ( usedColors.contains(X64RegAlloc::R13) ) ofs_ << "\tpushq\t%r13\n";
@@ -318,6 +331,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
     }
 
     const me::Colors& usedColors = function_->usedColors_;
+
     // use these ones only if they are used anyway
     if ( intFree.contains(X64RegAlloc::RBX) && !usedColors.contains(X64RegAlloc::RBX) ) 
             intFree.erase(X64RegAlloc::RBX);
