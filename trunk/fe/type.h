@@ -247,6 +247,7 @@ public:
      */
 
     Type* getInnerType();
+    const Type* getInnerType() const;
 
 protected:
 

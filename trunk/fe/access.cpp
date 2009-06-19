@@ -203,6 +203,20 @@ void MemberAccess::genSSA()
 {
 }
 
+bool MemberAccess::isCTOffset() const
+{
+    return true;
+}
+
+std::string MemberAccess::toString() const
+{
+    return postfixExpr_->toString() + "." + *id_;
+}
+
+/*
+ * further methods
+ */
+
 void MemberAccess::emitStoreIfApplicable(Expr* expr)
 {
     MemberAccess* ma = dynamic_cast<MemberAccess*>(postfixExpr_);
@@ -222,11 +236,6 @@ void MemberAccess::emitStoreIfApplicable(Expr* expr)
     }
 }
 
-std::string MemberAccess::toString() const
-{
-    return postfixExpr_->toString() + "." + *id_;
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -244,7 +253,7 @@ IndexExpr::~IndexExpr()
 }
 
 /*
- * further methods
+ * virtual methods
  */
 
 bool IndexExpr::analyze()
@@ -277,11 +286,19 @@ bool IndexExpr::analyze()
         return false;
     }
 
+    type_ = container->getInnerType()->clone();
+    place_ = type_->createVar();
+
     return true;
 }
 
 void IndexExpr::genSSA()
 {}
+
+bool IndexExpr::isCTOffset() const
+{
+    return false;
+}
 
 std::string IndexExpr::toString() const
 {

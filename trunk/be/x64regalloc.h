@@ -46,8 +46,14 @@ public:
         /*
          * general purpose registers
          */
-        R0, R1, R2,  R3,  R4,  R5,  R6,  R7, 
-        R8, R9, R10, R11, R12, R13, R14, R15, 
+        R0, R1, R2, R4, R5, R6, R7, R8, R9, R10, R11, 
+
+        /*
+         * deprefer these registers since they must be preserved across
+         * function calls, but if needed prefer R3 since it can be encoded
+         * shorter
+         */
+        R3, R12, R13, R14, R15, 
 
         /*
          * XMM registers

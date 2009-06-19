@@ -439,6 +439,11 @@ Type* NestedType::getInnerType()
     return innerType_;
 }
 
+const Type* NestedType::getInnerType() const
+{
+    return innerType_;
+}
+
 //------------------------------------------------------------------------------
 
 /*

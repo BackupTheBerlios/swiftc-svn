@@ -38,6 +38,8 @@ public:
      * virtual methods
      */
 
+    virtual bool isCTOffset() const = 0;
+
 protected:
 
     /*
@@ -73,9 +75,10 @@ public:
      * virtual methods
      */
 
-    virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
+    virtual bool isCTOffset() const;
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -118,6 +121,7 @@ public:
 
     virtual bool analyze();
     virtual void genSSA();
+    virtual bool isCTOffset() const;
     virtual std::string toString() const;
 
 private:

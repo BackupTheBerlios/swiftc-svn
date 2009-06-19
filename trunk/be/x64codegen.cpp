@@ -294,7 +294,10 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
     me::Colors xmmFree = *X64RegAlloc::getXmmColors();;
     me::Colors intFree = *X64RegAlloc::getIntColors();
 
-    // erase all not spilled regs which are in the live-out of the last instruction of prevNode
+    /* 
+     * erase all non-spilled regs which are in the live-out 
+     * of the last instruction of prevNode
+     */
     VARSET_EACH(iter, prevNode->value_->end_->prev_->value_->liveOut_) 
     {
         if ( (*iter)->type_ == me::Op::R_STACK || (*iter)->isSpilled() )
@@ -326,7 +329,6 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             intFree.erase(X64RegAlloc::R14);
     if ( intFree.contains(X64RegAlloc::R15) && !usedColors.contains(X64RegAlloc::R15) ) 
             intFree.erase(X64RegAlloc::R15);
-
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
@@ -386,7 +388,6 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new TReg(dstColor, dstType))) ).first;
 
         srcIter->second->link(dstIter->second);
-        //std::cout << srcIter->second->value_->toString() << " -> " << dstIter->second->value_->toString() << std::endl;
     }
 
     /*
@@ -409,7 +410,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             RegGraph::Node* p = n->pred_.first()->value_;
 
             me::Op::Type type = n->value_->type_;
-            genMove(type, p->value_->color_, n->value_->color_);
+            int n_color = n->value_->color_; // save color
+            genMove(type, p->value_->color_, n_color);
 
             rg.erase(n);
 
@@ -417,11 +419,17 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             if ( p->pred_.empty() )
                 rg.erase(p);
 
-            // p is free now
+            // p is free now while n is used now
             if ( me::Op::isReal(p->value_->type_) )
+            {
                 xmmFree.insert(p->value_->color_);
+                xmmFree.erase(n_color);
+            }
             else
+            {
                 intFree.insert(p->value_->color_);
+                intFree.erase(n_color);
+            }
         }
         else
             break;
