@@ -35,7 +35,7 @@ simd class Vec3
     end
 
 
-    routine start()
+    routine main() -> int result
         Vec3 v1 =  1.0, 2.0,  3.0
         Vec3 v2 = -2.0, 1.5, -3.0
         Vec3 v3 = Vec3::cross(v1, v2) # yields -10.5, -3, 5.5
@@ -43,29 +43,14 @@ simd class Vec3
         c_call print_float(v3.x)
         c_call print_float(v3.y)
         c_call print_float(v3.z)
-    end
 
-    routine main() -> int result
-        ::start()
-        # Vec3 v1 =  1.0,  2.0,  3.0
-        # Vec3 v2 = -2.0,  1.5, -3.0
-        # Vec3 v3 = Vec3::cross(v1, v2)
-
-        # c_call print_float(v3.x)
-        # c_call print_float(v3.y)
-        # c_call print_float(v3.z)
-
-        # simd{Vec3} vecs1
-        # simd{Vec3} vecs2
-        # simd{Vec3} vecs3
-
+        result = 0
 
         # simd: vecs1 = vecs2 + vecs3
 
         # simd: vecs1 = Vec3::cross(vecs2, vecs3)
 
         # simd: vecs1 = vecs2 + @.to_real()
-
-        result = 0
     end
+
 end
