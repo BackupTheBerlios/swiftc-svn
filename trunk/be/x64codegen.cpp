@@ -99,9 +99,9 @@ void X64CodeGen::process()
     if ( usedColors.contains(X64RegAlloc::R15) ) ++numPushes;
 
     // align stack
-    numPushes = numPushes & 0x00000001 ? 8 : 0;
+    numPushes = (numPushes & 0x00000001) ? 8 : 0; // 8 if odd, 0 if even
     int stackSize = function_->stackLayout_->size_;
-    if ( (stackSize + numPushes) % 16)
+    if ( (stackSize + numPushes) & 0x0000000F ) // (stackSize + numPushes) % 16
         stackSize = ((stackSize  + numPushes + 15) & 0xFFFFFFF0) - numPushes;
 
     ofs_ << "\tpushq\t%rbp\n"
@@ -331,16 +331,11 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
     const me::Colors& usedColors = function_->usedColors_;
 
     // use these ones only if they are used anyway
-    if ( intFree.contains(X64RegAlloc::RBX) && !usedColors.contains(X64RegAlloc::RBX) ) 
-            intFree.erase(X64RegAlloc::RBX);
-    if ( intFree.contains(X64RegAlloc::R12) && !usedColors.contains(X64RegAlloc::R12) ) 
-            intFree.erase(X64RegAlloc::R12);
-    if ( intFree.contains(X64RegAlloc::R13) && !usedColors.contains(X64RegAlloc::R13) ) 
-            intFree.erase(X64RegAlloc::R13);
-    if ( intFree.contains(X64RegAlloc::R14) && !usedColors.contains(X64RegAlloc::R14) ) 
-            intFree.erase(X64RegAlloc::R14);
-    if ( intFree.contains(X64RegAlloc::R15) && !usedColors.contains(X64RegAlloc::R15) ) 
-            intFree.erase(X64RegAlloc::R15);
+    if ( !usedColors.contains(X64RegAlloc::RBX) ) intFree.erase(X64RegAlloc::RBX);
+    if ( !usedColors.contains(X64RegAlloc::R12) ) intFree.erase(X64RegAlloc::R12);
+    if ( !usedColors.contains(X64RegAlloc::R13) ) intFree.erase(X64RegAlloc::R13);
+    if ( !usedColors.contains(X64RegAlloc::R14) ) intFree.erase(X64RegAlloc::R14);
+    if ( !usedColors.contains(X64RegAlloc::R15) ) intFree.erase(X64RegAlloc::R15);
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
@@ -361,7 +356,10 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         me::Reg* dstReg = (me::Reg*) phi->res_[0].var_;
 
         if ( dstReg->isSpilled() )
-            continue; // TODO
+        {
+            swiftAssert(false, "TODO");
+            continue; 
+        }
 
         // is this a pointless definition? (should be optimized away)
         if ( !phi->liveOut_.contains(dstReg) )
@@ -451,6 +449,9 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
      * now remove cycles
      */
 
+    bool intPop = false;
+    bool xmmPop = false;
+
     // while there are still nodes left
     while ( !rg.nodes_.empty() )
     {
@@ -481,22 +482,39 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          *  mov free, r1
          */
 
-        // mov r1, free
         me::Op::Type type = node->value_->type_;
 
         int tmpRegColor;
 
         if ( me::Op::isReal(type) )
         {
-            swiftAssert( !xmmFree.empty(), "TODO" );
-            tmpRegColor = *xmmFree.begin();
+            if ( xmmFree.empty() )
+            {
+                // no free register available so save XMM0 and use this one
+                ofs_ << "\tsubq\t$16, %rsp\n";
+                ofs_ << "\tmovdqa\t%xmm0, 16(%rsp)\n";
+                tmpRegColor = X64RegAlloc::XMM0;
+                xmmPop = true;
+                std::cout << "not tested" << std::endl;
+            }
+            else
+                tmpRegColor = *xmmFree.begin();
         }
         else
         {
-            swiftAssert( !intFree.empty(), "TODO" );
-            tmpRegColor = *intFree.begin();
+            if ( intFree.empty() )
+            {
+                // no free register available so save RAX and use this one
+                ofs_ << "\tpushq\t%rax\n";
+                tmpRegColor = X64RegAlloc::RAX;
+                intPop = true;
+                std::cout << "not tested" << std::endl;
+            }
+            else
+                tmpRegColor = *intFree.begin();
         }
 
+        // mov r1, free
         genMove(type, node->value_->color_, tmpRegColor);
 
         std::vector<RegGraph::Node*> toBeErased;
@@ -520,6 +538,17 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         // mov free, rn
         genMove(type, tmpRegColor, dst->value_->color_);
         toBeErased.push_back(node);
+
+        // do we have to restore RAX?
+        if (intPop)
+            ofs_ << "\tpopq\t%rax\n";
+
+        // do we have to restore XMM0?
+        if (xmmPop)
+        {
+            ofs_ << "\tmovdqa\t16(%rsp), %xmm0\n";
+            ofs_ << "\taddq\t$16, %rsp\n";
+        }
 
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)

@@ -375,7 +375,7 @@ bool UnExpr::analyze()
 
         type_ = ptr->getInnerType();
     }
-    else if (c_ == NOT_OP)
+    else if (kind_ == NOT_OP)
     {
         if ( !op_->getType()->isBool() )
         {
