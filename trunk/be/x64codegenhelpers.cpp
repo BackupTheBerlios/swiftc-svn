@@ -79,6 +79,14 @@ std::string reg2str(me::Reg* reg)
         return X64RegAlloc::reg2String(reg);
 }
 
+std::string reg2str(int color, me::Op::Type type)
+{
+    me::Reg reg(type, -1);
+    reg.color_ = color;
+
+    return reg2str(&reg);
+}
+
 std::string memvar2str(me::MemVar* memVar, std::pair<me::Reg*, size_t> pOffset)
 {
     size_t offset = pOffset.second;

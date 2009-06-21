@@ -40,6 +40,7 @@ namespace be {
 std::string suffix(int);
 
 std::string reg2str(me::Reg* reg);
+std::string reg2str(int color, me::Op::Type type);
 std::string memvar2str(me::MemVar* memVar, std::pair<me::Reg*, size_t> pOffset);
 std::string ptr2str(me::Reg* reg, std::pair<me::Reg*, size_t> pOffset);
 

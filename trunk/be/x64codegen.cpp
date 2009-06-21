@@ -1,3 +1,4 @@
+
 /*
  * Swift compiler framework
  * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
@@ -179,7 +180,10 @@ void X64CodeGen::process()
         x64parse();
     }
 
-    // function epilogue
+    /*
+     * function epilogue
+     */
+
     // restore saved registers
     if ( usedColors.contains(X64RegAlloc::R15) ) ofs_ << "\tpopq\t%r15\n";
     if ( usedColors.contains(X64RegAlloc::R14) ) ofs_ << "\tpopq\t%r14\n";
@@ -265,17 +269,8 @@ int meType2beType(me::Op::Type type)
 
 void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
 {
-    //if ( me::Op::isReal(type) )
-        //type = me::Op::R_REAL64;
-    //else
-        //type = me::Op::R_INT64;
-
-    me::Reg op1(type, -1);
-    me::Reg op2(type, -1);
-    op1.color_ = r1;
-    op2.color_ = r2;
-
-    ofs_  << "\tmov" << suffix(meType2beType(type)) << '\t' << reg2str(&op1) << ", " << reg2str(&op2) << '\n';
+    ofs_ << "\tmov" << suffix(meType2beType(type)) << '\t' 
+         << reg2str(r1, type) << ", " << reg2str(r2, type) << '\n';
 }
 
 void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
@@ -421,7 +416,9 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
             me::Op::Type type = p->value_->type_;
             int n_color = n->value_->color_; // save color
-            genMove(type, p->value_->color_, n_color);
+            int p_color = p->value_->color_; // save color
+
+            genMove(type, p_color, n_color);
 
             rg.erase(n);
 
@@ -430,15 +427,15 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                 rg.erase(p);
 
             // p is free now while n is used now
-            if ( me::Op::isReal(p->value_->type_) )
+            if ( me::Op::isReal(type) )
             {
-                xmmFree.insert(p->value_->color_);
-                xmmFree.erase(n_color);
+                xmmFree.insert(p_color);
+                xmmFree.erase (n_color);
             }
             else
             {
-                intFree.insert(p->value_->color_);
-                intFree.erase(n_color);
+                intFree.insert(p_color);
+                intFree.erase (n_color);
             }
         }
         else
@@ -483,39 +480,44 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          */
 
         me::Op::Type type = node->value_->type_;
-
         int tmpRegColor;
 
         if ( me::Op::isReal(type) )
         {
             if ( xmmFree.empty() )
             {
-                // no free register available so save XMM0 and use this one
+                // mov r1, mem
                 ofs_ << "\tsubq\t$16, %rsp\n";
-                ofs_ << "\tmovdqa\t%xmm0, 16(%rsp)\n";
-                tmpRegColor = X64RegAlloc::XMM0;
+                ofs_ << "\tmovdqa\t" 
+                    << reg2str(node->value_->color_, type) 
+                    << ", (%rsp)\n";
                 xmmPop = true;
-                std::cout << "not tested" << std::endl;
             }
             else
+            {
+                // mov r1, free
                 tmpRegColor = *xmmFree.begin();
+                swiftAssert(node->value_->color_ != tmpRegColor, "must be different");
+                genMove(type, node->value_->color_, tmpRegColor);
+            }
         }
         else
         {
             if ( intFree.empty() )
             {
-                // no free register available so save RAX and use this one
-                ofs_ << "\tpushq\t%rax\n";
-                tmpRegColor = X64RegAlloc::RAX;
+                // mov r1, mem
+                ofs_ << "\tpushq\t" << reg2str(node->value_->color_, type) << '\n';
                 intPop = true;
                 std::cout << "not tested" << std::endl;
             }
             else
+            {
+                // mov r1, free
                 tmpRegColor = *intFree.begin();
+                swiftAssert(node->value_->color_ != tmpRegColor, "must be different");
+                genMove(type, node->value_->color_, tmpRegColor);
+            }
         }
-
-        // mov r1, free
-        genMove(type, node->value_->color_, tmpRegColor);
 
         std::vector<RegGraph::Node*> toBeErased;
 
@@ -535,20 +537,22 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             src = src->pred_.first()->value_;
         }
 
-        // mov free, rn
-        genMove(type, tmpRegColor, dst->value_->color_);
-        toBeErased.push_back(node);
+        int dstColor = dst->value_->color_;
 
-        // do we have to restore RAX?
+        /*
+         * mov free, rn
+         */
         if (intPop)
-            ofs_ << "\tpopq\t%rax\n";
-
-        // do we have to restore XMM0?
-        if (xmmPop)
+            ofs_ << "\tpopq\t%" << reg2str(dstColor, type) << '\n';
+        else if (xmmPop)
         {
-            ofs_ << "\tmovdqa\t16(%rsp), %xmm0\n";
+            ofs_ << "\tmovdqa\t(%rsp), " << reg2str(dstColor, type) << '\n';
             ofs_ << "\taddq\t$16, %rsp\n";
         }
+        else
+            genMove(type, tmpRegColor, dstColor);
+
+        toBeErased.push_back(node);
 
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)
