@@ -487,10 +487,11 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             if ( xmmFree.empty() )
             {
                 // mov r1, mem
-                ofs_ << "\tsubq\t$16, %rsp\n";
+                //ofs_ << "\tsubq\t$16, %rsp\n";
+                // store in the 128 byte red zone area beyond RSP
                 ofs_ << "\tmovdqa\t" 
                     << reg2str(node->value_->color_, type) 
-                    << ", (%rsp)\n";
+                    << ", -16(%rsp)\n";
                 xmmPop = true;
             }
             else
@@ -546,8 +547,9 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             ofs_ << "\tpopq\t%" << reg2str(dstColor, type) << '\n';
         else if (xmmPop)
         {
-            ofs_ << "\tmovdqa\t(%rsp), " << reg2str(dstColor, type) << '\n';
-            ofs_ << "\taddq\t$16, %rsp\n";
+            // stored in the 128 byte red zone area beyond RSP
+            ofs_ << "\tmovdqa\t-16(%rsp), " << reg2str(dstColor, type) << '\n';
+            //ofs_ << "\taddq\t$16, %rsp\n";
         }
         else
             genMove(type, tmpRegColor, dstColor);
