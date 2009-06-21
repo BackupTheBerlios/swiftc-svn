@@ -196,6 +196,9 @@ int start(int argc, char** argv)
         me::arch->codeGen(function, ofs);
     }
 
+    // emit program prologue
+    me::arch->emitStart(ofs);
+
     // write constants to assembly language file
     me::arch->dumpConstants(ofs);
     

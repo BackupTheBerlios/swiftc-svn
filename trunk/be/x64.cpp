@@ -19,6 +19,7 @@
 
 #include "be/x64.h"
 
+#include <iostream>
 #include "me/constpool.h"
 #include "me/stacklayout.h"
 
@@ -186,6 +187,24 @@ void X64::dumpConstants(std::ofstream& ofs)
 void X64::codeGen(me::Function* function, std::ofstream& ofs)
 {
     X64CodeGen(function, ofs).process();
+}
+
+/*
+ * _start
+ */
+
+void X64::emitStart(std::ofstream& ofs) const
+{
+    ofs << "\t.type _start,@function\n"
+        << ".globl _start\n"
+        << "_start:\n"
+        << ".cfi_startproc\n"
+        << "\tcall\tmain\n"
+        << "\tmovq\t%rax,%rdi\n"
+        << "\tmovq\t$0x3c,%rax\n"
+        << "\tsyscall\n"
+        << "\thlt\n"
+        << ".cfi_endproc\n\n";
 }
 
 /*

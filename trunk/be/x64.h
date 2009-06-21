@@ -67,6 +67,12 @@ public:
     virtual void codeGen(me::Function* function, std::ofstream& ofs);
 
     /*
+     * _start
+     */
+
+    virtual void emitStart(std::ofstream& ofs) const;
+    
+    /*
      * clean up
      */
 

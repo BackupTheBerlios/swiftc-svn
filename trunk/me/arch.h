@@ -126,6 +126,12 @@ public:
     virtual void codeGen(Function* function, std::ofstream& ofs) = 0;
 
     /*
+     * _start
+     */
+
+    virtual void emitStart(std::ofstream& ofs) const = 0;
+
+    /*
      * clean up
      */
 
