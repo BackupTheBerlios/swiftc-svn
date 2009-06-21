@@ -420,12 +420,6 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
             genMove(type, p_color, n_color);
 
-            rg.erase(n);
-
-            // if p doesn't have a predecessor erase it, too
-            if ( p->pred_.empty() )
-                rg.erase(p);
-
             // p is free now while n is used now
             if ( me::Op::isReal(type) )
             {
@@ -437,6 +431,12 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                 intFree.insert(p_color);
                 intFree.erase (n_color);
             }
+
+            rg.erase(n);
+
+            // if p doesn't have a predecessor erase it, too
+            if ( p->pred_.empty() )
+                rg.erase(p);
         }
         else
             break;
