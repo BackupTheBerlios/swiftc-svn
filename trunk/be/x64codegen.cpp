@@ -215,6 +215,18 @@ class RegGraph : public Graph<int>
     }
 };
 
+struct Link
+{
+    me::Op::Type type_;
+    bool spilled_;
+
+    Link() {}
+    Link(me::Op::Type type, bool spilled)
+        : type_(type)
+        , spilled_(spilled)
+    {}
+};
+
 typedef RegGraph::Node* RGNode;
 
 int meType2beType(me::Op::Type type)
@@ -317,12 +329,14 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
-    typedef std::map< int, std::map<int, me::Op::Type> > LinkTypes;
+    typedef std::map< int, std::map<int, Link> > LinkTypes;
     LinkTypes linkTypes;
 
     // for each phi function in nextBB
     for (me::InstrNode* iter = nextBB->firstPhi_; iter != nextBB->firstOrdinary_; iter = iter->next())
     {
+        bool spilled = false;
+
         swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
                 "must be a PhiInstr here" );
         me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
@@ -337,8 +351,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
         if ( dstReg->isSpilled() )
         {
-            swiftAssert(false, "TODO");
-            continue; 
+            swiftAssert(srcReg->isSpilled(), "must be spilled, too");
+            spilled = true;
         }
 
         // is this a pointless definition? (should be optimized away)
@@ -378,7 +392,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new int(dstColor))) ).first;
 
         srcIter->second->link(dstIter->second);
-        linkTypes[srcColor][dstColor] = type;
+        linkTypes[srcColor][dstColor] = Link(type, spilled);
     }
 
     /*
@@ -402,7 +416,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
             int p_color = *p->value_; // save color
             int n_color = *n->value_; // save color
-            me::Op::Type type = linkTypes[p_color][n_color];
+            me::Op::Type type = linkTypes[p_color][n_color].type_;
             genMove(type, p_color, n_color);
 
             // p is free now while n is used now
@@ -465,7 +479,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          */
 
          // start with pred node
-        me::Op::Type type = linkTypes[*node->pred_.first()->value_->value_][*node->value_];
+        me::Op::Type type = linkTypes[*node->pred_.first()->value_->value_][*node->value_].type_;
         int tmpRegColor;
 
         if ( me::Op::isReal(type) )
