@@ -203,27 +203,11 @@ void X64CodeGen::process()
     ofs_ << '\n';
 }
 
-// helpers
+/*
+ * helpers
+ */
 
-struct TReg
-{
-    int color_;
-    me::Op::Type type_;
-
-    TReg(int color, me::Op::Type type)
-        : color_(color)
-        , type_(type)
-    {}
-
-    std::string toString() const
-    {
-        std::ostringstream oss;
-        oss << "color: " << color_ << " type: " << type_;
-        return oss.str();
-    }
-};
-
-class RegGraph : public Graph<TReg>
+class RegGraph : public Graph<int>
 {
     virtual std::string name() const
     {
@@ -265,7 +249,6 @@ int meType2beType(me::Op::Type type)
 
     return -1;
 }
-
 
 void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
 {
@@ -334,8 +317,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
-    //typedef std::map< me::Reg*, std::map<me::Reg*, int> > LinkTypes;
-    //LinkTypes linkTypes;
+    typedef std::map< int, std::map<int, me::Op::Type> > LinkTypes;
+    LinkTypes linkTypes;
 
     // for each phi function in nextBB
     for (me::InstrNode* iter = nextBB->firstPhi_; iter != nextBB->firstOrdinary_; iter = iter->next())
@@ -379,8 +362,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         int dstColor = dstReg->color_;
 
         // get Types
-        me::Op::Type srcType = srcReg->type_;
-        me::Op::Type dstType = dstReg->type_;
+        me::Op::Type type = dstReg->type_;
+        swiftAssert(srcReg->type_ == type, "types must match");
 
         /* 
          * check whether these colors have already been inserted 
@@ -388,13 +371,14 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          */
         std::map<int, RegGraph::Node*>::iterator srcIter = inserted.find(srcColor);
         if ( srcIter == inserted.end() )
-            srcIter = inserted.insert( std::make_pair(srcColor, rg.insert(new TReg(srcColor, srcType))) ).first;
+            srcIter = inserted.insert( std::make_pair(srcColor, rg.insert(new int(srcColor))) ).first;
 
         std::map<int, RegGraph::Node*>::iterator dstIter = inserted.find(dstColor);
         if ( dstIter == inserted.end() )
-            dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new TReg(dstColor, dstType))) ).first;
+            dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new int(dstColor))) ).first;
 
         srcIter->second->link(dstIter->second);
+        linkTypes[srcColor][dstColor] = type;
     }
 
     /*
@@ -416,12 +400,9 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
                     "must have exactly one predecessor" );
             RegGraph::Node* p = n->pred_.first()->value_;
 
-            me::Op::Type type = p->value_->type_;
-            swiftAssert(type == n->value_->type_, "types must match");
-
-            int p_color = p->value_->color_; // save color
-            int n_color = n->value_->color_; // save color
-
+            int p_color = *p->value_; // save color
+            int n_color = *n->value_; // save color
+            me::Op::Type type = linkTypes[p_color][n_color];
             genMove(type, p_color, n_color);
 
             // p is free now while n is used now
@@ -483,7 +464,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          *  mov free, r1
          */
 
-        me::Op::Type type = node->value_->type_;
+         // start with pred node
+        me::Op::Type type = linkTypes[*node->pred_.first()->value_->value_][*node->value_];
         int tmpRegColor;
 
         if ( me::Op::isReal(type) )
@@ -492,7 +474,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             {
                 // mov r1, mem: store in the 128 byte red zone area beyond RSP
                 ofs_ << "\tmovdqa\t" 
-                    << reg2str(node->value_->color_, type) 
+                    << reg2str(*node->value_, type) 
                     << ", -16(%rsp)\n";
                 xmmPop = true;
             }
@@ -500,8 +482,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             {
                 // mov r1, free
                 tmpRegColor = *xmmFree.begin();
-                swiftAssert(node->value_->color_ != tmpRegColor, "must be different");
-                genMove(type, node->value_->color_, tmpRegColor);
+                swiftAssert(*node->value_ != tmpRegColor, "must be different");
+                genMove(type, *node->value_, tmpRegColor);
             }
         }
         else
@@ -509,7 +491,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             if ( intFree.empty() )
             {
                 // mov r1, mem
-                ofs_ << "\tpushq\t" << reg2str(node->value_->color_, type) << '\n';
+                ofs_ << "\tpushq\t" << reg2str(*node->value_, type) << '\n';
                 intPop = true;
                 std::cout << "not tested" << std::endl;
             }
@@ -517,8 +499,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             {
                 // mov r1, free
                 tmpRegColor = *intFree.begin();
-                swiftAssert(node->value_->color_ != tmpRegColor, "must be different");
-                genMove(type, node->value_->color_, tmpRegColor);
+                swiftAssert(*node->value_ != tmpRegColor, "must be different");
+                genMove(type, *node->value_, tmpRegColor);
             }
         }
 
@@ -530,7 +512,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         while (src != node) // until we reach r1 again
         {
             // mov r_current, r_pred
-            genMove(type, src->value_->color_, dst->value_->color_);
+            genMove(type, *src->value_, *dst->value_);
 
             // remember for erasion
             toBeErased.push_back(src);
@@ -540,7 +522,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             src = src->pred_.first()->value_;
         }
 
-        int dstColor = dst->value_->color_;
+        int dstColor = *dst->value_;
 
         /*
          * mov free, rn
