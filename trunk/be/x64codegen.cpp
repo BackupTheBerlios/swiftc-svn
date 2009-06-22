@@ -83,8 +83,8 @@ void X64CodeGen::process()
     function_->stackLayout_->arangeStackLayout();
 
     // function prologue
-    ofs_ << "\t.p2align 4,,15\n"
-         << ".globl " << id << '\n'
+    ofs_ //<< "\t.p2align 4,,15\n"
+         << "\t.globl\t" << id << '\n'
          << "\t.type\t" << id << ", @function\n"
          << id << ":\n"
          << ".LFB" << counter << ":\n";
@@ -334,6 +334,8 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     RegGraph rg;
     std::map<int, RegGraph::Node*> inserted;
+    //typedef std::map< me::Reg*, std::map<me::Reg*, int> > LinkTypes;
+    //LinkTypes linkTypes;
 
     // for each phi function in nextBB
     for (me::InstrNode* iter = nextBB->firstPhi_; iter != nextBB->firstOrdinary_; iter = iter->next())
@@ -415,8 +417,10 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
             RegGraph::Node* p = n->pred_.first()->value_;
 
             me::Op::Type type = p->value_->type_;
-            int n_color = n->value_->color_; // save color
+            swiftAssert(type == n->value_->type_, "types must match");
+
             int p_color = p->value_->color_; // save color
+            int n_color = n->value_->color_; // save color
 
             genMove(type, p_color, n_color);
 

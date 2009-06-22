@@ -143,6 +143,8 @@ void X64::dumpConstants(std::ofstream& ofs)
      * short constants 
      */
 
+    ofs << "\t.align\t2\n";
+
     UINT16MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ":\n";
@@ -157,6 +159,8 @@ void X64::dumpConstants(std::ofstream& ofs)
      * long constants 
      */
 
+    ofs << "\t.align\t4\n";
+
     UINT32MAP_EACH(iter)
     {
         ofs << ".LC" << iter->second << ":\n";
@@ -170,6 +174,8 @@ void X64::dumpConstants(std::ofstream& ofs)
     /*
      * quad constants 
      */
+
+    ofs << "\t.align\t8\n";
 
     UINT64MAP_EACH(iter)
     {
@@ -195,16 +201,17 @@ void X64::codeGen(me::Function* function, std::ofstream& ofs)
 
 void X64::emitStart(std::ofstream& ofs) const
 {
-    ofs << "\t.type _start,@function\n"
-        << ".globl _start\n"
+    ofs << "\t.type\t_start,@function\n"
+        << "\t.globl\t_start\n"
         << "_start:\n"
-        << ".cfi_startproc\n"
+        << "\t.cfi_startproc\n"
+        << "\tandq\t$" << 0xFFFFFFFFFFFFFFF0ULL << ", %rsp\n"
         << "\tcall\tmain\n"
-        << "\tmovq\t%rax,%rdi\n"
-        << "\tmovq\t$0x3c,%rax\n"
+        << "\tmovq\t%rax, %rdi\n"
+        << "\tmovq\t$0x3c, %rax\n"
         << "\tsyscall\n"
         << "\thlt\n"
-        << ".cfi_endproc\n\n";
+        << "\t.cfi_endproc\n\n";
 }
 
 /*
