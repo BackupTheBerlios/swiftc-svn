@@ -51,8 +51,8 @@ StructOffset::StructOffset(Struct* _struct, Member* member)
 
 size_t StructOffset::getCTOffset() const
 {
-    return next_ ?  next_->getCTOffset() + member_->offset_ 
-                 : member_->offset_;
+    return next_ ?  next_->getCTOffset() + member_->getOffset() 
+                 : member_->getOffset();
 }
 
 std::string StructOffset::toString() const
@@ -61,9 +61,9 @@ std::string StructOffset::toString() const
     oss << '(';
 
 #ifdef SWIFT_DEBUG
-    oss << struct_->id_ << ", " << member_->id_ << ", " << getCTOffset();
+    oss << struct_->getId() << ", " << member_->getId() << ", " << getCTOffset();
 #else // SWIFT_DEBUG
-    oss << struct_->nr_ << ", " << getCTOffset();
+    oss << struct_->getNr() << ", " << getCTOffset();
 #endif // SWIFT_DEBUG
 
     oss << ')';
@@ -104,15 +104,15 @@ RTArrayOffset::RTArrayOffset(Reg* index, Member* member)
 std::pair<Reg*, size_t> RTArrayOffset::getRTOffset() 
 {
     return std::make_pair( index_,
-            next_ ?  next_->getCTOffset() + member_->offset_ 
-                  : member_->offset_ );
+            next_ ?  next_->getCTOffset() + member_->getOffset() 
+                  : member_->getOffset() );
 }
 
 std::pair<const Reg*, size_t> RTArrayOffset::getRTOffset() const
 {
     return std::make_pair( index_,
-            next_ ? next_->getCTOffset() + member_->offset_ 
-                  : member_->offset_ );
+            next_ ? next_->getCTOffset() + member_->getOffset() 
+                  : member_->getOffset() );
 }
 
 std::string RTArrayOffset::toString() const

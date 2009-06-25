@@ -77,6 +77,36 @@ bool Member::alreadyAnalyzed() const
     return size_ != NOT_ANALYZED;
 }
 
+int Member::sizeOf() const
+{
+    swiftAssert( alreadyAnalyzed(), "not analyzed yet" );
+    return size_;
+}
+
+int Member::getNr() const
+{
+    return nr_;
+}
+
+int Member::getOffset() const
+{
+    return offset_;
+}
+
+void Member::setOffset(int offset)
+{
+    offset_ = offset;
+}
+
+#ifdef SWIFT_DEBUG
+
+std::string Member::getId() const
+{
+    return id_;
+}
+
+#endif // SWIFT_DEBUG
+
 //------------------------------------------------------------------------------
 
 /*
@@ -160,10 +190,10 @@ Struct::Struct()
 
 void Struct::append(Member* member)
 {
-    swiftAssert( !memberMap_.contains(member->nr_), "already inserted" );
+    swiftAssert( !memberMap_.contains(member->getNr()), "already inserted" );
 
     members_.push_back(member);
-    memberMap_[member->nr_] = member;
+    memberMap_[ member->getNr() ] = member;
 }
 
 Member* Struct::lookup(int nr)
@@ -188,8 +218,17 @@ void Struct::analyze()
         if ( !member->alreadyAnalyzed() )
             member->analyze();
 
-        member->offset_ = arch->calcAlignedOffset(size_, member->size_);
-        size_ = member->offset_ + member->size_;
+        member->setOffset( arch->calcAlignedOffset(size_, member->sizeOf()) );
+        size_ = member->getOffset() + member->sizeOf();
+    }
+}
+
+void Struct::destroyNonStructMembers()
+{
+    for (size_t i = 0; i < members_.size(); ++i)
+    {
+        if ( typeid(*members_[i]) != typeid(Struct) )
+            delete members_[i];
     }
 }
 
@@ -206,9 +245,9 @@ std::string Struct::toString() const
     for (size_t i = 0; i < members_.size(); ++i)
     {
         Member* member = members_[i];
-        oss << '\t' << member->id_ << '\n';
-        oss << "\t\tsize: " << member->size_ << '\n';
-        oss << "\t\toffset: " << member->offset_ << '\n';
+        oss << '\t' << member->getId() << '\n';
+        oss << "\t\tsize: " << member->sizeOf() << '\n';
+        oss << "\t\toffset: " << member->getOffset() << '\n';
     }
 
     return oss.str();

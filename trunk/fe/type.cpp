@@ -692,7 +692,7 @@ me::Offset* Container::createContainerSizeOffset()
 
 size_t Container::getContainerSize()
 {
-    return meContainer_->size_;
+    return meContainer_->sizeOf();
 }
 
 //------------------------------------------------------------------------------

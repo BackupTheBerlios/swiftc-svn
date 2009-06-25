@@ -61,6 +61,11 @@ bool Op::isReal() const
     return isReal(type_);
 }
 
+bool Op::isSIMD() const
+{
+    return type_ & SIMD;
+}
+
 Reg* Op::isReg(int typeMask)
 {
     return 0;

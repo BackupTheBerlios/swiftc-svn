@@ -55,63 +55,79 @@ typedef Graph<IVar>::Node VarNode;
  */
 struct Op
 {
+    enum
+    {
+        SIMD_OFFSET = 14
+    };
+
     /// Types of pseudo registers / constants
     enum Type
     {
-        R_BOOL   = 1 <<  0,
-
-        // integers
-        R_INT8   = 1 <<  1,
-        R_INT16  = 1 <<  2,
-        R_INT32  = 1 <<  3,
-        R_INT64  = 1 <<  4,
-        R_SAT8   = 1 <<  5,
-        R_SAT16  = 1 <<  6,
-
-        // unsigned integers
-        R_UINT8  = 1 <<  7,
-        R_UINT16 = 1 <<  8,
-        R_UINT32 = 1 <<  9,
-        R_UINT64 = 1 << 10,
-        R_USAT8  = 1 << 11,
-        R_USAT16 = 1 << 12,
-
-        // floating points
-        R_REAL32 = 1 << 13,
-        R_REAL64 = 1 << 14,
+        R_BOOL   = 1 << 0,
 
         // pointers
-        R_PTR    = 1 << 15, ///< A pointer to an arbitrary location.
+        R_PTR    = 1 << 1, ///< A pointer to an arbitrary location.
 
         /** 
          * @brief A variable on the local stack frame. 
          *
          * This is not a spilled local. See \a Memory for details.
          */
-        R_STACK  = 1 << 16, 
+        R_STACK  = 1 << 2, 
+
+        // integers
+        R_INT8   = 1 <<  3,
+        R_INT16  = 1 <<  4,
+        R_INT32  = 1 <<  5,
+        R_INT64  = 1 <<  6,
+        R_SAT8   = 1 <<  7,
+        R_SAT16  = 1 <<  8,
+
+        // unsigned integers
+        R_UINT8  = 1 <<  9 ,
+        R_UINT16 = 1 << 10,
+        R_UINT32 = 1 << 11,
+        R_UINT64 = 1 << 12,
+        R_USAT8  = 1 << 13,
+        R_USAT16 = 1 << 14,
+
+        // floating points
+        R_REAL32 = 1 << 15,
+        R_REAL64 = 1 << 16,
 
         /*
          * simd types
          */
 
-        S_INT8   = -R_INT8,
-        S_INT16  = -R_INT16,
-        S_INT32  = -R_INT32,
-        S_INT64  = -R_INT64,
-        S_SAT8   = -R_SAT8,
-        S_SAT16  = -R_SAT16,
+        // signed integers
+        S_INT8   = R_INT8  << SIMD_OFFSET,
+        S_INT16  = R_INT16 << SIMD_OFFSET,
+        S_INT32  = R_INT32 << SIMD_OFFSET,
+        S_INT64  = R_INT64 << SIMD_OFFSET,
+        S_SAT8   = R_SAT8  << SIMD_OFFSET,
+        S_SAT16  = R_SAT16 << SIMD_OFFSET,
 
         // unsigned integers
-        S_UINT8  = -R_UINT8,
-        S_UINT16 = -R_UINT16,
-        S_UINT32 = -R_UINT32,
-        S_UINT64 = -R_UINT64,
-        S_USAT8  = -R_USAT8,
-        S_USAT16 = -R_USAT16,
+        S_UINT8   = R_UINT8  << SIMD_OFFSET,
+        S_UINT16  = R_UINT16 << SIMD_OFFSET,
+        S_UINT32  = R_UINT32 << SIMD_OFFSET,
+        S_UINT64  = R_UINT64 << SIMD_OFFSET,
+        S_USAT8   = R_USAT8  << SIMD_OFFSET,
+        S_USAT16  = R_USAT16 << SIMD_OFFSET,
 
         // floating points
-        S_REAL32  = -R_REAL32,
-        S_REAL64  = -R_REAL64
+        S_REAL32  = R_REAL32 << SIMD_OFFSET,
+        S_REAL64  = R_REAL64 << SIMD_OFFSET,
+    };
+
+    enum
+    {
+        SIMD 
+            =  S_INT8 | S_INT16  |  S_INT32 |  S_INT64
+            | S_UINT8 | S_UINT16 | S_UINT32 | S_UINT64
+            | S_SAT8  | S_SAT16
+            | S_USAT8 | S_USAT16
+            | S_REAL32| S_REAL64,
     };
 
     Type type_;
@@ -153,6 +169,7 @@ struct Op
      */
 
     bool isReal() const;
+    bool isSIMD() const;
 
     /*
      * static methods

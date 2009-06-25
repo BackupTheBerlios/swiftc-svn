@@ -95,7 +95,9 @@ public:
             | me::Op::R_PTR,
 
         F_TYPE_MASK
-            = me::Op::R_REAL32| me::Op::R_REAL64
+            = me::Op::R_REAL32| me::Op::R_REAL64,
+
+        S_TYPE_MASK = me::Op::SIMD
     };
 
     enum

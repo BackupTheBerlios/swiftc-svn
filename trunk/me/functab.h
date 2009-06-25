@@ -226,6 +226,7 @@ struct FunctionTable
     void appendInstrNode(InstrNode* node);
     InstrNode* getLastLabelNode();
 
+    void analyzeStructs();
     void buildUpME();
 
     void dumpSSA();

@@ -95,6 +95,7 @@ bool Module::analyze()
         } // if type == Class
     } // for each class
 
+    me::functab->analyzeStructs();
     /*
      * now the rest
      */

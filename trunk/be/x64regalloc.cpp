@@ -182,11 +182,11 @@ void X64RegAlloc::process()
     me::Coloring(function_, R_TYPE_MASK, *intColors_).process();
 
     // XMM registers
-    me::Coloring(function_, F_TYPE_MASK, *xmmColors_).process(); 
+    me::Coloring(function_, F_TYPE_MASK | S_TYPE_MASK, *xmmColors_).process(); 
 
     // color spill slots
     me::Coloring(function_, R_TYPE_MASK | F_TYPE_MASK, X64::QUADWORDS).process();
-    //me::Coloring(function_, V_TYPE_MASK, X64::OCTWORDS).process();
+    me::Coloring(function_, S_TYPE_MASK, X64::OCTWORDS).process();
 }
 
 bool X64RegAlloc::arg2Reg(me::InstrNode* iter, size_t i)

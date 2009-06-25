@@ -344,14 +344,7 @@ FunctionTable::~FunctionTable()
 {
     // first destroy all ordinary Struct Members
     for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-    {
-        Struct* _struct = iter->second;
-        for (size_t i = 0; i < _struct->members_.size(); ++i)
-        {
-            if ( typeid(*_struct->members_[i]) != typeid(Struct) )
-                delete _struct->members_[i];
-        }
-    }
+        iter->second->destroyNonStructMembers();
 
     // now delete all structs
     for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
@@ -465,11 +458,14 @@ void FunctionTable::appendInstrNode(InstrNode* node)
     currentFunction_->instrList_.append(node);
 }
 
-void FunctionTable::buildUpME()
+void FunctionTable::analyzeStructs()
 {
     for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
         iter->second->analyze();
+}
 
+void FunctionTable::buildUpME()
+{
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         CFG* cfg = iter->second->cfg_;
@@ -557,7 +553,7 @@ Struct* FunctionTable::currentStruct()
 Struct* FunctionTable::newStruct(const std::string& id)
 {
     Struct* _struct = new Struct(id);
-    structs_[_struct->nr_] = _struct;
+    structs_[ _struct->getNr() ] = _struct;
 
     return _struct;
 }

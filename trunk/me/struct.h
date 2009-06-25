@@ -50,8 +50,48 @@ struct Struct;
  *
  * For better debugging you can use the \a id_ member.
  */
-struct Member
+class Member
 {
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+#ifdef SWIFT_DEBUG
+    Member(const std::string& id);
+#else // SWIFT_DEBUG
+    Member();
+#endif // SWIFT_DEBUG
+
+    virtual ~Member() {}
+
+    /*
+     * virtual methods
+     */
+
+    virtual void analyze() = 0;
+
+    /*
+     * further methods
+     */
+
+    bool alreadyAnalyzed() const;
+    int sizeOf() const;
+    int getNr() const;
+    int getOffset() const;
+    void setOffset(int offset);
+
+#ifdef SWIFT_DEBUG
+    std::string getId() const;
+#endif // SWIFT_DEBUG
+
+protected:
+
+    /*
+     * data
+     */
+
     enum 
     {
         NOT_ANALYZED = -1
@@ -69,26 +109,6 @@ struct Member
 #ifdef SWIFT_DEBUG
     std::string id_;///< Use this for additional debugging information.
 #endif // SWIFT_DEBUG
-
-    /*
-     * constructor and destructor
-     */
-
-#ifdef SWIFT_DEBUG
-    Member(const std::string& id);
-#else // SWIFT_DEBUG
-    Member();
-#endif // SWIFT_DEBUG
-
-    virtual ~Member() {}
-
-    /*
-     * further methods
-     */
-
-    virtual void analyze() = 0;
-
-    bool alreadyAnalyzed() const;
 };
 
 //------------------------------------------------------------------------------
@@ -98,9 +118,9 @@ struct Member
  *
  * This means one of \a me::Op::Type.
  */
-struct AtomicMember : public Member
+class AtomicMember : public Member
 {
-    Op::Type type_;
+public:
 
     /*
      * constructor
@@ -117,6 +137,14 @@ struct AtomicMember : public Member
      */
 
     virtual void analyze();
+
+private:
+
+    /*
+     * data
+     */
+
+    Op::Type type_;
 };
 
 //------------------------------------------------------------------------------
@@ -126,10 +154,9 @@ struct AtomicMember : public Member
  *
  * The number of elemets \a size_ is fix and must be known at compile time.
  */
-struct ArrayMember : public Member
+class ArrayMember : public Member
 {
-    Op::Type type_;
-    const size_t num_;
+public:
 
     /*
      * constructors and destructor
@@ -146,6 +173,16 @@ struct ArrayMember : public Member
      */
 
     virtual void analyze();
+
+private:
+
+    /*
+     * data
+     */
+
+    Op::Type type_;
+    const size_t num_;
+
 };
 
 //------------------------------------------------------------------------------
@@ -157,15 +194,9 @@ struct ArrayMember : public Member
  * chronological order, the latter one is sorted by the global number.
  * 
  */
-struct Struct : public Member
+class Struct : public Member
 {
-    typedef std::vector<Member*> Members;
-    /// All members in chronological order.
-    Members members_;
-
-    /// All members sorted by global name number.
-    typedef Map<int, Member*> MemberMap;
-    MemberMap memberMap_;
+public:
 
     /*
      * constructor
@@ -178,16 +209,36 @@ struct Struct : public Member
 #endif // SWIFT_DEBUG
 
     /*
+     * virtual methods
+     */
+
+    virtual void analyze();
+
+    /*
      * further methods
      */
 
     void append(Member* member);
     Member* lookup(int nr);
-    virtual void analyze();
+    void destroyNonStructMembers();
 
 #ifdef SWIFT_DEBUG
     std::string toString() const;
 #endif // SWIFT_DEBUG
+
+private:
+
+    /*
+     * data
+     */
+
+    typedef std::vector<Member*> Members;
+    /// All members in chronological order.
+    Members members_;
+
+    /// All members sorted by global name number.
+    typedef Map<int, Member*> MemberMap;
+    MemberMap memberMap_;
 };
 
 } // namespace me

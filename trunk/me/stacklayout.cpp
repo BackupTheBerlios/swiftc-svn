@@ -55,8 +55,8 @@ void StackLayout::arangeStackLayout()
     for (size_t i = 0; i < color2MemSlot_.size(); ++i)
     {
         MemSlot& ms = color2MemSlot_[i];
-        ms.offset_ = arch->calcAlignedStackOffset(memSlotsSize_, ms.memVar_->memory_->size_);
-        memSlotsSize_ = ms.offset_ + ms.memVar_->memory_->size_;
+        ms.offset_ = arch->calcAlignedStackOffset( memSlotsSize_, ms.memVar_->memory_->sizeOf() );
+        memSlotsSize_ = ms.offset_ + ms.memVar_->memory_->sizeOf();
     }
 
     // fill itemSize_ for each place
@@ -79,7 +79,7 @@ void StackLayout::arangeStackLayout()
          *      first-item-size )
          */
         places_[0].offset_ = arch->calcAlignedStackOffset(
-                lastMemSlot.offset_ + lastMemSlot.memVar_->memory_->size_, 
+                lastMemSlot.offset_ + lastMemSlot.memVar_->memory_->sizeOf(), 
                 places_[0].itemSize_);
     }
 

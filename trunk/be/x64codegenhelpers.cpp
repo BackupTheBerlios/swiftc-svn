@@ -70,9 +70,20 @@ std::string reg2str(me::Reg* reg)
     if ( reg->isSpilled() )
     {
         std::ostringstream oss;
-        oss << '-' << (reg->color_ + 1) 
-            * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
-            + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rbp)";
+
+        if ( reg->isSIMD() )
+        {
+            oss << '-' << (reg->color_ + 1) 
+                * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
+                + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rbp)";
+        }
+        else
+        {
+            oss << '-' << (reg->color_ + 1) 
+                * x64_stacklayout->places_[X64::OCTWORDS].itemSize_ 
+                + x64_stacklayout->places_[X64::OCTWORDS].offset_ + 8 << "(%rbp)";
+        }
+
         return oss.str();
     }
     else
