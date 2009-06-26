@@ -1,4 +1,4 @@
-/*
+ /*
  * Swift compiler framework
  * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
  *
@@ -831,7 +831,7 @@ Load::Load(Var* result, Var* location, Offset* offset)
     : InstrBase(1, 1)
     , offset_(offset)
 {
-    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_MEM, 
             "must be an R_PTR");
 
     res_[0] = Res(result);
@@ -889,7 +889,7 @@ LoadPtr::LoadPtr(Reg* result, Var* location, Offset* offset)
     , offset_(offset)
 {
     swiftAssert(result->type_ == Op::R_PTR, "must be an R_PTR");
-    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_MEM, 
             "must be an R_PTR");
 
     res_[0] = Res(result);
@@ -993,17 +993,17 @@ Reg* Deref::result()
  */
 
 Store::Store(Op* arg, Var* location, Offset* offset)
-    : InstrBase( (location->type_ == Op::R_STACK) ? 1 : 0, 2 )
+    : InstrBase( (location->type_ == Op::R_MEM) ? 1 : 0, 2 )
     , offset_(offset)
 {
     // -> store to an arbitrary location in memory
-    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_STACK, 
-            "must be an R_PTR or R_STACK");
+    swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_MEM, 
+            "must be an R_PTR or R_MEM");
 
     arg_[0] = Arg(arg);
     arg_[1] = Arg(location);
 
-    if (location->type_ == Op::R_STACK)
+    if (location->type_ == Op::R_MEM)
     {
         // -> store to a location on the stack
         res_[0] = Res(location);

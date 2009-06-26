@@ -4,6 +4,18 @@ struct Vec3 {
     float y;
     float z;
 
+    Vec3(float _x, float _y, float _z) {
+        x = _x;
+        y = _y;
+        z = _z;
+    }
+
+
+
+
+
+
+
     Vec3 operator + (const Vec3& v2) { Vec3 result;
         result.x = x + v2.x;
         result.y = y + v2.y;

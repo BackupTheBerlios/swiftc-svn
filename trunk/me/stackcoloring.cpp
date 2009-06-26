@@ -89,7 +89,7 @@ void StackColoring::colorRecursive(BBNode* bbNode)
             Var* var = instr->res_[i].var_;
 
             // only stack locations are considered here
-            if ( var->type_ != Op::R_STACK )
+            if ( var->type_ != Op::R_MEM )
                 continue;
 
             swiftAssert( typeid(*var) == typeid(MemVar), "must be a MemVar here" );

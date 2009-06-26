@@ -212,7 +212,7 @@ me::Op::Type BaseType::toMeType() const
         {
             swiftAssert(modifier_ == VAR || modifier_ == CONST, 
                     "impossible modifier_ value");
-            return me::Op::R_STACK;
+            return me::Op::R_MEM;
         }
     }
 }
@@ -252,6 +252,14 @@ bool BaseType::isInt() const
     return *id_ == "int";
 }
 
+size_t BaseType::sizeOf() const
+{
+    if (builtin_)
+        return me::Op::sizeOf( typeMap_->find(*id_)->second );
+    else
+        return lookupClass()->meStruct_->sizeOf();
+}
+
 bool BaseType::isActuallyPtr() const
 {
     return modifier_ == CONST_REF || modifier_ == REF;
@@ -262,7 +270,7 @@ me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
     me::Op::Type meType = toMeType();
 
     me::Var* var;
-    if (meType == me::Op::R_STACK)
+    if (meType == me::Op::R_MEM)
     {
         Class* _class = lookupClass();
 #ifdef SWIFT_DEBUG
@@ -301,6 +309,12 @@ me::Reg* BaseType::derefToInnerstPtr(me::Var* var) const
 const BaseType* BaseType::unnestPtr() const
 {
     return this;
+}
+
+const Ptr* BaseType::unnestInnerstPtr() const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
 }
 
 bool BaseType::hasAssignCreate(const TypeList& /*in*/, 
@@ -412,11 +426,6 @@ const BaseType* NestedType::isInner() const
     return 0;
 }
 
-const BaseType* NestedType::unnestPtr() const
-{
-    return innerType_->unnestPtr();
-}
-
 bool NestedType::check(const Type* type) const
 {
     if ( typeid(*this) != typeid(*type) )
@@ -491,6 +500,26 @@ bool Ptr::isActuallyPtr() const
 {
     return true;
 }
+
+size_t Ptr::sizeOf() const
+{
+    return me::Op::sizeOf(me::Op::R_PTR);
+}
+
+const BaseType* Ptr::unnestPtr() const
+{
+    return innerType_->unnestPtr();
+}
+
+const Ptr* Ptr::unnestInnerstPtr() const
+{
+    const Ptr* ptr = dynamic_cast<const Ptr*>(innerType_);
+    if (ptr)
+        return ptr->unnestInnerstPtr();
+    else
+        return this;
+}
+
 
 me::Reg* Ptr::derefToInnerstPtr(me::Var* var) const
 {
@@ -569,7 +598,7 @@ Container::Container(int modifier, Type* innerType, int line /*= NO_LINE*/)
 
 me::Op::Type Container::toMeType() const
 {
-    return me::Op::R_STACK;
+    return me::Op::R_MEM;
 }
 
 me::Var* Container::createVar(const std::string* id /*= 0*/) const
@@ -594,6 +623,11 @@ bool Container::isInternalAtomic() const
 bool Container::isActuallyPtr() const
 {
     return false;
+}
+
+size_t Container::sizeOf() const
+{
+    return meContainer_->sizeOf();
 }
 
 me::Reg* Container::derefToInnerstPtr(me::Var* var) const
@@ -641,6 +675,12 @@ const BaseType* Container::unnestPtr() const
     return 0;
 }
 
+const Ptr* Container::unnestInnerstPtr() const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
+}
+
 std::string Container::toString() const
 {
     std::ostringstream oss;
@@ -679,13 +719,17 @@ void Container::initMeContainer()
     meContainer_->analyze();
 }
 
+me::Struct* Container::getMeStruct()
+{
+    return meContainer_;
+}
 
-me::Offset* Container::createContainerPtrOffset()
+me::StructOffset* Container::createContainerPtrOffset()
 {
     return new me::StructOffset(meContainer_, meContainerPtr_);
 }
 
-me::Offset* Container::createContainerSizeOffset()
+me::StructOffset* Container::createContainerSizeOffset()
 {
     return new me::StructOffset(meContainer_, meContainerPtr_);
 }

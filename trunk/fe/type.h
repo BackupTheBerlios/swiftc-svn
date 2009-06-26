@@ -25,11 +25,16 @@
 
 #include "me/op.h"
 
-namespace swift {
-
 /*
  * forward declarations
  */
+
+namespace me {
+    class Struct;
+    class StructOffset;
+}
+
+namespace swift {
 
 class BaseType;
 class Class;
@@ -106,9 +111,12 @@ public:
 
     virtual bool isInt() const;
 
+    virtual size_t sizeOf() const = 0;
+
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const = 0;
 
     virtual const BaseType* unnestPtr() const = 0;
+    virtual const Ptr* unnestInnerstPtr() const = 0;
 
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
@@ -130,6 +138,7 @@ public:
     const int& modifier() const;
 
     bool isReadOnly() const;
+
 
 protected:
 
@@ -181,9 +190,11 @@ public:
     virtual bool isIndex() const;
     virtual bool isInt() const;
     virtual bool isActuallyPtr() const;
+    virtual size_t sizeOf() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual const BaseType* unnestPtr() const;
+    virtual const Ptr* unnestInnerstPtr() const;
 
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
@@ -239,7 +250,6 @@ public:
     virtual bool validate() const;
     virtual bool isBuiltin() const;
     virtual const BaseType* isInner() const;
-    virtual const BaseType* unnestPtr() const;
     virtual bool check(const Type* type) const;
 
     /*
@@ -278,6 +288,9 @@ public:
     virtual bool isAtomic() const;
     virtual bool isInternalAtomic() const;
     virtual bool isActuallyPtr() const;
+    virtual size_t sizeOf() const;
+    virtual const BaseType* unnestPtr() const;
+    virtual const Ptr* unnestInnerstPtr() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
@@ -308,6 +321,7 @@ public:
     virtual bool isAtomic() const;
     virtual bool isInternalAtomic() const;
     virtual bool isActuallyPtr() const;
+    virtual size_t sizeOf() const;
 
     virtual me::Op::Type toMeType() const;
     virtual me::Var* createVar(const std::string* id = 0) const;
@@ -317,6 +331,7 @@ public:
                                  int line) const;
 
     virtual const BaseType* unnestPtr() const;
+    virtual const Ptr* unnestInnerstPtr() const;
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
 
@@ -325,8 +340,9 @@ public:
      */
 
     static void initMeContainer();
-    static me::Offset* createContainerPtrOffset();
-    static me::Offset* createContainerSizeOffset();
+    static me::Struct* getMeStruct();
+    static me::StructOffset* createContainerPtrOffset();
+    static me::StructOffset* createContainerSizeOffset();
     static size_t getContainerSize();
 
 protected:

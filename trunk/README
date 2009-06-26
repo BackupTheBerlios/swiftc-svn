@@ -5,8 +5,7 @@ However you can compile and run swift on other archs as well.
 --------------------------------------------------------------------------------
 
 All files are published under the GPL-3. See the LICENSE-file in this directory
-for details. If you a really intressted in my code and you need another license,
-please contact me. Perhaps I'll change it even to a BSD-style license.
+for details. 
 
 --------------------------------------------------------------------------------
 
@@ -14,7 +13,7 @@ REQUIREMENTS
 - bison
 - flex
 - cmake
-- gas (to assemble the output file)
+- gnu assembler (to assemble the output file)
 - gcc
 
 --------------------------------------------------------------------------------
@@ -23,11 +22,6 @@ INSTALLING
 
 $ cmake .
 $ make
-
-You can now symlink the executable to /usr/bin.
-For example:
-$ su
-$ ln -s /home/username/swiftc/swift /usr/bin/.
 
 If you use KDE you can get syntax highlighting with proper symlinking.
 For example:

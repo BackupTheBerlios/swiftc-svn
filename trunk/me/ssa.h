@@ -554,7 +554,7 @@ struct Load : public InstrBase
      * @param result A proper pseudo-varister. Is an lvalue.
      *
      * @param location The memory location to load from. Must be either of 
-     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      type \a me::Op::R_MEM or of type \a me::Op::R_PTR. 
      *      This is an rvalue.
      *
      * @param offset The offset to the base pointer / stack location.
@@ -609,7 +609,7 @@ struct LoadPtr : public InstrBase
      * @param result A proper pseudo-varister. Is an lvalue.
      *
      * @param location The memory location to load from. Must be either of 
-     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      type \a me::Op::R_MEM or of type \a me::Op::R_PTR. 
      *      This is an rvalue.
      *
      * @param offset The offset to the base pointer / stack location.
@@ -682,7 +682,7 @@ struct Store : public InstrBase
      * compile time known \p offset into \p result.
      * 
      * @param location The memory location to store to. Must be either of 
-     *      type \a me::Op::R_STACK or of type \a me::Op::R_PTR. 
+     *      type \a me::Op::R_MEM or of type \a me::Op::R_PTR. 
      *      In the former case this is an lvalue in the latter one an rvalue.
      *
      * @param arg The rvalue to be stored.

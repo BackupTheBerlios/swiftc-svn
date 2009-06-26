@@ -71,6 +71,7 @@ public:
      */
 
     virtual void analyze() = 0;
+    virtual Member* vectorize() = 0;
 
     /*
      * further methods
@@ -137,6 +138,7 @@ public:
      */
 
     virtual void analyze();
+    virtual AtomicMember* vectorize();
 
 private:
 
@@ -173,6 +175,7 @@ public:
      */
 
     virtual void analyze();
+    virtual ArrayMember* vectorize();
 
 private:
 
@@ -213,6 +216,7 @@ public:
      */
 
     virtual void analyze();
+    virtual Struct* vectorize();
 
     /*
      * further methods

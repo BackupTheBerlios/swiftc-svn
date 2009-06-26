@@ -73,7 +73,7 @@ struct Op
          *
          * This is not a spilled local. See \a Memory for details.
          */
-        R_STACK  = 1 << 2, 
+        R_MEM    = 1 <<  2, 
 
         // integers
         R_INT8   = 1 <<  3,
@@ -128,6 +128,13 @@ struct Op
             | S_SAT8  | S_SAT16
             | S_USAT8 | S_USAT16
             | S_REAL32| S_REAL64,
+
+        VECTORIZABLE
+            =  R_INT8 | R_INT16  |  R_INT32 |  R_INT64
+            | R_UINT8 | R_UINT16 | R_UINT32 | R_UINT64
+            | R_SAT8  | R_SAT16
+            | R_USAT8 | R_USAT16
+            | R_REAL32| R_REAL64,
     };
 
     Type type_;
@@ -169,7 +176,7 @@ struct Op
      */
 
     bool isReal() const;
-    bool isSIMD() const;
+    bool isSimd() const;
 
     /*
      * static methods
@@ -177,7 +184,7 @@ struct Op
 
     static bool isReal(Type type);
     static int sizeOf(Type type);
-    static Type toSimdType(Type type);
+    static Type toSimd(Type type);
 };
 
 //------------------------------------------------------------------------------

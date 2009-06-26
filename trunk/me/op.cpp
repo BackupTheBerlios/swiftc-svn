@@ -61,7 +61,7 @@ bool Op::isReal() const
     return isReal(type_);
 }
 
-bool Op::isSIMD() const
+bool Op::isSimd() const
 {
     return type_ & SIMD;
 }
@@ -120,7 +120,7 @@ int Op::sizeOf(Type type)
         case R_PTR:
             return arch->getPtrSize();
 
-        case R_STACK:
+        case R_MEM:
             swiftAssert(false, "unreachable code");
             return -1;
 
@@ -133,16 +133,17 @@ int Op::sizeOf(Type type)
     return -1;
 }
 
-Op::Type Op::toSimdType(Type type)
+Op::Type Op::toSimd(Type type)
 {
-    return (Type) -type;
+    swiftAssert(type & VECTORIZABLE, "type not vectorizable");
+    return (Type) (type << SIMD_OFFSET);
 }
 
 //------------------------------------------------------------------------------
 
 Undef* Undef::toSimd() const
 {
-    return new Undef( toSimdType(type_) );
+    return new Undef( Op::toSimd(type_) );
 }
 
 //------------------------------------------------------------------------------
@@ -162,7 +163,7 @@ Const::Const(Type type)
 
 Const* Const::toSimd() const
 {
-    Const* cst = new Const( toSimdType(type_) );
+    Const* cst = new Const( Op::toSimd(type_) );
     cst->box_ = box_;
 
     return cst;
@@ -319,7 +320,7 @@ Reg::Reg(Type type, int varNr, const std::string* id /*= 0*/)
     : Var(type, varNr, id)
     , isSpilled_(false)
 {
-    swiftAssert(type_ != R_STACK, "Use a MemVar for this type");
+    swiftAssert(type_ != R_MEM, "Use a MemVar for this type");
 }
 
 Reg* Reg::clone(int varNr) const
@@ -372,9 +373,9 @@ Reg* Reg::colorReg(int typeMask)
 Reg* Reg::toSimd() const
 {
 #ifdef SWIFT_DEBUG
-    return functab->newSSAReg( toSimdType(type_), new std::string("s_" + id_) );
+    return functab->newSSAReg( Op::toSimd(type_), new std::string("s_" + id_) );
 #else // SWIFT_DEBUG
-    return functab->newSSAReg( toSimdType(type_) );
+    return functab->newSSAReg( Op::toSimd(type_) );
 #endif // SWIFT_DEBUG
 }
 
@@ -404,7 +405,7 @@ std::string Reg::toString() const
 #ifdef SWIFT_DEBUG
 
 MemVar::MemVar(Member* memory, int varNr, const std::string* id /*= 0*/)
-    : Var(R_STACK, varNr, id)
+    : Var(R_MEM, varNr, id)
     , memory_(memory)
 {}
 
@@ -416,7 +417,7 @@ MemVar* MemVar::clone(int varNr) const
 #else // SWIFT_DEBUG
 
 MemVar::MemVar(Member* memory, int varNr)
-    : Var(R_STACK, varNr)
+    : Var(R_MEM, varNr)
     , memory_(memory)
 {}
 

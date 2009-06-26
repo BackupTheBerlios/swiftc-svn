@@ -127,9 +127,9 @@ bool Tuple::moreThanOne() const
 
 void Tuple::emitStoreIfApplicable(Expr* expr)
 {
-    MemberAccess* ma = dynamic_cast<MemberAccess*>( typeNode() );
-    if (ma)
-        ma->emitStoreIfApplicable(expr);
+    Access* access = dynamic_cast<Access*>( typeNode() );
+    if (access)
+        access->emitStoreIfApplicable(expr);
 }
 
 } // namespace swift

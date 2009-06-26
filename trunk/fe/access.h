@@ -38,7 +38,16 @@ public:
      * virtual methods
      */
 
-    virtual bool isCTOffset() const = 0;
+    virtual bool analyze();
+    virtual void genSSA();
+    virtual bool analyzeAccess() = 0;
+    virtual bool needsNewChain() const = 0;
+
+    /*
+     * further methods
+     */
+
+    void emitStoreIfApplicable(Expr* expr);
 
 protected:
 
@@ -47,7 +56,16 @@ protected:
      */
 
     Expr* postfixExpr_;
-    bool right_;
+    Access* nextAccess_;
+    bool firstInAChain_;
+    bool lastInAChain_;
+
+    /// The Offset of the current access.
+    me::Offset* offset_;
+    /// The StructOffset of the left most place in each chain.
+    me::Offset* rootOffset_;
+    /// The place of the left most place in each chain.
+    me::Var* rootVar_; 
 };
 
 //------------------------------------------------------------------------------
@@ -75,16 +93,9 @@ public:
      * virtual methods
      */
 
-    virtual bool analyze();
-    virtual void genSSA();
-    virtual bool isCTOffset() const;
+    virtual bool analyzeAccess();
+    virtual bool needsNewChain() const;
     virtual std::string toString() const;
-
-    /*
-     * further methods
-     */
-
-    void emitStoreIfApplicable(Expr* expr);
 
 private:
 
@@ -93,13 +104,6 @@ private:
      */
 
     std::string* id_;
-
-    /// The StructOffset of the current access.
-    me::StructOffset* structOffset_;
-    /// The StructOffset of the left most place in each chain.
-    me::StructOffset* rootStructOffset_;
-    /// The place of the left most place in each chain.
-    me::Var* rootVar_; 
 };
 
 //------------------------------------------------------------------------------
@@ -119,9 +123,8 @@ public:
      * virtual methods
      */
 
-    virtual bool analyze();
-    virtual void genSSA();
-    virtual bool isCTOffset() const;
+    virtual bool analyzeAccess();
+    virtual bool needsNewChain() const;
     virtual std::string toString() const;
 
 private:

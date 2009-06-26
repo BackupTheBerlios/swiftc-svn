@@ -317,10 +317,10 @@ bool AssignStatement::analyzeAssignCreate()
 #endif // SWIFT_DEBUG
 
                 // calculate size
-                me::Const* constainerSize = me::functab->newConst(me::Op::R_UINT64);
-                constainerSize->box_.uint64_ = Container::getContainerSize();
+                me::Const* elemSize = me::functab->newConst(me::Op::R_UINT64);
+                elemSize->box_.uint64_ = container->getInnerType()->sizeOf();
                 me::AssignInstr* mul = 
-                    new me::AssignInstr('*', size, numElems, constainerSize);
+                    new me::AssignInstr('*', size, numElems, elemSize);
                 me::functab->appendInstr(mul);
 
                 // TODO for simd containers: find next boundary

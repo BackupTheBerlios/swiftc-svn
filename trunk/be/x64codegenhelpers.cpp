@@ -71,7 +71,7 @@ std::string reg2str(me::Reg* reg)
     {
         std::ostringstream oss;
 
-        if ( reg->isSIMD() )
+        if ( reg->isSimd() )
         {
             oss << '-' << (reg->color_ + 1) 
                 * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 

@@ -282,7 +282,9 @@ bool MemberVar::registerMeMember()
 
     me::Op::Type meType = type_->toMeType();
 
-    if (meType == me::Op::R_STACK)
+    if ( dynamic_cast<Container*>(type_) )
+        meMember_ = Container::getMeStruct();
+    else if (meType == me::Op::R_MEM)
     {
         swiftAssert( typeid(*type_) == typeid(BaseType),
                 "must be a BaseType here" );

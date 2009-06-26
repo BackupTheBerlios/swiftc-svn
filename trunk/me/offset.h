@@ -64,7 +64,7 @@ public:
      * constructor 
      */
 
-    CTArrayOffset(size_t index, Member* member);
+    CTArrayOffset(size_t index);
 
     /*
      * further methods
@@ -77,6 +77,8 @@ private:
     /*
      * data
      */
+
+    size_t index_;
 };
 
 //------------------------------------------------------------------------------
@@ -117,9 +119,8 @@ public:
 struct RTArrayOffset : public RTOffset
 {
     Reg* index_;
-    Member* member_;
 
-    RTArrayOffset(Reg* index, Member* member);
+    RTArrayOffset(Reg* index);
 
     virtual std::pair<Reg*, size_t> getRTOffset();
     virtual std::pair<const Reg*, size_t> getRTOffset() const;

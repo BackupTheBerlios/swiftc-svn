@@ -129,12 +129,21 @@ AtomicMember::AtomicMember(Op::Type type)
 #endif // SWIFT_DEBUG
 
 /*
- * further methods
+ * virtual methods
  */
 
 void AtomicMember::analyze()
 {
     size_ = Op::sizeOf(type_);
+}
+
+AtomicMember* AtomicMember::vectorize()
+{
+#ifdef SWIFT_DEBUG
+    return new AtomicMember( Op::toSimd(type_), "simd_" + id_ );
+#else // SWIFT_DEBUG
+    return new AtomicMember( Op::toSimd(type_));
+#endif // SWIFT_DEBUG
 }
 
 //------------------------------------------------------------------------------
@@ -157,12 +166,22 @@ ArrayMember::ArrayMember(Op::Type type, size_t num)
 #endif // SWIFT_DEBUG
 
 /*
- * further methods
+ * virtual methods
  */
 
 void ArrayMember::analyze()
 {
     size_ = Op::sizeOf(type_) * num_;
+}
+
+ArrayMember* ArrayMember::vectorize()
+{
+    // TODO increase num
+#ifdef SWIFT_DEBUG
+    return new ArrayMember( Op::toSimd(type_), num_, "simd_" + id_ );
+#else // SWIFT_DEBUG
+    return new ArrayMember( Op::toSimd(type_), num_);
+#endif // SWIFT_DEBUG
 }
     
 //------------------------------------------------------------------------------
@@ -180,9 +199,46 @@ Struct::Struct(const std::string& id)
 #else // SWIFT_DEBUG
 
 Struct::Struct()
+    : Member()
 {}
 
 #endif // SWIFT_DEBUG
+
+/*
+ * virtual methods
+ */
+
+void Struct::analyze()
+{
+    size_ = 0;
+
+    // for each member
+    for (size_t i = 0; i < members_.size(); ++i)
+    {
+        Member* member = members_[i];
+
+        if ( !member->alreadyAnalyzed() )
+            member->analyze();
+
+        member->setOffset( arch->calcAlignedOffset(size_, member->sizeOf()) );
+        size_ = member->getOffset() + member->sizeOf();
+    }
+}
+
+Struct* Struct::vectorize()
+{
+#ifdef SWIFT_DEBUG
+    Struct* result = new Struct( "simd_" + id_ );
+#else // SWIFT_DEBUG
+    Struct* result = new Struct();
+#endif // SWIFT_DEBUG
+
+    // for each member
+    for (size_t i = 0; i < members_.size(); ++i)
+        result->members_.push_back( members_[i]->vectorize() );
+
+    return result;
+}
 
 /*
  * further methods
@@ -204,23 +260,6 @@ Member* Struct::lookup(int nr)
         return 0;
     else
         return iter->second;
-}
-
-void Struct::analyze()
-{
-    size_ = 0;
-
-    // for each member
-    for (size_t i = 0; i < members_.size(); ++i)
-    {
-        Member* member = members_[i];
-
-        if ( !member->alreadyAnalyzed() )
-            member->analyze();
-
-        member->setOffset( arch->calcAlignedOffset(size_, member->sizeOf()) );
-        size_ = member->getOffset() + member->sizeOf();
-    }
 }
 
 void Struct::destroyNonStructMembers()

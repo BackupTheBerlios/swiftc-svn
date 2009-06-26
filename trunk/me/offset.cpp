@@ -92,9 +92,8 @@ std::pair<const Reg*, size_t> RTOffset::getOffset() const
  * constructor 
  */
 
-RTArrayOffset::RTArrayOffset(Reg* index, Member* member)
+RTArrayOffset::RTArrayOffset(Reg* index)
     : index_(index) 
-    , member_(member)
 {}
 
 /*
@@ -103,16 +102,12 @@ RTArrayOffset::RTArrayOffset(Reg* index, Member* member)
 
 std::pair<Reg*, size_t> RTArrayOffset::getRTOffset() 
 {
-    return std::make_pair( index_,
-            next_ ?  next_->getCTOffset() + member_->getOffset() 
-                  : member_->getOffset() );
+    return std::make_pair( index_, next_ ? next_->getCTOffset() : 0 ); 
 }
 
 std::pair<const Reg*, size_t> RTArrayOffset::getRTOffset() const
 {
-    return std::make_pair( index_,
-            next_ ? next_->getCTOffset() + member_->getOffset() 
-                  : member_->getOffset() );
+    return std::make_pair( index_, next_ ? next_->getCTOffset() : 0 );
 }
 
 std::string RTArrayOffset::toString() const

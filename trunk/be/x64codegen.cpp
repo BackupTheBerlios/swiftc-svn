@@ -301,7 +301,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
      */
     VARSET_EACH(iter, prevNode->value_->end_->prev_->value_->liveOut_) 
     {
-        if ( (*iter)->type_ == me::Op::R_STACK || (*iter)->isSpilled() )
+        if ( (*iter)->type_ == me::Op::R_MEM || (*iter)->isSpilled() )
             continue; // ignore stack vars
 
         if ( (*iter)->isReal() )
@@ -353,6 +353,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         {
             swiftAssert(srcReg->isSpilled(), "must be spilled, too");
             spilled = true;
+            std::cout << "TODO" << std::endl;
         }
 
         // is this a pointless definition? (should be optimized away)
@@ -375,7 +376,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         int srcColor = srcReg->color_;
         int dstColor = dstReg->color_;
 
-        // get Types
+        // get Type
         me::Op::Type type = dstReg->type_;
         swiftAssert(srcReg->type_ == type, "types must match");
 
@@ -385,11 +386,17 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
          */
         std::map<int, RegGraph::Node*>::iterator srcIter = inserted.find(srcColor);
         if ( srcIter == inserted.end() )
-            srcIter = inserted.insert( std::make_pair(srcColor, rg.insert(new int(srcColor))) ).first;
+        {
+            srcIter = inserted.insert( std::make_pair(
+                        srcColor, rg.insert(new int(srcColor))) ).first;
+        }
 
         std::map<int, RegGraph::Node*>::iterator dstIter = inserted.find(dstColor);
         if ( dstIter == inserted.end() )
-            dstIter = inserted.insert( std::make_pair(dstColor, rg.insert(new int(dstColor))) ).first;
+        {
+            dstIter = inserted.insert( std::make_pair(
+                        dstColor, rg.insert(new int(dstColor))) ).first;
+        }
 
         srcIter->second->link(dstIter->second);
         linkTypes[srcColor][dstColor] = Link(type, spilled);
@@ -556,7 +563,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         // remove all handled nodes
         for (size_t i = 0; i < toBeErased.size(); ++i)
             rg.erase( toBeErased[i] );
-    }
+    } // while there are still nodes left
 
 #ifdef SWIFT_DEBUG
     ofs_ << "\t /* end phi functions */\n";
@@ -722,7 +729,7 @@ int x64lex()
                 case me::Op::R_REAL64: return X64_REAL64;
 
                 case me::Op::R_PTR:    return X64_UINT64;
-                case me::Op::R_STACK:  return X64_STACK;
+                case me::Op::R_MEM:  return X64_STACK;
 
                 case me::Op::S_INT8:   return X64_SIMD_INT8;
                 case me::Op::S_INT16:  return X64_SIMD_INT16;
