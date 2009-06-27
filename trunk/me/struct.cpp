@@ -146,6 +146,19 @@ AtomicMember* AtomicMember::vectorize()
 #endif // SWIFT_DEBUG
 }
 
+std::string AtomicMember::toString() const
+{
+    std::ostringstream oss;
+
+#ifdef SWIFT_DEBUG
+    oss << id_;
+#else // SWIFT_DEBUG
+    oss << nr_;
+#endif // SWIFT_DEBUG
+
+    return oss.str();
+}
+
 //------------------------------------------------------------------------------
 
 #ifdef SWIFT_DEBUG
@@ -176,12 +189,25 @@ void ArrayMember::analyze()
 
 ArrayMember* ArrayMember::vectorize()
 {
-    // TODO increase num
 #ifdef SWIFT_DEBUG
     return new ArrayMember( Op::toSimd(type_), num_, "simd_" + id_ );
 #else // SWIFT_DEBUG
     return new ArrayMember( Op::toSimd(type_), num_);
 #endif // SWIFT_DEBUG
+}
+
+std::string ArrayMember::toString() const
+{
+    std::ostringstream oss;
+
+#ifdef SWIFT_DEBUG
+    oss << id_;
+#else // SWIFT_DEBUG
+    oss << nr_;
+#endif // SWIFT_DEBUG
+    oss << '{' << num_ << '}';
+
+    return oss.str();
 }
     
 //------------------------------------------------------------------------------
@@ -240,6 +266,19 @@ Struct* Struct::vectorize()
     return result;
 }
 
+std::string Struct::toString() const
+{
+    std::ostringstream oss;
+
+#ifdef SWIFT_DEBUG
+    oss << id_;
+#else // SWIFT_DEBUG
+    oss << nr_;
+#endif // SWIFT_DEBUG
+
+    return oss.str();
+}
+
 /*
  * further methods
  */
@@ -273,7 +312,7 @@ void Struct::destroyNonStructMembers()
 
 #ifdef SWIFT_DEBUG
 
-std::string Struct::toString() const
+std::string Struct::dump() const
 {
     std::ostringstream oss;
 

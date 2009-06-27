@@ -563,7 +563,7 @@ Struct* FunctionTable::newStruct(const std::string& id)
 Struct* FunctionTable::newStruct()
 {
     Struct* _struct = new Struct();
-    structs_[_struct->nr_] = _struct;
+    structs_[ _struct->getNr() ] = _struct;
 
     return _struct;
 }

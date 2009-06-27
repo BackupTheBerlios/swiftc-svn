@@ -125,8 +125,8 @@ int Op::sizeOf(Type type)
             return -1;
 
         default:
-            swiftAssert(type < 0, "must a an simd type here");
-            return sizeOf( (Type) -type );
+            swiftAssert(type & SIMD, "must a an simd type here");
+            return arch->getSimdWidth();
     }
 
     swiftAssert(false, "unreachable code");
@@ -188,16 +188,12 @@ std::string Const::toString() const
         case R_UINT64: oss << box_.uint64_     << "uq";  break;
         case R_USAT8:  oss << int(box_.uint8_) << "usb"; break;
         case R_USAT16: oss << box_.uint16_     << "usw"; break;
-
         case R_BOOL:
             if (box_.bool_)
                 oss << "true";
             else
                 oss << "false";
             break;
-
-        // -> hence it is real32 or real64
-
         case R_REAL32:
             oss << box_.float_;
             if ( fmod(box_.float_, 1.0) == 0.0 )
@@ -274,6 +270,12 @@ size_t Var::var2Index() const
 bool Var::typeCheck(int typeMask) const
 {
     return !dontColor() && Op::typeCheck(typeMask);
+}
+
+Var* Var::toSimd() const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
 }
 
 std::string Var::toString() const

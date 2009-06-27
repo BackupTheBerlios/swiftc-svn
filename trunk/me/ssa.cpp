@@ -398,11 +398,7 @@ int PhiInstr::oldResultNr() const
 
 PhiInstr* PhiInstr::toSimd() const
 {
-    // is this a trivial phi function?
-    //if (arg_.size() == 1)
-        //return new PhiInstr( result()->toSimd(), arg_[0].op_->toSimd() );
-
-    // no -> a more complex analysis
+    swiftAssert(false, "unreachable code");
     return 0;
 }
 
@@ -461,8 +457,24 @@ AssignInstr::AssignInstr(int kind)
 
 AssignInstr* AssignInstr::toSimd() const
 {
-    // TODO
-    return 0;
+    AssignInstr* simdAssign; 
+
+    if ( arg_.size() == 1 )
+    {
+        simdAssign = new AssignInstr(kind_, 
+                res_[0].var_->toSimd(), 
+                arg_[0]. op_->toSimd() );
+    }
+    else
+    {
+        swiftAssert( arg_.size() == 2, "must exactly have two arguments" );
+        simdAssign = new AssignInstr(kind_, 
+                res_[0].var_->toSimd(), 
+                arg_[0]. op_->toSimd(),
+                arg_[1]. op_->toSimd() );
+    }
+
+    return simdAssign;
 }
 
 std::string AssignInstr::toString() const
@@ -631,8 +643,8 @@ const LabelInstr* GotoInstr::label() const
 
 GotoInstr* GotoInstr::toSimd() const
 {
-    // TODO
-    return 0;
+    // result must substitute target with proper mapped one
+    return new GotoInstr( instrTargets_[0] );
 }
 
 std::string GotoInstr::toString() const
@@ -705,7 +717,7 @@ const Op* BranchInstr::getOp() const
 
 BranchInstr* BranchInstr::toSimd() const
 {
-    // TODO
+    swiftAssert(false, "unreachable code");
     return 0;
 }
 
@@ -741,7 +753,7 @@ Spill::Spill(Var* result, Var* arg)
 
 Spill* Spill::toSimd() const
 {
-    //return new Spill( res_[0]->toSimd(), arg_[0]->toSimd() );
+    swiftAssert(false, "unreachable code");
     return 0;
 }
 
@@ -791,7 +803,7 @@ Reload::Reload(Var* result, Var* arg)
 
 Reload* Reload::toSimd() const
 {
-    //return new Reload( res_[0]->toSimd(), arg_[0]->toSimd() );
+    swiftAssert(false, "unreachable code");
     return 0;
 }
 

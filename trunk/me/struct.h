@@ -72,6 +72,7 @@ public:
 
     virtual void analyze() = 0;
     virtual Member* vectorize() = 0;
+    virtual std::string toString() const = 0;
 
     /*
      * further methods
@@ -98,7 +99,7 @@ protected:
         NOT_ANALYZED = -1
     };
 
-    /// A Unique global name.
+    /// A unique global name.
     int nr_;
 
     /// Size in bytes of this \a Member or \a NOT_ANALYZED if not yet analyzed.
@@ -139,6 +140,7 @@ public:
 
     virtual void analyze();
     virtual AtomicMember* vectorize();
+    virtual std::string toString() const;
 
 private:
 
@@ -176,6 +178,7 @@ public:
 
     virtual void analyze();
     virtual ArrayMember* vectorize();
+    virtual std::string toString() const;
 
 private:
 
@@ -217,6 +220,7 @@ public:
 
     virtual void analyze();
     virtual Struct* vectorize();
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -227,7 +231,7 @@ public:
     void destroyNonStructMembers();
 
 #ifdef SWIFT_DEBUG
-    std::string toString() const;
+    std::string dump() const;
 #endif // SWIFT_DEBUG
 
 private:

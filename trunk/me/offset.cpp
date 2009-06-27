@@ -58,15 +58,11 @@ size_t StructOffset::getCTOffset() const
 std::string StructOffset::toString() const
 {
     std::ostringstream oss;
-    oss << '(';
+    oss << struct_->toString() << '.' << member_->toString();
 
-#ifdef SWIFT_DEBUG
-    oss << struct_->getId() << ", " << member_->getId() << ", " << getCTOffset();
-#else // SWIFT_DEBUG
-    oss << struct_->getNr() << ", " << getCTOffset();
-#endif // SWIFT_DEBUG
+    if (next_) 
+        oss << "->" << next_->toString();
 
-    oss << ')';
     return oss.str();
 }
 
@@ -93,7 +89,7 @@ std::pair<const Reg*, size_t> RTOffset::getOffset() const
  */
 
 RTArrayOffset::RTArrayOffset(Reg* index)
-    : index_(index) 
+    : index_( index ) 
 {}
 
 /*
@@ -113,16 +109,11 @@ std::pair<const Reg*, size_t> RTArrayOffset::getRTOffset() const
 std::string RTArrayOffset::toString() const
 {
     std::ostringstream oss;
-    oss << '(';
+    oss << '[' << index_->toString() << ']';
 
-    // TODO
-#ifdef SWIFT_DEBUG
-    //oss << member_->id_ << "[" << getRTOffset()->toString();
-#else // SWIFT_DEBUG
-    //oss << member_->nr_ << "[" << getRTOffset()->toString();
-#endif // SWIFT_DEBUG
+    if (next_) 
+        oss << "->" << next_->toString();
 
-    oss << "])";
     return oss.str();
 }
 

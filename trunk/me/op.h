@@ -301,14 +301,13 @@ struct Var : public Op
      */
 
     virtual Var* clone(int varNr) const = 0;
-
+    virtual bool typeCheck(int typeMask) const;
+    virtual Var* toSimd() const;
     virtual std::string toString() const;
 
     /*
      * further methods
      */
-
-    virtual bool typeCheck(int typeMask) const;
 
     /// Returns whether this Var is only defined once
     bool isSSA() const;
