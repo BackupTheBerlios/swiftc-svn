@@ -379,6 +379,7 @@ struct AssignInstr : public InstrBase
 
     bool isArithmetic() const;
     bool isComparison() const;
+    bool isUnary() const;
 
     std::string getOpString() const;
 };
@@ -573,7 +574,7 @@ struct Load : public InstrBase
      * further methods
      */
 
-    std::pair<Reg*, size_t> getOffset(); 
+    size_t getOffset() const;
     Reg* resReg();
 };
 
@@ -628,32 +629,8 @@ struct LoadPtr : public InstrBase
      * further methods
      */
 
-    std::pair<Reg*, size_t> getOffset(); 
+    size_t getOffset() const;
     Reg* resReg();
-};
-
-//------------------------------------------------------------------------------
-
-struct Deref : public InstrBase
-{
-    /*
-     * constructor
-     */
-
-    Deref(Reg* result, Reg* ptr);
-
-    /*
-     * virtual methods
-     */
-
-    virtual Deref* toSimd() const;
-    virtual std::string toString() const;
-
-    /*
-     * further methods
-     */
-
-    Reg* result();
 };
 
 //------------------------------------------------------------------------------
@@ -703,7 +680,7 @@ struct Store : public InstrBase
      * further methods
      */
 
-    std::pair<Reg*, size_t> getOffset(); 
+    size_t getOffset() const;
     MemVar* resMemVar();
 };
 

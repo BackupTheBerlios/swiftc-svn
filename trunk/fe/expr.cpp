@@ -365,7 +365,7 @@ bool UnExpr::analyze()
     //else 
     if (c_ == '^')
     {
-        Ptr* ptr = dynamic_cast<Ptr*>(type_);
+        const Ptr* ptr = dynamic_cast<const Ptr*>( op_->getType() );
 
         if (!ptr)
         {
@@ -373,7 +373,7 @@ bool UnExpr::analyze()
             return false;
         }
 
-        type_ = ptr->getInnerType();
+        type_ = ptr->getInnerType()->clone();
     }
     else if (kind_ == NOT_OP)
     {
@@ -408,7 +408,7 @@ void UnExpr::genSSA()
             kind = me::AssignInstr::NOT;
             break;
         default:
-            swiftAssert(kind_ == '&', "impossible switch/case value");
+            swiftAssert(kind_ == '^', "impossible switch/case value");
             kind = kind_;
     }
 

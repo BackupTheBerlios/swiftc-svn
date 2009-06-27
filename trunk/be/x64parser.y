@@ -50,8 +50,8 @@ using namespace be;
     me::CallInstr*   call_;
     me::GotoInstr*   goto_;
     me::LabelInstr*  label_;
-    me::LoadPtr*     loadPtr_;
     me::Load*        load_;
+    me::LoadPtr*     loadPtr_;
     me::Reload*      reload_;
     me::Spill*       spill_;
     me::Store*       store_;
@@ -67,6 +67,7 @@ using namespace be;
 %token <assign_> X64_UN_MINUS
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
+%token <assign_>  X64_DEREF
 %token <goto_>   X64_GOTO
 %token <label_>  X64_LABEL
 %token <loadPtr_> X64_LOAD_PTR
@@ -114,6 +115,7 @@ instruction
     | spill_reload
     | load_store
     | load_ptr
+    | deref
     | call
     ;
 
@@ -217,6 +219,12 @@ load_ptr
         EMIT("leaq\t" << memvar2str($2, $1->getOffset()) << ", " << reg2str($1->resReg()))
     }
     ;
+
+deref
+    : X64_DEREF any_type any_reg
+    {
+        EMIT("mov" << suffix($2) << "\t(" << reg2str($3) << "), " << reg2str($1->resReg()))
+    }
 
 assign_instruction
     : int_mov

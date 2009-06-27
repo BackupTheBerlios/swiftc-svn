@@ -536,7 +536,7 @@ me::Reg* Ptr::derefToInnerstPtr(me::Var* var) const
         me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-        me::Deref* derefInstr = new me::Deref(derefed, (me::Reg*) var);
+        me::AssignInstr* derefInstr = new me::AssignInstr('^', derefed, (me::Reg*) var);
         me::functab->appendInstr(derefInstr);
 
         return innerType_->derefToInnerstPtr(derefed);

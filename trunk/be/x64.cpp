@@ -86,23 +86,6 @@ size_t X64::getNumStackPlaces() const
     return NUM_STACK_PLACES;
 }
 
-int X64::calcStackOffset(me::StackLayout* sl, size_t place, int color) const
-{
-    const int globalOffset = 0;
-    
-    if (place == MEM)
-        return sl->color2MemSlot_[color].offset_ + globalOffset;
-
-    int result = sl->memSlotsSize_ + globalOffset;
-
-    //if (place == XMM)
-        //result += sl->places_[R].color2Slot_.size() * 8;
-
-    result += sl->places_[place].color2Slot_[color] * 8;
-
-    return result;
-}
-
 int X64::getItemSize(size_t place) const
 {
     swiftAssert(place < NUM_STACK_PLACES, "index out of range");

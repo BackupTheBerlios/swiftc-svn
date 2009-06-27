@@ -98,38 +98,36 @@ std::string reg2str(int color, me::Op::Type type)
     return reg2str(&reg);
 }
 
-std::string memvar2str(me::MemVar* memVar, std::pair<me::Reg*, size_t> pOffset)
+std::string memvar2str(me::MemVar* memVar, size_t offset)
 {
-    size_t offset = pOffset.second;
-    me::Reg* indexReg = pOffset.first;
+    //me::Reg* indexReg = pOffset.first;
 
     std::ostringstream oss;
     oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 16) - offset
         << "(%rbp";
 
-    if (indexReg)
-        oss << ", " << reg2str(indexReg);
+    //if (indexReg)
+        //oss << ", " << reg2str(indexReg);
 
     oss << ')';
 
     return oss.str();
 }
 
-std::string ptr2str(me::Reg* reg, std::pair<me::Reg*, size_t> pOffset)
+std::string ptr2str(me::Reg* reg, size_t offset)
 {
     swiftAssert(reg->type_ == me::Op::R_PTR, "must be an R_PTR here");
     std::ostringstream oss;
 
-    size_t offset = pOffset.second;
-    me::Reg* indexReg = pOffset.first;
+    //me::Reg* indexReg = pOffset.first;
 
     if (offset)
         oss << offset;
 
     oss << '(' << reg2str(reg);
 
-    if (indexReg)
-        oss << ", " << reg2str(indexReg);
+    //if (indexReg)
+        //oss << ", " << reg2str(indexReg);
 
     oss << ')';
 

@@ -180,9 +180,7 @@ bool Access::analyze()
         rootOffset_ = prevAccess->rootOffset_;
 
         // link previous' offset with this one's
-        swiftAssert( dynamic_cast<me::CTOffset*>(offset_), 
-                "must be castable to CTOffset*" );
-        prevAccess->offset_->next_ = (me::CTOffset*) offset_;
+        prevAccess->offset_->next_ = offset_;
     }
 
     if (lastInAChain_)
@@ -375,7 +373,8 @@ bool IndexExpr::analyzeAccess()
     me::AssignInstr* mul = 
         new me::AssignInstr( '*', realIndex, indexExpr_->getPlace(), elemSize );
     me::functab->appendInstr(mul);
-    offset_ = new me::RTArrayOffset(realIndex);
+    //offset_ = new me::RTArrayOffset(realIndex);
+    // TODO
 
     return true;
 }

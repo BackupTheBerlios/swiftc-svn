@@ -594,6 +594,11 @@ bool AssignInstr::isArithmetic() const
             kind_ == '*' || kind_ == '/');
 }
 
+bool AssignInstr::isUnary() const
+{
+    return res_.size() == 1;
+}
+
 //------------------------------------------------------------------------------
 
 /*
@@ -879,7 +884,7 @@ std::string Load::toString() const
  * further methods
  */
 
-std::pair<Reg*, size_t> Load::getOffset() 
+size_t Load::getOffset() const
 {
     return offset_->getOffset();
 }
@@ -941,60 +946,14 @@ std::string LoadPtr::toString() const
  * further methods
  */
 
-std::pair<Reg*, size_t> LoadPtr::getOffset()
+size_t LoadPtr::getOffset() const
 {
-    return offset_ ? offset_->getOffset()
-                   : std::make_pair( (Reg*) 0, 0UL );
+    return offset_ ? offset_->getOffset() : 0;
 }
 
 Reg* LoadPtr::resReg()
 {
     swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor
- */
-
-Deref::Deref(Reg* result, Reg* ptr)
-    : InstrBase(1, 1)
-{
-    swiftAssert(ptr->type_ == Op::R_PTR, "must be an R_PTR");
-
-    res_[0] = Res(result);
-    arg_[0] = Arg(ptr);
-}
-
-/*
- * virtual methods
- */
-
-Deref* Deref::toSimd() const
-{
-    // TODO
-    return 0;
-}
-
-std::string Deref::toString() const
-{
-    std::ostringstream oss;
-    oss << res_[0].var_->toString() << "\t= Deref(" 
-        << arg_[0].op_->toString() << ", " << ')';
-
-    return oss.str();
-}
-
-/*
- * further methods
- */
-
-Reg* Deref::result()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-
     return (Reg*) res_[0].var_;
 }
 
@@ -1065,7 +1024,7 @@ std::string Store::toString() const
  * further methods
  */
 
-std::pair<Reg*, size_t> Store::getOffset()
+size_t Store::getOffset() const
 {
     return offset_->getOffset();
 }

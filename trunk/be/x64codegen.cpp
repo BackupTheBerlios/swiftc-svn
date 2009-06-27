@@ -642,6 +642,7 @@ int x64lex()
                     case '>': return X64_G;
                     case me::AssignInstr::LE: return X64_LE;
                     case me::AssignInstr::GE: return X64_GE;
+                    case '^': return X64_DEREF;
                     case me::AssignInstr::UNARY_MINUS: return X64_UN_MINUS;
 
                     default:
@@ -701,8 +702,11 @@ int x64lex()
             // set new location
             location = OP1;
 
+            me::AssignInstr* ai = dynamic_cast<me::AssignInstr*>(currentInstr);
             me::Op::Type type;
             if ( typeid(*currentInstr) == typeid(me::Load) )
+                type = currentInstr->res_[0].var_->type_;
+            else if ( ai && ai->isUnary() )
                 type = currentInstr->res_[0].var_->type_;
             else
                 type = currentInstr->arg_[0].op_->type_;
@@ -729,7 +733,7 @@ int x64lex()
                 case me::Op::R_REAL64: return X64_REAL64;
 
                 case me::Op::R_PTR:    return X64_UINT64;
-                case me::Op::R_MEM:  return X64_STACK;
+                case me::Op::R_MEM:    return X64_STACK;
 
                 case me::Op::S_INT8:   return X64_SIMD_INT8;
                 case me::Op::S_INT16:  return X64_SIMD_INT16;
