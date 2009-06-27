@@ -596,7 +596,7 @@ bool AssignInstr::isArithmetic() const
 
 bool AssignInstr::isUnary() const
 {
-    return res_.size() == 1;
+    return arg_.size() == 1;
 }
 
 //------------------------------------------------------------------------------
