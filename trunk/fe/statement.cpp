@@ -330,7 +330,7 @@ bool AssignStatement::analyzeAssignCreate()
 
                 // store ptr
                 me::Store* store = new me::Store( 
-                        ptr, location, Container::createContainerPtrOffset() );
+                        ptr, location, 0, Container::createContainerPtrOffset() ); // TODO
                 me::functab->appendInstr(store);
             }
             else

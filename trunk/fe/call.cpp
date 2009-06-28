@@ -111,7 +111,7 @@ bool Call::emitCall()
                 me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-                me::functab->appendInstr( new me::LoadPtr(tmp, res, 0) );
+                me::functab->appendInstr( new me::LoadPtr(tmp, res, 0, 0) );
 
                 // -> this one is a hidden in-param
                 in_.push_back(tmp);

@@ -560,7 +560,7 @@ struct Load : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    Load(Var* result, Var* location, Offset* offset);
+    Load(Var* result, Var* location, Reg* index, Offset* offset);
     virtual ~Load();
 
     /*
@@ -615,7 +615,7 @@ struct LoadPtr : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    LoadPtr(Reg* result, Var* location, Offset* offset);
+    LoadPtr(Reg* result, Var* location, Reg* index, Offset* offset);
     virtual ~LoadPtr();
 
     /*
@@ -666,7 +666,7 @@ struct Store : public InstrBase
      *
      * @param offset The offset to the base pointer / stack location.
      */
-    Store(Op* arg, Var* location, Offset* offset);
+    Store(Op* arg, Var* location, Reg* index, Offset* offset);
     virtual ~Store();
 
     /*

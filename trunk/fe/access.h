@@ -66,6 +66,7 @@ protected:
     me::Offset* rootOffset_;
     /// The place of the left most place in each chain.
     me::Var* rootVar_; 
+    me::Reg* index_;
 };
 
 //------------------------------------------------------------------------------

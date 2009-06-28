@@ -42,6 +42,7 @@ std::string reg2str(me::Reg* reg);
 std::string reg2str(int color, me::Op::Type type);
 std::string memvar2str(me::MemVar* memVar, size_t Offset);
 std::string ptr2str(me::Reg* reg, size_t offset);
+std::string ptr_index2str(me::Reg* reg, me::Reg* index, size_t offset);
 
 std::string ccsuffix(me::AssignInstr* ai, int type, bool neg = false);
 std::string jcc(me::BranchInstr* bi, bool neg = false);

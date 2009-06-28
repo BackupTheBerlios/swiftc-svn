@@ -312,7 +312,7 @@ bool Id::analyze()
             me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-            me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0) );
+            me::functab->appendInstr( new me::LoadPtr(tmp, var_->getMeVar(), 0, 0) );
             place_ = tmp;
         }
     }

@@ -203,6 +203,10 @@ load_store
     { 
         EMIT("mov" << suffix($2) << '\t' << ptr2str($3, $1->getOffset()) << ", " << reg2str($1->resReg()))
     }
+    | X64_LOAD any_type any_reg any_reg
+    { 
+        EMIT("mov" << suffix($2) << '\t' << ptr_index2str($3, $4, $1->getOffset()) << ", " << reg2str($1->resReg()))
+    }
     | X64_STORE any_type any_reg X64_MEM_VAR
     { 
         EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << memvar2str($4, $1->getOffset()))

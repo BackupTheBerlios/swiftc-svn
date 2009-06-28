@@ -41,6 +41,7 @@ Access::Access(Expr* postfixExpr, int line)
     , nextAccess_(0)
     , firstInAChain_(false)
     , lastInAChain_(true)
+    , index_(0)
 {
     place_ = 0; // only last ones in a chain get a valid place
 }
@@ -177,10 +178,23 @@ bool Access::analyze()
 
         // pass-through
         rootVar_ = prevAccess->rootVar_;       
-        rootOffset_ = prevAccess->rootOffset_;
 
-        // link previous' offset with this one's
-        prevAccess->offset_->next_ = offset_;
+        if (prevAccess->offset_)
+        {
+            rootOffset_ = prevAccess->rootOffset_;
+            // link previous' offset with this one's
+            prevAccess->offset_->next_ = offset_;
+        }
+        else
+        {
+            swiftAssert( typeid(*prevAccess) == typeid(IndexExpr), 
+                    "prevAccess must be an IndexExpr" );
+            swiftAssert( typeid(*this) == typeid(MemberAccess),
+                    "this Access must be a MemberAccess" );
+            rootOffset_ = offset_;
+            index_ = static_cast<IndexExpr*>(prevAccess)->index_;
+        }
+
     }
 
     if (lastInAChain_)
@@ -228,7 +242,7 @@ void Access::genSSA()
     }
 
     me::InstrBase* instr;
-    instr = new me::Load( (me::Var*) place_, rootVar_, rootOffset_);
+    instr = new me::Load( (me::Var*) place_, rootVar_, index_, rootOffset_ );
 
     me::functab->appendInstr(instr); 
 }
@@ -251,6 +265,7 @@ void Access::emitStoreIfApplicable(Expr* expr)
         me::Store* store = new me::Store( 
                 expr->getPlace(), // argument 
                 rootVar_,         // memory variable
+                0, // TODO
                 rootOffset_);     // offset 
         me::functab->appendInstr(store);
     }
@@ -363,18 +378,18 @@ bool IndexExpr::analyzeAccess()
     // create temporaries
 #ifdef SWIFT_DEBUG
     std::string indexStr = "index";
-    me::Reg* realIndex = me::functab->newReg(me::Op::R_UINT64, &indexStr);
+    index_ = me::functab->newReg(me::Op::R_UINT64, &indexStr);
 #else // SWIFT_DEBUG
-    me::Reg* realIndex = me::functab->newReg(me::Op::R_UINT64);
+    index_ = me::functab->newReg(me::Op::R_UINT64);
 #endif // SWIFT_DEBUG
 
     me::Const* elemSize = me::functab->newConst(me::Op::R_UINT64);
     elemSize->box_.uint64_ = container->getInnerType()->sizeOf();
     me::AssignInstr* mul = 
-        new me::AssignInstr( '*', realIndex, indexExpr_->getPlace(), elemSize );
+        new me::AssignInstr( '*', index_, indexExpr_->getPlace(), elemSize );
     me::functab->appendInstr(mul);
-    //offset_ = new me::RTArrayOffset(realIndex);
-    // TODO
+
+    offset_ = 0;
 
     return true;
 }

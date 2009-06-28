@@ -844,8 +844,8 @@ Reg* Reload::resReg()
  * constructor and destructor
  */
 
-Load::Load(Var* result, Var* location, Offset* offset)
-    : InstrBase(1, 1)
+Load::Load(Var* result, Var* location, Reg* index, Offset* offset)
+    : InstrBase(1, index ? 2 : 1)
     , offset_(offset)
 {
     swiftAssert(location->type_ == Op::R_PTR || location->type_ == Op::R_MEM, 
@@ -853,6 +853,9 @@ Load::Load(Var* result, Var* location, Offset* offset)
 
     res_[0] = Res(result);
     arg_[0] = Arg(location);
+
+    if (index)
+        arg_[1] = Arg(index);
 }
 
 Load::~Load()
@@ -874,8 +877,11 @@ std::string Load::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= Load(" 
-        << arg_[0].op_->toString() << ", "
-        << offset_->toString() << ')';
+        << arg_[0].op_->toString() << ", ";
+    if ( arg_.size() == 2 )
+        oss << arg_[1].op_->toString() << ", ";
+
+    oss << offset_->toString() << ')';
 
     return oss.str();
 }
@@ -901,8 +907,8 @@ Reg* Load::resReg()
  * constructor and destructor
  */
 
-LoadPtr::LoadPtr(Reg* result, Var* location, Offset* offset)
-    : InstrBase(1, 1)
+LoadPtr::LoadPtr(Reg* result, Var* location, Reg* index, Offset* offset)
+    : InstrBase(1, index ? 2 : 1)
     , offset_(offset)
 {
     swiftAssert(result->type_ == Op::R_PTR, "must be an R_PTR");
@@ -911,6 +917,9 @@ LoadPtr::LoadPtr(Reg* result, Var* location, Offset* offset)
 
     res_[0] = Res(result);
     arg_[0] = Arg(location);
+
+    if (index)
+        arg_[1] = Arg(index);
 }
 
 LoadPtr::~LoadPtr()
@@ -932,10 +941,13 @@ std::string LoadPtr::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= LoadPtr(" 
-        << arg_[0].op_->toString();
+        << arg_[0].op_->toString() << ", ";
+
+    if ( arg_.size() == 2 )
+        oss << arg_[1].op_->toString() << ", ";
 
     if (offset_)
-         oss << ", " << offset_->toString(); 
+         oss << offset_->toString(); 
     
     oss << ')';
 
@@ -963,8 +975,10 @@ Reg* LoadPtr::resReg()
  * constructor and destructor
  */
 
-Store::Store(Op* arg, Var* location, Offset* offset)
-    : InstrBase( (location->type_ == Op::R_MEM) ? 1 : 0, 2 )
+Store::Store(Op* arg, Var* location, Reg* index, Offset* offset)
+    : InstrBase( 
+            (location->type_ == Op::R_MEM) ? 1 : 0, 
+            index ? 3 : 2 )
     , offset_(offset)
 {
     // -> store to an arbitrary location in memory
@@ -973,6 +987,9 @@ Store::Store(Op* arg, Var* location, Offset* offset)
 
     arg_[0] = Arg(arg);
     arg_[1] = Arg(location);
+    
+    if (index)
+        arg_[2] = Arg(index);
 
     if (location->type_ == Op::R_MEM)
     {
@@ -1012,10 +1029,13 @@ std::string Store::toString() const
         // -> store to a location on the stack
         oss << res_[0].var_->toString() << "\t= Store(" 
             << arg_[0]. op_->toString() << ", "
-            << arg_[1]. op_->toString();
+            << arg_[1]. op_->toString() << ", ";
+
+        if ( arg_.size() == 3 )
+            oss << arg_[2].op_->toString() << ", ";
     }
 
-    oss << ", (" << offset_->toString() << ')';
+    oss << "(" << offset_->toString() << ')';
 
     return oss.str();
 }

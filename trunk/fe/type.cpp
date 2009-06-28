@@ -122,7 +122,7 @@ me::Reg* Type::loadPtr(me::Var* var) const
     me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, var, 0);
+    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, var, 0, 0);
     me::functab->appendInstr(loadPtr);
 
     return ptr;

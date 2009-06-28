@@ -114,24 +114,27 @@ std::string memvar2str(me::MemVar* memVar, size_t offset)
     return oss.str();
 }
 
-std::string ptr2str(me::Reg* reg, size_t offset)
+std::string ptr_index2str(me::Reg* reg, me::Reg* index, size_t offset)
 {
     swiftAssert(reg->type_ == me::Op::R_PTR, "must be an R_PTR here");
     std::ostringstream oss;
-
-    //me::Reg* indexReg = pOffset.first;
 
     if (offset)
         oss << offset;
 
     oss << '(' << reg2str(reg);
 
-    //if (indexReg)
-        //oss << ", " << reg2str(indexReg);
+    if (index)
+        oss << ", " << reg2str(index);
 
     oss << ')';
 
     return oss.str();
+}
+
+std::string ptr2str(me::Reg* reg, size_t offset)
+{
+    return ptr_index2str(reg, 0, offset);
 }
 
 std::string mcst2str(me::Const* cst)

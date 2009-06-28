@@ -82,7 +82,7 @@ bool Decl::analyze()
         me::Reg* tmp = me::functab->newReg(me::Op::R_PTR);
 #endif // SWIFT_DEBUG
 
-        me::functab->appendInstr( new me::LoadPtr(tmp, meVar, 0) );
+        me::functab->appendInstr( new me::LoadPtr(tmp, meVar, 0, 0) );
 
         place_ = tmp;
     }
