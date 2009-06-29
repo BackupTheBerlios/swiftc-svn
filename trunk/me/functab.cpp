@@ -113,17 +113,17 @@ Reg* Function::newSpilledSSAReg(Op::Type type, const std::string* id /*= 0*/)
     return reg;
 }
 
-MemVar* Function::newMemVar(Member* memory, const std::string* id /*= 0*/)
+MemVar* Function::newMemVar(Aggregate* aggregate, const std::string* id /*= 0*/)
 {
-    MemVar* var = new MemVar(memory, varCounter_--, id);
+    MemVar* var = new MemVar(aggregate, varCounter_--, id);
     insert(var);
 
     return var;
 }
 
-MemVar* Function::newSSAMemVar(Member* memory, const std::string* id /*= 0*/)
+MemVar* Function::newSSAMemVar(Aggregate* aggregate, const std::string* id /*= 0*/)
 {
-    MemVar* var = new MemVar(memory, ssaCounter_++, id);
+    MemVar* var = new MemVar(aggregate, ssaCounter_++, id);
     insert(var);
 
     return var;
@@ -156,17 +156,17 @@ Reg* Function::newSpilledSSAReg(Op::Type type)
     return reg;
 }
 
-MemVar* Function::newMemVar(Member* memory)
+MemVar* Function::newMemVar(Aggregate* aggregate)
 {
-    MemVar* var = new MemVar(memory, varCounter_--);
+    MemVar* var = new MemVar(aggregate, varCounter_--);
     insert(var);
 
     return var;
 }
 
-MemVar* Function::newSSAMemVar(Member* memory)
+MemVar* Function::newSSAMemVar(Aggregate* aggregate)
 {
-    MemVar* var = new MemVar(memory, ssaCounter_++);
+    MemVar* var = new MemVar(aggregate, ssaCounter_++);
     insert(var);
 
     return var;
@@ -342,13 +342,12 @@ FunctionTable::FunctionTable(const std::string& filename)
 
 FunctionTable::~FunctionTable()
 {
-    // first destroy all ordinary Struct Members
-    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-        iter->second->destroyNonStructMembers();
+    // first destroy all ordinary Struct aggregates
+    for (size_t i = 0; i < structs_.size(); ++i)
+        structs_[i]->destroyNonStructMembers();
 
-    // now delete all structs
-    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-        delete iter->second;
+    for (size_t i = 0; i < structs_.size(); ++i)
+        delete structs_[i];
 
     // finally delete all functions
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
@@ -384,14 +383,14 @@ Reg* FunctionTable::newSpilledSSAReg(Op::Type type, const std::string* id /*= 0*
     return currentFunction_->newSpilledSSAReg(type, id);
 }
 
-MemVar* FunctionTable::newMemVar(Member* memory, const std::string* id /*= 0*/)
+MemVar* FunctionTable::newMemVar(Aggregate* aggregate, const std::string* id /*= 0*/)
 {
-    return currentFunction_->newMemVar(memory, id);
+    return currentFunction_->newMemVar(aggregate, id);
 }
 
-MemVar* FunctionTable::newSSAMemVar(Member* memory, const std::string* id /*= 0*/)
+MemVar* FunctionTable::newSSAMemVar(Aggregate* aggregate, const std::string* id /*= 0*/)
 {
-    return currentFunction_->newSSAMemVar(memory, id);
+    return currentFunction_->newSSAMemVar(aggregate, id);
 }
 
 #else // SWIFT_DEBUG
@@ -411,14 +410,14 @@ Reg* FunctionTable::newSpilledSSAReg(Op::Type type)
     return currentFunction_->newSpilledSSAReg(type);
 }
 
-MemVar* FunctionTable::newMemVar(Member* memory)
+MemVar* FunctionTable::newMemVar(Aggregate* aggregate)
 {
-    return currentFunction_->newMemVar(memory);
+    return currentFunction_->newMemVar(aggregate);
 }
 
-MemVar* FunctionTable::newSSAMemVar(Member* memory)
+MemVar* FunctionTable::newSSAMemVar(Aggregate* aggregate)
 {
-    return currentFunction_->newSSAMemVar(memory);
+    return currentFunction_->newSSAMemVar(aggregate);
 }
 
 #endif // SWIFT_DEBUG
@@ -460,8 +459,8 @@ void FunctionTable::appendInstrNode(InstrNode* node)
 
 void FunctionTable::analyzeStructs()
 {
-    for (StructMap::iterator iter = structs_.begin(); iter != structs_.end(); ++iter)
-        iter->second->analyze();
+    for (size_t i = 0; i < structs_.size(); ++i)
+        structs_[i]->analyze();
 }
 
 void FunctionTable::buildUpME()
@@ -553,9 +552,14 @@ Struct* FunctionTable::currentStruct()
 Struct* FunctionTable::newStruct(const std::string& id)
 {
     Struct* _struct = new Struct(id);
-    structs_[ _struct->getNr() ] = _struct;
+    structs_.push_back(_struct);
 
     return _struct;
+}
+
+Member* FunctionTable::appendMember(Aggregate* aggregate, const std::string& id)
+{
+    return structStack_.top()->append(aggregate, id);
 }
 
 #else // SWIFT_DEBUG
@@ -563,16 +567,17 @@ Struct* FunctionTable::newStruct(const std::string& id)
 Struct* FunctionTable::newStruct()
 {
     Struct* _struct = new Struct();
-    structs_[ _struct->getNr() ] = _struct;
+    structs_.push_back(_struct);
 
     return _struct;
 }
 
-#endif // SWIFT_DEBUG
-
-void FunctionTable::appendMember(Member* member)
+Member* FunctionTable::appendMember(Aggregate* aggregate)
 {
-    structStack_.top()->append(member);
+    return structStack_.top()->append(aggregate);
 }
+
+
+#endif // SWIFT_DEBUG
 
 } // namespace me

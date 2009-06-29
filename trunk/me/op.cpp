@@ -406,26 +406,26 @@ std::string Reg::toString() const
 
 #ifdef SWIFT_DEBUG
 
-MemVar::MemVar(Member* memory, int varNr, const std::string* id /*= 0*/)
+MemVar::MemVar(Aggregate* aggregate, int varNr, const std::string* id /*= 0*/)
     : Var(R_MEM, varNr, id)
-    , memory_(memory)
+    , aggregate_(aggregate)
 {}
 
 MemVar* MemVar::clone(int varNr) const
 {
-    return new MemVar(memory_, varNr, &id_);
+    return new MemVar(aggregate_, varNr, &id_);
 }
 
 #else // SWIFT_DEBUG
 
-MemVar::MemVar(Member* memory, int varNr)
+MemVar::MemVar(Aggregate* aggregate, int varNr)
     : Var(R_MEM, varNr)
-    , memory_(memory)
+    , aggregate_(aggregate)
 {}
 
 MemVar* MemVar::clone(int varNr) const
 {
-    return new MemVar(memory_, varNr);
+    return new MemVar(aggregate_, varNr);
 }
 
 #endif // SWIFT_DEBUG
@@ -433,9 +433,9 @@ MemVar* MemVar::clone(int varNr) const
 MemVar* MemVar::toSimd() const
 {
 #ifdef SWIFT_DEBUG
-    //return functab->newSSAMemVar( memory->toSimd(), new std::string("s_" + id_) );
+    //return functab->newSSAMemVar( aggregate->toSimd(), new std::string("s_" + id_) );
 #else // SWIFT_DEBUG
-    //return functab->newSSAMemVar( memory->toSimd() );
+    //return functab->newSSAMemVar( aggregate->toSimd() );
 #endif // SWIFT_DEBUG
     return 0;
 }

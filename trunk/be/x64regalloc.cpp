@@ -73,9 +73,9 @@ X64RegAlloc::X64RegAlloc(me::Function* function)
         for (int i = R0; i <= R15; ++i)
             intColors_->insert(i);
 
-        // do not use the stack pointer and the frame pointer as free registers
+        // do not use the stack pointer 
         intColors_->erase(RSP);
-        intColors_->erase(RBP);
+        //intColors_->erase(RBP);
 
         me::Colors xmmColors;
         for (int i = XMM0; i <= XMM15; ++i)

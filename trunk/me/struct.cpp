@@ -37,8 +37,6 @@
 
 namespace {
 
-int namecounter = 0;
-
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -51,41 +49,37 @@ namespace me {
 
 #ifdef SWIFT_DEBUG
 
-Member::Member(const std::string& id)
-    : nr_(namecounter++)
-    , size_(NOT_ANALYZED)
-    , offset_(0)
+Member::Member(Aggregate* aggregate, const std::string& id)
+    : aggregate_(aggregate)
     , id_(id)
+    , offset_(0)
 {}
 
 #else // SWIFT_DEBUG
 
-Member::Member()
-    : nr_(namecounter++)
-    , size_(NOT_ANALYZED)
+Member::Member(Aggregate* aggregate)
+    : aggregate_(aggregate)
     , offset_(0)
 {}
 
 #endif // SWIFT_DEBUG
 
+Member::~Member()
+{
+    delete aggregate_;
+}
+
 /*
  * further methods
  */
 
-bool Member::alreadyAnalyzed() const
+Member* Member::vectorize() const
 {
-    return size_ != NOT_ANALYZED;
-}
-
-int Member::sizeOf() const
-{
-    swiftAssert( alreadyAnalyzed(), "not analyzed yet" );
-    return size_;
-}
-
-int Member::getNr() const
-{
-    return nr_;
+#ifdef SWIFT_DEBUG
+    return new Member( aggregate_->vectorize(), "simd_" + id_ );
+#else //  SWIFT_DEBUG
+    return new Member( aggregate_->vectorize() );
+#endif // SWIFT_DEBUG
 }
 
 int Member::getOffset() const
@@ -98,6 +92,16 @@ void Member::setOffset(int offset)
     offset_ = offset;
 }
 
+Aggregate* Member::aggregate()
+{
+    return aggregate_;
+}
+
+const Aggregate* Member::aggregate() const
+{
+    return aggregate_;
+}
+
 #ifdef SWIFT_DEBUG
 
 std::string Member::getId() const
@@ -107,109 +111,88 @@ std::string Member::getId() const
 
 #endif // SWIFT_DEBUG
 
+std::string Member::toString() const
+{
+    std::ostringstream oss;
+#ifdef SWIFT_DEBUG
+    oss << id_ << '|';
+#endif // SWIFT_DEBUG
+    oss << offset_;
+
+    return oss.str();
+}
+
 //------------------------------------------------------------------------------
+
+/*
+ * constructor 
+ */
+
+Aggregate::Aggregate()
+    : size_(NOT_ANALYZED)
+{}
+
+/*
+ * further methods
+ */
+
+bool Aggregate::alreadyAnalyzed() const
+{
+    return size_ != NOT_ANALYZED;
+}
+
+int Aggregate::sizeOf() const
+{
+    swiftAssert( alreadyAnalyzed(), "not analyzed yet" );
+    return size_;
+}
+
+//------------------------------------------------------------------------------
+
 
 /*
  * constructor and destructor
  */
 
-#ifdef SWIFT_DEBUG
-
-AtomicMember::AtomicMember(Op::Type type, const std::string& id)
-    : Member(id)
-    , type_(type)
-{}
-
-#else // SWIFT_DEBUG
-
-AtomicMember::AtomicMember(Op::Type type)
+AtomicAggregate::AtomicAggregate(Op::Type type)
     : type_(type)
 {}
-
-#endif // SWIFT_DEBUG
 
 /*
  * virtual methods
  */
 
-void AtomicMember::analyze()
+void AtomicAggregate::analyze()
 {
     size_ = Op::sizeOf(type_);
 }
 
-AtomicMember* AtomicMember::vectorize()
+AtomicAggregate* AtomicAggregate::vectorize() const
 {
-#ifdef SWIFT_DEBUG
-    return new AtomicMember( Op::toSimd(type_), "simd_" + id_ );
-#else // SWIFT_DEBUG
-    return new AtomicMember( Op::toSimd(type_));
-#endif // SWIFT_DEBUG
-}
-
-std::string AtomicMember::toString() const
-{
-    std::ostringstream oss;
-
-#ifdef SWIFT_DEBUG
-    oss << id_;
-#else // SWIFT_DEBUG
-    oss << nr_;
-#endif // SWIFT_DEBUG
-
-    return oss.str();
+    return new AtomicAggregate( Op::toSimd(type_));
 }
 
 //------------------------------------------------------------------------------
 
-#ifdef SWIFT_DEBUG
-
-ArrayMember::ArrayMember(Op::Type type, size_t num, const std::string& id)
-    : Member(id)
-    , type_(type)
-    , num_(num)
-{}
-
-#else // SWIFT_DEBUG
-
-ArrayMember::ArrayMember(Op::Type type, size_t num)
+ArrayAggregate::ArrayAggregate(Op::Type type, size_t num)
     : type_(type)
     , num_(num)
 {}
-
-#endif // SWIFT_DEBUG
 
 /*
  * virtual methods
  */
 
-void ArrayMember::analyze()
+void ArrayAggregate::analyze()
 {
     size_ = Op::sizeOf(type_) * num_;
 }
 
-ArrayMember* ArrayMember::vectorize()
+ArrayAggregate* ArrayAggregate::vectorize() const
 {
-#ifdef SWIFT_DEBUG
-    return new ArrayMember( Op::toSimd(type_), num_, "simd_" + id_ );
-#else // SWIFT_DEBUG
-    return new ArrayMember( Op::toSimd(type_), num_);
-#endif // SWIFT_DEBUG
+    return new ArrayAggregate( Op::toSimd(type_), num_);
 }
 
-std::string ArrayMember::toString() const
-{
-    std::ostringstream oss;
-
-#ifdef SWIFT_DEBUG
-    oss << id_;
-#else // SWIFT_DEBUG
-    oss << nr_;
-#endif // SWIFT_DEBUG
-    oss << '{' << num_ << '}';
-
-    return oss.str();
-}
-    
 //------------------------------------------------------------------------------
 
 /*
@@ -219,13 +202,12 @@ std::string ArrayMember::toString() const
 #ifdef SWIFT_DEBUG
 
 Struct::Struct(const std::string& id)
-    : Member(id)
+    : id_(id)
 {}
 
 #else // SWIFT_DEBUG
 
 Struct::Struct()
-    : Member()
 {}
 
 #endif // SWIFT_DEBUG
@@ -243,15 +225,15 @@ void Struct::analyze()
     {
         Member* member = members_[i];
 
-        if ( !member->alreadyAnalyzed() )
-            member->analyze();
+        if ( !member->aggregate()->alreadyAnalyzed() )
+            member->aggregate()->analyze();
 
-        member->setOffset( arch->calcAlignedOffset(size_, member->sizeOf()) );
-        size_ = member->getOffset() + member->sizeOf();
+        member->setOffset( arch->calcAlignedOffset(size_, member->aggregate()->sizeOf()) );
+        size_ = member->getOffset() + member->aggregate()->sizeOf();
     }
 }
 
-Struct* Struct::vectorize()
+Struct* Struct::vectorize() const
 {
 #ifdef SWIFT_DEBUG
     Struct* result = new Struct( "simd_" + id_ );
@@ -266,46 +248,37 @@ Struct* Struct::vectorize()
     return result;
 }
 
-std::string Struct::toString() const
-{
-    std::ostringstream oss;
-
-#ifdef SWIFT_DEBUG
-    oss << id_;
-#else // SWIFT_DEBUG
-    oss << nr_;
-#endif // SWIFT_DEBUG
-
-    return oss.str();
-}
-
 /*
  * further methods
  */
 
-void Struct::append(Member* member)
-{
-    swiftAssert( !memberMap_.contains(member->getNr()), "already inserted" );
+#ifdef SWIFT_DEBUG
 
+Member* Struct::append(Aggregate* aggregate, const std::string& id)
+{
+    Member* member = new Member(aggregate, id);
     members_.push_back(member);
-    memberMap_[ member->getNr() ] = member;
+
+    return member;
 }
 
-Member* Struct::lookup(int nr)
+#else // SWIFT_DEBUG
+
+Member* Struct::append(Aggregate* aggregate);
 {
-    MemberMap::iterator iter = memberMap_.find(nr);
+    Member* member = new Member(aggregate);
+    members_.push_back(member);
 
-    if ( iter == memberMap_.end() )
-        return 0;
-    else
-        return iter->second;
+    return member;
 }
+
+#endif // SWIFT_DEBUG
 
 void Struct::destroyNonStructMembers()
 {
     for (size_t i = 0; i < members_.size(); ++i)
     {
-        if ( typeid(*members_[i]) != typeid(Struct) )
+        if ( typeid(*members_[i]->aggregate()) != typeid(Struct) )
             delete members_[i];
     }
 }
@@ -324,7 +297,7 @@ std::string Struct::dump() const
     {
         Member* member = members_[i];
         oss << '\t' << member->getId() << '\n';
-        oss << "\t\tsize: " << member->sizeOf() << '\n';
+        oss << "\t\tsize: " << member->aggregate()->sizeOf() << '\n';
         oss << "\t\toffset: " << member->getOffset() << '\n';
     }
 
@@ -332,5 +305,18 @@ std::string Struct::dump() const
 }
 
 #endif // SWIFT_DEBUG
+
+std::string Struct::toString() const
+{
+    std::ostringstream oss;
+
+#ifdef SWIFT_DEBUG
+    oss << id_;
+#else // SWIFT_DEBUG
+    oss << "STRUCT[" << members_.size() << ']';
+#endif // SWIFT_DEBUG
+
+    return oss.str();
+}
 
 } // namespace me

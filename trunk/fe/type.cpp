@@ -700,23 +700,23 @@ void Container::initMeContainer()
 #ifdef SWIFT_DEBUG
 
     meContainer_ = me::functab->newStruct("Container");
-    meContainerPtr_  = new me::AtomicMember(me::Op::R_PTR, "ptr");
-    meContainerSize_ = new me::AtomicMember(me::Op::R_UINT64, "size");
+    me::functab->enterStruct(meContainer_);
+
+    meContainerPtr_  = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_PTR), "ptr" );
+    meContainerSize_ = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_UINT64), "size");
 
 #else // SWIFT_DEBUG
 
     meContainer_ = me::functab->newStruct();
-    meContainerPtr_  = new me::AtomicMember(me::Op::R_PTR);
-    meContainerSize_ = new me::AtomicMember(me::Op::R_UINT64);
+    me::functab->enterStruct(meContainer_);
+
+    meContainerPtr_  = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_PTR) );
+    meContainerSize_ = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_UINT64) );
 
 #endif // SWIFT_DEBUG
 
-    me::functab->enterStruct(meContainer_);
-    me::functab->appendMember(meContainerPtr_);
-    me::functab->appendMember(meContainerSize_); 
     me::functab->leaveStruct();
-
-    meContainer_->analyze();
+    //meContainer_->analyze();
 }
 
 me::Struct* Container::getMeStruct()

@@ -36,10 +36,10 @@ namespace me {
  * forward declarations
  */
 
-struct Reg;
-struct Member;
-struct Struct;
+struct Aggregate;
 struct InstrBase;
+struct Reg;
+struct Struct;
 
 #ifdef SWIFT_DEBUG
 
@@ -157,7 +157,7 @@ struct Op
     virtual Reg* colorReg(int typeMask);
 
     /** 
-     * @brief Checks whether this Reg is actually in a spilled memory location.
+     * @brief Checks whether this Reg is actually in a spilled aggregate location.
      *
      * If the type is not Reg or is not spilled 0 is return.
      *
@@ -331,7 +331,7 @@ struct Var : public Op
  */
 struct Reg : public Var
 {
-    /// Is this currently in a spilled memory loaction?
+    /// Is this currently in a spilled aggregate loaction?
     bool isSpilled_;
 
     /*
@@ -361,16 +361,16 @@ struct Reg : public Var
 
 struct MemVar : public Var
 {
-    Member* memory_;
+    Aggregate* aggregate_;
 
     /*
      * constructor
      */
 
 #ifdef SWIFT_DEBUG
-    MemVar(Member* memory, int varNr, const std::string* id = 0);
+    MemVar(Aggregate* aggregate, int varNr, const std::string* id = 0);
 #else // SWIFT_DEBUG
-    MemVar(Member* memory, int varNr);
+    MemVar(Aggregate* aggregate, int varNr);
 #endif // SWIFT_DEBUG
 
     /*

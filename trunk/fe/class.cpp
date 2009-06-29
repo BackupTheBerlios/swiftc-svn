@@ -283,7 +283,13 @@ bool MemberVar::registerMeMember()
     me::Op::Type meType = type_->toMeType();
 
     if ( dynamic_cast<Container*>(type_) )
-        meMember_ = Container::getMeStruct();
+    {
+#ifdef SWIFT_DEBUG
+        meMember_ = me::functab->appendMember( Container::getMeStruct(), *id_ );
+#else // SWIFT_DEBUG
+        meMember_ = me::functab->appendMember( Container::getMeStruct() );
+#endif // SWIFT_DEBUG
+    }
     else if (meType == me::Op::R_MEM)
     {
         swiftAssert( typeid(*type_) == typeid(BaseType),
@@ -292,20 +298,22 @@ bool MemberVar::registerMeMember()
 
         Class* _class = bt->lookupClass();
         swiftAssert(_class, "must be found here");
-        meMember_ = _class->meStruct_;
+
+#ifdef SWIFT_DEBUG
+        meMember_ = me::functab->appendMember(_class->meStruct_, *id_);
+#else // SWIFT_DEBUG
+        meMember_ = me::functab->appendMember(_class->meStruct_);
+#endif // SWIFT_DEBUG
     }
     else
     {
         // -> it is a builtin type or a pointer
 #ifdef SWIFT_DEBUG
-        meMember_ = new me::AtomicMember(meType, *id_);
+        meMember_ = me::functab->appendMember( new me::AtomicAggregate(meType), *id_ );
 #else // SWIFT_DEBUG
-        meMember_ = new me::AtomicMember(meType);
+        meMember_ = me::functab->appendMember( new me::AtomicAggregate(meType) );
 #endif // SWIFT_DEBUG
     }
-
-    // append member to current me::Struct in all cases
-    me::functab->appendMember(meMember_);
 
     return true;
 }

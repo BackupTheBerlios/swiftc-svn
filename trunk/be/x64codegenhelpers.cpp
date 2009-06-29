@@ -100,14 +100,9 @@ std::string reg2str(int color, me::Op::Type type)
 
 std::string memvar2str(me::MemVar* memVar, size_t offset)
 {
-    //me::Reg* indexReg = pOffset.first;
-
     std::ostringstream oss;
-    oss << '-' << (x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + 16) - offset
-        << "(%rbp";
-
-    //if (indexReg)
-        //oss << ", " << reg2str(indexReg);
+    oss << x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + offset
+        << "(%rsp";
 
     oss << ')';
 

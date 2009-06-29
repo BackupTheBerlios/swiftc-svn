@@ -30,6 +30,7 @@
  */
 
 namespace me {
+    class Member;
     class Struct;
     class StructOffset;
 }

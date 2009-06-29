@@ -1,7 +1,5 @@
 #include "me/stacklayout.h"
 
-#include <iostream>
-
 #include "me/arch.h"
 #include "me/op.h"
 #include "me/struct.h"
@@ -55,8 +53,8 @@ void StackLayout::arangeStackLayout()
     for (size_t i = 0; i < color2MemSlot_.size(); ++i)
     {
         MemSlot& ms = color2MemSlot_[i];
-        ms.offset_ = arch->calcAlignedStackOffset( memSlotsSize_, ms.memVar_->memory_->sizeOf() );
-        memSlotsSize_ = ms.offset_ + ms.memVar_->memory_->sizeOf();
+        ms.offset_ = arch->calcAlignedStackOffset( memSlotsSize_, ms.memVar_->aggregate_->sizeOf() );
+        memSlotsSize_ = ms.offset_ + ms.memVar_->aggregate_->sizeOf();
     }
 
     // fill itemSize_ for each place
@@ -79,7 +77,7 @@ void StackLayout::arangeStackLayout()
          *      first-item-size )
          */
         places_[0].offset_ = arch->calcAlignedStackOffset(
-                lastMemSlot.offset_ + lastMemSlot.memVar_->memory_->sizeOf(), 
+                lastMemSlot.offset_ + lastMemSlot.memVar_->aggregate_->sizeOf(), 
                 places_[0].itemSize_);
     }
 

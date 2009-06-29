@@ -94,6 +94,7 @@ void X64CodeGen::process()
     // count number of pushes
     int numPushes = 0;
     if ( usedColors.contains(X64RegAlloc::RBX) ) ++numPushes;
+    if ( usedColors.contains(X64RegAlloc::RBP) ) ++numPushes;
     if ( usedColors.contains(X64RegAlloc::R12) ) ++numPushes;
     if ( usedColors.contains(X64RegAlloc::R13) ) ++numPushes;
     if ( usedColors.contains(X64RegAlloc::R14) ) ++numPushes;
@@ -101,18 +102,21 @@ void X64CodeGen::process()
 
     // align stack
     numPushes = (numPushes & 0x00000001) ? 8 : 0; // 8 if odd, 0 if even
+    numPushes = 8 - numPushes;
+
     int stackSize = function_->stackLayout_->size_;
     if ( (stackSize + numPushes) & 0x0000000F ) // (stackSize + numPushes) % 16
         stackSize = ((stackSize  + numPushes + 15) & 0xFFFFFFF0) - numPushes;
 
-    ofs_ << "\tpushq\t%rbp\n"
-         << "\tmovq\t%rsp, %rbp\n";
+    //ofs_ << "\tpushq\t%rbp\n"
+         //<< "\tmovq\t%rsp, %rbp\n";
 
     if (stackSize)
         ofs_ << "\tsubq\t$" << stackSize << ", %rsp\n";
 
     // save registers which should be preserved during function calls
     if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpushq\t%rbx\n";
+    if ( usedColors.contains(X64RegAlloc::RBP) ) ofs_ << "\tpushq\t%rbp\n";
     if ( usedColors.contains(X64RegAlloc::R12) ) ofs_ << "\tpushq\t%r12\n";
     if ( usedColors.contains(X64RegAlloc::R13) ) ofs_ << "\tpushq\t%r13\n";
     if ( usedColors.contains(X64RegAlloc::R14) ) ofs_ << "\tpushq\t%r14\n";
@@ -189,12 +193,17 @@ void X64CodeGen::process()
     if ( usedColors.contains(X64RegAlloc::R14) ) ofs_ << "\tpopq\t%r14\n";
     if ( usedColors.contains(X64RegAlloc::R13) ) ofs_ << "\tpopq\t%r13\n";
     if ( usedColors.contains(X64RegAlloc::R12) ) ofs_ << "\tpopq\t%r12\n";
+    if ( usedColors.contains(X64RegAlloc::RBP) ) ofs_ << "\tpopq\t%rbp\n";
     if ( usedColors.contains(X64RegAlloc::RBX) ) ofs_ << "\tpopq\t%rbx\n";
 
     // clean up
-    ofs_ << "\tmovq\t%rbp, %rsp\n"
-         << "\tpopq\t%rbp\n"
-         << "\tret\n";
+    //ofs_ << "\tmovq\t%rbp, %rsp\n"
+         //<< "\tpopq\t%rbp\n"
+
+    if (stackSize)
+        ofs_ << "\taddq\t$" << stackSize << ", %rsp\n";
+
+    ofs_ << "\tret\n";
 
     ofs_ << ".LFE" << counter << ":\n"
          << "\t.size\t" << id << ", .-" << id << '\n';
@@ -322,6 +331,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 
     // use these ones only if they are used anyway
     if ( !usedColors.contains(X64RegAlloc::RBX) ) intFree.erase(X64RegAlloc::RBX);
+    if ( !usedColors.contains(X64RegAlloc::RBP) ) intFree.erase(X64RegAlloc::RBP);
     if ( !usedColors.contains(X64RegAlloc::R12) ) intFree.erase(X64RegAlloc::R12);
     if ( !usedColors.contains(X64RegAlloc::R13) ) intFree.erase(X64RegAlloc::R13);
     if ( !usedColors.contains(X64RegAlloc::R14) ) intFree.erase(X64RegAlloc::R14);

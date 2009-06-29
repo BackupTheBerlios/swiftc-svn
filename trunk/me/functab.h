@@ -39,11 +39,12 @@ namespace me {
 /*
  * forward declarations
  */
+struct Aggregate;
 struct CFG;
 struct Function;
-struct Struct;
 struct Member;
 struct StackLayout;
+struct Struct;
 
 typedef Set<int> Colors;
 
@@ -128,16 +129,16 @@ struct Function
     Reg*    newReg(Op::Type type, const std::string* id = 0);
     Reg*    newSSAReg(Op::Type type, const std::string* id = 0);
     Reg*    newSpilledSSAReg(Op::Type type, const std::string* id = 0);
-    MemVar* newMemVar(Member* memory, const std::string* id = 0);
-    MemVar* newSSAMemVar(Member* memory, const std::string* id = 0);
+    MemVar* newMemVar(Aggregate* aggregate, const std::string* id = 0);
+    MemVar* newSSAMemVar(Aggregate* aggregate, const std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
     Reg*    newSSAReg(Op::Type type);
     Reg*    newReg(Op::Type type);
     Reg*    newSpilledSSAReg(Op::Type type);
-    MemVar* newMemVar(Member* memory);
-    MemVar* newSSAMemVar(Member* memory);
+    MemVar* newMemVar(Aggregate* aggregate);
+    MemVar* newSSAMemVar(Aggregate* aggregate);
 
 #endif // SWIFT_DEBUG
 
@@ -180,8 +181,8 @@ struct FunctionTable
     typedef std::stack<Struct*> StructStack;
     StructStack structStack_;
 
-    typedef std::map<int, Struct*> StructMap;
-    StructMap structs_;
+    typedef std::vector<Struct*> Structs;
+    Structs structs_;
 
     /*
      * constructor and destructor
@@ -201,16 +202,16 @@ struct FunctionTable
     Reg*    newReg(Op::Type type, const std::string* id = 0);
     Reg*    newSSAReg(Op::Type type, const std::string* id = 0);
     Reg*    newSpilledSSAReg(Op::Type type, const std::string* id = 0);
-    MemVar* newMemVar(Member* memory, const std::string* id = 0);
-    MemVar* newSSAMemVar(Member* memory, const std::string* id = 0);
+    MemVar* newMemVar(Aggregate* aggregate, const std::string* id = 0);
+    MemVar* newSSAMemVar(Aggregate* aggregate, const std::string* id = 0);
 
 #else // SWIFT_DEBUG
 
     Reg*    newReg(Op::Type type);
     Reg*    newSSAReg(Op::Type type);
     Reg*    newSpilledSSAReg(Op::Type type);
-    MemVar* newMemVar(Member* memory);
-    MemVar* newSSAMemVar(Member* memory);
+    MemVar* newMemVar(Aggregate* aggregate);
+    MemVar* newSSAMemVar(Aggregate* aggregate);
 
 #endif // SWIFT_DEBUG
     
@@ -252,12 +253,17 @@ struct FunctionTable
     Struct* currentStruct();
 
 #ifdef SWIFT_DEBUG
+
     Struct* newStruct(const std::string& id);
+    Member* appendMember(Aggregate* aggregate, const std::string& id);
+
 #else // SWIFT_DEBUG
+
     Struct* newStruct();
+    Member* appendMember(Aggregate* aggregate);
+
 #endif // SWIFT_DEBUG
 
-    void appendMember(Member* member);
 };
 
 typedef FunctionTable FuncTab;
