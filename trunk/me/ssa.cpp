@@ -879,9 +879,12 @@ std::string Load::toString() const
     oss << res_[0].var_->toString() << "\t= Load(" 
         << arg_[0].op_->toString() << ", ";
     if ( arg_.size() == 2 )
-        oss << arg_[1].op_->toString() << ", ";
+        oss << arg_[1].op_->toString();
 
-    oss << offset_->toString() << ')';
+    if (offset_)
+        oss << ", " << offset_->toString();
+
+    oss << ')';
 
     return oss.str();
 }
@@ -892,7 +895,7 @@ std::string Load::toString() const
 
 size_t Load::getOffset() const
 {
-    return offset_->getOffset();
+    return offset_ ? offset_->getOffset() : 0;
 }
 
 Reg* Load::resReg()
@@ -1035,7 +1038,8 @@ std::string Store::toString() const
             oss << arg_[2].op_->toString() << ", ";
     }
 
-    oss << "(" << offset_->toString() << ')';
+    if (offset_)
+        oss << "(" << offset_->toString() << ')';
 
     return oss.str();
 }
@@ -1046,7 +1050,7 @@ std::string Store::toString() const
 
 size_t Store::getOffset() const
 {
-    return offset_->getOffset();
+    return offset_ ? offset_->getOffset() : 0;
 }
 
 MemVar* Store::resMemVar()

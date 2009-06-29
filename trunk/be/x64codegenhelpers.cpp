@@ -98,15 +98,23 @@ std::string reg2str(int color, me::Op::Type type)
     return reg2str(&reg);
 }
 
-std::string memvar2str(me::MemVar* memVar, size_t offset)
+std::string memvar_index2str(me::MemVar* memVar, me::Reg* index, size_t offset)
 {
     std::ostringstream oss;
     oss << x64_stacklayout->color2MemSlot_[memVar->color_].offset_ + offset
         << "(%rsp";
 
+    if (index)
+        oss << ", " << reg2str(index);
+
     oss << ')';
 
     return oss.str();
+}
+
+std::string memvar2str(me::MemVar* memVar, size_t offset)
+{
+    return memvar_index2str(memVar, 0, offset);
 }
 
 std::string ptr_index2str(me::Reg* reg, me::Reg* index, size_t offset)
