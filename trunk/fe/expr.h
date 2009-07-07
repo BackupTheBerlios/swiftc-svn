@@ -72,6 +72,7 @@ public:
      */
 
     void neededAsLValue();
+    // TODO rename this to sth appropriate
     void doNotLoadPtr();
 
 protected:

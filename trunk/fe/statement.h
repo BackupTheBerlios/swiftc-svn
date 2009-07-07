@@ -130,7 +130,7 @@ private:
 /**
  * @brief This is an ordinary assignment. 
  *
- * In contrast to other languages assignments in Swift are not expresions 
+ * In contrast to many other languages assignments in Swift are not expresions 
  * but statements.
  */
 struct AssignStatement : public Statement

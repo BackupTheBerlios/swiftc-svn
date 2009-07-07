@@ -294,12 +294,38 @@ bool Id::analyze()
 
     type_ = var_->getType()->clone();
 
+    const Container* container = dynamic_cast<Container*>(type_);
+
     if ( type_->isInternalAtomic() )
         place_ = var_->getMeVar();
     else
     {
         if (doNotLoadPtr_)
-            place_ = var_->getMeVar();
+        {
+            if (container)
+            {
+
+#ifdef SWIFT_DEBUG
+                std::string tmpStr = std::string("ptr_") + var_->getMeVar()->id_;
+                me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+                me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+                me::Load* load = new me::Load(
+                        ptr, 
+                        var_->getMeVar(), 
+                        0, 
+                        Container::createContainerPtrOffset() );
+
+                me::functab->appendInstr(load);
+
+                place_ = ptr;
+                type_->modifier() = REF;
+            }
+            else
+                place_ = var_->getMeVar();
+        }
         else
         {
             // mark type as reference

@@ -42,6 +42,7 @@ enum Location
     TYPE,
     OP1,
     OP2,
+    OP3,
     END
 };
 
@@ -833,6 +834,9 @@ int x64lex()
             {
                 if ( typeid(*currentInstr) == typeid(me::Store) )
                 {
+                    if (currentInstr->arg_.size() == 3)
+                        location = OP3;
+
                     me::MemVar* memVar = dynamic_cast<me::MemVar*>(op);
                     if (memVar)
                     {
@@ -874,6 +878,18 @@ int x64lex()
                         return X64_REG_3;
                 }
             }
+
+            return lastOp;
+        }
+        case OP3:
+        {
+            location = END;
+            me::Op* op = currentInstr->arg_[2].op_;
+            swiftAssert( typeid(*op) == typeid(me::Reg), 
+                    "must be a Reg here");
+            me::Reg* reg = (me::Reg*) op;
+            x64lval.reg_ = reg;
+            lastOp = X64_REG_4;
             return lastOp;
         }
         case END:

@@ -92,7 +92,7 @@ using namespace be;
 /* operands */
 %token <undef_>  X64_UNDEF
 %token <const_>  X64_CONST X64_CST_0 X64_CST_1
-%token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3
+%token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3 X64_REG_4
 %token <memVar_> X64_MEM_VAR
 
 %start instruction
@@ -218,6 +218,14 @@ load_store
     | X64_STORE any_type any_reg any_reg
     { 
         EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << ptr2str($4, $1->getOffset()))
+    }
+    | X64_STORE any_type any_reg X64_MEM_VAR any_reg
+    { 
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << memvar_index2str($4, $5, $1->getOffset()))
+    }
+    | X64_STORE any_type any_reg any_reg any_reg
+    { 
+        EMIT("mov" << suffix($2) << '\t' << reg2str($3) << ", " << ptr_index2str($4, $5, $1->getOffset()))
     }
     ;
 
@@ -819,6 +827,7 @@ any_reg
     : X64_REG_1 { $$ = $1; }
     | X64_REG_2 { $$ = $1; }
     | X64_REG_3 { $$ = $1; }
+    | X64_REG_4 { $$ = $1; }
     ;
 
 %%

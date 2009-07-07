@@ -263,6 +263,8 @@ void readBuiltinTypes()
     builtin.push_back("fe/builtin/usat8.swift");
     builtin.push_back("fe/builtin/usat16.swift");
 
+    builtin.push_back("fe/builtin/index.swift");
+
     builtin.push_back("fe/builtin/real.swift");
     builtin.push_back("fe/builtin/real32.swift");
     builtin.push_back("fe/builtin/real64.swift");

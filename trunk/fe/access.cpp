@@ -113,11 +113,8 @@ bool Access::analyze()
         }
     }
 
-    if (prevAccess && prevAccess->lastInAChain_)
-        firstInAChain_ = true;
-
     /*
-     * set rootVar_ and rootOffset_
+     * set rootVar_, rootOffset_ and index_
      */
 
     if (!postfixExpr_)
@@ -219,8 +216,15 @@ bool Access::analyze()
 
 void Access::genSSA()
 {
-    if ( neededAsLValue_ && type_->isAtomic() )
+    /*
+     * always emit code if 
+     *  - this is needed as lvalue
+     *  - if the type is not atomic
+     *  - this isn't the last chain
+     */
+    if ( neededAsLValue_ && type_->isAtomic() && !nextAccess_ )
     {
+        // mark that a later store must be created
         storeNecessary_ = true;
         return;
     }
@@ -264,8 +268,8 @@ void Access::emitStoreIfApplicable(Expr* expr)
 
         me::Store* store = new me::Store( 
                 expr->getPlace(), // argument 
-                rootVar_,         // memory variable
-                0, // TODO
+                rootVar_,         // memory variable / location
+                index_,           // index
                 rootOffset_);     // offset 
         me::functab->appendInstr(store);
     }
