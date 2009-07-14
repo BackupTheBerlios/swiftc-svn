@@ -35,6 +35,7 @@
 #include "fe/functioncall.h"
 #include "fe/lexer.h"
 #include "fe/memberfunction.h"
+#include "fe/simdprefix.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
@@ -88,6 +89,7 @@ using namespace swift;
 %union
 {
     int                     int_;
+    bool                    bool_;
     std::string*            id_;
 
     swift::Class*           class_;
@@ -99,6 +101,7 @@ using namespace swift;
     swift::MemberVar*       memberVar_;
     swift::MemberFunction*  memberFunction_;
     swift::Module*          module_;
+    swift::SimdPrefix*      simdPrefix_;
     swift::Statement*       statement_;
     swift::Tuple*           tuple_;
     swift::Type*            type_;
@@ -123,7 +126,7 @@ using namespace swift;
 // type modifiers
 %token VAR CONST INOUT REF CONST_REF
 
-%token SELF SIMD_PREFIX
+%token SELF
 
 // method qualifier
 %token READER WRITER ROUTINE ASSIGN OPERATOR
@@ -165,7 +168,8 @@ using namespace swift;
     types
 */
 
-%type <int_>        method_qualifier operator simd_modifier
+%type <int_>        method_qualifier operator
+%type <bool_>        simd_modifier
 %type <type_>       type bare_type
 %type <decl_>       decl
 
@@ -177,6 +181,8 @@ using namespace swift;
 %type <expr_>     expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <exprList_> expr_list expr_list_not_empty
 %type <tuple_>    tuple
+
+%type <simdPrefix_> simd_prefix
 
 %type <statement_>  statement_list statement
 
@@ -205,14 +211,14 @@ definitions
 */
 
 simd_modifier
-    : SIMD { $$ = SIMD; }
-    | /**/ { $$ = 0; }
+    : SIMD { $$ = true; }
+    | /**/ { $$ = false; }
     ;
 
 class_definition
     : simd_modifier CLASS ID EOL
         {
-            $<class_>$ = new Class($3, symtab->module_, currentLine);
+            $<class_>$ = new Class($1, $3, symtab->module_, currentLine);
             symtab->insert($<class_>$);
 #ifdef SWIFT_DEBUG
             $<class_>$->meStruct_ = me::functab->newStruct(*$3);
@@ -255,15 +261,15 @@ member_function
             switch ($2)
             {
                 case READER: 
-                    $<memberFunction_>$ = new Reader($3, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Reader($1, $3, symtab->class_, getKeyLine() );
                     break;
 
                 case WRITER: 
-                    $<memberFunction_>$ = new Writer($3, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Writer($1, $3, symtab->class_, getKeyLine() );
                     break;
 
                 case ROUTINE: 
-                    $<memberFunction_>$ = new Routine($3, symtab->class_, getKeyLine() );
+                    $<memberFunction_>$ = new Routine($1, $3, symtab->class_, getKeyLine() );
                     break;
 
                 default:
@@ -280,7 +286,7 @@ member_function
         }
     | simd_modifier OPERATOR operator
         {
-            $<memberFunction_>$ = new Operator( operatorToString($3), symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Operator( $1, operatorToString($3), symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')' arrow_return_type_list
@@ -291,7 +297,7 @@ member_function
         }
     | simd_modifier ASSIGN 
         {
-            $<memberFunction_>$ = new Assign(symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Assign($1, symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')'
@@ -302,7 +308,7 @@ member_function
         }
     | simd_modifier CREATE
         {
-            $<memberFunction_>$ = new Create(symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Create($1, symtab->class_, getKeyLine() );
             symtab->insert($<memberFunction_>$);
             symtab->class_->hasCreate_ = true;
         }
@@ -392,8 +398,8 @@ statement
     /*
         simd statements
     */
-    | SIMD_PREFIX expr EOL                          { $$ = new ExprStatement(true, $2, currentLine-1); }
-    | SIMD_PREFIX tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(true, '=', $2, $4, currentLine-1) }
+    | simd_prefix expr EOL                          { $$ = new ExprStatement($1, $2, currentLine-1); }
+    | simd_prefix tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement($1, '=', $2, $4, currentLine-1) }
 
     /*
         control flow statements
@@ -412,6 +418,20 @@ statement
     | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
     | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
     | CONTINUE  EOL { $$ = new CFStatement(CONTINUE, currentLine); }
+    ;
+
+/*
+    ***********
+    simd prefix
+    ***********
+*/
+
+simd_prefix
+    : SIMD '[' expr ',' expr ']' ':' { $$ = new SimdPrefix($3, $5, currentLine); } 
+    | SIMD '['      ',' expr ']' ':' { $$ = new SimdPrefix( 0, $4, currentLine); } 
+    | SIMD '[' expr ','      ']' ':' { $$ = new SimdPrefix($3,  0, currentLine); } 
+    | SIMD '['      ','      ']' ':' { $$ = new SimdPrefix( 0,  0, currentLine); } 
+    | SIMD                       ':' { $$ = new SimdPrefix( 0,  0, currentLine); } 
     ;
 
 /*

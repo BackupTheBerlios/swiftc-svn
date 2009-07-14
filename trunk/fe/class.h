@@ -57,6 +57,7 @@ struct Class : public Definition
      * if this is not the case a default constructor must be created artifically
      */
     bool hasCreate_;
+    bool simd_;
 
     enum DefaultCreate
     {
@@ -90,7 +91,7 @@ struct Class : public Definition
      * constructor and destructor
      */
 
-    Class(std::string* id, Symbol* parent, int line);
+    Class(bool simd, std::string* id, Symbol* parent, int line);
     virtual ~Class();
 
     /*

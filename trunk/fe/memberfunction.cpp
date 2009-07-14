@@ -40,8 +40,9 @@ namespace swift {
  * constructor and destructor
  */
 
-MemberFunction::MemberFunction(std::string* id, Symbol* parent, int line)
+MemberFunction::MemberFunction(bool simd, std::string* id, Symbol* parent, int line)
     : ClassMember(id, parent, line)
+    , simd_(simd)
     , rootScope_( new Scope(0) )
     , sig_( new Signature() )
 {}
@@ -133,8 +134,8 @@ bool MemberFunction::isTrivial() const
  * constructor
  */
 
-Method::Method(std::string* id, Symbol* parent, int line)
-    : MemberFunction(id, parent, line)
+Method::Method(bool simd, std::string* id, Symbol* parent, int line)
+    : MemberFunction(simd, id, parent, line)
 {}
 
 /*
@@ -170,8 +171,8 @@ BaseType* Method::createSelfType() const
  * constructor
  */
 
-Reader::Reader(std::string* id, Symbol* parent, int line)
-    : Method(id, parent, line)
+Reader::Reader(bool simd, std::string* id, Symbol* parent, int line)
+    : Method(simd, id, parent, line)
 {}
 
 /*
@@ -194,8 +195,8 @@ std::string Reader::qualifierString() const
  * constructor
  */
 
-Writer::Writer(std::string* id, Symbol* parent, int line)
-    : Method(id, parent, line)
+Writer::Writer(bool simd, std::string* id, Symbol* parent, int line)
+    : Method(simd, id, parent, line)
 {}
 
 /*
@@ -218,8 +219,8 @@ std::string Writer::qualifierString() const
  * constructor
  */
 
-Create::Create(Symbol* parent, int line /*= NO_LINE*/)
-    : Method( new std::string("create"), parent, line )
+Create::Create(bool simd, Symbol* parent, int line /*= NO_LINE*/)
+    : Method( simd, new std::string("create"), parent, line )
 {}
 
 /*
@@ -242,8 +243,8 @@ std::string Create::qualifierString() const
  * constructor
  */
 
-Assign::Assign(Symbol* parent, int line /*= NO_LINE*/)
-    : Method( new std::string("assign"), parent, line)
+Assign::Assign(bool simd, Symbol* parent, int line /*= NO_LINE*/)
+    : Method( simd, new std::string("assign"), parent, line)
 {}
 
 /*
@@ -285,8 +286,8 @@ std::string Assign::qualifierString() const
  * constructor
  */
 
-StaticMethod::StaticMethod(std::string* id, Symbol* parent, int line)
-    : MemberFunction(id, parent, line)
+StaticMethod::StaticMethod(bool simd, std::string* id, Symbol* parent, int line)
+    : MemberFunction(simd, id, parent, line)
 {}
 
 //------------------------------------------------------------------------------
@@ -295,8 +296,8 @@ StaticMethod::StaticMethod(std::string* id, Symbol* parent, int line)
  * constructor
  */
 
-Routine::Routine(std::string* id, Symbol* parent, int line)
-    : StaticMethod(id, parent, line)
+Routine::Routine(bool simd, std::string* id, Symbol* parent, int line)
+    : StaticMethod(simd, id, parent, line)
 {}
 
 /*
@@ -327,8 +328,8 @@ std::string Routine::qualifierString() const
  * constructor
  */
 
-Operator::Operator(std::string* id, Symbol* parent, int line)
-    : StaticMethod(id, parent, line)
+Operator::Operator(bool simd, std::string* id, Symbol* parent, int line)
+    : StaticMethod(simd, id, parent, line)
 {}
 
 /*

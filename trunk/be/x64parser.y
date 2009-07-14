@@ -55,7 +55,7 @@ using namespace be;
     me::Reload*      reload_;
     me::Spill*       spill_;
     me::Store*       store_;
-}
+};
 
 /*
     tokens
@@ -95,8 +95,6 @@ using namespace be;
 %token <reg_>    X64_REG_1 X64_REG_2 X64_REG_3 X64_REG_4
 %token <memVar_> X64_MEM_VAR
 
-%start instruction
-
 /*
     types
 */
@@ -104,6 +102,8 @@ using namespace be;
 %type <int_> bool_type int_type sint_no8_type sint_type uint_no8_type int8_type real_type int_or_bool_type any_type
 %type <assign_> add_or_mul cmp
 %type <reg_> any_reg
+
+%start instruction
 
 %% 
 

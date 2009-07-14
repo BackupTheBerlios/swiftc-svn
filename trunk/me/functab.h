@@ -105,6 +105,7 @@ struct Function
 
     bool ignore_; // TODO needed?
     bool isMain_;
+    bool vectorize_;
 
 #ifdef SWIFT_DEBUG
     static bool mainSet_;
@@ -117,7 +118,7 @@ struct Function
      * constructor and destructor
      */
 
-    Function(std::string* id, size_t stackPlaces, bool ignore);
+    Function(std::string* id, size_t stackPlaces, bool ignore, bool vectorize = false);
     ~Function();
 
     /*

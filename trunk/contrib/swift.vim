@@ -74,9 +74,9 @@ if exists("swift_symbol_operator")
   "syn match  swiftMatrixDelimiter	"[\d\+\.\.\d\+]"
 endif
 
-syn match  swiftNumber		"-\=\<\d\+\>"
-syn match  swiftFloat		"-\=\<\d\+\.\d\+\>"
-syn match  swiftFloat		"-\=\<\d\+\.\d\+[eE]-\=\d\+\>"
+syn match  swiftNumber		"-\=\<\d\+u\?s\?[bwdqx]\?\>"
+syn match  swiftFloat		"-\=\<\d\+\.\d\+[dq]\?\>"
+syn match  swiftFloat		"-\=\<\d\+\.\d\+[eE]-\=\d\+[dq]\?\>"
 syn match  swiftHexNumber	"\$[0-9a-fA-F]\+\>"
 
 if exists("swift_no_tabs")

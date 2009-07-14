@@ -17,36 +17,49 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_PARSER_H
-#define SWIFT_PARSER_H
+#ifndef SWIFT_SIMD_PREFIX_H
+#define SWIFT_SIMD_PREFIX_H
 
-extern "C" int swiftparse();
+#include "fe/syntaxtree.h"
 
 namespace swift {
 
-// it is important to declare all union members of YYSTYPE here
-class Class;
-class ClassMember;
-class Decl;
-class Definition;
+/*
+ * forward declarations
+ */
+
 class Expr;
-class ExprList;
-class MemberVar;
-class MemberFunction;
-class Module;
-class Param;
-class SimdPrefix;
-class Statement;
-class Tuple;
-class Type;
 
-//------------------------------------------------------------------------------
+class SimdPrefix : public Node
+{
+public:
 
-std::string* operatorToString(int _operator);
+    /*
+     * constructor and destructor
+     */
+
+    SimdPrefix(Expr* leftExpr_, Expr* rightExpr, int line);
+    virtual ~SimdPrefix();
+
+    /*
+     * further methods
+     */
+
+    bool analyze();
+    void genSSA();
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+
+private:
+
+    Expr* leftExpr_;
+    Expr* rightExpr_;
+};
 
 } // namespace swift
 
-// include auto generated parser header before tokens
-#include "parser.tab.hpp"
-
-#endif // SWIFT_PARSER_H
+#endif // SWIFT_SIMD_PREFIX_H

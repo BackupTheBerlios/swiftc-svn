@@ -56,7 +56,7 @@ public:
      * constructor and destructor
      */
 
-    MemberFunction(std::string* id, Symbol* parent, int line);
+    MemberFunction(bool simd, std::string* id, Symbol* parent, int line);
     virtual ~MemberFunction();
 
     /*
@@ -79,6 +79,7 @@ public:
      * data
      */
 
+    bool simd_;
     Statement* statements_;///< The statements_ inside this Proc.
     Scope* rootScope_;     ///< The root Scope where vars of this Proc are stored.
     Signature* sig_;       ///< The signature of this Method.
@@ -97,7 +98,7 @@ public:
      * constructor
      */
 
-    Method(std::string* id, Symbol* parent, int line);
+    Method(bool simd, std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -127,7 +128,7 @@ public:
      * constructor
      */
 
-    Reader(std::string* id, Symbol* parent, int line);
+    Reader(bool simd, std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -147,7 +148,7 @@ public:
      * constructor
      */
 
-    Writer(std::string* id, Symbol* parent, int line);
+    Writer(bool simd, std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -167,7 +168,7 @@ public:
      * constructor
      */
 
-    Create(Symbol* parent, int line = NO_LINE);
+    Create(bool simd, Symbol* parent, int line = NO_LINE);
 
     /*
      * virtual methods
@@ -187,7 +188,7 @@ public:
      * constructor 
      */
 
-    Assign(Symbol* parent, int line = NO_LINE);
+    Assign(bool simd, Symbol* parent, int line = NO_LINE);
 
     /*
      * virtual methods
@@ -208,7 +209,7 @@ public:
      * constructor
      */
 
-    StaticMethod(std::string* id, Symbol* parent, int line);
+    StaticMethod(bool simd, std::string* id, Symbol* parent, int line);
 };
 
 //------------------------------------------------------------------------------
@@ -221,7 +222,7 @@ public:
      * constructor
      */
 
-    Routine(std::string *id, Symbol* parent, int line);
+    Routine(bool simd, std::string *id, Symbol* parent, int line);
 
     /*
      * virtual methods
@@ -241,7 +242,7 @@ public:
      * constructor 
      */
 
-    Operator(std::string* id, Symbol* parent, int line);
+    Operator(bool simd, std::string* id, Symbol* parent, int line);
 
     /*
      * virtual methods

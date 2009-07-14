@@ -42,7 +42,7 @@ FuncTab* functab = 0;
  * constructor and destructor
  */
 
-Function::Function(std::string* id, size_t stackPlaces, bool ignore)
+Function::Function(std::string* id, size_t stackPlaces, bool ignore, bool vectorize /*= false*/)
     : id_(id)
     , ssaCounter_(0)
     , varCounter_(-1) // >= 0 is reserved for vars already in SSA form
@@ -53,6 +53,7 @@ Function::Function(std::string* id, size_t stackPlaces, bool ignore)
     , stackLayout_( new StackLayout(stackPlaces) )
     , ignore_(ignore)
     , isMain_(false)
+    , vectorize_(vectorize)
 {}
 
 Function::~Function()
@@ -467,8 +468,14 @@ void FunctionTable::buildUpME()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
-        CFG* cfg = iter->second->cfg_;
+        Function* function = iter->second;
+        CFG* cfg = function->cfg_;
         cfg->constructSSAForm();
+
+        if (function->vectorize_)
+        {
+            // TODO
+        }
     }
 }
 

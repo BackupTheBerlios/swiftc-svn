@@ -34,6 +34,7 @@ namespace swift {
 class Expr;
 class ExprList;
 class Local;
+class SimdPrefix;
 class Tuple;
 
 //------------------------------------------------------------------------------
@@ -69,14 +70,14 @@ struct Statement : public Node
  */
 struct ExprStatement : public Statement
 {
-    bool simd_;
+    SimdPrefix* simdPrefix_;
     Expr* expr_;
 
     /*
      * constructor and destructor
      */
 
-    ExprStatement(bool simd, Expr* expr, int line);
+    ExprStatement(SimdPrefix* simd, Expr* expr, int line);
     virtual ~ExprStatement();
 
     /*
@@ -135,7 +136,7 @@ private:
  */
 struct AssignStatement : public Statement
 {
-    bool simd_;
+    SimdPrefix* simdPrefix_;
 
     union
     {
@@ -150,7 +151,7 @@ struct AssignStatement : public Statement
      * constructor and destructor
      */
 
-    AssignStatement(bool simd, int kind, Tuple* tuple, ExprList* exprList, int line);
+    AssignStatement(SimdPrefix* simdPrefix, int kind, Tuple* tuple, ExprList* exprList, int line);
     virtual ~AssignStatement();
 
     /*

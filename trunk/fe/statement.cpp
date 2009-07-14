@@ -31,6 +31,7 @@
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
 #include "fe/memberfunction.h"
+#include "fe/simdprefix.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
 #include "fe/tuple.h"
@@ -65,20 +66,26 @@ Statement::~Statement()
  * constructor and destructor
  */
 
-ExprStatement::ExprStatement(bool simd, Expr* expr, int line)
+ExprStatement::ExprStatement(SimdPrefix* simdPrefix, Expr* expr, int line)
     : Statement(line)
-    , simd_(simd)
+    , simdPrefix_(simdPrefix)
     , expr_(expr)
 {}
 
 ExprStatement::~ExprStatement()
 {
+    delete simdPrefix_;
     delete expr_;
 }
 
 bool ExprStatement::analyze()
 {
-    return expr_->analyze();
+    bool result = true;
+
+    if (simdPrefix_)
+        result &= simdPrefix_->analyze();
+
+    return result & expr_->analyze();
 }
 
 //------------------------------------------------------------------------------
@@ -137,13 +144,13 @@ std::string DeclStatement::toString() const
  */
 
 AssignStatement::AssignStatement(
-        bool simd, 
+        SimdPrefix* simdPrefix, 
         int kind, 
         Tuple* tuple, 
         ExprList* exprList, 
         int line)
     : Statement(line)
-    , simd_(simd)
+    , simdPrefix_(simdPrefix)
     , kind_(kind)
     , tuple_(tuple)
     , exprList_(exprList)
@@ -151,6 +158,7 @@ AssignStatement::AssignStatement(
 
 AssignStatement::~AssignStatement()
 {
+    delete simdPrefix_;
     delete tuple_;
     delete exprList_;
 }
@@ -161,6 +169,11 @@ AssignStatement::~AssignStatement()
 
 bool AssignStatement::analyze()
 {
+    bool result = true;
+
+    if (simdPrefix_)
+        result &= simdPrefix_->analyze();
+
     if ( exprList_->moreThanOne() )
     {
         if ( tuple_->moreThanOne() )
@@ -177,9 +190,9 @@ bool AssignStatement::analyze()
     FunctionCall* fc = exprList_->getFunctionCall();
 
     if (fc)
-        return analyzeFunctionCall();
+        return result & analyzeFunctionCall();
     else
-        return analyzeAssignCreate();
+        return result & analyzeAssignCreate();
 }
 
 /*

@@ -42,8 +42,9 @@ namespace swift {
  * constructor and destructor
  */
 
-Class::Class(std::string* id, Symbol* parent, int line)
+Class::Class(bool simd, std::string* id, Symbol* parent, int line)
     : Definition(id, parent, line)
+    , simd_(simd)
     , defaultCreate_(DEFAULT_NONE)
     , copyCreate_(COPY_USER)
 {}
@@ -80,7 +81,7 @@ void Class::addDefaultCreate()
         */
         defaultCreate_ = DEFAULT_TRIVIAL;
 
-        create = new Create(this);
+        create = new Create(simd_, this);
         symtab->insert(create);
         create->statements_ = 0;
 
@@ -100,7 +101,7 @@ void Class::addCopyCreate()
     {
         copyCreate_ = COPY_AUTO;
 
-        create = new Create(this);
+        create = new Create(simd_, this);
         create->statements_ = 0;
         symtab->insert(create);
         symtab->insertInParam( new InParam(false, newType, new std::string("arg")) );
@@ -134,7 +135,7 @@ void Class::addAssignOperators()
 
         if (!assign)
         {
-            assign = new Assign(this);
+            assign = new Assign(simd_, this);
             assign->statements_ = 0;
             symtab->insert(assign);
 

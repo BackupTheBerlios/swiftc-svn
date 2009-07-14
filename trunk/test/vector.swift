@@ -46,6 +46,10 @@ simd class Vec3
 
         result = 0
 
+        simd{Vec3} vecs1 = 10000x
+        simd{Vec3} vecs2 = 10000x
+        simd{Vec3} vecs3 = 10000x
+
         # simd: vecs1 = vecs2 + vecs3
 
         # simd: vecs1 = Vec3::cross(vecs2, vecs3)
