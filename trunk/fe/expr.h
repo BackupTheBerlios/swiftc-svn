@@ -83,7 +83,6 @@ protected:
 
     bool neededAsLValue_;
     bool doNotLoadPtr_;
-    bool simd_;
 };
 
 //------------------------------------------------------------------------------

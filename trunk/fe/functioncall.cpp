@@ -107,7 +107,7 @@ CCall::~CCall()
 bool CCall::analyze()
 {
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList() 
+        ? exprList_->getTypeList(simd_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     if ( returnType_ && !returnType_->validate() )
@@ -218,7 +218,7 @@ bool RoutineCall::analyze()
         return false;
 
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList() 
+        ? exprList_->getTypeList(simd_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     if (classId_)
@@ -305,7 +305,7 @@ bool BinExpr::analyze()
     if ( !tuple_ && !exprList_->analyze() )
             return false;
 
-    TypeList argTypeList = exprList_->getTypeList();
+    TypeList argTypeList = exprList_->getTypeList(simd_);
 
     const Ptr* ptr1 = dynamic_cast<const Ptr*>( op1_->getType() );
     const Ptr* ptr2 = dynamic_cast<const Ptr*>( op2_->getType() );
@@ -316,10 +316,10 @@ bool BinExpr::analyze()
         return false;
     }
 
-    swiftAssert( typeid(*op1_->getType()) == typeid(BaseType), "must be a BaseType here" );
-    swiftAssert( typeid(*op2_->getType()) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*argTypeList[0]) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*argTypeList[1]) == typeid(BaseType), "must be a BaseType here" );
 
-    const BaseType* bt1 = (const BaseType*) op1_->getType();
+    const BaseType* bt1 = (const BaseType*) argTypeList[0];
 
     std::string* opString = operatorToString(kind_);
     MemberFunction* memberFunction = symtab->lookupMemberFunction(
@@ -330,7 +330,7 @@ bool BinExpr::analyze()
     if (!memberFunction)
         return false;
 
-    if ( op1_->getType()->isAtomic() )
+    if ( argTypeList[0]->isAtomic() )
     {
         // find first out parameter and clone this type
         type_ = memberFunction->sig_->getOut()[0]->varClone();
@@ -420,7 +420,7 @@ MethodCall::~MethodCall()
 bool MethodCall::analyze()
 {
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList() 
+        ? exprList_->getTypeList(simd_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     me::Reg* self;

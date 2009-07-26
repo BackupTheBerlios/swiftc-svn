@@ -303,8 +303,8 @@ bool AssignStatement::analyzeAssignCreate()
     if (!result)
         return false;
 
-    TypeList in = exprList_->getTypeList();
-    TypeList out = tuple_->getTypeList();
+    TypeList in = exprList_->getTypeList(simdPrefix_);
+    TypeList out = tuple_->getTypeList(simdPrefix_);
     
     if ( out[0]->isNonInnerBuiltin() )
     {

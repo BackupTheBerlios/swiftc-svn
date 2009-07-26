@@ -22,6 +22,7 @@
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/functioncall.h"
+#include "fe/type.h"
 
 namespace swift {
 
@@ -62,12 +63,18 @@ bool ExprList::analyze()
  * further methods
  */
 
-TypeList ExprList::getTypeList() const
+TypeList ExprList::getTypeList(bool simd) const
 {
     TypeList result;
 
     for (const ExprList* iter = this; iter != 0; iter = iter->next_)
-        result.push_back( iter->expr_->getType() );
+    {
+        const Type* type = iter->expr_->getType();
+        if ( simd && typeid(*type) == typeid(Simd) )
+            type = ((const NestedType*) type)->getInnerType();
+
+        result.push_back(type);
+    }
 
     return result;
 }

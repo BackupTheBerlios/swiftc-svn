@@ -22,6 +22,7 @@
 #include "fe/access.h"
 #include "fe/expr.h"
 #include "fe/exprlist.h"
+#include "fe/type.h"
 
 namespace swift {
 
@@ -67,12 +68,18 @@ bool Tuple::analyze()
  * further methods
  */
 
-TypeList Tuple::getTypeList() const
+TypeList Tuple::getTypeList(bool simd) const
 {
     TypeList result;
 
     for (const Tuple* iter = this; iter != 0; iter = iter->next_)
-        result.push_back( iter->typeNode_->getType() );
+    {
+        const Type* type = iter->typeNode_->getType();
+        if ( simd && typeid(*type) == typeid(Simd))
+            type = ((const NestedType*) type)->getInnerType();
+
+        result.push_back(type);
+    }
 
     return result;
 }

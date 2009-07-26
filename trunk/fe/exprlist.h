@@ -64,7 +64,7 @@ public:
      * further methods
      */
 
-    TypeList getTypeList() const;
+    TypeList getTypeList(bool simd) const;
     PlaceList getPlaceList();
     int getModifier() const;
     FunctionCall* getFunctionCall();

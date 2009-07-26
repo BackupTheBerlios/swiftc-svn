@@ -63,7 +63,7 @@ public:
      */
 
     PlaceList getPlaceList();
-    TypeList getTypeList() const;
+    TypeList getTypeList(bool simd) const;
     const Tuple* next() const;
     Tuple* next();
     const TypeNode* typeNode() const;
