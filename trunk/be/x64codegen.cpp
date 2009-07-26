@@ -364,7 +364,7 @@ void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
         {
             swiftAssert(srcReg->isSpilled(), "must be spilled, too");
             spilled = true;
-            std::cout << "TODO" << std::endl;
+            std::cout << "spill TODO" << std::endl;
         }
 
         // is this a pointless definition? (should be optimized away)

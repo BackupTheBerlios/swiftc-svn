@@ -7,7 +7,7 @@ class SDL_VideoInfo
 end
 
 class App
-    # This is our SDL surface
+    # this is our SDL surface
     ptr{SDL_Surface} surface
 
     # rotational vars for the triangle and quad, respectively 

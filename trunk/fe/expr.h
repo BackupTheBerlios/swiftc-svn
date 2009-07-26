@@ -83,6 +83,7 @@ protected:
 
     bool neededAsLValue_;
     bool doNotLoadPtr_;
+    bool simd_;
 };
 
 //------------------------------------------------------------------------------
@@ -185,48 +186,6 @@ struct UnExpr : public Expr
     virtual std::string toString() const;
     virtual bool analyze();
     virtual void genSSA();
-};
-
-//------------------------------------------------------------------------------
-
-/**
- * @brief This class represents a binary expression. 
- *
- * This is either 
- * * +, -, *, /, MOD, DIV, AND, OR, XOR, <, >, <=, >=, ==, or <>. TODO
- */
-struct BinExpr : public Expr
-{
-    union
-    {
-        int kind_;
-        char c_;
-    };
-
-    Expr* op1_;
-    Expr* op2_;
-
-    /*
-     * constructor and destructor
-     */
-
-    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE);
-    virtual ~BinExpr();
-
-    /*
-     * virtual methods
-     */
-
-    virtual std::string toString() const;
-    virtual bool analyze();
-    virtual void genSSA();
-
-    /*
-     * further methods
-     */
-
-    std::string getExprName() const;
-    std::string getOpString() const;
 };
 
 //------------------------------------------------------------------------------

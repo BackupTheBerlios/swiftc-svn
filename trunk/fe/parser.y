@@ -230,7 +230,6 @@ class_definition
         {
             $$ = $<class_>5;
             $<class_>$->classMember_= $6;
-            /*$<class_>$->autoGenMethods();*/
         }
     ;
 
@@ -392,8 +391,8 @@ statement
         basic statements
     */
     : decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
-    | expr EOL                          { $$ = new ExprStatement(false, $1, currentLine-1); }
-    | tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(false, '=', $1, $3, currentLine-1) }
+    | expr EOL                          { $$ = new ExprStatement(0, $1, currentLine-1); }
+    | tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(0, '=', $1, $3, currentLine-1) }
 
     /*
         simd statements

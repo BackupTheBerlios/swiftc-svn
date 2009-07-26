@@ -126,4 +126,10 @@ const ExprList* ExprList::next() const
     return next_;
 }
 
+void ExprList::setSimd() 
+{
+    for (ExprList* iter = this; iter != 0; iter = iter->next_)
+        iter->expr_->setSimd();
+}
+
 } // namespace swift

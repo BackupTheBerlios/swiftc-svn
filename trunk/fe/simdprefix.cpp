@@ -50,6 +50,9 @@ bool SimdPrefix::analyze()
 {
     bool result = true;
 
+    // TODO get bounds for 0 left/rigt expressions
+    swiftAssert(leftExpr_ && rightExpr_, "TODO");
+
     if (leftExpr_)
         result &= leftExpr_->analyze();
 
@@ -70,8 +73,6 @@ bool SimdPrefix::analyze()
         errorf(line_, "type of the right expression must be of type 'index'");
         return false;
     }
-
-    // TODO get bounds for 0 left/rigt expressions
 
     genSSA();
 

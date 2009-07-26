@@ -73,6 +73,7 @@ public:
     const Expr* getExpr() const;
     ExprList* next();
     const ExprList* next() const;
+    void setSimd();
 
 private:
 

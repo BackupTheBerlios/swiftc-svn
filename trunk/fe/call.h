@@ -53,7 +53,7 @@ public:
      * further methods
      */
 
-    bool emitCall();
+    void emitCall();
 
     me::Var* getPrimaryPlace();
     Type* getPrimaryType();

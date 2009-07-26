@@ -26,6 +26,7 @@
 
 #include "utils/assert.h"
 
+#include "fe/call.h"
 #include "fe/class.h"
 #include "fe/error.h"
 #include "fe/exprlist.h"
@@ -445,138 +446,6 @@ std::string UnExpr::toString() const
 {
     std::string* opString = operatorToString(kind_);
     std::string result = *opString + " " + op_->toString();
-    delete opString;
-
-    return result;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, int line /*= NO_LINE*/)
-    : Expr(line)
-    , kind_(kind)
-    , op1_(op1)
-    , op2_(op2)
-{}
-
-BinExpr::~BinExpr()
-{
-    delete op1_;
-    delete op2_;
-}
-
-/*
- * further methods
- */
-
-std::string BinExpr::getExprName() const
-{
-    if (c_ == '[')
-        return "index expression";
-
-    return "binary expression";
-}
-
-std::string BinExpr::getOpString() const
-{
-    std::ostringstream oss;
-    if (c_ == '[')
-        oss << "[";
-    else
-        oss << " " << c_ << " ";
-
-    return oss.str();
-}
-
-bool BinExpr::analyze()
-{
-    if ( neededAsLValue_ )
-    {
-        errorf(line_, "lvalue required as left operand of assignment");
-        return false;
-    }
-
-    // return false when syntax is wrong
-    if ( !op1_->analyze() | !op2_->analyze() ) // analyze both ops in all cases
-        return false;
-
-    const Ptr* ptr1 = dynamic_cast<const Ptr*>( op1_->getType() );
-    const Ptr* ptr2 = dynamic_cast<const Ptr*>( op2_->getType() );
-
-    if ( ptr1 || ptr2 )
-    {
-        errorf( op1_->line_, "%s used with pointer type", getExprName().c_str() );
-        return false;
-    }
-
-    swiftAssert( typeid(*op1_->getType()) == typeid(BaseType), "must be a BaseType here" );
-    swiftAssert( typeid(*op2_->getType()) == typeid(BaseType), "must be a BaseType here" );
-
-    const BaseType* bt1 = (const BaseType*) op1_->getType();
-
-    // check whether there is an operator which fits
-    TypeList argTypeList;
-    argTypeList.push_back(op1_->getType());
-    argTypeList.push_back(op2_->getType());
-
-    std::string* opString = operatorToString(kind_);
-    MemberFunction* memberFunction = symtab->lookupMemberFunction(
-            symtab->lookupClass(bt1->getId()), opString, argTypeList, line_);
-
-    delete opString;
-
-    if (!memberFunction)
-        return false;
-
-    // find first out parameter and clone this type
-    type_ = memberFunction->sig_->getOut()[0]->varClone();
-
-    genSSA();
-
-    return true;
-}
-
-void BinExpr::genSSA()
-{
-    me::Var* var = type_->createVar();
-    place_ = var;
-    int kind;
-
-    switch (kind_)
-    {
-        case EQ_OP:
-            kind = me::AssignInstr::EQ;
-            break;
-        case NE_OP:
-            kind = me::AssignInstr::NE;
-            break;
-        case LE_OP:
-            kind = me::AssignInstr::LE;
-            break;
-        case GE_OP:
-            kind = me::AssignInstr::GE;
-            break;
-        default:
-            kind = kind_;
-    }
-
-    if ( op1_->getType()->isAtomic() )
-    {
-        me::functab->appendInstr( 
-                new me::AssignInstr(kind, var, op1_->getPlace(), op2_->getPlace()) );
-    }
-    else
-        swiftAssert(false, "TODO");
-}
-
-std::string BinExpr::toString() const
-{
-    std::string* opString = operatorToString(kind_);
-    std::string result = op1_->toString() + " " + *opString + " " + op2_->toString();
     delete opString;
 
     return result;

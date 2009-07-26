@@ -83,7 +83,10 @@ bool ExprStatement::analyze()
     bool result = true;
 
     if (simdPrefix_)
+    {
+        expr_->setSimd();
         result &= simdPrefix_->analyze();
+    }
 
     return result & expr_->analyze();
 }
@@ -172,7 +175,11 @@ bool AssignStatement::analyze()
     bool result = true;
 
     if (simdPrefix_)
+    {
+        exprList_->setSimd();
+        tuple_->setSimd();
         result &= simdPrefix_->analyze();
+    }
 
     if ( exprList_->moreThanOne() )
     {
@@ -258,6 +265,14 @@ bool AssignStatement::analyzeFunctionCall()
 
     if ( !((Expr*) fc)->analyze() )
         return false;
+
+    //TypeList out = tuple_->getTypeList();
+
+    //if ( out[0]->isAtomic() )
+        //atomicAssignment();
+
+    //if ( !exprList_->moreThanOne() )
+        //tuple_->emitStoreIfApplicable( exprList_->getExpr() );
 
     tuple_->emitStoreIfApplicable(fc);
 
@@ -354,7 +369,7 @@ bool AssignStatement::analyzeAssignCreate()
 
             return true;
         }
-    }
+    } // if isNonInnerBuiltin
 
     const BaseType* bt = (const BaseType*) out[0];
     Class* _class = bt->lookupClass();

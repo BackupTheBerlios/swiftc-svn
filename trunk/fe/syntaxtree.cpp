@@ -113,6 +113,16 @@ TypeNode::~TypeNode()
 }
 
 /*
+ * virtual methods
+ */
+
+void TypeNode::setSimd()
+{
+    simd_ = true;
+}
+
+
+/*
  * further methods
  */
 

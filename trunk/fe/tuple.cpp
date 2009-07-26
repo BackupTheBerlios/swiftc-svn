@@ -132,4 +132,10 @@ void Tuple::emitStoreIfApplicable(Expr* expr)
         access->emitStoreIfApplicable(expr);
 }
 
+void Tuple::setSimd()
+{
+    for (Tuple* iter = this; iter != 0; iter = iter->next_)
+        iter->typeNode_->setSimd();
+}
+
 } // namespace swift

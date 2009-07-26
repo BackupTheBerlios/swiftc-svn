@@ -125,6 +125,7 @@ public:
      */
     
     virtual bool analyze() = 0;
+    void setSimd();
 
     /*
      * further methods
@@ -134,6 +135,7 @@ public:
     const me::Op* getPlace() const;
     me::Op* getPlace();
     bool isStoreNecessary() const;
+    bool simd_;
 
 protected:
 

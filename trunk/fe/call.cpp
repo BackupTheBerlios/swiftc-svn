@@ -19,6 +19,7 @@
 
 #include "fe/call.h"
 
+#include "fe/class.h"
 #include "fe/expr.h"
 #include "fe/exprlist.h"
 #include "fe/signature.h"
@@ -26,6 +27,8 @@
 #include "fe/tuple.h"
 #include "fe/type.h"
 #include "fe/var.h"
+
+#include "me/struct.h"
 
 namespace swift {
 
@@ -43,7 +46,7 @@ Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig)
  * further methods
  */
 
-bool Call::emitCall()
+void Call::emitCall()
 {
     /*
      * fill in_ and out_
@@ -86,24 +89,39 @@ bool Call::emitCall()
             const Param* param = sig_->getOutParam(i);
 
             // create place to hold the result and init with undef
-#ifdef SWIFT_DEBUG
-            std::string resStr = std::string("res");
-            me::Reg* res = me::functab->newReg( param->getType()->toMeType(), &resStr );
-#else // SWIFT_DEBUG
-            me::Reg* res = me::functab->newReg( param->getType()->toMeType() );
-#endif // SWIFT_DEBUG
-
-            me::AssignInstr* ai = new me::AssignInstr(
-                    '=', res, me::functab->newUndef(res->type_) );
-            me::functab->appendInstr(ai);
-
             if ( param->getType()->isAtomic() )
             {
                 // -> this one is an ordinary out-param
+#ifdef SWIFT_DEBUG
+                std::string resStr = std::string("res");
+                me::Reg* res = me::functab->newReg( param->getType()->toMeType(), &resStr );
+#else // SWIFT_DEBUG
+                me::Reg* res = me::functab->newReg( param->getType()->toMeType() );
+#endif // SWIFT_DEBUG
+
+                me::AssignInstr* ai = new me::AssignInstr(
+                        '=', res, me::functab->newUndef(res->type_) );
+                me::functab->appendInstr(ai);
+
                 out_.push_back(res);
             }
             else
             {
+                swiftAssert( typeid(*param->getType()) == typeid(BaseType), 
+                        "must be a BaseType here"); // TODO container
+                BaseType* bt = (BaseType*) param->getType();
+                me::Struct* _struct = bt->lookupClass()->meStruct_;
+#ifdef SWIFT_DEBUG
+                std::string resStr = std::string("res");
+                me::MemVar* res = me::functab->newMemVar(_struct, &resStr );
+#else // SWIFT_DEBUG
+                me::MemVar* res = me::functab->newMemVar(_struct);
+#endif // SWIFT_DEBUG
+
+                me::AssignInstr* ai = new me::AssignInstr(
+                        '=', res, me::functab->newUndef(res->type_) );
+                me::functab->appendInstr(ai);
+
 #ifdef SWIFT_DEBUG
                 std::string tmpStr = std::string("p_res");
                 me::Reg* tmp = me::functab->newReg(me::Op::R_PTR, &tmpStr);
@@ -142,7 +160,7 @@ bool Call::emitCall()
 
     me::functab->appendInstr(call); 
 
-    return true;
+    return;
 }
 
 me::Var* Call::getPrimaryPlace()

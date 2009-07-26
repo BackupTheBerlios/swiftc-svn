@@ -172,11 +172,21 @@ std::string CCall::toString() const
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
+ * constructor
  */
 
 MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int line)
     : FunctionCall(id, exprList, line)
+{}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+StaticMethodCall::StaticMethodCall(std::string* id, ExprList* exprList, int line)
+    : MemberFunctionCall(id, exprList, line)
 {}
 
 //------------------------------------------------------------------------------
@@ -189,7 +199,7 @@ RoutineCall::RoutineCall(std::string* classId,
                          std::string* id, 
                          ExprList* exprList, 
                          int line)
-    : MemberFunctionCall(id, exprList, line)
+    : StaticMethodCall(id, exprList, line)
     , classId_(classId)
 {}
 
@@ -204,11 +214,8 @@ RoutineCall::~RoutineCall()
 
 bool RoutineCall::analyze()
 {
-    if (!tuple_)
-    {
-        if ( exprList_ && !exprList_->analyze() )
-            return false;
-    }
+    if ( !tuple_ && exprList_ && !exprList_->analyze() )
+        return false;
 
     TypeList argTypeList = exprList_ 
         ? exprList_->getTypeList() 
@@ -234,9 +241,7 @@ bool RoutineCall::analyze()
         return false;
 
     Call call(exprList_, tuple_, memberFunction_->sig_);
-
-    if ( !call.emitCall() )
-        return false;
+    call.emitCall();
 
     if (!tuple_)
     {
@@ -244,8 +249,6 @@ bool RoutineCall::analyze()
         place_ = call.getPrimaryPlace();
         type_ = call.getPrimaryType();
     }
-    //else
-        //tuple_->emitStoreIfApplicable(this);
 
     return true;
 }
@@ -253,6 +256,145 @@ bool RoutineCall::analyze()
 std::string RoutineCall::toString() const
 {
     return *classId_ + "::" + callToString();
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, int line /*= NO_LINE*/)
+    : StaticMethodCall( 0, new ExprList(0, op1, new ExprList(0, op2, 0)), line )
+    , kind_(kind)
+    , op1_(op1)
+    , op2_(op2)
+{}
+
+/*
+ * further methods
+ */
+
+std::string BinExpr::getExprName() const
+{
+    if (c_ == '[')
+        return "index expression";
+
+    return "binary expression";
+}
+
+std::string BinExpr::getOpString() const
+{
+    std::ostringstream oss;
+    if (c_ == '[')
+        oss << "[";
+    else
+        oss << " " << c_ << " ";
+
+    return oss.str();
+}
+
+bool BinExpr::analyze()
+{
+    if ( neededAsLValue_ )
+    {
+        errorf(line_, "lvalue required as left operand of assignment");
+        return false;
+    }
+
+    if ( !tuple_ && !exprList_->analyze() )
+            return false;
+
+    TypeList argTypeList = exprList_->getTypeList();
+
+    const Ptr* ptr1 = dynamic_cast<const Ptr*>( op1_->getType() );
+    const Ptr* ptr2 = dynamic_cast<const Ptr*>( op2_->getType() );
+
+    if ( ptr1 || ptr2 )
+    {
+        errorf( op1_->line_, "%s used with pointer type", getExprName().c_str() );
+        return false;
+    }
+
+    swiftAssert( typeid(*op1_->getType()) == typeid(BaseType), "must be a BaseType here" );
+    swiftAssert( typeid(*op2_->getType()) == typeid(BaseType), "must be a BaseType here" );
+
+    const BaseType* bt1 = (const BaseType*) op1_->getType();
+
+    std::string* opString = operatorToString(kind_);
+    MemberFunction* memberFunction = symtab->lookupMemberFunction(
+            symtab->lookupClass(bt1->getId()), opString, argTypeList, line_);
+
+    delete opString;
+
+    if (!memberFunction)
+        return false;
+
+    if ( op1_->getType()->isAtomic() )
+    {
+        // find first out parameter and clone this type
+        type_ = memberFunction->sig_->getOut()[0]->varClone();
+
+        me::Var* var = type_->createVar();
+        place_ = var;
+        int kind;
+
+        switch (kind_)
+        {
+            case EQ_OP:
+                kind = me::AssignInstr::EQ;
+                break;
+            case NE_OP:
+                kind = me::AssignInstr::NE;
+                break;
+            case LE_OP:
+                kind = me::AssignInstr::LE;
+                break;
+            case GE_OP:
+                kind = me::AssignInstr::GE;
+                break;
+            default:
+                kind = kind_;
+        }
+
+        me::functab->appendInstr( 
+                new me::AssignInstr(kind, var, op1_->getPlace(), op2_->getPlace()) );
+
+        if ( tuple_ && !tuple_->typeNode()->isStoreNecessary() )
+        {
+            swiftAssert( dynamic_cast<me::Var*>(tuple_->getPlaceList()[0]), 
+                    "must be a Var here" );
+            me::Var* lhsPlace = (me::Var*) tuple_->getPlaceList()[0];
+            me::functab->appendInstr( new me::AssignInstr('=', lhsPlace, place_) );
+        }
+
+        return true;
+    }
+    // else
+
+    Call call(exprList_, tuple_, memberFunction->sig_);
+    call.emitCall();
+
+    if (!tuple_)
+    {
+        // set place and type as it is needed by the parent expr
+        place_ = call.getPrimaryPlace();
+        type_ = call.getPrimaryType();
+    }
+
+    return true;
+}
+
+void BinExpr::genSSA()
+{}
+
+std::string BinExpr::toString() const
+{
+    std::string* opString = operatorToString(kind_);
+    std::string result = op1_->toString() + " " + *opString + " " + op2_->toString();
+    delete opString;
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -346,20 +488,15 @@ bool MethodCall::analyze()
         self = ((Method*) memberFunction_)->self_;
     }
 
-    if (!tuple_)
-    {
-        if ( exprList_ && !exprList_->analyze() )
-            return false;
-    }
+    if ( !tuple_ && exprList_ && !exprList_->analyze() )
+        return false;
 
     if (!memberFunction_)
         return false;
 
     Call call(exprList_, tuple_, memberFunction_->sig_);
     call.addSelf(self);
-
-    if ( !call.emitCall() )
-        return false;
+    call.emitCall();
 
     if (!tuple_)
     {

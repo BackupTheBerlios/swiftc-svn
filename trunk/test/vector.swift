@@ -4,6 +4,9 @@ simd class Vec3
     real y
     real z
 
+    create ()
+    end
+
     create (real x, real y, real z)
         .x = x
         .y = y
@@ -34,11 +37,12 @@ simd class Vec3
         result.z = v1.x * v2.y - v1.y * v2.x
     end
 
-
     routine main() -> int result
         Vec3 v1 =  1.0, 2.0,  3.0
         Vec3 v2 = -2.0, 1.5, -3.0
-        Vec3 v3 = Vec3::cross(v1, v2) # yields -10.5, -3, 5.5
+        # Vec3 v3 = Vec3::cross(v1, v2) # yields -10.5, -3, 5.5
+        Vec3 v3
+        v3 = v1 + v2
 
         c_call print_float(v3.x)
         c_call print_float(v3.y)
@@ -46,9 +50,9 @@ simd class Vec3
 
         result = 0
 
-        simd{Vec3} vecs1 = 10000x
-        simd{Vec3} vecs2 = 10000x
-        simd{Vec3} vecs3 = 10000x
+        # simd{Vec3} vecs1 = 10000x
+        # simd{Vec3} vecs2 = 10000x
+        # simd{Vec3} vecs3 = 10000x
 
         # simd: vecs1 = vecs2 + vecs3
 

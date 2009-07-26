@@ -129,7 +129,20 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class RoutineCall : public MemberFunctionCall
+class StaticMethodCall : public MemberFunctionCall
+{
+public:
+
+    /*
+     * constructor 
+     */
+
+    StaticMethodCall(std::string* id, ExprList* exprList, int line);
+};
+
+//------------------------------------------------------------------------------
+
+class RoutineCall : public StaticMethodCall
 {
 public:
 
@@ -160,6 +173,46 @@ private:
     std::string* classId_;
 };
 
+//------------------------------------------------------------------------------
+
+/**
+ * @brief This class represents a binary expression. 
+ *
+ * This is either 
+ * * +, -, *, /, MOD, DIV, AND, OR, XOR, <, >, <=, >=, ==, or <>. TODO
+ */
+struct BinExpr : public StaticMethodCall
+{
+    union
+    {
+        int kind_;
+        char c_;
+    };
+
+    Expr* op1_;
+    Expr* op2_;
+
+    /*
+     * constructor
+     */
+
+    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE);
+
+    /*
+     * virtual methods
+     */
+
+    virtual std::string toString() const;
+    virtual bool analyze();
+    virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    std::string getExprName() const;
+    std::string getOpString() const;
+};
 
 //------------------------------------------------------------------------------
 

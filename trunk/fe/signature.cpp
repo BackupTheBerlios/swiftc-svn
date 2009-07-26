@@ -103,10 +103,7 @@ bool Signature::checkOut(const TypeList& out) const
 
 bool Signature::check(const TypeList& in, const TypeList& out) const
 {
-    if ( checkIn(in) && checkOut(out) )
-        return true;
-
-    return false;
+    return checkIn(in) && checkOut(out);
 }
 
 bool Signature::check(const Signature* sig)
