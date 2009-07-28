@@ -391,7 +391,8 @@ Reg* Reg::toSimd(Vectorizer* vectorizer) const
     // else
 
 #ifdef SWIFT_DEBUG
-    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_), new std::string("s_" + id_) );
+    std::string simdStr = "s_" + id_;
+    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_), &simdStr );
 #else // SWIFT_DEBUG
     Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_) );
 #endif // SWIFT_DEBUG
@@ -465,7 +466,8 @@ MemVar* MemVar::toSimd(Vectorizer* vectorizer) const
     // else
 
 #ifdef SWIFT_DEBUG
-    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd(), new std::string("s_" + id_) );
+    std::string simdStr = "s_" + id_;
+    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd(), &simdStr );
 #else // SWIFT_DEBUG
     //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd() );
 #endif // SWIFT_DEBUG
