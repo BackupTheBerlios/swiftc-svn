@@ -29,10 +29,12 @@
 #include "utils/stringhelper.h"
 
 #include "me/arch.h"
+#include "me/cfg.h"
 #include "me/functab.h"
 #include "me/op.h"
 #include "me/offset.h"
 #include "me/struct.h"
+#include "me/vectorizer.h"
 
 namespace me {
 
@@ -302,9 +304,33 @@ LabelInstr::LabelInstr()
  * virtual methods
  */
 
-LabelInstr* LabelInstr::toSimd() const
+LabelInstr* LabelInstr::toSimd(Vectorizer* vectorizer) const
 {
-    return new LabelInstr();
+    LabelInstr* newLabel;
+    //InstrNode* src = vectorizer->currentInstrNode_;
+
+    // is special last label?
+    if ( vectorizer->function()->lastLabelNode_->value_ == this )
+    {
+        // yes -> use simdFunction_'s last label
+        InstrNode* dst;
+        dst = vectorizer->simdFunction_->lastLabelNode_;
+        newLabel = (LabelInstr*) dst->value_;
+        //std::cout << "fjdkfjdk" << std::endl;
+    }
+    else
+    {
+        // no -> create a new one
+        newLabel = new LabelInstr();
+        //dst = new InstrNode(newLabel);
+    }
+
+    //vectorizer->src2dstLabel_[src] = dst;
+    //vectorizer->dst2srcLabel_[dst] = src;
+
+    //vectorizer->currentBB_ = vectorizer->cfg()->labelNode2BBNode_[src];
+
+    return newLabel;
 }
 
 std::string LabelInstr::toString() const
@@ -337,9 +363,9 @@ NOP::NOP(Op* op)
  * virtual methods
  */
 
-NOP* NOP::toSimd() const
+NOP* NOP::toSimd(Vectorizer* vectorizer) const
 {
-    return new NOP( arg_[0].op_->toSimd() );
+    return new NOP( arg_[0].op_->toSimd(vectorizer) );
 }
 
 std::string NOP::toString() const
@@ -396,7 +422,7 @@ int PhiInstr::oldResultNr() const
  * virtual methods
  */
 
-PhiInstr* PhiInstr::toSimd() const
+PhiInstr* PhiInstr::toSimd(Vectorizer* vectorizer) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -455,23 +481,23 @@ AssignInstr::AssignInstr(int kind)
  * virtual methods
  */
 
-AssignInstr* AssignInstr::toSimd() const
+AssignInstr* AssignInstr::toSimd(Vectorizer* vectorizer) const
 {
     AssignInstr* simdAssign; 
 
     if ( arg_.size() == 1 )
     {
         simdAssign = new AssignInstr(kind_, 
-                res_[0].var_->toSimd(), 
-                arg_[0]. op_->toSimd() );
+                res_[0].var_->toSimd(vectorizer), 
+                arg_[0]. op_->toSimd(vectorizer) );
     }
     else
     {
         swiftAssert( arg_.size() == 2, "must exactly have two arguments" );
         simdAssign = new AssignInstr(kind_, 
-                res_[0].var_->toSimd(), 
-                arg_[0]. op_->toSimd(),
-                arg_[1]. op_->toSimd() );
+                res_[0].var_->toSimd(vectorizer), 
+                arg_[0]. op_->toSimd(vectorizer),
+                arg_[1]. op_->toSimd(vectorizer) );
     }
 
     return simdAssign;
@@ -646,7 +672,7 @@ const LabelInstr* GotoInstr::label() const
  * virtual methods
  */
 
-GotoInstr* GotoInstr::toSimd() const
+GotoInstr* GotoInstr::toSimd(Vectorizer* vectorizer) const
 {
     // result must substitute target with proper mapped one
     return new GotoInstr( instrTargets_[0] );
@@ -720,7 +746,7 @@ const Op* BranchInstr::getOp() const
  * virtual methods
  */
 
-BranchInstr* BranchInstr::toSimd() const
+BranchInstr* BranchInstr::toSimd(Vectorizer* vectorizer) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -756,7 +782,7 @@ Spill::Spill(Var* result, Var* arg)
  * virtual methods
  */
 
-Spill* Spill::toSimd() const
+Spill* Spill::toSimd(Vectorizer* vectorizer) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -806,7 +832,7 @@ Reload::Reload(Var* result, Var* arg)
  * virtual methods
  */
 
-Reload* Reload::toSimd() const
+Reload* Reload::toSimd(Vectorizer* vectorizer) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -866,11 +892,16 @@ Load::~Load()
  * virtual methods
  */
 
-Load* Load::toSimd() const
+Load* Load::toSimd(Vectorizer* vectorizer) const
 {
-    // TODO
-    //return new Load();
-    return 0;
+    Reg* index = (arg_.size() == 2) 
+               ? (Reg*) arg_[1].op_->toSimd(vectorizer) 
+               : 0;
+
+    return new Load( res_[0].var_->toSimd(vectorizer), 
+                     (Var*) arg_[0].op_->toSimd(vectorizer), 
+                     index, 
+                     offset_->toSimd() );
 }
 
 std::string Load::toString() const
@@ -934,9 +965,9 @@ LoadPtr::~LoadPtr()
  * virtual methods
  */
 
-LoadPtr* LoadPtr::toSimd() const
+LoadPtr* LoadPtr::toSimd(Vectorizer* vectorizer) const
 {
-    // TODO
+    swiftAssert(false, "TODO");
     return 0;
 }
 
@@ -1010,10 +1041,16 @@ Store::~Store()
  * virtual methods
  */
 
-Store* Store::toSimd() const
+Store* Store::toSimd(Vectorizer* vectorizer) const
 {
-    // TODO
-    return 0;
+    Reg* index = (arg_.size() == 3) 
+               ? (Reg*) arg_[2].op_->toSimd(vectorizer) 
+               : 0;
+
+    return new Store( arg_[0].op_->toSimd(vectorizer),
+                      (Var*) arg_[1].op_->toSimd(vectorizer), 
+                      index, 
+                      offset_->toSimd() );
 }
 
 std::string Store::toString() const
@@ -1073,10 +1110,13 @@ SetParams::SetParams(size_t numLhs)
  * virtual methods
  */
 
-SetParams* SetParams::toSimd() const
+SetParams* SetParams::toSimd(Vectorizer* vectorizer) const
 {
-    // TODO
-    return 0;
+    SetParams* setParams = new SetParams( res_.size() );
+    for (size_t i = 0; i < res_.size(); ++i)
+        setParams->res_[i] = Res(res_[i].var_->toSimd(vectorizer));//, res_[i].oldVarNr_);
+
+    return setParams;
 }
 
 std::string SetParams::toString() const
@@ -1103,7 +1143,7 @@ SetResults::SetResults(size_t numRhs)
  * virtual methods
  */
 
-SetResults* SetResults::toSimd() const
+SetResults* SetResults::toSimd(Vectorizer* vectorizer) const
 {
     // TODO
     return 0;
@@ -1140,7 +1180,7 @@ CallInstr::CallInstr(size_t numLhs,
  * virtual methods
  */
 
-CallInstr* CallInstr::toSimd() const
+CallInstr* CallInstr::toSimd(Vectorizer* vectorizer) const
 {
     // TODO
     return 0;

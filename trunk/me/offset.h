@@ -31,6 +31,7 @@ struct Offset
      */
 
     virtual size_t getOffset() const = 0;
+    virtual Offset* toSimd() const = 0;
     virtual std::string toString() const = 0;
 };
 
@@ -51,6 +52,7 @@ public:
      */
 
     virtual size_t getOffset() const;
+    virtual ArrayOffset* toSimd() const;
     virtual std::string toString() const;
 
 private:
@@ -75,6 +77,7 @@ struct StructOffset : public Offset
     StructOffset(Struct* _struct, Member* member);
 
     virtual size_t getOffset() const;
+    virtual StructOffset* toSimd() const;
     virtual std::string toString() const;
 };
 

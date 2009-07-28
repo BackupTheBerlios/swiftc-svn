@@ -37,6 +37,11 @@ size_t ArrayOffset::getOffset() const
     return index_ + (next_ ? next_->getOffset() : 0 ); 
 }
 
+ArrayOffset* ArrayOffset::toSimd() const
+{
+    return 0;
+}
+
 std::string ArrayOffset::toString() const
 {
     std::ostringstream oss;
@@ -68,6 +73,11 @@ size_t StructOffset::getOffset() const
 {
     return next_ ?  next_->getOffset() + member_->getOffset() 
                  : member_->getOffset();
+}
+
+StructOffset* StructOffset::toSimd() const
+{
+    return 0;
 }
 
 std::string StructOffset::toString() const

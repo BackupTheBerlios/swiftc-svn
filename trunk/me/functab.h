@@ -196,7 +196,7 @@ struct FunctionTable
      * further methods
      */
 
-    Function* insertFunction(std::string* id, bool ignore);
+    Function* insertFunction(std::string* id, bool ignore, bool vectorize = false);
 
 #ifdef SWIFT_DEBUG
 

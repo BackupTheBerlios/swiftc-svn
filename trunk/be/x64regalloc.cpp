@@ -291,7 +291,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
      * do register targeting on mul, div and idiv instructions
      */
 
-    if ( ai->res_[0].var_->isReal() )
+    if ( ai->res_[0].var_->isReal() || ai->res_[0].var_->isSimd() )
         return;
 
     if (ai->kind_ == '*' || ai->kind_ == '/')
@@ -458,6 +458,20 @@ void X64RegAlloc::targetSetParams(me::InstrNode* iter, me::BBNode* currentBB)
 
             case me::Op::R_REAL32:
             case me::Op::R_REAL64:
+            case me::Op::S_REAL32:
+            case me::Op::S_REAL64:
+            case me::Op::S_INT8:
+            case me::Op::S_INT16:
+            case me::Op::S_INT32:
+            case me::Op::S_INT64:
+            case me::Op::S_SAT8:
+            case me::Op::S_SAT16:
+            case me::Op::S_UINT8:
+            case me::Op::S_UINT16:
+            case me::Op::S_UINT32:
+            case me::Op::S_UINT64:
+            case me::Op::S_USAT8:
+            case me::Op::S_USAT16:
                 sp->res_[i].constraint_ = xmmRegs[xmmCounter++];
                 break;
 
@@ -667,6 +681,20 @@ std::string X64RegAlloc::reg2String(const me::Reg* reg)
             
         case me::Op::R_REAL32:
         case me::Op::R_REAL64:
+        case me::Op::S_REAL32:
+        case me::Op::S_REAL64:
+        case me::Op::S_INT8:
+        case me::Op::S_INT16:
+        case me::Op::S_INT32:
+        case me::Op::S_INT64:
+        case me::Op::S_SAT8:
+        case me::Op::S_SAT16:
+        case me::Op::S_UINT8:
+        case me::Op::S_UINT16:
+        case me::Op::S_UINT32:
+        case me::Op::S_UINT64:
+        case me::Op::S_USAT8:
+        case me::Op::S_USAT16:
             switch (color)
             {
                 case XMM0: oss << "xmm0"; break;

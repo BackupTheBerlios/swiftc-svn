@@ -169,7 +169,7 @@ struct Op
 
     virtual std::string toString() const = 0;
 
-    virtual Op* toSimd() const = 0;
+    virtual Op* toSimd(Vectorizer* vectorizer) const = 0;
 
     /*
      * further methods
@@ -210,7 +210,7 @@ struct Undef : public Op
      * virtual methods
      */
 
-    virtual Undef* toSimd() const;
+    virtual Undef* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -235,7 +235,7 @@ struct Const : public Op
      * virtual methods
      */
 
-    virtual Const* toSimd() const;
+    virtual Const* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -302,7 +302,7 @@ struct Var : public Op
 
     virtual Var* clone(int varNr) const = 0;
     virtual bool typeCheck(int typeMask) const;
-    virtual Var* toSimd() const;
+    virtual Var* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -353,7 +353,7 @@ struct Reg : public Var
     virtual Reg* isSpilled();
     virtual Reg* isSpilled(int typeMask);
     virtual Reg* colorReg(int typeMask);
-    virtual Reg* toSimd() const;
+    virtual Reg* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -378,7 +378,7 @@ struct MemVar : public Var
      */
 
     virtual MemVar* clone(int varNr) const;
-    virtual MemVar* toSimd() const;
+    virtual MemVar* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 

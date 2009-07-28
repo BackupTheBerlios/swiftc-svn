@@ -23,9 +23,27 @@
 
 namespace me {
 
+/*
+ * constructor
+ */
+
 CodePass::CodePass(Function* function)
     : function_(function)
     , cfg_( function->cfg_ )
 {}
+
+/*
+ * further methods
+ */
+
+CFG* CodePass::cfg()
+{
+    return cfg_;
+}
+
+const CFG* CodePass::cfg() const
+{
+    return cfg_;
+}
 
 } // namespace me

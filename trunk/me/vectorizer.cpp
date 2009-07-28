@@ -24,31 +24,53 @@
 
 namespace me {
 
+/*
+ * constructor
+ */
+
 Vectorizer::Vectorizer(Function* function)
     : CodePass(function)
     , simdFunction_( me::functab->insertFunction(
                 new std::string(*function->id_ + "simd"), false) )
-{
-}
+{}
+
+/*
+ * virtual methods
+ */
 
 void Vectorizer::process()
 {
     // for each instruction
     INSTRLIST_EACH(iter, cfg_->instrList_)
     {
-        //InstrBase* instr = iter->value_;
+        if ( iter == function_->lastLabelNode_ )
+        {
+            simdFunction_->instrList_.append( simdFunction_->lastLabelNode_ );
+            continue;
+        }
 
-        //if ( typeid(*instr) == typeid(LabelInstr) )
-        //{
-            //currentBB = cfg_->labelNode2BBNode_[iter];
-            //continue;
-        //}
+        currentInstrNode_ = iter;
+        InstrBase* instr = iter->value_;
+        //std::cout << instr->toString() << std::endl;
 
-        //if ( instr->isConstrained() )
-            //liveRangeSplit(iter, currentBB);
+        InstrBase* simdInstr = instr->toSimd(this);
+        swiftAssert(simdInstr, "is 0");
+        simdFunction_->instrList_.append(simdInstr);
     }
+}
 
-    cfg_->constructSSAForm();
+/*
+ * further methods
+ */
+
+Function* Vectorizer::getSimdFunction()
+{
+    return simdFunction_;
+}
+
+Function* Vectorizer::function()
+{
+    return function_;
 }
 
 } // namespace me

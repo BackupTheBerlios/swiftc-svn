@@ -34,6 +34,7 @@ namespace me {
 struct Struct;
 struct Memory;
 struct Offset;
+struct Vectorizer;
 
 //------------------------------------------------------------------------------
 
@@ -120,7 +121,7 @@ struct InstrBase
      * virtual methods
      */
 
-    virtual InstrBase* toSimd() const = 0;
+    virtual InstrBase* toSimd(Vectorizer* vectorizer) const = 0;
     virtual std::string toString() const = 0;
 
     /*
@@ -223,7 +224,7 @@ struct LabelInstr : public InstrBase
      * virtual methods
      */
 
-    virtual LabelInstr* toSimd() const;
+    virtual LabelInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -258,7 +259,7 @@ struct NOP : public InstrBase
      * virtual methods
      */
 
-    virtual NOP* toSimd() const;
+    virtual NOP* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -291,7 +292,7 @@ struct PhiInstr : public InstrBase
      * virtual methods
      */
 
-    virtual PhiInstr* toSimd() const;
+    virtual PhiInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -367,7 +368,7 @@ struct AssignInstr : public InstrBase
      * virtual methods
      */
 
-    virtual AssignInstr* toSimd() const;
+    virtual AssignInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -431,7 +432,7 @@ struct GotoInstr : public JumpInstr
      * virtual methods
      */
 
-    GotoInstr* toSimd() const;
+    GotoInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -460,7 +461,7 @@ struct BranchInstr : public JumpInstr
      * virtual methods
      */
 
-    virtual BranchInstr* toSimd() const;
+    virtual BranchInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -491,7 +492,7 @@ struct Spill : public InstrBase
      * virtual methods
      */
 
-    virtual Spill* toSimd() const;
+    virtual Spill* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -516,7 +517,7 @@ struct Reload : public InstrBase
      * virtual methods
      */
 
-    virtual Reload* toSimd() const;
+    virtual Reload* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -567,7 +568,7 @@ struct Load : public InstrBase
      * further methods
      */
 
-    virtual Load* toSimd() const;
+    virtual Load* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -622,7 +623,7 @@ struct LoadPtr : public InstrBase
      * virtual methods
      */
     
-    virtual LoadPtr* toSimd() const;
+    virtual LoadPtr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -673,7 +674,7 @@ struct Store : public InstrBase
      * virtual methods
      */
 
-    virtual Store* toSimd() const;
+    virtual Store* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*
@@ -698,7 +699,7 @@ struct SetParams : public InstrBase
      * virtual methods
      */
 
-    virtual SetParams* toSimd() const;
+    virtual SetParams* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -716,7 +717,7 @@ struct SetResults : public InstrBase
      * virtual methods
      */
 
-    virtual SetResults* toSimd() const;
+    virtual SetResults* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 };
 
@@ -754,7 +755,7 @@ struct CallInstr : public InstrBase
      * virtual methods
      */
 
-    virtual CallInstr* toSimd() const;
+    virtual CallInstr* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
 
     /*

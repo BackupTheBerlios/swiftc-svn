@@ -20,6 +20,8 @@
 #ifndef ME_VECTORIZER_H
 #define ME_VECTORIZER_H
 
+#include "utils/map.h"
+
 #include "me/codepass.h"
 #include "me/forward.h"
 
@@ -41,13 +43,26 @@ public:
 
     void process();
 
-private:
+    /*
+     * further methods
+     */
+
+    Function* getSimdFunction();
+    Function* function();
+
+//private:
 
     Function* simdFunction_;
 
-    /// Maps src labels to new labels.
-    typedef std::map<InstrNode*, InstrNode*> LabelNode2LabelNode;
-    LabelNode2LabelNode labelNode2LabelNode_;
+    InstrNode* currentInstrNode_;
+    BBNode* currentBB_;
+
+    typedef Map<InstrNode*, InstrNode*> Label2Label;
+    Label2Label src2dstLabel_;
+    Label2Label dst2srcLabel_;
+
+    typedef Map<int, int> Nr2Nr;
+    Nr2Nr src2dstNr_;
 };
 
 } // namespace me

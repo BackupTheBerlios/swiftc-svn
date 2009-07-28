@@ -26,6 +26,7 @@
 
 #include "me/arch.h"
 #include "me/functab.h"
+#include "me/vectorizer.h"
 
 namespace me {
 
@@ -135,15 +136,18 @@ int Op::sizeOf(Type type)
 
 Op::Type Op::toSimd(Type type)
 {
+    if (type == R_PTR)
+        return R_PTR;
+
     swiftAssert(type & VECTORIZABLE, "type not vectorizable");
     return (Type) (type << SIMD_OFFSET);
 }
 
 //------------------------------------------------------------------------------
 
-Undef* Undef::toSimd() const
+Undef* Undef::toSimd(Vectorizer* vectorizer) const
 {
-    return new Undef( Op::toSimd(type_) );
+    return vectorizer->simdFunction_->newUndef( Op::toSimd(type_) );
 }
 
 //------------------------------------------------------------------------------
@@ -161,9 +165,9 @@ Const::Const(Type type)
  * virtual methods
  */
 
-Const* Const::toSimd() const
+Const* Const::toSimd(Vectorizer* vectorizer) const
 {
-    Const* cst = new Const( Op::toSimd(type_) );
+    Const* cst = vectorizer->simdFunction_->newConst( Op::toSimd(type_) );
     cst->box_ = box_;
 
     return cst;
@@ -272,7 +276,7 @@ bool Var::typeCheck(int typeMask) const
     return !dontColor() && Op::typeCheck(typeMask);
 }
 
-Var* Var::toSimd() const
+Var* Var::toSimd(Vectorizer* vectorizer) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -372,13 +376,29 @@ Reg* Reg::colorReg(int typeMask)
     return ( !isSpilled() && typeCheck(typeMask) ) ? this : 0;
 }
 
-Reg* Reg::toSimd() const
+Reg* Reg::toSimd(Vectorizer* vectorizer) const
 {
+    // is it already created?
+    Vectorizer::Nr2Nr::iterator iter = vectorizer->src2dstNr_.find(varNr_);
+
+    if ( iter != vectorizer->src2dstNr_.end() )
+    {
+        // yes -> return the already created one
+        swiftAssert( vectorizer->simdFunction_->vars_.contains(iter->second),
+                "must be found here" );
+        return (Reg*) vectorizer->simdFunction_->vars_[iter->second];
+    }
+    // else
+
 #ifdef SWIFT_DEBUG
-    return functab->newSSAReg( Op::toSimd(type_), new std::string("s_" + id_) );
+    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_), new std::string("s_" + id_) );
 #else // SWIFT_DEBUG
-    return functab->newSSAReg( Op::toSimd(type_) );
+    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_) );
 #endif // SWIFT_DEBUG
+
+    vectorizer->src2dstNr_[varNr_] = reg->varNr_;
+
+    return reg;
 }
 
 std::string Reg::toString() const
@@ -430,14 +450,31 @@ MemVar* MemVar::clone(int varNr) const
 
 #endif // SWIFT_DEBUG
 
-MemVar* MemVar::toSimd() const
+MemVar* MemVar::toSimd(Vectorizer* vectorizer) const
 {
+    // is it already created?
+    Vectorizer::Nr2Nr::iterator iter = vectorizer->src2dstNr_.find(varNr_);
+
+    if ( iter != vectorizer->src2dstNr_.end() )
+    {
+        // yes -> return the already created one
+        swiftAssert( vectorizer->simdFunction_->vars_.contains(iter->second),
+                "must be found here" );
+        return (MemVar*) vectorizer->simdFunction_->vars_[iter->second];
+    }
+    // else
+
 #ifdef SWIFT_DEBUG
-    //return functab->newSSAMemVar( aggregate->toSimd(), new std::string("s_" + id_) );
+    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd(), new std::string("s_" + id_) );
 #else // SWIFT_DEBUG
-    //return functab->newSSAMemVar( aggregate->toSimd() );
+    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd() );
 #endif // SWIFT_DEBUG
-    return 0;
+    MemVar* memVar = 0;
+    swiftAssert(false, "TODO");
+
+    vectorizer->src2dstNr_[varNr_] = memVar->varNr_;
+
+    return memVar;
 }
 
 std::string MemVar::toString() const

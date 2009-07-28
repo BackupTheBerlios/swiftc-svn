@@ -29,6 +29,7 @@
 #include "me/cfg.h"
 #include "me/struct.h"
 #include "me/stacklayout.h"
+#include "me/vectorizer.h"
 
 using namespace std;
 
@@ -359,9 +360,9 @@ FunctionTable::~FunctionTable()
  * further methods
  */
 
-Function* FunctionTable::insertFunction(string* id, bool ignore)
+Function* FunctionTable::insertFunction(string* id, bool ignore, bool vectorize /*= false*/)
 {
-    currentFunction_ = new Function( id, arch->getNumStackPlaces(), ignore );
+    currentFunction_ = new Function( id, arch->getNumStackPlaces(), ignore, vectorize );
     functions_.insert( make_pair(id, currentFunction_) );
 
     return currentFunction_;
@@ -466,17 +467,33 @@ void FunctionTable::analyzeStructs()
 
 void FunctionTable::buildUpME()
 {
+    // build up middle-end for normal functions
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         Function* function = iter->second;
-        CFG* cfg = function->cfg_;
-        cfg->constructSSAForm();
+        function->cfg_->constructSSAForm();
+    }
+
+    // vectorize
+    //std::vector<Function*> simdFunctions;
+    for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
+    {
+        Function* function = iter->second;
+        if ( function->ignore() )
+            continue;
 
         if (function->vectorize_)
         {
-            // TODO
+            Vectorizer vectorizer(function);
+            vectorizer.process();
+            //simdFunctions.push_back( vectorizer.getSimdFunction() );
+            vectorizer.getSimdFunction()->cfg_->constructSSAForm();
         }
     }
+
+    // build up middle-end for vectorized functions
+    //for (size_t i = 0; i < simdFunctions.size(); ++i)
+        //simdFunctions[i]->cfg_->constructSSAForm();
 }
 
 void FunctionTable::dumpSSA()

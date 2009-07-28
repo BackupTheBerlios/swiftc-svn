@@ -62,7 +62,7 @@ bool MemberFunction::analyze()
 {
     symtab->enterMemberFunction(this);
 
-    me::functab->insertFunction( new std::string(sig_->getMeId()), isTrivial() );
+    me::functab->insertFunction( new std::string(sig_->getMeId()), isTrivial(), simd_ );
 
     bool result = true;
     result &= sig_->analyze();

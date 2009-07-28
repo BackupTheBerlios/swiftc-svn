@@ -47,6 +47,13 @@ public:
      */
 
     virtual void process() = 0;
+
+    /*
+     * further methods
+     */
+
+    CFG* cfg();
+    const CFG* cfg() const;
 };
 
 } // namespace me

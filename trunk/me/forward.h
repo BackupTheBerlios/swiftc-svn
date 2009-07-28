@@ -25,6 +25,7 @@
 #include "utils/list.h"
 #include "utils/graph.h"
 #include "utils/set.h"
+#include "utils/map.h"
 
 // include this file for useful forward declarations
 
@@ -47,7 +48,7 @@ struct Var;
 struct MemVar;
 struct Reg;
 typedef List<Var*> VarList;
-typedef std::map<int, Var*> VarMap;
+typedef Map<int, Var*> VarMap;
 typedef Set<Var*> VarSet;
 typedef Set<Reg*> RegSet;
 typedef std::vector<Var*> VarVec;

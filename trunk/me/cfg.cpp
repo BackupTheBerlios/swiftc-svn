@@ -565,8 +565,9 @@ void CFG::renameVars()
     // for each vars, no temps
     for (VarMap::iterator iter = vars.begin(); iter->first < 0 && iter != vars.end(); ++iter)
     {
-        delete iter->second;
+        Var* var =  iter->second;
         vars.erase(iter);
+        delete var;
     }
 }
 
