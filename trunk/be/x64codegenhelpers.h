@@ -36,7 +36,7 @@ namespace me {
 
 namespace be {
 
-std::string suffix(int);
+std::string mnemonic(const std::string& str, int);
 
 std::string reg2str(me::Reg* reg);
 std::string reg2str(int color, me::Op::Type type);

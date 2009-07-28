@@ -33,36 +33,80 @@
 
 namespace be {
 
-std::string suffix(int type)
+std::string mnemonic(const std::string& str, int type)
 {
+    std::string pre;
+    std::string instr = str;
+    std::string post;
+
     switch (type)
     {
         case X64_BOOL:
         case X64_INT8:
         case X64_UINT8:
-            return "b"; // byte
-
+            post = "b"; // byte
+            break;
         case X64_INT16:
         case X64_UINT16:
-            return "s"; // short
-
+            post = "s"; // short
+            break;
         case X64_INT32:
         case X64_UINT32:
-            return "l"; // long
-
+            post = "l"; // long
+            break;
         case X64_INT64:
         case X64_UINT64:
-            return "q"; // quad
-
+            post = "q"; // quad
+            break;
         case X64_REAL32:
-            return "ss";// scalar single
-            
+            post = "ss";// scalar single
+            break;
         case X64_REAL64:
-            return "sd";// scalar double
-
+            post = "sd";// scalar double
+            break;
+        case X64_S_REAL32:
+            post = "ps";// packed singles
+            if (instr == "mov")
+                instr = "mova";
+            break;
+        case X64_S_REAL64:
+            post = "pd";// packed doubles
+            if (instr == "mov")
+                instr = "mova";
+            break;
+        case X64_S_INT8:
+        case X64_S_UINT8:
+            post = "b";// byte
+            pre = "p"; // packed
+            if (instr == "mov")
+                instr = "mova";
+            break;
+        case X64_S_INT16:
+        case X64_S_UINT16:
+            post = "w";// word
+            pre = "p"; // packed
+            if (instr == "mov")
+                instr = "mova";
+            break;
+        case X64_S_INT32:
+        case X64_S_UINT32:
+            post = "d";// double word
+            pre = "p"; // packed
+            if (instr == "mov")
+                instr = "mova";
+            break;
+        case X64_S_INT64:
+        case X64_S_UINT64:
+            post = "q";// quad word
+            pre = "p"; // packed
+            if (instr == "mov")
+                instr = "mova";
+            break;
         default:
             return "TODO";
     }
+
+    return pre + instr + post;
 }
 
 std::string reg2str(me::Reg* reg)
