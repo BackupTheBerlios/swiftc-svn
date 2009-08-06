@@ -41,17 +41,12 @@ public:
     virtual ~FunctionCall();
 
     /*
-     * virtual methods
-     */
-
-    virtual void genSSA();
-
-    /*
      * further methods
      */
 
     void setTuple(Tuple* tuple);
     bool analyzeArgs();
+    void genSSA();
 
 protected:
 
@@ -204,12 +199,12 @@ struct BinExpr : public StaticMethodCall
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
 
     /*
      * further methods
      */
 
+    void genSSA();
     std::string getExprName() const;
     std::string getOpString() const;
 };

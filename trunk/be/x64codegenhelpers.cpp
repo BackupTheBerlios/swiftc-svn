@@ -48,7 +48,7 @@ std::string mnemonic(const std::string& str, int type)
             break;
         case X64_INT16:
         case X64_UINT16:
-            post = "s"; // short
+            post = "w"; // word
             break;
         case X64_INT32:
         case X64_UINT32:
@@ -76,31 +76,43 @@ std::string mnemonic(const std::string& str, int type)
             break;
         case X64_S_INT8:
         case X64_S_UINT8:
-            post = "b";// byte
-            pre = "p"; // packed
             if (instr == "mov")
-                instr = "mova";
+                instr = "movdqa";
+            else
+            {
+                post = "b";// byte
+                pre = "p"; // packed
+            }
             break;
         case X64_S_INT16:
         case X64_S_UINT16:
-            post = "w";// word
-            pre = "p"; // packed
             if (instr == "mov")
-                instr = "mova";
+                instr = "movdqa";
+            else
+            {
+                post = "w";// word
+                pre = "p"; // packed
+            }
             break;
         case X64_S_INT32:
         case X64_S_UINT32:
-            post = "d";// double word
-            pre = "p"; // packed
             if (instr == "mov")
-                instr = "mova";
+                instr = "movdqa";
+            else
+            {
+                post = "d";// double word
+                pre = "p"; // packed
+            }
             break;
         case X64_S_INT64:
         case X64_S_UINT64:
-            post = "q";// quad word
-            pre = "p"; // packed
             if (instr == "mov")
-                instr = "mova";
+                instr = "movdqa";
+            else
+            {
+                post = "q";// quad word
+                pre = "p"; // packed
+            }
             break;
         default:
             return "TODO";
@@ -342,6 +354,7 @@ std::string instr2str(me::AssignInstr* ai)
         case '-': return "sub";
         case '*': return "mul";
         case '/': return "div";
+        case '&': return "and";
         default:
             swiftAssert(false, "unreachable code");
     }

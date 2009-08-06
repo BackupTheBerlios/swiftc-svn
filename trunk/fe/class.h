@@ -86,6 +86,7 @@ struct Class : public Definition
     MemberVarMap memberVars_;           ///< MemberVars defined in this class.
 
     me::Struct* meStruct_;
+    me::Struct* meSimdStruct_;
 
     /*
      * constructor and destructor
@@ -110,6 +111,7 @@ struct Class : public Definition
     void addCopyCreate();
     void addAssignOperators();
     BaseType* createType(int modifier) const;
+    void vectorize();
 };
 
 //------------------------------------------------------------------------------

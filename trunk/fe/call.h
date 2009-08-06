@@ -72,6 +72,7 @@ private:
 
     std::vector<me::Op*> in_;
     std::vector<me::Var*> out_;
+    me::Var* place_;
 };
 
 } // namespace swift

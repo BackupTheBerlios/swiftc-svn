@@ -63,7 +63,7 @@ using namespace be;
 
 /* instructions */
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
-%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV
+%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV X64_AND
 %token <assign_> X64_UN_MINUS
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
@@ -100,7 +100,7 @@ using namespace be;
 */
 
 %type <int_> bool_type int_type sint_no8_type sint_type uint_no8_type int8_type real_type simd_type real_simd_type int_or_bool_type any_type
-%type <assign_> add_or_mul cmp
+%type <assign_> add_or_and add_or_mul cmp
 %type <reg_> any_reg
 
 %start instruction
@@ -244,7 +244,7 @@ deref
 
 assign_instruction
     : int_mov
-    | int_add
+    | int_add_and
     | int_mul
     | int_sub
     | sint_un_minus
@@ -278,50 +278,54 @@ int_mov
     }
     ;
 
-int_add
-    : X64_ADD int_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
+int_add_and
+    : add_or_and int_type X64_CONST X64_CONST /* mov (c1 + c2), r1 */
     {
         EMIT(mnemonic("mov", $2) << '\t' << cst_op_cst($1, $3, $4) << ", " << reg2str($1->resReg())) 
     } 
-    | X64_ADD int_type X64_CONST X64_REG_1 /* add c, r1 */
+    | add_or_and int_type X64_CONST X64_REG_1 /* add c, r1 */
     {
-        EMIT(mnemonic("add", $2) << '\t' << cst2str($3) << ", " << reg2str($4)) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << cst2str($3) << ", " << reg2str($4)) 
     }
-    | X64_ADD int_type X64_CONST X64_REG_2 /* mov c, r1; add r2, r1 */ 
+    | add_or_and int_type X64_CONST X64_REG_2 /* mov c, r1; add r2, r1 */ 
     {
         EMIT(mnemonic("mov", $2) << '\t' << cst2str($3) << ", " << reg2str($1->resReg()))
-        EMIT(mnemonic("add", $2) << '\t' << reg2str($4) << ", " << reg2str($1->resReg())) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($4) << ", " << reg2str($1->resReg())) 
     }
-    | X64_ADD int_type X64_REG_1 X64_CONST /* add c, r1 */
+    | add_or_and int_type X64_REG_1 X64_CONST /* add c, r1 */
     {
-        EMIT(mnemonic("add", $2) << '\t' << cst2str($4) << ", " << reg2str($3)) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << cst2str($4) << ", " << reg2str($3)) 
     }
-    | X64_ADD int_type X64_REG_1 X64_REG_1 /* shl 2, r2 */
+    | add_or_and int_type X64_REG_1 X64_REG_1 /* shl 2, r2 */
     { 
-          EMIT(mnemonic("shl", $2) << " $2, " << reg2str($3)) 
+        if ($1->kind_ == '+')
+            EMIT(mnemonic("shl", $2) << " $2, " << reg2str($3))
+        /* else -> do nothing */
     }
-    | X64_ADD int_type X64_REG_1 X64_REG_2 /* add r2, r1 */
+    | add_or_and int_type X64_REG_1 X64_REG_2 /* add r2, r1 */
     { 
-          EMIT(mnemonic("add", $2) << '\t' << reg2str($4) << ", " << reg2str($3)) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($4) << ", " << reg2str($3)) 
     }
-    | X64_ADD int_type X64_REG_2 X64_CONST /* mov c, r1; add r2, r1 */ 
+    | add_or_and int_type X64_REG_2 X64_CONST /* mov c, r1; add r2, r1 */ 
     { 
-          EMIT(mnemonic("mov", $2) << '\t' << cst2str($4) << ", " << reg2str($1->resReg()))
-          EMIT(mnemonic("add", $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
+        EMIT(mnemonic("mov", $2) << '\t' << cst2str($4) << ", " << reg2str($1->resReg()))
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg())) 
     }
-    | X64_ADD int_type X64_REG_2 X64_REG_1 /* add r2, r1 */
+    | add_or_and int_type X64_REG_2 X64_REG_1 /* add r2, r1 */
     { 
-          EMIT(mnemonic("add", $2) << '\t' << reg2str($3) << ", " << reg2str($4)) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($3) << ", " << reg2str($4)) 
     }
-    | X64_ADD int_type X64_REG_2 X64_REG_2 /* mov r2, r1; shl 2, r1 */
+    | add_or_and int_type X64_REG_2 X64_REG_2 /* mov r2, r1; shl 2, r1 */
     { 
-          EMIT(mnemonic("mov", $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
-          EMIT(mnemonic("shl", $2) << " $2,  " << reg2str($1->resReg())) 
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+        if ($1->kind_ == '+')
+            EMIT(mnemonic("shl", $2) << " $2,  " << reg2str($1->resReg())) 
+        /* else -> do nothing */
     }
-    | X64_ADD int_type X64_REG_2 X64_REG_3 /* mov r2, r1; add r3, r1 */
+    | add_or_and int_type X64_REG_2 X64_REG_3 /* mov r2, r1; add r3, r1 */
     { 
-          EMIT(mnemonic("mov", $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
-          EMIT(mnemonic("add", $2) << '\t' << reg2str($4) << ", " << reg2str($1->resReg())) 
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($3) << ", " << reg2str($1->resReg()))
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($4) << ", " << reg2str($1->resReg())) 
     }
     ;
 
@@ -764,6 +768,11 @@ real_simd_cmp
 add_or_mul
     : X64_ADD { $$ = $1; }
     | X64_MUL { $$ = $1; }
+    ;
+
+add_or_and
+    : X64_ADD { $$ = $1; }
+    | X64_AND { $$ = $1; }
     ;
 
 cmp

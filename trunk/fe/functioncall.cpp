@@ -54,10 +54,6 @@ FunctionCall::~FunctionCall()
  * virtual methods
  */
 
-void FunctionCall::genSSA()
-{
-};
-
 /*
  * further methods
  */
@@ -303,7 +299,7 @@ bool BinExpr::analyze()
     }
 
     if ( !tuple_ && !exprList_->analyze() )
-            return false;
+        return false;
 
     TypeList argTypeList = exprList_->getTypeList(simd_);
 
@@ -384,9 +380,6 @@ bool BinExpr::analyze()
 
     return true;
 }
-
-void BinExpr::genSSA()
-{}
 
 std::string BinExpr::toString() const
 {

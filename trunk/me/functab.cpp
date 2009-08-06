@@ -475,7 +475,6 @@ void FunctionTable::buildUpME()
     }
 
     // vectorize
-    //std::vector<Function*> simdFunctions;
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         Function* function = iter->second;
@@ -486,14 +485,9 @@ void FunctionTable::buildUpME()
         {
             Vectorizer vectorizer(function);
             vectorizer.process();
-            //simdFunctions.push_back( vectorizer.getSimdFunction() );
             vectorizer.getSimdFunction()->cfg_->constructSSAForm();
         }
     }
-
-    // build up middle-end for vectorized functions
-    //for (size_t i = 0; i < simdFunctions.size(); ++i)
-        //simdFunctions[i]->cfg_->constructSSAForm();
 }
 
 void FunctionTable::dumpSSA()
@@ -601,7 +595,19 @@ Member* FunctionTable::appendMember(Aggregate* aggregate)
     return structStack_.top()->append(aggregate);
 }
 
-
 #endif // SWIFT_DEBUG
+
+Struct* FunctionTable::vectorize(Struct* _struct)
+{
+    int simdLength;
+    Struct* vectorized = _struct->vectorize(simdLength);
+    vectorized->analyze();
+    structs_.push_back(vectorized);
+
+    if (simdLength == -1) // TODO
+        std::cout << "error" << std::endl;
+
+    return vectorized;
+}
 
 } // namespace me

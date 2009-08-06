@@ -265,6 +265,7 @@ struct FunctionTable
 
 #endif // SWIFT_DEBUG
 
+    Struct* vectorize(Struct* _struct);
 };
 
 typedef FunctionTable FuncTab;

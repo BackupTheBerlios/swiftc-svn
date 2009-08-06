@@ -47,6 +47,7 @@ Class::Class(bool simd, std::string* id, Symbol* parent, int line)
     , simd_(simd)
     , defaultCreate_(DEFAULT_NONE)
     , copyCreate_(COPY_USER)
+    , meSimdStruct_(0)
 {}
 
 Class::~Class()
@@ -317,6 +318,12 @@ bool MemberVar::registerMeMember()
     }
 
     return true;
+}
+
+void Class::vectorize()
+{
+    if (simd_)
+        meSimdStruct_ = me::functab->vectorize(meStruct_);
 }
 
 } // namespace swift

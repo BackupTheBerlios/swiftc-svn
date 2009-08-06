@@ -39,7 +39,6 @@ public:
      */
 
     virtual bool analyze();
-    virtual void genSSA();
     virtual bool analyzeAccess() = 0;
     virtual bool needsNewChain() const = 0;
 
@@ -47,6 +46,7 @@ public:
      * further methods
      */
 
+    void genSSA();
     void emitStoreIfApplicable(Expr* expr);
 
 protected:

@@ -50,7 +50,6 @@ public:
      * further methods
      */
 
-    Member* vectorize() const;
     int getOffset() const;
     void setOffset(int offset);
     std::string toString() const;
@@ -61,6 +60,8 @@ public:
 #ifdef SWIFT_DEBUG
     std::string getId() const;
 #endif // SWIFT_DEBUG
+
+    Member* vectorize(int& simdLength) const;
 
 protected:
 
@@ -116,7 +117,7 @@ public:
      */
 
     virtual void analyze() = 0;
-    virtual Aggregate* vectorize() const = 0;
+    virtual Aggregate* vectorize(int& simdLength) = 0;
 
     /*
      * further methods
@@ -129,6 +130,8 @@ public:
     std::string getId() const;
 #endif // SWIFT_DEBUG
 
+    int getSimdLength() const;
+
 protected:
 
     /*
@@ -137,11 +140,15 @@ protected:
 
     enum 
     {
-        NOT_ANALYZED = -1
+        NOT_ANALYZED = -1,
+        NON_SIMD = -1
     };
 
     /// Size in bytes of this \a Aggregate or \a NOT_ANALYZED if not yet analyzed.
     int size_; 
+
+    ///< Number of repetitions of one member before the next one.
+    int simdLength_;
 };
 
 //------------------------------------------------------------------------------
@@ -166,7 +173,7 @@ public:
      */
 
     virtual void analyze();
-    virtual AtomicAggregate* vectorize() const;
+    virtual AtomicAggregate* vectorize(int& simdLength);
 
 private:
 
@@ -199,7 +206,7 @@ public:
      */
 
     virtual void analyze();
-    virtual ArrayAggregate* vectorize() const;
+    virtual ArrayAggregate* vectorize(int& simdLength);
 
 private:
 
@@ -240,7 +247,7 @@ public:
      */
 
     virtual void analyze();
-    virtual Struct* vectorize() const;
+    virtual Struct* vectorize(int& simdLength);
 
     /*
      * further methods

@@ -347,8 +347,6 @@ bool Id::analyze()
     return true;
 }
 
-void Id::genSSA() {} // do nothing
-
 std::string Id::toString() const
 {
     return *id_;
@@ -485,10 +483,6 @@ bool Nil::analyze()
     return true;
 }
 
-void Nil::genSSA() 
-{
-}
-
 std::string Nil::toString() const
 {
     return "nil{" + innerType_->toString() + "}";
@@ -535,10 +529,6 @@ bool Self::analyze()
     return true;
 }
 
-void Self::genSSA() 
-{
-}
-
 std::string Self::toString() const
 {
     return "self";
@@ -561,10 +551,6 @@ SimdIndex::SimdIndex(int line)
 bool SimdIndex::analyze()
 {
     return true;
-}
-
-void SimdIndex::genSSA() 
-{
 }
 
 std::string SimdIndex::toString() const

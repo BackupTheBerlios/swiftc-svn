@@ -22,6 +22,8 @@
 
 #include "fe/syntaxtree.h"
 
+#include "me/forward.h"
+
 namespace swift {
 
 /*
@@ -42,22 +44,40 @@ public:
     virtual ~SimdPrefix();
 
     /*
-     * further methods
-     */
-
-    bool analyze();
-    void genSSA();
-
-    /*
      * virtual methods
      */
 
     virtual std::string toString() const;
 
+    /*
+     * further methods
+     */
+
+    void genSSA();
+    bool analyze();
+
 private:
+
+    /*
+     * index expresions
+     */
 
     Expr* leftExpr_;
     Expr* rightExpr_;
+
+    /*
+     * regs
+     */
+
+    me::Reg* counter_;
+    me::Reg* check_;
+    
+    /*
+     * labels
+     */
+
+    me::InstrNode* simdLabelNode_;
+    me::InstrNode* nextLabelNode_;
 };
 
 } // namespace swift

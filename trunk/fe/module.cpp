@@ -96,6 +96,15 @@ bool Module::analyze()
     } // for each class
 
     me::functab->analyzeStructs();
+
+    // vectorize each simd class
+    for (DefinitionList::Node* iter = definitions_.first(); iter != definitions_.sentinel(); iter = iter->next())
+    {
+        Class* _class = dynamic_cast<Class*>(iter->value_);
+        if ( _class)
+            _class->vectorize();
+    } // for each class
+
     /*
      * now the rest
      */

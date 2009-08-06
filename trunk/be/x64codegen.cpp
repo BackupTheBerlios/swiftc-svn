@@ -654,6 +654,7 @@ int x64lex()
                     case me::AssignInstr::LE: return X64_LE;
                     case me::AssignInstr::GE: return X64_GE;
                     case '^': return X64_DEREF;
+                    case '&': return X64_AND;
                     case me::AssignInstr::UNARY_MINUS: return X64_UN_MINUS;
 
                     default:

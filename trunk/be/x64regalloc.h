@@ -75,6 +75,7 @@ public:
     /*
      * condition codes
      */
+
     enum CC
     {
         C_EQ, C_NE,

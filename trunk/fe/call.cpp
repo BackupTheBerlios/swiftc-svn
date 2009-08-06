@@ -40,6 +40,7 @@ Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig)
     : exprList_(exprList)
     , tuple_(tuple)
     , sig_(sig)
+    , place_(0)
 {}
 
 /*
@@ -104,6 +105,9 @@ void Call::emitCall()
                 me::functab->appendInstr(ai);
 
                 out_.push_back(res);
+
+                if (!place_)
+                    place_ = res;
             }
             else
             {
@@ -133,6 +137,9 @@ void Call::emitCall()
 
                 // -> this one is a hidden in-param
                 in_.push_back(tmp);
+
+                if (!place_)
+                    place_ = tmp;
             }
         }
     }
@@ -165,12 +172,19 @@ void Call::emitCall()
 
 me::Var* Call::getPrimaryPlace()
 {
-    return out_.empty() ? 0 : (me::Var*) out_[0];
+    return place_;
 }
 
 Type* Call::getPrimaryType()
 {
-    return out_.empty() ? 0 : sig_->getOutParam(0)->getType()->varClone();
+    Type* type = sig_->getNumOut() 
+        ?  sig_->getOutParam(0)->getType()->varClone() 
+        : 0;
+
+    if ( type && !type->isAtomic() )
+        type->modifier() = REF;
+
+    return type;
 }
 
 void Call::addSelf(me::Reg* self)

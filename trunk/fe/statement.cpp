@@ -88,7 +88,12 @@ bool ExprStatement::analyze()
         result &= simdPrefix_->analyze();
     }
 
-    return result & expr_->analyze();
+    result &= expr_->analyze();
+
+    if (result && simdPrefix_)
+        simdPrefix_->genSSA();
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -197,9 +202,14 @@ bool AssignStatement::analyze()
     FunctionCall* fc = exprList_->getFunctionCall();
 
     if (fc)
-        return result & analyzeFunctionCall();
+        result &= analyzeFunctionCall();
     else
-        return result & analyzeAssignCreate();
+        result &= analyzeAssignCreate();
+
+    if (result && simdPrefix_)
+        simdPrefix_->genSSA();
+
+    return result;
 }
 
 /*
@@ -351,7 +361,39 @@ bool AssignStatement::analyzeAssignCreate()
                     new me::AssignInstr('*', size, numElems, elemSize);
                 me::functab->appendInstr(mul);
 
-                // TODO for simd containers: find next boundary
+                const Simd* simd = dynamic_cast<const Simd*>(container);
+                if (simd)
+                {
+                    const BaseType* bt = simd->getInnerType()->isInner();
+
+                    if (!bt)
+                    {
+                        errorf(line_, "only simd-containers of base types are allowed");
+                        return false;
+                    }
+
+                    /*
+                     * do this to adjust the size:
+                     * size = size + simdLength - 1
+                     * size = size & !(simdLength - 1)
+                     */
+
+                    size_t simdLength = bt->lookupClass()->meSimdStruct_->getSimdLength();
+
+                    me::Const* simdLength_minus_one = me::functab->newConst(me::Op::R_UINT64);
+                    simdLength_minus_one->box_.uint64_ = simdLength - 1ull;
+
+                    me::Const* not_simdLength_minus_one = me::functab->newConst(me::Op::R_UINT64);
+                    not_simdLength_minus_one->box_.uint64_ = ~(simdLength - 1ull);
+
+                    me::AssignInstr* plus = 
+                        new me::AssignInstr('+', size, size, simdLength_minus_one);
+                    me::functab->appendInstr(plus);
+
+                    me::AssignInstr* _and = 
+                        new me::AssignInstr('&', size, size, not_simdLength_minus_one);
+                    me::functab->appendInstr(_and);
+                }
 
                 // malloc
                 me::functab->appendInstr( new me::Malloc(ptr, size) );

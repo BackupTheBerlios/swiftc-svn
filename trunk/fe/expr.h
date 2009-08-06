@@ -62,12 +62,6 @@ public:
     Expr(int line);
 
     /*
-     * virtual methods
-     */
-
-    virtual void genSSA() = 0;
-
-    /*
      * further methods
      */
 
@@ -99,18 +93,18 @@ struct Literal : public Expr
     Literal(int kind, int line = NO_LINE);
 
     /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
+    virtual std::string toString() const;
+
+    /*
      * further methods
      */
 
     me::Op::Type toType() const;
-    virtual bool analyze();
-    virtual void genSSA();
-
-    /*
-     * virtual methods
-     */
-
-    virtual std::string toString() const;
+    void genSSA();
 
     /*
      * static methods
@@ -152,7 +146,12 @@ struct Id : public Expr
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -184,7 +183,12 @@ struct UnExpr : public Expr
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -206,7 +210,12 @@ public:
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    void genSSA();
 
 private:
 
@@ -235,7 +244,12 @@ public:
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
+
+    /*
+     * further methods
+     */
+
+    void genSSA();
 };
 
 //------------------------------------------------------------------------------
@@ -256,7 +270,6 @@ public:
 
     virtual std::string toString() const;
     virtual bool analyze();
-    virtual void genSSA();
 };
 
 //------------------------------------------------------------------------------

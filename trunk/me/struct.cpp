@@ -20,6 +20,7 @@
 #include "me/struct.h"
 
 #include <sstream>
+#include <iostream>
 #include <typeinfo>
 
 #include "me/arch.h"
@@ -30,14 +31,6 @@
  *
  * TODO empty structs are not handled correctly
  */
-
-/*
- * globals
- */
-
-namespace {
-
-} // namespace
 
 //------------------------------------------------------------------------------
 
@@ -73,12 +66,12 @@ Member::~Member()
  * further methods
  */
 
-Member* Member::vectorize() const
+Member* Member::vectorize(int& simdLength) const
 {
 #ifdef SWIFT_DEBUG
-    return new Member( aggregate_->vectorize(), "simd_" + id_ );
+    return new Member( aggregate_->vectorize(simdLength), "simd_" + id_ );
 #else //  SWIFT_DEBUG
-    return new Member( aggregate_->vectorize() );
+    return new Member( aggregate_->vectorize(simdLength) );
 #endif // SWIFT_DEBUG
 }
 
@@ -130,6 +123,7 @@ std::string Member::toString() const
 
 Aggregate::Aggregate()
     : size_(NOT_ANALYZED)
+    , simdLength_(NON_SIMD)
 {}
 
 /*
@@ -147,8 +141,12 @@ int Aggregate::sizeOf() const
     return size_;
 }
 
-//------------------------------------------------------------------------------
+int Aggregate::getSimdLength() const
+{
+    return simdLength_;
+}
 
+//------------------------------------------------------------------------------
 
 /*
  * constructor and destructor
@@ -167,9 +165,14 @@ void AtomicAggregate::analyze()
     size_ = Op::sizeOf(type_);
 }
 
-AtomicAggregate* AtomicAggregate::vectorize() const
+AtomicAggregate* AtomicAggregate::vectorize(int& simdLength)
 {
-    return new AtomicAggregate( Op::toSimd(type_));
+    AtomicAggregate* result = new AtomicAggregate( Op::toSimd(type_) );
+    result->analyze();
+    result->simdLength_ = arch->getSimdWidth() / size_;
+    simdLength = result->simdLength_;
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -188,9 +191,14 @@ void ArrayAggregate::analyze()
     size_ = Op::sizeOf(type_) * num_;
 }
 
-ArrayAggregate* ArrayAggregate::vectorize() const
+ArrayAggregate* ArrayAggregate::vectorize(int& simdLength)
 {
-    return new ArrayAggregate( Op::toSimd(type_), num_);
+    ArrayAggregate* result = new ArrayAggregate( Op::toSimd(type_), num_);
+    result->analyze();
+    result->simdLength_ = arch->getSimdWidth() / size_;
+    simdLength = result->simdLength_;
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +241,7 @@ void Struct::analyze()
     }
 }
 
-Struct* Struct::vectorize() const
+Struct* Struct::vectorize(int& simdLength)
 {
 #ifdef SWIFT_DEBUG
     Struct* result = new Struct( "simd_" + id_ );
@@ -241,9 +249,36 @@ Struct* Struct::vectorize() const
     Struct* result = new Struct();
 #endif // SWIFT_DEBUG
 
+    bool simdLengthSet = false;
+    bool vectorizeable = true;
+
     // for each member
     for (size_t i = 0; i < members_.size(); ++i)
-        result->members_.push_back( members_[i]->vectorize() );
+    {
+        int innerSimdLength;
+        Member* member = members_[i]->vectorize(innerSimdLength);
+
+        if (!simdLengthSet)
+        {
+            result->simdLength_ = innerSimdLength;
+            simdLengthSet = true;
+        }
+        else
+        {
+            if (result->simdLength_ != innerSimdLength)
+                vectorizeable = false;
+        }
+
+        result->members_.push_back(member);
+    }
+
+    if (!vectorizeable)
+    {
+        result->simdLength_ = NON_SIMD;
+        simdLength  = NON_SIMD;
+    }
+    else
+        simdLength = result->simdLength_;
 
     return result;
 }
