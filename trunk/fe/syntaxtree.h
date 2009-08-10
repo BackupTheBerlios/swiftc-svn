@@ -125,7 +125,7 @@ public:
      */
     
     virtual bool analyze() = 0;
-    void setSimd();
+    virtual void setSimdLength(int simdLength);
 
     /*
      * further methods
@@ -135,7 +135,6 @@ public:
     const me::Op* getPlace() const;
     me::Op* getPlace();
     bool isStoreNecessary() const;
-    bool simd_;
 
 protected:
 
@@ -146,6 +145,7 @@ protected:
     Type* type_;
     me::Op* place_;
     bool storeNecessary_;
+    int simdLength_;
 };
 
 //------------------------------------------------------------------------------

@@ -96,6 +96,11 @@ void ConstPool::insert(uint64_t value)
     uint64_.insert( std::make_pair(value, counter_++) );
 }
 
+void ConstPool::insert(UInt128 value) 
+{
+    uint128_.insert( std::make_pair(value, counter_++) );
+}
+
 /*
  * real types
  */

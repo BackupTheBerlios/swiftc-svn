@@ -51,7 +51,6 @@ void Vectorizer::process()
 
         currentInstrNode_ = iter;
         InstrBase* instr = iter->value_;
-        //std::cout << instr->toString() << std::endl;
 
         InstrBase* simdInstr = instr->toSimd(this);
         swiftAssert(simdInstr, "is 0");
@@ -71,6 +70,12 @@ Function* Vectorizer::getSimdFunction()
 Function* Vectorizer::function()
 {
     return function_;
+}
+
+int Vectorizer::getSimdLength()
+{
+    // TODO
+    return 4;
 }
 
 } // namespace me

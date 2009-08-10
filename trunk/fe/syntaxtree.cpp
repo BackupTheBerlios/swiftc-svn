@@ -105,6 +105,7 @@ TypeNode::TypeNode(Type* type, int line /*= NO_LINE*/)
     : Node(line)
     , type_(type)
     , storeNecessary_(false)
+    , simdLength_(0)
 {}
 
 TypeNode::~TypeNode()
@@ -116,11 +117,10 @@ TypeNode::~TypeNode()
  * virtual methods
  */
 
-void TypeNode::setSimd()
+void TypeNode::setSimdLength(int simdLength)
 {
-    simd_ = true;
+    simdLength_ = simdLength;
 }
-
 
 /*
  * further methods

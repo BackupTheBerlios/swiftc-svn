@@ -49,6 +49,7 @@ public:
 
     Function* getSimdFunction();
     Function* function();
+    int getSimdLength();
 
 //private:
 

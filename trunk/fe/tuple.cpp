@@ -139,10 +139,10 @@ void Tuple::emitStoreIfApplicable(Expr* expr)
         access->emitStoreIfApplicable(expr);
 }
 
-void Tuple::setSimd()
+void Tuple::setSimdLength(int simdLength)
 {
     for (Tuple* iter = this; iter != 0; iter = iter->next_)
-        iter->typeNode_->setSimd();
+        iter->typeNode_->setSimdLength(simdLength);
 }
 
 } // namespace swift

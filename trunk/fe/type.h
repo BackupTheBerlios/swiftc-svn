@@ -397,6 +397,8 @@ public:
     virtual std::string containerStr() const;
 };
 
+typedef std::vector<Simd*> SimdContainers;
+
 //------------------------------------------------------------------------------
 
 } // namespace swift

@@ -47,7 +47,7 @@ public:
      * constructor
      */
 
-    Call(ExprList* exprList, Tuple* tuple, Signature* sig);
+    Call(ExprList* exprList, Tuple* tuple, Signature* sig, bool simd);
 
     /*
      * further methods
@@ -69,6 +69,7 @@ private:
     ExprList* exprList_; ///< Right hand side arguments.
     Tuple* tuple_; ///< Left hand side if present.
     Signature* sig_;
+    bool simd_;
 
     std::vector<me::Op*> in_;
     std::vector<me::Var*> out_;

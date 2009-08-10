@@ -126,7 +126,7 @@ jump_instruction
     }
     | X64_BRANCH bool_type X64_CONST 
     {   
-        if ($3->box_.bool_) 
+        if ($3->box().bool_) 
             EMIT("jmp\t" << $1->trueLabel()->asmName())
         else
             EMIT("jmp\t" << $1->falseLabel()->asmName())
@@ -147,7 +147,7 @@ jump_instruction
     }
     | X64_BRANCH_TRUE bool_type X64_CONST 
     {   
-        if ($3->box_.bool_) 
+        if ($3->box().bool_) 
             EMIT("jmp\t" << $1->trueLabel()->asmName())
     }
     | X64_BRANCH_TRUE bool_type X64_REG_1 
@@ -162,7 +162,7 @@ jump_instruction
     }
     | X64_BRANCH_FALSE bool_type X64_CONST 
     {   
-        if (!$3->box_.bool_) 
+        if (!$3->box().bool_) 
             EMIT("jmp\t" << $1->falseLabel()->asmName())
     }
     | X64_BRANCH_FALSE bool_type X64_REG_1 

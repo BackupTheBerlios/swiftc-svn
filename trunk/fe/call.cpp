@@ -36,10 +36,11 @@ namespace swift {
  * constructor
  */
 
-Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig)
+Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig, bool simd)
     : exprList_(exprList)
     , tuple_(tuple)
     , sig_(sig)
+    , simd_(simd)
     , place_(0)
 {}
 
@@ -93,11 +94,16 @@ void Call::emitCall()
             if ( param->getType()->isAtomic() )
             {
                 // -> this one is an ordinary out-param
+
+                me::Op::Type type = param->getType()->toMeType();
+                if (simd_)
+                    type = me::Op::toSimd(type);
+
 #ifdef SWIFT_DEBUG
                 std::string resStr = std::string("res");
-                me::Reg* res = me::functab->newReg( param->getType()->toMeType(), &resStr );
+                me::Reg* res = me::functab->newReg(type, &resStr);
 #else // SWIFT_DEBUG
-                me::Reg* res = me::functab->newReg( param->getType()->toMeType() );
+                me::Reg* res = me::functab->newReg(type);
 #endif // SWIFT_DEBUG
 
                 me::AssignInstr* ai = new me::AssignInstr(
@@ -114,7 +120,14 @@ void Call::emitCall()
                 swiftAssert( typeid(*param->getType()) == typeid(BaseType), 
                         "must be a BaseType here"); // TODO container
                 BaseType* bt = (BaseType*) param->getType();
-                me::Struct* _struct = bt->lookupClass()->meStruct_;
+                Class* _class = bt->lookupClass();
+                me::Struct* _struct;
+
+                if (simd_)
+                    _struct = _class->meSimdStruct_;
+                else
+                    _struct = _class->meStruct_;
+
 #ifdef SWIFT_DEBUG
                 std::string resStr = std::string("res");
                 me::MemVar* res = me::functab->newMemVar(_struct, &resStr );
@@ -156,8 +169,11 @@ void Call::emitCall()
      * create actual call
      */
 
-    me::CallInstr* call = new me::CallInstr( 
-            out_.size(), in_.size(), sig_->getMeId(), false);
+    std::string id = sig_->getMeId();
+    if (simd_)
+        id += "simd";
+
+    me::CallInstr* call = new me::CallInstr( out_.size(), in_.size(), id, false );
 
     for (size_t i = 0; i < in_.size(); ++i)
         call->arg_[i] = me::Arg( in_[i] );

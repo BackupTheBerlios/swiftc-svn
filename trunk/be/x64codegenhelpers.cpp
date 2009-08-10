@@ -206,24 +206,24 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_UINT8:
         {
             me::ConstPool::UInt8Map::iterator iter =
-                me::constpool->uint8_.find(cst->box_.uint8_);
+                me::constpool->uint8_.find(cst->box().uint8_);
 
             if ( iter == me::constpool->uint8_.end() )
-                me::constpool->insert(cst->box_.uint8_);
+                me::constpool->insert(cst->box().uint8_);
 
-            oss << ".LC" << me::constpool->uint8_[cst->box_.uint8_];
+            oss << ".LC" << me::constpool->uint8_[cst->box().uint8_];
             break;
         }
         case me::Op::R_INT16:
         case me::Op::R_UINT16:
         {
             me::ConstPool::UInt16Map::iterator iter =
-                me::constpool->uint16_.find(cst->box_.uint16_);
+                me::constpool->uint16_.find(cst->box().uint16_);
 
             if ( iter == me::constpool->uint16_.end() )
-                me::constpool->insert(cst->box_.uint16_);
+                me::constpool->insert(cst->box().uint16_);
 
-            oss << ".LC" << me::constpool->uint16_[cst->box_.uint16_];
+            oss << ".LC" << me::constpool->uint16_[cst->box().uint16_];
             break;
         }
         case me::Op::R_INT32:
@@ -231,12 +231,12 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_REAL32:
         {
             me::ConstPool::UInt32Map::iterator iter =
-                me::constpool->uint32_.find(cst->box_.uint32_);
+                me::constpool->uint32_.find(cst->box().uint32_);
 
             if ( iter == me::constpool->uint32_.end() )
-                me::constpool->insert(cst->box_.uint32_);
+                me::constpool->insert(cst->box().uint32_);
 
-            oss << ".LC" << me::constpool->uint32_[cst->box_.uint32_];
+            oss << ".LC" << me::constpool->uint32_[cst->box().uint32_];
             break;
         }
         case me::Op::R_INT64:
@@ -244,12 +244,38 @@ std::string mcst2str(me::Const* cst)
         case me::Op::R_REAL64:
         {
             me::ConstPool::UInt64Map::iterator iter =
-                me::constpool->uint64_.find(cst->box_.uint64_);
+                me::constpool->uint64_.find(cst->box().uint64_);
 
             if ( iter == me::constpool->uint64_.end() )
-                me::constpool->insert(cst->box_.uint64_);
+                me::constpool->insert(cst->box().uint64_);
 
-            oss << ".LC" << me::constpool->uint64_[cst->box_.uint64_];
+            oss << ".LC" << me::constpool->uint64_[cst->box().uint64_];
+            break;
+        }
+        case me::Op::S_INT8:
+        case me::Op::S_INT16:
+        case me::Op::S_INT32:
+        case me::Op::S_INT64:
+        case me::Op::S_SAT8:
+        case me::Op::S_SAT16:
+        case me::Op::S_UINT8:
+        case me::Op::S_UINT16:
+        case me::Op::S_UINT32:
+        case me::Op::S_UINT64:
+        case me::Op::S_USAT8:
+        case me::Op::S_USAT16:
+        case me::Op::S_REAL32:
+        case me::Op::S_REAL64:
+        {
+            UInt128 ui128(cst->boxes_, cst->numBoxElems_);
+
+            me::ConstPool::UInt128Map::iterator iter =
+                me::constpool->uint128_.find(ui128);
+
+            if ( iter == me::constpool->uint128_.end() )
+                me::constpool->insert(ui128);
+
+            oss << ".LC" << me::constpool->uint128_[ui128];
             break;
         }
         default:
@@ -279,22 +305,22 @@ std::string sgn_cst2str(me::Const* cst)
     switch (cst->type_)
     {
         case me::Op::R_INT8 : 
-            if (cst->box_.int16_ < 0)  
+            if (cst->box().int16_ < 0)  
                 return "$255"; 
             else 
                 return "$0";
         case me::Op::R_INT16: 
-            if (cst->box_.int16_ < 0) 
+            if (cst->box().int16_ < 0) 
                 return  "$65535"; 
             else 
                 return "$0";
         case me::Op::R_INT32: 
-            if (cst->box_.int32_ < 0) 
+            if (cst->box().int32_ < 0) 
                 return  "$4294967295"; 
             else 
                 return "$0";
         case me::Op::R_INT64: 
-            if (cst->box_.int64_ < 0) 
+            if (cst->box().int64_ < 0) 
                 return  "$18446744073709551615"; 
             else 
                 return "$0";
@@ -341,7 +367,7 @@ std::string cst2str(me::Const* cst)
 {
     std::ostringstream oss;
     oss << '$';
-    oss << cst->box_.uint64_;
+    oss << cst->box().uint64_;
 
     return oss.str();
 }
@@ -401,11 +427,11 @@ std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false
 
 #define OP_CONST_CASE(type, member, box_member)\
     case me::Op::type :\
-        box.member = -cst->box_.member;\
+        box.member = -cst->box().member;\
         if (mem)\
         {\
             me::Const newCst(cst->type_);\
-            newCst.box_ = box;\
+            newCst.box() = box;\
             return mcst2str(&newCst);\
         }\
         oss << box.box_member;\
@@ -440,6 +466,7 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     std::ostringstream oss;
     oss << '$';
     int kind = ai->kind_;
+    swiftAssert(kind != '&', "TODO");
 
     Box box;
 
@@ -450,29 +477,29 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     case me::Op::type :\
         switch (kind)\
         {\
-            case '+': box.member = cst1->box_.member + cst2->box_.member; break;\
-            case '-': box.member = cst1->box_.member - cst2->box_.member; break;\
-            case '*': box.member = cst1->box_.member * cst2->box_.member; break;\
-            case '/': box.member = cst1->box_.member / cst2->box_.member; break;\
+            case '+': box.member = cst1->box().member + cst2->box().member; break;\
+            case '-': box.member = cst1->box().member - cst2->box().member; break;\
+            case '*': box.member = cst1->box().member * cst2->box().member; break;\
+            case '/': box.member = cst1->box().member / cst2->box().member; break;\
             case me::AssignInstr::EQ:\
-                if (cst1->box_.member == cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member == cst2->box().member) return "$1"; else return "$0";\
             case me::AssignInstr::NE:\
-                if (cst1->box_.member != cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member != cst2->box().member) return "$1"; else return "$0";\
             case '<':\
-                if (cst1->box_.member <  cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member <  cst2->box().member) return "$1"; else return "$0";\
             case me::AssignInstr::LE:\
-                if (cst1->box_.member <= cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member <= cst2->box().member) return "$1"; else return "$0";\
             case '>':\
-                if (cst1->box_.member >  cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member >  cst2->box().member) return "$1"; else return "$0";\
             case me::AssignInstr::GE:\
-                if (cst1->box_.member >= cst2->box_.member) return "$1"; else return "$0";\
+                if (cst1->box().member >= cst2->box().member) return "$1"; else return "$0";\
             default:\
                 swiftAssert(false, "unreachable code"); \
         }\
         if (mem)\
         {\
             me::Const cst(cst1->type_);\
-            cst.box_ = box;\
+            cst.box() = box;\
             return mcst2str(&cst);\
         }\
         oss << box.box_member;\

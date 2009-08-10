@@ -908,9 +908,9 @@ std::string Load::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= Load(" 
-        << arg_[0].op_->toString() << ", ";
+        << arg_[0].op_->toString();
     if ( arg_.size() == 2 )
-        oss << arg_[1].op_->toString();
+        oss << ", " << arg_[1].op_->toString();
 
     if (offset_)
         oss << ", " << offset_->toString();
@@ -975,13 +975,13 @@ std::string LoadPtr::toString() const
 {
     std::ostringstream oss;
     oss << res_[0].var_->toString() << "\t= LoadPtr(" 
-        << arg_[0].op_->toString() << ", ";
+        << arg_[0].op_->toString();
 
     if ( arg_.size() == 2 )
-        oss << arg_[1].op_->toString() << ", ";
+        oss << ", " << arg_[1].op_->toString();
 
     if (offset_)
-         oss << offset_->toString(); 
+         oss << ", " << offset_->toString(); 
     
     oss << ')';
 
@@ -1069,14 +1069,14 @@ std::string Store::toString() const
         // -> store to a location on the stack
         oss << res_[0].var_->toString() << "\t= Store(" 
             << arg_[0]. op_->toString() << ", "
-            << arg_[1]. op_->toString() << ", ";
+            << arg_[1]. op_->toString();
 
         if ( arg_.size() == 3 )
-            oss << arg_[2].op_->toString() << ", ";
+            oss << ", " << arg_[2].op_->toString();
     }
 
     if (offset_)
-        oss << "(" << offset_->toString() << ')';
+        oss << ", (" << offset_->toString() << ')';
 
     return oss.str();
 }
@@ -1256,6 +1256,66 @@ Memcpy::Memcpy(Reg* src, Reg* dst)
     swiftAssert(dst->type_ == Op::R_PTR, "must be a Ptr here");
     arg_[0] = Arg(src);
     arg_[1] = Arg(dst);
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Pack::Pack(Reg* result, Op* op)
+    : InstrBase(1, 1)
+{
+    swiftAssert( me::Op::toSimd(op->type_) == result->type_,
+            "result->type_ must be the simd version of reg->type_");
+    res_[0] = Res(result);
+    arg_[0] = Arg(op);
+}
+
+/*
+ * virtual methods
+ */
+
+Pack* Pack::toSimd(Vectorizer* vectorizer) const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
+}
+
+std::string Pack::toString() const
+{
+    return res_[0].var_->toString() + "\tPack(" + arg_[0].op_->toString() + ')';
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Unpack::Unpack(Reg* result, Op* op)
+    : InstrBase(1, 1)
+{
+    swiftAssert( me::Op::toSimd(result->type_) == op->type_,
+            "reg->type_ must be the simd version of result->type_");
+    res_[0] = Res(result);
+    arg_[0] = Arg(op);
+}
+
+/*
+ * virtual methods
+ */
+
+Unpack* Unpack::toSimd(Vectorizer* vectorizer) const
+{
+    swiftAssert(false, "unreachable code");
+    return 0;
+}
+
+std::string Unpack::toString() const
+{
+    return res_[0].var_->toString() + "\tUnpack(" + arg_[0].op_->toString() + ')';
 }
 
 } // namespace me

@@ -366,17 +366,28 @@ class Vec2
 end
 
 class Foo
-    ptr{Gnatz} gnatz
 
-    writer foo(ptr{Gnatz} gnatz)
-        .gnatz = gnatz
+    routine foo() -> simd{Vec3} result
+        # ...
     end
 
     routine main()
-        ptr{Gnatz} gnatz = new Gnatz()
+        
+        simd{Vec3} v1
+        simd{Vec3} v2
 
-        Foo f
-        f.foo(gnatz)
+        simd Vec3 bar = 5.0, 6.0, 7.0
+
+        simd[0x, 10000x]: v1 = ::foo() + v2
+        simd[0x, 10000x]: v1 = ::cross(v2, v3) + v2
+
+        simd[0x, 10000x]: v1 = (::foo() + ::cross(v2, v3)) + (5 + 7)
+
     end
+
 end
+
+    tmp1 = foo()
+    tmp2 = 5 + 7
+
 

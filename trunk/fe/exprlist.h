@@ -33,6 +33,8 @@ namespace swift {
 
 class Expr;
 class FunctionCall;
+class Simd;
+typedef std::vector<Simd*> SimdContainers;
 
 //------------------------------------------------------------------------------
 
@@ -73,7 +75,8 @@ public:
     const Expr* getExpr() const;
     ExprList* next();
     const ExprList* next() const;
-    void setSimd();
+    void setSimdLength(int simdLength);
+    SimdContainers getSimdContainers();
 
 private:
 

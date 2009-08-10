@@ -1,6 +1,11 @@
+class Foo
+    index x
+    real r
+end
+
 class Test
     routine main() -> int result
-        array{index} a = 100x
+        array{index} a = 20x
         index i = 0x
 
         # write
@@ -26,5 +31,24 @@ class Test
         end
 
         c_call print_int(sum)
+
+        # array{Foo} af = 20x
+
+        # i = 0x
+        # # load and print
+        # # write
+        # while i < 20x
+        #     af[i].x = i
+        #     af[i].r = 5.0
+        #     i = i + 1x
+        # end
+
+        # i = 0x
+        # # load and print
+        # while i < 20x
+        #     c_call print_float( af[i].r )
+        #     i = i + 1x
+        # end
+
     end
 end

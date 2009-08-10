@@ -388,7 +388,7 @@ bool IndexExpr::analyzeAccess()
 #endif // SWIFT_DEBUG
 
     me::Const* elemSize = me::functab->newConst(me::Op::R_UINT64);
-    elemSize->box_.uint64_ = container->getInnerType()->sizeOf();
+    elemSize->box().uint64_ = container->getInnerType()->sizeOf();
     me::AssignInstr* mul = 
         new me::AssignInstr( '*', index_, indexExpr_->getPlace(), elemSize );
     me::functab->appendInstr(mul);

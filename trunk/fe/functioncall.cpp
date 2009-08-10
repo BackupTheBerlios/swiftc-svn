@@ -54,6 +54,12 @@ FunctionCall::~FunctionCall()
  * virtual methods
  */
 
+void FunctionCall::setSimdLength(int simdLength)
+{
+    simdLength_ = simdLength;
+    exprList_->setSimdLength(simdLength);
+}
+
 /*
  * further methods
  */
@@ -103,7 +109,7 @@ CCall::~CCall()
 bool CCall::analyze()
 {
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList(simd_) 
+        ? exprList_->getTypeList(simdLength_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     if ( returnType_ && !returnType_->validate() )
@@ -141,9 +147,6 @@ bool CCall::analyze()
         call->res_[i] = me::Res( out_[i] );
 
     me::functab->appendInstr(call); 
-
-    //if (tuple_)
-        //tuple_->emitStoreIfApplicable(this);
 
     return true;
 }
@@ -214,7 +217,7 @@ bool RoutineCall::analyze()
         return false;
 
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList(simd_) 
+        ? exprList_->getTypeList(simdLength_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     if (classId_)
@@ -236,7 +239,7 @@ bool RoutineCall::analyze()
     if (!memberFunction_)
         return false;
 
-    Call call(exprList_, tuple_, memberFunction_->sig_);
+    Call call(exprList_, tuple_, memberFunction_->sig_, simdLength_);
     call.emitCall();
 
     if (!tuple_)
@@ -301,7 +304,7 @@ bool BinExpr::analyze()
     if ( !tuple_ && !exprList_->analyze() )
         return false;
 
-    TypeList argTypeList = exprList_->getTypeList(simd_);
+    TypeList argTypeList = exprList_->getTypeList(simdLength_);
 
     const Ptr* ptr1 = dynamic_cast<const Ptr*>( op1_->getType() );
     const Ptr* ptr2 = dynamic_cast<const Ptr*>( op2_->getType() );
@@ -368,7 +371,7 @@ bool BinExpr::analyze()
     }
     // else
 
-    Call call(exprList_, tuple_, memberFunction->sig_);
+    Call call(exprList_, tuple_, memberFunction->sig_, simdLength_);
     call.emitCall();
 
     if (!tuple_)
@@ -413,7 +416,7 @@ MethodCall::~MethodCall()
 bool MethodCall::analyze()
 {
     TypeList argTypeList = exprList_ 
-        ? exprList_->getTypeList(simd_) 
+        ? exprList_->getTypeList(simdLength_) 
         : TypeList(); // use empty TypeList when there is no ExprList
 
     me::Reg* self;
@@ -487,7 +490,7 @@ bool MethodCall::analyze()
     if (!memberFunction_)
         return false;
 
-    Call call(exprList_, tuple_, memberFunction_->sig_);
+    Call call(exprList_, tuple_, memberFunction_->sig_, simdLength_);
     call.addSelf(self);
     call.emitCall();
 

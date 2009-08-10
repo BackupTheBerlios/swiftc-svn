@@ -51,13 +51,13 @@ simd class Vec3
 
         result = 0
 
-        simd{Vec3} vecs1 = 10000x
-        simd{Vec3} vecs2 = 10000x
-        simd{Vec3} vecs3 = 10000x
+        simd{Vec3} vecs1s = 1000000x
+        simd{Vec3} vecs2s = 1000000x
+        simd{Vec3} vecs3s = 1000000x
 
-        simd[0x, 10000x]: vecs1 = vecs2 + vecs3
-        simd[0x, 10000x]: vecs1 = Vec3::cross(vecs2, vecs3)
-        # simd[0x, 10000x]: c_call print_float(v3.z)
+        #simd[0x, 1000000x]: vecs1s = vecs2s + vecs3s
+        simd[0x, 1000000x]: vecs1s = Vec3::cross(vecs2s, vecs3s)
+        # simd[0x,0 10000x]: c_call print_float(v3.z)
         # simd: vecs1 = vecs2 + @.to_real()
     end
 

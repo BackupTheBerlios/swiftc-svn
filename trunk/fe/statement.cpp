@@ -45,6 +45,8 @@
 
 namespace swift {
 
+//------------------------------------------------------------------------------
+
 /*
  * constructor and destructor
  */
@@ -59,42 +61,6 @@ Statement::~Statement()
     if (next_)
         delete next_;
 };
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-ExprStatement::ExprStatement(SimdPrefix* simdPrefix, Expr* expr, int line)
-    : Statement(line)
-    , simdPrefix_(simdPrefix)
-    , expr_(expr)
-{}
-
-ExprStatement::~ExprStatement()
-{
-    delete simdPrefix_;
-    delete expr_;
-}
-
-bool ExprStatement::analyze()
-{
-    bool result = true;
-
-    if (simdPrefix_)
-    {
-        expr_->setSimd();
-        result &= simdPrefix_->analyze();
-    }
-
-    result &= expr_->analyze();
-
-    if (result && simdPrefix_)
-        simdPrefix_->genSSA();
-
-    return result;
-}
 
 //------------------------------------------------------------------------------
 
@@ -151,14 +117,64 @@ std::string DeclStatement::toString() const
  * constructor and destructor
  */
 
+ActionStatement::ActionStatement(SimdPrefix* simdPrefix, int line)
+    : Statement(line)
+    , simdPrefix_(simdPrefix)
+{}
+
+ActionStatement::~ActionStatement()
+{
+    delete simdPrefix_;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
+ExprStatement::ExprStatement(SimdPrefix* simdPrefix, Expr* expr, int line)
+    : ActionStatement(simdPrefix, line)
+    , expr_(expr)
+{}
+
+ExprStatement::~ExprStatement()
+{
+    delete expr_;
+}
+
+bool ExprStatement::analyze()
+{
+    bool result = true;
+
+    if (simdPrefix_)
+    {
+        expr_->setSimdLength(4); // TODO simd
+        result &= simdPrefix_->analyze();
+        simdPrefix_->genPreSSA(); // TODO
+    }
+
+    result &= expr_->analyze();
+
+    if (result && simdPrefix_)
+        simdPrefix_->genPostSSA(); // TODO
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor and destructor
+ */
+
 AssignStatement::AssignStatement(
         SimdPrefix* simdPrefix, 
         int kind, 
         Tuple* tuple, 
         ExprList* exprList, 
         int line)
-    : Statement(line)
-    , simdPrefix_(simdPrefix)
+    : ActionStatement(simdPrefix, line)
     , kind_(kind)
     , tuple_(tuple)
     , exprList_(exprList)
@@ -166,7 +182,6 @@ AssignStatement::AssignStatement(
 
 AssignStatement::~AssignStatement()
 {
-    delete simdPrefix_;
     delete tuple_;
     delete exprList_;
 }
@@ -181,9 +196,10 @@ bool AssignStatement::analyze()
 
     if (simdPrefix_)
     {
-        exprList_->setSimd();
-        tuple_->setSimd();
+        exprList_->setSimdLength(4); // TODO simd
+        tuple_->setSimdLength(4); // TODO simd
         result &= simdPrefix_->analyze();
+        simdPrefix_->genPreSSA();
     }
 
     if ( exprList_->moreThanOne() )
@@ -207,7 +223,7 @@ bool AssignStatement::analyze()
         result &= analyzeAssignCreate();
 
     if (result && simdPrefix_)
-        simdPrefix_->genSSA();
+        simdPrefix_->genPostSSA(); // TODO
 
     return result;
 }
@@ -356,7 +372,7 @@ bool AssignStatement::analyzeAssignCreate()
 
                 // calculate size
                 me::Const* elemSize = me::functab->newConst(me::Op::R_UINT64);
-                elemSize->box_.uint64_ = container->getInnerType()->sizeOf();
+                elemSize->box().uint64_ = container->getInnerType()->sizeOf();
                 me::AssignInstr* mul = 
                     new me::AssignInstr('*', size, numElems, elemSize);
                 me::functab->appendInstr(mul);
@@ -381,10 +397,10 @@ bool AssignStatement::analyzeAssignCreate()
                     size_t simdLength = bt->lookupClass()->meSimdStruct_->getSimdLength();
 
                     me::Const* simdLength_minus_one = me::functab->newConst(me::Op::R_UINT64);
-                    simdLength_minus_one->box_.uint64_ = simdLength - 1ull;
+                    simdLength_minus_one->box().uint64_ = simdLength - 1ull;
 
                     me::Const* not_simdLength_minus_one = me::functab->newConst(me::Op::R_UINT64);
-                    not_simdLength_minus_one->box_.uint64_ = ~(simdLength - 1ull);
+                    not_simdLength_minus_one->box().uint64_ = ~(simdLength - 1ull);
 
                     me::AssignInstr* plus = 
                         new me::AssignInstr('+', size, size, simdLength_minus_one);
@@ -428,7 +444,7 @@ bool AssignStatement::analyzeAssignCreate()
         {
             swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
-            Call call(exprList_, tuple_, assignCreate->sig_);
+            Call call(exprList_, tuple_, assignCreate->sig_, simdPrefix_);
             swiftAssert( typeid(*tuple_->typeNode()->getPlace()) == typeid(me::Reg),
                     "must be a Reg here" );
             call.addSelf( (me::Reg*) tuple_->typeNode()->getPlace() );

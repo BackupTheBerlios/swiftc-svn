@@ -153,12 +153,15 @@ Undef* Undef::toSimd(Vectorizer* vectorizer) const
 //------------------------------------------------------------------------------
 
 /*
- * constructor and destructor
+ * constructor
  */
-Const::Const(Type type)
+
+Const::Const(Type type, size_t numBoxElems /*= 1*/)
     : Op(type)
+    , numBoxElems_(numBoxElems)
 {
-    box_.uint64_ = 0; // clear all bits
+    for (size_t i = 0; i < numBoxElems_; ++i)
+        boxes_[i].uint64_ = 0; // clear all bits
 }
 
 /*
@@ -167,8 +170,12 @@ Const::Const(Type type)
 
 Const* Const::toSimd(Vectorizer* vectorizer) const
 {
-    Const* cst = vectorizer->simdFunction_->newConst( Op::toSimd(type_) );
-    cst->box_ = box_;
+    swiftAssert( !isSimd(), "must not be an simd type" );
+    int simdLength = vectorizer->getSimdLength();
+    Const* cst = vectorizer->simdFunction_->newConst( Op::toSimd(type_), simdLength );
+
+    // broadcast original constant
+    cst->broadcast(boxes_[0]);
 
     return cst;
 }
@@ -177,46 +184,86 @@ std::string Const::toString() const
 {
     std::ostringstream oss;
 
-    switch (type_)
+    for (size_t i = 0; i < numBoxElems_; ++i)
     {
-        case R_INT8:   oss << int(box_.int8_)  << "b";   break;
-        case R_INT16:  oss << box_.int16_      << "w";   break;
-        case R_INT32:  oss << box_.int32_      << "d";   break;
-        case R_INT64:  oss << box_.int64_      << "q";   break;
-        case R_SAT8:   oss << int(box_.int8_)  << "sb";  break;
-        case R_SAT16:  oss << box_.int16_      << "sw";  break;
+        switch (type_)
+        {
+            case S_INT8:
+            case R_INT8:   oss << int(boxes_[i].int8_)  << "b";   break;
+            case S_INT16:
+            case R_INT16:  oss << boxes_[i].int16_      << "w";   break;
+            case S_INT32:
+            case R_INT32:  oss << boxes_[i].int32_      << "d";   break;
+            case S_INT64:
+            case R_INT64:  oss << boxes_[i].int64_      << "q";   break;
+            case S_SAT8:
+            case R_SAT8:   oss << int(boxes_[i].int8_)  << "sb";  break;
+            case S_SAT16:
+            case R_SAT16:  oss << boxes_[i].int16_      << "sw";  break;
 
-        case R_UINT8:  oss << int(box_.uint8_) << "ub";  break;
-        case R_UINT16: oss << box_.uint16_     << "uw";  break;
-        case R_UINT32: oss << box_.uint32_     << "ud";  break;
-        case R_UINT64: oss << box_.uint64_     << "uq";  break;
-        case R_USAT8:  oss << int(box_.uint8_) << "usb"; break;
-        case R_USAT16: oss << box_.uint16_     << "usw"; break;
-        case R_BOOL:
-            if (box_.bool_)
-                oss << "true";
-            else
-                oss << "false";
-            break;
-        case R_REAL32:
-            oss << box_.float_;
-            if ( fmod(box_.float_, 1.0) == 0.0 )
-                oss << ".d";
-            else
-                oss << "d";
-            break;
-        case R_REAL64:
-            oss << box_.double_;
-            if ( fmod(box_.double_, 1.0) == 0.0 )
-                oss << ".q";
-            else
-                oss << "q"; // FIXME
-            break;
-        default:
-            swiftAssert(false, "VR_* not implemented yet");
+            case S_UINT8:
+            case R_UINT8:  oss << int(boxes_[i].uint8_) << "ub";  break;
+            case S_UINT16:
+            case R_UINT16: oss << boxes_[i].uint16_     << "uw";  break;
+            case S_UINT32:
+            case R_UINT32: oss << boxes_[i].uint32_     << "ud";  break;
+            case S_UINT64:
+            case R_UINT64: oss << boxes_[i].uint64_     << "uq";  break;
+            case S_USAT8:
+            case R_USAT8:  oss << int(boxes_[i].uint8_) << "usb"; break;
+            case S_USAT16:
+            case R_USAT16: oss << boxes_[i].uint16_     << "usw"; break;
+            case R_BOOL:
+                if (boxes_[i].bool_)
+                    oss << "true";
+                else
+                    oss << "false";
+                break;
+            case S_REAL32:
+            case R_REAL32:
+                oss << boxes_[i].float_;
+                if ( fmod(boxes_[i].float_, 1.0) == 0.0 )
+                    oss << ".d";
+                else
+                    oss << "d";
+                break;
+            case S_REAL64:
+            case R_REAL64:
+                oss << boxes_[i].double_;
+                if ( fmod(boxes_[i].double_, 1.0) == 0.0 )
+                    oss << ".q";
+                else
+                    oss << "q"; // FIXME
+                break;
+            default:
+                swiftAssert(false, "unreachable code");
+        }
+
+        if (i != numBoxElems_ - 1)
+            oss << '|';
     }
 
     return oss.str();
+}
+
+/*
+ * further methods
+ */
+
+Box& Const::box()
+{
+    return boxes_[0];
+}
+
+const Box& Const::box() const
+{
+    return boxes_[0];
+}
+
+void Const::broadcast(const Box& box)
+{
+    for (size_t i = 0; i < numBoxElems_; ++i)
+        boxes_[i] = box;
 }
 
 //------------------------------------------------------------------------------

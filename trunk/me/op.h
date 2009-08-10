@@ -216,6 +216,8 @@ struct Undef : public Op
 
 //------------------------------------------------------------------------------
 
+#define NUM_MAX_SIMD_WIDTH 16
+
 /** 
  * @brief Represents a Const.
  *
@@ -223,13 +225,14 @@ struct Undef : public Op
  */
 struct Const : public Op
 {
-    Box box_;
+    Box boxes_[NUM_MAX_SIMD_WIDTH];
+    size_t numBoxElems_;
 
     /*
-     * constructor and destructor
+     * constructor
      */
 
-    Const(Type type);
+    Const(Type type, size_t numBoxElems = 1);
 
     /*
      * virtual methods
@@ -237,6 +240,17 @@ struct Const : public Op
 
     virtual Const* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
+
+    /*
+     * further methods
+     */
+
+    /// Returns the default first element of the \p box array.
+    Box& box();
+    /// Returns the default first element of the \p box array.
+    const Box& box() const;
+
+    void broadcast(const Box& box);
 };
 
 //------------------------------------------------------------------------------

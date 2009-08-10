@@ -42,6 +42,7 @@ namespace swift {
 
 class Expr;
 class Var;
+class Simd;
 
 //------------------------------------------------------------------------------
 
@@ -65,6 +66,7 @@ public:
      * further methods
      */
 
+    Simd* getSimdContainer();
     void neededAsLValue();
     // TODO rename this to sth appropriate
     void doNotLoadPtr();
@@ -81,10 +83,9 @@ protected:
 
 //------------------------------------------------------------------------------
 
-struct Literal : public Expr
+class Literal : public Expr
 {
-    int kind_;
-    Box box_;
+public:
 
     /*
      * constructor
@@ -113,11 +114,15 @@ struct Literal : public Expr
     static void initTypeMap();
     static void destroyTypeMap();
 
-private:
-
     /*
      * data
      */
+
+    Box box_;
+
+private:
+
+    int kind_;
 
     typedef std::map<int, me::Op::Type> TypeMap;
     static TypeMap* typeMap_;
@@ -183,6 +188,7 @@ struct UnExpr : public Expr
 
     virtual std::string toString() const;
     virtual bool analyze();
+    virtual void setSimdLength(int simdLength);
 
     /*
      * further methods

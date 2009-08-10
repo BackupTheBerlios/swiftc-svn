@@ -19,7 +19,7 @@
 
 
 /* 
-    TODO remove right recursion and favour left recursion 
+    TODO remove right recursion in favour of left recursion 
 */
 
 %{
@@ -403,7 +403,6 @@ statement
     /*
         control flow statements
     */
-
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine-1); }
 
     | SCOPE EOL statement_list END EOL      { $$ = new ScopeStatement($3, currentLine-1); }

@@ -22,6 +22,7 @@
 
 #include <ostream>
 
+#include "utils/assert.h"
 #include "utils/types.h"
 
 union Box
@@ -68,6 +69,58 @@ To convert(From from)
 
     return conv.to_;
 }
+
+//------------------------------------------------------------------------------
+
+class UInt128
+{
+public:
+
+    UInt128(Box* boxes, size_t numElems)
+    {
+        if (numElems == 2)
+        {
+            uint64_[0] = boxes[0].uint64_;
+            uint64_[1] = boxes[1].uint64_;
+        }
+        else if (numElems == 4)
+        {
+            for (size_t i = 0; i < 4; ++i)
+                uint32_[i] = boxes[i].uint32_;
+        }
+        else if (numElems == 8)
+        {
+            for (size_t i = 0; i < 8; ++i)
+                uint16_[i] = boxes[i].uint16_;
+        }
+        else
+        {
+            swiftAssert(numElems == 16, "must be 16 here");
+            for (size_t i = 0; i < 16; ++i)
+                uint8_[i] = boxes[i].uint8_;
+        }
+    }
+
+    bool operator < (const UInt128& ui128) const
+    {
+        if (uint64_[0] != ui128.uint64_[0])
+            return uint64_[0] < ui128.uint64_[0];
+        else
+            return uint64_[1] < ui128.uint64_[1];
+    }
+
+    /*
+     * data
+     */
+
+    union 
+    {
+        uint64_t uint64_[2];
+        uint32_t uint32_[4];
+        uint16_t uint16_[8];
+        uint8_t  uint8_[16];
+    };
+};
 
 //------------------------------------------------------------------------------
 

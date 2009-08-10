@@ -72,6 +72,11 @@ Expr::Expr(int line)
  * virtual methods
  */
 
+Simd* Expr::getSimdContainer()
+{
+    return 0;
+}
+
 /*
  * further methods
  */
@@ -104,15 +109,8 @@ Literal::Literal(int kind, int line /*= NO_LINE*/)
 {}
 
 /*
- * further methods
+ * virtual methods
  */
-
-me::Op::Type Literal::toType() const
-{
-    swiftAssert(typeMap_->find(kind_) != typeMap_->end(), 
-            "must be found here");
-    return typeMap_->find(kind_)->second;
-}
 
 bool Literal::analyze()
 {
@@ -156,15 +154,6 @@ bool Literal::analyze()
     genSSA();
 
     return true;
-}
-
-void Literal::genSSA()
-{
-    // create appropriate Var
-    me::Const* literal = me::functab->newConst( toType() );
-    literal->box_ = box_;
-    place_ = literal;
-    //TODO do int stuff arch independently
 }
 
 std::string Literal::toString() const
@@ -220,6 +209,34 @@ std::string Literal::toString() const
     }
 
     return oss.str();
+}
+
+/*
+ * further methods
+ */
+
+me::Op::Type Literal::toType() const
+{
+    swiftAssert(typeMap_->find(kind_) != typeMap_->end(), 
+            "must be found here");
+    return typeMap_->find(kind_)->second;
+}
+
+void Literal::genSSA()
+{
+    me::Const* literal;
+    if (simdLength_)
+    {
+        literal = me::functab->newConst( me::Op::toSimd(toType()), simdLength_ );
+        literal->broadcast(box_);
+    }
+    else
+    {
+        literal = me::functab->newConst( toType() );
+        literal->box() = box_;
+    }
+
+    place_ = literal;
 }
 
 /*
@@ -280,7 +297,7 @@ Id::~Id()
 }
 
 /*
- * further methods
+ * virtual methods
  */
 
 bool Id::analyze()
@@ -298,35 +315,57 @@ bool Id::analyze()
     const Container* container = dynamic_cast<Container*>(type_);
 
     if ( type_->isInternalAtomic() )
-        place_ = var_->getMeVar();
-    else
     {
-        if (doNotLoadPtr_)
+        if (simdLength_)
         {
-            if (container)
+            if ( type_->isAtomic() )
             {
-
+                me::Op::Type simdType = me::Op::toSimd( type_->toMeType() );
 #ifdef SWIFT_DEBUG
-                std::string tmpStr = std::string("ptr_") + var_->getMeVar()->id_;
-                me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+                std::string tmpStr = std::string("s_") + *id_;
+                me::Reg* simdVar = me::functab->newReg(simdType, &tmpStr);
 #else // SWIFT_DEBUG
-                me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+                me::Reg* simdVar = me::functab->newReg(simdType);
 #endif // SWIFT_DEBUG
 
-                me::Load* load = new me::Load(
-                        ptr, 
-                        var_->getMeVar(), 
-                        0, 
-                        Container::createContainerPtrOffset() );
-
-                me::functab->appendInstr(load);
-
-                place_ = ptr;
-                type_->modifier() = REF;
+                me::Pack* pack = new me::Pack( simdVar, var_->getMeVar() );
+                me::functab->appendInstr(pack);
+                place_ = simdVar;
             }
             else
-                place_ = var_->getMeVar();
+            {
+                //const BaseType* bt = type_->unnestPtr();
+                // TODO pack basetype
+            }
         }
+        else
+            place_ = var_->getMeVar();
+    }
+    else
+    {
+        if ( container && (doNotLoadPtr_ || simdLength_) )
+        {
+
+#ifdef SWIFT_DEBUG
+            std::string tmpStr = std::string("ptr_") + var_->getMeVar()->id_;
+            me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+            me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+            me::Load* load = new me::Load(
+                    ptr, 
+                    var_->getMeVar(), 
+                    0, 
+                    Container::createContainerPtrOffset() );
+
+            me::functab->appendInstr(load);
+
+            place_ = ptr;
+            type_->modifier() = REF;
+        }
+        else if (doNotLoadPtr_)
+            place_ = var_->getMeVar();
         else
         {
             // mark type as reference
@@ -351,6 +390,10 @@ std::string Id::toString() const
 {
     return *id_;
 }
+
+/*
+ * further methods
+ */
 
 //------------------------------------------------------------------------------
 
@@ -418,6 +461,16 @@ bool UnExpr::analyze()
     return true;
 }
 
+void UnExpr::setSimdLength(int simdLength)
+{
+    simdLength_ = simdLength_;
+    op_->setSimdLength(simdLength);
+}
+
+/*
+ * further methods
+ */
+
 void UnExpr::genSSA()
 {
     me::Var* var = type_->createVar();
@@ -477,7 +530,7 @@ bool Nil::analyze()
     type_ = new Ptr( CONST, innerType_->clone() );
 
     me::Const* literal = me::functab->newConst(me::Op::R_PTR);
-    literal->box_.ptr_ = 0;
+    literal->box().ptr_ = 0;
     place_ = literal;
 
     return true;

@@ -405,7 +405,7 @@ struct JumpInstr : public InstrBase
     JumpInstr(size_t numLhs, size_t numRhs_, size_t numTargets);
 };
 
-//-------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 
 /** 
@@ -808,6 +808,46 @@ struct Memcpy : public CallInstr
      */
 
     Memcpy(Reg* src, Reg* dst);
+};
+
+//------------------------------------------------------------------------------
+
+class Pack : public InstrBase
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    Pack(Reg* result, Op* op);
+
+    /*
+     * virtual methods
+     */
+
+    virtual Pack* toSimd(Vectorizer* vectorizer) const;
+    virtual std::string toString() const;
+};
+
+//------------------------------------------------------------------------------
+
+class Unpack : public InstrBase
+{
+public:
+
+    /*
+     * constructor
+     */
+
+    Unpack(Reg* result, Op* op);
+
+    /*
+     * virtual methods
+     */
+
+    virtual Unpack* toSimd(Vectorizer* vectorizer) const;
+    virtual std::string toString() const;
 };
 
 } // namespace me

@@ -170,6 +170,19 @@ void X64::dumpConstants(std::ofstream& ofs)
     ofs << ".LCS64:\n";
     ofs << ".quad " << 0x8000000000000000ULL << '\n';
 
+    /*
+     * double quad constants 
+     */
+
+    ofs << "\t.align\t16\n";
+
+    UINT128MAP_EACH(iter)
+    {
+        ofs << ".LC" << iter->second << ":\n";
+        ofs << ".quad " << iter->first.uint64_[0] << '\n'; // correct or other way round?
+        ofs << ".quad " << iter->first.uint64_[1] << '\n';
+    }
+
     ofs << '\n';
 }
 

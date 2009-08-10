@@ -145,7 +145,7 @@ struct Function
 
     Var* cloneNewSSA(Var* var);
 
-    Const* newConst(Op::Type type);
+    Const* newConst(Op::Type type, size_t numBoxElems = 1);
     Undef* newUndef(Op::Type type);
 
     void insert(Var* var);
@@ -219,7 +219,7 @@ struct FunctionTable
 
     Var* cloneNewSSA(Var* var);
 
-    Const* newConst(Op::Type type);
+    Const* newConst(Op::Type type, size_t numBoxElems = 1);
     Undef* newUndef(Op::Type type);
 
     Var* lookupVar(int id);

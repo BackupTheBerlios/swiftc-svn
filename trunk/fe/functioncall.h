@@ -41,6 +41,12 @@ public:
     virtual ~FunctionCall();
 
     /*
+     * virtual methods
+     */
+
+    virtual void setSimdLength(int simdLength);
+
+    /*
      * further methods
      */
 

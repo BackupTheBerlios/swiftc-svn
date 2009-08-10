@@ -52,7 +52,7 @@ struct DefUse
      * data
      */
 
-    Var* var_;              /// < The var which is referenced here.
+    Var* var_;              ///< The var which is referenced here.
     InstrNode* instrNode_;  ///< The instruction which is referenced here.
     BBNode* bbNode_;        ///< The basic block where \a instr_ can be found.
 };

@@ -90,12 +90,17 @@ bool SimdPrefix::analyze()
         return false;
     }
 
+    return true;
+}
+
+void SimdPrefix::genPreSSA()
+{
     /*
      * generate this SSA code:
      *
      *     $simd_counter = left
      * simdLabelNode:
-     *     $simd_check = $simd_counter < rigt
+     *     $SIMd_check = $simd_counter < rigt
      *     IF simd_check THEN trueLabelNode ELSE nextLabelNode
      * trueLabelNode:
      *     //...                             <- will be created by the parent statement
@@ -139,11 +144,9 @@ bool SimdPrefix::analyze()
 
     // trueLabelNode:
     me::functab->appendInstrNode(trueLabelNode);
-
-    return true;
 }
 
-void SimdPrefix::genSSA()
+void SimdPrefix::genPostSSA()
 {
     /*
      * generate this SSA code:
@@ -162,7 +165,7 @@ void SimdPrefix::genSSA()
 
     // $simd_counter = $simd_counter + 1
     me::Const* one = me::functab->newConst(me::Op::R_UINT64);
-    one->box_.uint64_ = 1;
+    one->box().uint64_ = 1;
     me::functab->appendInstr( new me::AssignInstr(
                 '+', counter_, counter_, one) );
 

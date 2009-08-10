@@ -133,10 +133,24 @@ const ExprList* ExprList::next() const
     return next_;
 }
 
-void ExprList::setSimd() 
+void ExprList::setSimdLength(int simdLength) 
 {
     for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        iter->expr_->setSimd();
+        iter->expr_->setSimdLength(simdLength);
+}
+
+SimdContainers ExprList::getSimdContainers() 
+{
+    SimdContainers result;
+
+    for (ExprList* iter = this; iter != 0; iter = iter->next_)
+    {
+        Simd* simd = iter->expr_->getSimdContainer();
+        if (simd)
+            result.push_back( iter->expr_->getSimdContainer() );
+    }
+
+    return result;
 }
 
 } // namespace swift

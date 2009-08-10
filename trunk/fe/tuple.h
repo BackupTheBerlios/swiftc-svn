@@ -70,7 +70,7 @@ public:
     TypeNode* typeNode();
     bool moreThanOne() const;
     void emitStoreIfApplicable(Expr* expr);
-    void setSimd();
+    void setSimdLength(int simdLength);
 
 private:
 

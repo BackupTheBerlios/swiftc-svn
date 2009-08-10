@@ -185,9 +185,9 @@ Var* Function::cloneNewSSA(Var* var)
     return newVar;
 }
 
-Const* Function::newConst(Op::Type type)
+Const* Function::newConst(Op::Type type, size_t numBoxElems /*= 1*/)
 {
-    Const* _const = new Const(type);
+    Const* _const = new Const(type, numBoxElems);
     consts_.push_back(_const);
 
     return _const;
@@ -429,9 +429,9 @@ Var* FunctionTable::cloneNewSSA(Var* var)
     return currentFunction_->cloneNewSSA(var);
 }
 
-Const* FunctionTable::newConst(Op::Type type)
+Const* FunctionTable::newConst(Op::Type type, size_t numBoxElems /*= 1*/)
 {
-    return currentFunction_->newConst(type);
+    return currentFunction_->newConst(type, numBoxElems);
 }
 
 Undef* FunctionTable::newUndef(Op::Type type)

@@ -66,31 +66,6 @@ struct Statement : public Node
 //------------------------------------------------------------------------------
 
 /**
- * An ExprStatement is an Statement which holds an Expr.
- */
-struct ExprStatement : public Statement
-{
-    SimdPrefix* simdPrefix_;
-    Expr* expr_;
-
-    /*
-     * constructor and destructor
-     */
-
-    ExprStatement(SimdPrefix* simd, Expr* expr, int line);
-    virtual ~ExprStatement();
-
-    /*
-     * further methods
-     */
-
-    virtual bool analyze();
-    virtual std::string toString() const { return std::string(""); }
-};
-
-//------------------------------------------------------------------------------
-
-/**
  * @brief This is DeclStatement, consisting of a Type, an Identifier and an ExprList.
  *
  * Furthermore it will create a Local which will be inserted in the SymbolTable.
@@ -128,24 +103,73 @@ private:
 
 //------------------------------------------------------------------------------
 
+class ActionStatement : public Statement
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    ActionStatement(SimdPrefix* simd, int line);
+    virtual ~ActionStatement();
+
+    /*
+     * further Methods
+     */
+
+protected:
+
+    /*
+     * data
+     */
+
+    SimdPrefix* simdPrefix_;
+};
+
+//------------------------------------------------------------------------------
+
+/**
+ * An ExprStatement is an Statement which holds an Expr.
+ */
+class ExprStatement : public ActionStatement
+{
+public:
+
+    /*
+     * constructor and destructor
+     */
+
+    ExprStatement(SimdPrefix* simd, Expr* expr, int line);
+    virtual ~ExprStatement();
+
+    /*
+     * further methods
+     */
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+
+private:
+
+    /*
+     * data
+     */
+
+    Expr* expr_;
+};
+
+//------------------------------------------------------------------------------
+
 /**
  * @brief This is an ordinary assignment. 
  *
  * In contrast to many other languages assignments in Swift are not expresions 
  * but statements.
  */
-struct AssignStatement : public Statement
+class AssignStatement : public ActionStatement
 {
-    SimdPrefix* simdPrefix_;
-
-    union
-    {
-        int kind_;
-        char c_; ///< '=', others will follow.
-    };
-
-    Tuple* tuple_;       ///< The lvalue.
-    ExprList* exprList_; ///< The rvalue.
+public:
 
     /*
      * constructor and destructor
@@ -172,6 +196,20 @@ struct AssignStatement : public Statement
 private:
 
     void atomicAssignment();
+
+    /*
+     * data
+     */
+
+    union
+    {
+        int kind_;
+        char c_; ///< '=', others will follow.
+    };
+
+    Tuple* tuple_;       ///< The lvalue.
+    ExprList* exprList_; ///< The rvalue.
+
 };
 
 //------------------------------------------------------------------------------

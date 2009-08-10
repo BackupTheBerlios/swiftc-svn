@@ -20,8 +20,8 @@
 #ifndef ME_CONST_POOL_H
 #define ME_CONST_POOL_H
 
-#include <map>
-
+#include "utils/box.h"
+#include "utils/map.h"
 #include "utils/types.h"
 
 namespace me {
@@ -38,6 +38,9 @@ namespace me {
 #define UINT64MAP_EACH(iter) \
     for (me::ConstPool::UInt64Map::iterator (iter) = me::constpool->uint64_.begin(); (iter) != me::constpool->uint64_.end(); ++(iter))
 
+#define UINT128MAP_EACH(iter) \
+    for (me::ConstPool::UInt128Map::iterator (iter) = me::constpool->uint128_.begin(); (iter) != me::constpool->uint128_.end(); ++(iter))
+
 class ConstPool
 {
 private:
@@ -46,29 +49,32 @@ private:
 
 public:
 
-    typedef std::map< uint8_t, int>  UInt8Map;
-    typedef std::map<uint16_t, int> UInt16Map;
-    typedef std::map<uint32_t, int> UInt32Map;
-    typedef std::map<uint64_t, int> UInt64Map;
+    typedef Map< uint8_t, int>   UInt8Map;
+    typedef Map<uint16_t, int>  UInt16Map;
+    typedef Map<uint32_t, int>  UInt32Map;
+    typedef Map<uint64_t, int>  UInt64Map;
+    typedef Map<UInt128,  int> UInt128Map;
 
-    UInt8Map  uint8_;
-    UInt16Map uint16_;
-    UInt32Map uint32_;
-    UInt64Map uint64_;
+    UInt8Map    uint8_;
+    UInt16Map   uint16_;
+    UInt32Map   uint32_;
+    UInt64Map   uint64_;
+    UInt128Map uint128_;
 
     ConstPool();
 
     void insert(bool value);
 
-    void insert(int8_t value);
+    void insert(int8_t  value);
     void insert(int16_t value);
     void insert(int32_t value);
     void insert(int64_t value);
 
-    void insert(uint8_t value);
+    void insert(uint8_t  value);
     void insert(uint16_t value);
     void insert(uint32_t value);
     void insert(uint64_t value);
+    void insert(UInt128  value);
 
     void insert(float value);
     void insert(double value);

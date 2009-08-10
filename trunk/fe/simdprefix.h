@@ -53,7 +53,8 @@ public:
      * further methods
      */
 
-    void genSSA();
+    void genPreSSA();
+    void genPostSSA();
     bool analyze();
 
 private:
