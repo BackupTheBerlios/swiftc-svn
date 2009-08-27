@@ -154,6 +154,15 @@ std::string reg2str(int color, me::Op::Type type)
     return reg2str(&reg);
 }
 
+std::string spilledReg2str(int color, me::Op::Type type)
+{
+    me::Reg reg(type, -1);
+    reg.isSpilled_ = true;
+    reg.color_ = color;
+
+    return reg2str(&reg);
+}
+
 std::string memvar_index2str(me::MemVar* memVar, me::Reg* index, size_t offset)
 {
     std::ostringstream oss;

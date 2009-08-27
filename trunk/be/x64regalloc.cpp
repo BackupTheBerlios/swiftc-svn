@@ -136,7 +136,7 @@ void X64RegAlloc::process()
      * spill general purpose registers
      */
 
-    me::Spiller( function_, intColors_->size(), R_TYPE_MASK ).process();
+    me::Spiller( function_, intColors_->size(), INT_TYPE_MASK ).process();
 
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
@@ -146,14 +146,14 @@ void X64RegAlloc::process()
      * spill XMM registers
      */
 
-    me::Spiller( function_, xmmColors_->size(), F_TYPE_MASK ).process();
+    me::Spiller( function_, xmmColors_->size(), XMM_TYPE_MASK ).process();
 
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
     me::LivenessAnalysis(function_).process();
 
     /*
-     * copy insertion -> faithful fixing -> live range splitting
+     * copy insertion
      */
 
     me::CopyInsertion(function_).process();
@@ -169,6 +169,10 @@ void X64RegAlloc::process()
     //me::DefUseCalc(function_).process();
     //me::LivenessAnalysis(function_).process();
 
+    /*
+     * live range splitting
+     */
+
     me::LiveRangeSplitting(function_).process();
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
@@ -179,14 +183,14 @@ void X64RegAlloc::process()
      */
 
     // general purpose registers
-    me::Coloring(function_, R_TYPE_MASK, *intColors_).process();
+    me::Coloring(function_, INT_TYPE_MASK, *intColors_).process();
 
     // XMM registers
-    me::Coloring(function_, F_TYPE_MASK | S_TYPE_MASK, *xmmColors_).process(); 
+    me::Coloring(function_, XMM_TYPE_MASK, *xmmColors_).process(); 
 
     // color spill slots
-    me::Coloring(function_, R_TYPE_MASK | F_TYPE_MASK, X64::QUADWORDS).process();
-    me::Coloring(function_, S_TYPE_MASK, X64::OCTWORDS).process();
+    me::Coloring(function_, QUADWORD_TYPE_MASK, X64::QUADWORDS).process();
+    me::Coloring(function_,  OCTWORD_TYPE_MASK, X64:: OCTWORDS).process();
 }
 
 bool X64RegAlloc::arg2Reg(me::InstrNode* iter, size_t i)

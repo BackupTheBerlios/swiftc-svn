@@ -52,6 +52,7 @@ typedef Map<int, Var*> VarMap;
 typedef Set<Var*> VarSet;
 typedef Set<Reg*> RegSet;
 typedef std::vector<Var*> VarVec;
+typedef Set<int> Colors;
 
 } // namespace me
 

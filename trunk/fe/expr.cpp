@@ -69,15 +69,6 @@ Expr::Expr(int line)
 {}
 
 /*
- * virtual methods
- */
-
-Simd* Expr::getSimdContainer()
-{
-    return 0;
-}
-
-/*
  * further methods
  */
 
@@ -302,15 +293,24 @@ Id::~Id()
 
 bool Id::analyze()
 {
-    var_ = symtab->lookupVar(id_);
-
-    if (var_ == 0)
+    if (!simdLength_)
     {
-        errorf(line_, "'%s' was not declared in this scope", id_->c_str());
-        return false;
-    }
+        var_ = symtab->lookupVar(id_);
 
-    type_ = var_->getType()->clone();
+        if (var_ == 0)
+        {
+            errorf(line_, "'%s' was not declared in this scope", id_->c_str());
+            return false;
+        }
+
+        type_ = var_->getType()->clone();
+    }
+    else
+    {
+        const Simd* simd = dynamic_cast<const Simd*>(type_);
+        if (simd)
+            return true;
+    }
 
     const Container* container = dynamic_cast<Container*>(type_);
 
@@ -345,7 +345,6 @@ bool Id::analyze()
     {
         if ( container && (doNotLoadPtr_ || simdLength_) )
         {
-
 #ifdef SWIFT_DEBUG
             std::string tmpStr = std::string("ptr_") + var_->getMeVar()->id_;
             me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &tmpStr);
@@ -386,14 +385,56 @@ bool Id::analyze()
     return true;
 }
 
+void Id::simdAnalyze(SimdAnalyses& simdAnalyzes)
+{
+    SimdAnalysis result;
+    result.ptr_ = 0;
+    result.simdLength_ = 0;
+
+    var_ = symtab->lookupVar(id_);
+
+    if (var_ == 0)
+    {
+        errorf(line_, "'%s' was not declared in this scope", id_->c_str());
+        return;
+    }
+
+    type_ = var_->getType()->clone();
+
+    const Simd* simd = dynamic_cast<const Simd*>(type_);
+    result.simdLength_ = 
+        simd->getInnerType()->lookupClass()->meSimdStruct_->getSimdLength();
+
+    if (simd)
+    {
+#ifdef SWIFT_DEBUG
+        std::string tmpStr = std::string("ptr_") + var_->getMeVar()->id_;
+        me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &tmpStr);
+#else // SWIFT_DEBUG
+        me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
+#endif // SWIFT_DEBUG
+
+        me::Load* load = new me::Load(
+                ptr, 
+                var_->getMeVar(), 
+                0, 
+                Container::createContainerPtrOffset() );
+
+        me::functab->appendInstr(load);
+
+        place_ = ptr;
+        type_->modifier() = REF;
+
+        result.ptr_ = ptr;
+    }
+
+    simdAnalyzes.push_back(result);
+}
+
 std::string Id::toString() const
 {
     return *id_;
 }
-
-/*
- * further methods
- */
 
 //------------------------------------------------------------------------------
 
@@ -413,7 +454,7 @@ UnExpr::~UnExpr()
 }
 
 /*
- * further methods
+ * virtual methods
  */
 
 bool UnExpr::analyze()
@@ -467,6 +508,20 @@ void UnExpr::setSimdLength(int simdLength)
     op_->setSimdLength(simdLength);
 }
 
+void UnExpr::simdAnalyze(SimdAnalyses& simdAnalyzes)
+{
+    op_->simdAnalyze(simdAnalyzes);
+}
+
+std::string UnExpr::toString() const
+{
+    std::string* opString = operatorToString(kind_);
+    std::string result = *opString + " " + op_->toString();
+    delete opString;
+
+    return result;
+}
+
 /*
  * further methods
  */
@@ -491,15 +546,6 @@ void UnExpr::genSSA()
     }
 
     me::functab->appendInstr( new me::AssignInstr(kind, var, op_->getPlace()) );
-}
-
-std::string UnExpr::toString() const
-{
-    std::string* opString = operatorToString(kind_);
-    std::string result = *opString + " " + op_->toString();
-    delete opString;
-
-    return result;
 }
 
 //------------------------------------------------------------------------------

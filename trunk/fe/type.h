@@ -395,9 +395,14 @@ public:
 
     virtual Simd* clone() const;
     virtual std::string containerStr() const;
-};
 
-typedef std::vector<Simd*> SimdContainers;
+    /*
+     * further methods
+     */
+
+    BaseType* getInnerType();
+    const BaseType* getInnerType() const;
+};
 
 //------------------------------------------------------------------------------
 

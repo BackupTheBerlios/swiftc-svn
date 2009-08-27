@@ -124,6 +124,7 @@ ADD_EXECUTABLE (swift
     me/liverangesplitting.cpp
     me/op.cpp
     me/offset.cpp
+    me/phiimpl.cpp
     me/spiller.cpp
     me/ssa.cpp
     me/stackcoloring.cpp
@@ -137,6 +138,7 @@ ADD_EXECUTABLE (swift
     be/x64regalloc.cpp
     be/x64parser.tab.cpp
     be/x64parser.tab.hpp
+    be/x64phiimpl.cpp
 )
 
 #-------------------------------------------------------------------------------

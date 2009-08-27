@@ -183,6 +183,7 @@ struct Op
      */
 
     static bool isReal(Type type);
+    static bool isSimd(Type type);
     static int sizeOf(Type type);
     static Type toSimd(Type type);
 };

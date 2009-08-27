@@ -139,18 +139,10 @@ void ExprList::setSimdLength(int simdLength)
         iter->expr_->setSimdLength(simdLength);
 }
 
-SimdContainers ExprList::getSimdContainers() 
+void ExprList::simdAnalyze(SimdAnalyses& simdAnalyzes) 
 {
-    SimdContainers result;
-
     for (ExprList* iter = this; iter != 0; iter = iter->next_)
-    {
-        Simd* simd = iter->expr_->getSimdContainer();
-        if (simd)
-            result.push_back( iter->expr_->getSimdContainer() );
-    }
-
-    return result;
+        iter->expr_->simdAnalyze(simdAnalyzes);
 }
 
 } // namespace swift

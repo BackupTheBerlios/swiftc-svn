@@ -40,6 +40,7 @@ std::string mnemonic(const std::string& str, int);
 
 std::string reg2str(me::Reg* reg);
 std::string reg2str(int color, me::Op::Type type);
+std::string spilledReg2str(int color, me::Op::Type type);
 std::string memvar2str(me::MemVar* memVar, size_t Offset);
 std::string memvar_index2str(me::MemVar* memVar, me::Reg* index, size_t Offset);
 std::string ptr2str(me::Reg* reg, size_t offset);

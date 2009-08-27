@@ -109,6 +109,17 @@ struct Symbol : public Node
 
 //------------------------------------------------------------------------------
 
+struct SimdAnalysis 
+{
+    me::Reg* ptr_;
+    int simdLength_;
+};
+
+typedef std::vector<SimdAnalysis> SimdAnalyses;
+
+//------------------------------------------------------------------------------
+
+
 class TypeNode : public Node
 {
 public:
@@ -125,6 +136,7 @@ public:
      */
     
     virtual bool analyze() = 0;
+    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
     virtual void setSimdLength(int simdLength);
 
     /*

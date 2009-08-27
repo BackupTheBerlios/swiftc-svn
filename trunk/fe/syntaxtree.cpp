@@ -117,6 +117,10 @@ TypeNode::~TypeNode()
  * virtual methods
  */
 
+void TypeNode::simdAnalyze(SimdAnalyses& simdAnalyzes)
+{
+}
+
 void TypeNode::setSimdLength(int simdLength)
 {
     simdLength_ = simdLength;

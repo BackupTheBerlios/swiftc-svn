@@ -87,7 +87,7 @@ public:
 
     enum
     {
-        R_TYPE_MASK 
+        INT_TYPE_MASK 
             = me::Op::R_BOOL
             | me::Op::R_INT8  | me::Op::R_INT16  | me::Op::R_INT32  | me::Op::R_INT64 
             | me::Op::R_UINT8 | me::Op::R_UINT16 | me::Op::R_UINT32 | me::Op::R_UINT64
@@ -95,10 +95,15 @@ public:
             | me::Op::R_USAT8 | me::Op::R_USAT16
             | me::Op::R_PTR,
 
-        F_TYPE_MASK
+        FLOAT_TYPE_MASK
             = me::Op::R_REAL32| me::Op::R_REAL64,
 
-        S_TYPE_MASK = me::Op::SIMD
+        SIMD_TYPE_MASK = me::Op::SIMD,
+
+        XMM_TYPE_MASK = FLOAT_TYPE_MASK | SIMD_TYPE_MASK,
+
+        QUADWORD_TYPE_MASK = FLOAT_TYPE_MASK | INT_TYPE_MASK,
+         OCTWORD_TYPE_MASK = SIMD_TYPE_MASK
     };
 
     enum

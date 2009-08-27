@@ -45,6 +45,7 @@ public:
      */
 
     virtual void setSimdLength(int simdLength);
+    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
 
     /*
      * further methods

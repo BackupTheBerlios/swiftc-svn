@@ -118,6 +118,8 @@ public:
      * further Methods
      */
 
+    void simdAnalyze();
+
 protected:
 
     /*

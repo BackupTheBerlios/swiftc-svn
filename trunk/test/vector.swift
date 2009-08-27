@@ -55,7 +55,7 @@ simd class Vec3
         simd{Vec3} vecs2s = 1000000x
         simd{Vec3} vecs3s = 1000000x
 
-        #simd[0x, 1000000x]: vecs1s = vecs2s + vecs3s
+        simd[0x, 1000000x]: vecs1s = vecs2s + vecs3s
         simd[0x, 1000000x]: vecs1s = Vec3::cross(vecs2s, vecs3s)
         # simd[0x,0 10000x]: c_call print_float(v3.z)
         # simd: vecs1 = vecs2 + @.to_real()

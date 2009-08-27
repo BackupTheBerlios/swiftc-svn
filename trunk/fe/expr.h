@@ -66,7 +66,6 @@ public:
      * further methods
      */
 
-    Simd* getSimdContainer();
     void neededAsLValue();
     // TODO rename this to sth appropriate
     void doNotLoadPtr();
@@ -149,8 +148,9 @@ struct Id : public Expr
      * virtual methods
      */
 
-    virtual std::string toString() const;
     virtual bool analyze();
+    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    virtual std::string toString() const;
 
     /*
      * further methods
@@ -186,9 +186,10 @@ struct UnExpr : public Expr
      * virtual methods
      */
 
-    virtual std::string toString() const;
     virtual bool analyze();
     virtual void setSimdLength(int simdLength);
+    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    virtual std::string toString() const;
 
     /*
      * further methods

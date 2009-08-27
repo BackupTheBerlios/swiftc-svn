@@ -787,4 +787,24 @@ std::string Simd::containerStr() const
     return "simd";
 }
 
+/*
+ * further methods
+ */
+
+BaseType* Simd::getInnerType()
+{
+    swiftAssert( typeid(*innerType_) == typeid(BaseType),
+            "inner type must be a BaseType");
+
+    return (BaseType*) innerType_;
+}
+
+const BaseType* Simd::getInnerType() const
+{
+    swiftAssert( typeid(*innerType_) == typeid(BaseType),
+            "inner type must be a BaseType");
+
+    return (BaseType*) innerType_;
+}
+
 } // namespace swift

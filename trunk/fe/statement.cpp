@@ -156,8 +156,8 @@ bool ExprStatement::analyze()
 
     result &= expr_->analyze();
 
-    if (result && simdPrefix_)
-        simdPrefix_->genPostSSA(); // TODO
+    //if (result && simdPrefix_)
+        //simdPrefix_->genPostSSA(); // TODO
 
     return result;
 }
@@ -193,11 +193,34 @@ AssignStatement::~AssignStatement()
 bool AssignStatement::analyze()
 {
     bool result = true;
+    SimdAnalyses simdAnalyzes;
 
     if (simdPrefix_)
     {
-        exprList_->setSimdLength(4); // TODO simd
-        tuple_->setSimdLength(4); // TODO simd
+        exprList_->simdAnalyze(simdAnalyzes);
+        tuple_->simdAnalyze(simdAnalyzes);
+
+        if ( simdAnalyzes.empty() )
+        {
+            errorf(line_, "simd statement does not contain any simd containers");
+            return false;
+        }
+
+        int simdLength = simdAnalyzes[0].simdLength_;
+
+        for (size_t i = 0; i < simdAnalyzes.size(); ++i)
+        {
+            SimdAnalysis& simd = simdAnalyzes[i];
+
+            if (simd.simdLength_ != simdLength)
+            {
+                errorf(line_, "different simd lengths used in this simd statement");
+                return false;
+            }
+        }
+
+        exprList_->setSimdLength(simdLength);
+        tuple_->setSimdLength(simdLength);
         result &= simdPrefix_->analyze();
         simdPrefix_->genPreSSA();
     }
@@ -223,7 +246,7 @@ bool AssignStatement::analyze()
         result &= analyzeAssignCreate();
 
     if (result && simdPrefix_)
-        simdPrefix_->genPostSSA(); // TODO
+        simdPrefix_->genPostSSA(simdAnalyzes);
 
     return result;
 }

@@ -67,6 +67,11 @@ bool Op::isSimd() const
     return type_ & SIMD;
 }
 
+bool Op::isSimd(Type type) 
+{
+    return type & SIMD;
+}
+
 Reg* Op::isReg(int typeMask)
 {
     return 0;

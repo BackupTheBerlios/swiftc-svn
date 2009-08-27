@@ -146,7 +146,7 @@ void SimdPrefix::genPreSSA()
     me::functab->appendInstrNode(trueLabelNode);
 }
 
-void SimdPrefix::genPostSSA()
+void SimdPrefix::genPostSSA(SimdAnalyses& simdAnalyzes)
 {
     /*
      * generate this SSA code:
@@ -163,11 +163,19 @@ void SimdPrefix::genPostSSA()
      *     //...
      */
 
-    // $simd_counter = $simd_counter + 1
-    me::Const* one = me::functab->newConst(me::Op::R_UINT64);
-    one->box().uint64_ = 1;
+    // $simd_counter = $simd_counter + simdLength_
+    me::Const* cst = me::functab->newConst(me::Op::R_UINT64);
+    cst->box().uint64_ = simdAnalyzes[0].simdLength_;
     me::functab->appendInstr( new me::AssignInstr(
-                '+', counter_, counter_, one) );
+                '+', counter_, counter_, cst) );
+
+    for (size_t i = 0; i < simdAnalyzes.size(); ++i)
+    {
+        SimdAnalysis& simd = simdAnalyzes[i];
+
+        me::functab->appendInstr( new me::AssignInstr( 
+                    '+', simd.ptr_, simd.ptr_, cst) );
+    }
 
     // GOTO simdLabelNode_
     me::functab->appendInstr( new me::GotoInstr(simdLabelNode_) );

@@ -1,4 +1,3 @@
-
 /*
  * Swift compiler framework
  * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
@@ -28,6 +27,7 @@
 #include "me/stacklayout.h"
 
 #include "be/x64parser.h"
+#include "be/x64phiimpl.h"
 #include "be/x64codegenhelpers.h"
 
 //------------------------------------------------------------------------------
@@ -217,364 +217,38 @@ void X64CodeGen::process()
  * helpers
  */
 
-class RegGraph : public Graph<int>
-{
-    virtual std::string name() const
-    {
-        return "";
-    }
-};
-
-struct Link
-{
-    me::Op::Type type_;
-    bool spilled_;
-
-    Link() {}
-    Link(me::Op::Type type, bool spilled)
-        : type_(type)
-        , spilled_(spilled)
-    {}
-};
-
-typedef RegGraph::Node* RGNode;
-
-int meType2beType(me::Op::Type type)
-{
-    switch (type)
-    {
-        case me::Op::R_BOOL:  return X64_BOOL;
-
-        case me::Op::R_INT8:  return X64_INT8;
-        case me::Op::R_INT16: return X64_INT16;
-        case me::Op::R_INT32: return X64_INT32;
-        case me::Op::R_INT64: return X64_INT64;
-
-        case me::Op::R_SAT8:  return X64_SAT8;
-        case me::Op::R_SAT16: return X64_SAT16;
-
-        case me::Op::R_UINT8:  return X64_UINT8;
-        case me::Op::R_UINT16: return X64_UINT16;
-        case me::Op::R_UINT32: return X64_UINT32;
-        case me::Op::R_PTR:
-        case me::Op::R_UINT64: return X64_UINT64;
-
-        case me::Op::R_USAT8:  return X64_USAT8;
-        case me::Op::R_USAT16: return X64_USAT16;
-
-        case me::Op::R_REAL32: return X64_REAL32;
-        case me::Op::R_REAL64: return X64_REAL64;
-
-        default:
-            swiftAssert(false, "unreachable code");
-    }
-
-    return -1;
-}
-
-void X64CodeGen::genMove(me::Op::Type type, int r1, int r2)
-{
-    ofs_ << '\t' << mnemonic("mov", meType2beType(type)) << '\t' 
-         << reg2str(r1, type) << ", " << reg2str(r2, type) << '\n';
-}
-
 void X64CodeGen::genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode)
 {
-    me::BasicBlock* nextBB = nextNode->value_;
-
-    if ( !nextBB->hasPhiInstr() )
-        return;
+    if ( !nextNode->value_->hasPhiInstr() )
+        return; // nothing to do
 
 #ifdef SWIFT_DEBUG
     ofs_ << "\t /* phi functions */\n";
 #endif // SWIFT_DEBUG
 
-    /* 
-     * Because of the critical edge elimination prevNode's 
-     * successors can't have phi functions when prevNode has more than
-     * one successor.
+    /*
+     * phi-spilled first
      */
-    swiftAssert( prevNode->succ_.size() == 1, "must have exactly one successor");
 
-    size_t phiIndex = nextNode->whichPred(prevNode);
+    // quadword spill slots -> general purpose registers are used
+    X64PhiImpl(X64PhiImpl::QUADWORD_SPILL_SLOTS,
+            prevNode, nextNode, function_->usedColors_, ofs_).genPhiInstr();
+
+    // octword spill slots -> xmm registers are used 
+    X64PhiImpl(X64PhiImpl::OCTWORD_SPILL_SLOTS,
+            prevNode, nextNode, function_->usedColors_, ofs_).genPhiInstr();
 
     /*
-     * collect free registers
+     * now non-phi-spilled
      */
 
-    me::Colors xmmFree = *X64RegAlloc::getXmmColors();;
-    me::Colors intFree = *X64RegAlloc::getIntColors();
+    // integer registers
+    X64PhiImpl(X64PhiImpl::INT_REG,
+            prevNode, nextNode, function_->usedColors_, ofs_).genPhiInstr();
 
-    /* 
-     * erase all non-spilled regs which are in the live-out 
-     * of the last instruction of prevNode
-     */
-    VARSET_EACH(iter, prevNode->value_->end_->prev_->value_->liveOut_) 
-    {
-        if ( (*iter)->type_ == me::Op::R_MEM || (*iter)->isSpilled() )
-            continue; // ignore stack vars
-
-        if ( (*iter)->isReal() )
-        {
-            swiftAssert( xmmFree.contains((*iter)->color_), 
-                        "colors must be found here" );
-            xmmFree.erase( (*iter)->color_ );
-        }
-        else
-        {
-            swiftAssert( intFree.contains((*iter)->color_),
-                        "colors must be found here" );
-            intFree.erase( (*iter)->color_ );
-        }
-    }
-
-    const me::Colors& usedColors = function_->usedColors_;
-
-    // use these ones only if they are used anyway
-    if ( !usedColors.contains(X64RegAlloc::RBX) ) intFree.erase(X64RegAlloc::RBX);
-    if ( !usedColors.contains(X64RegAlloc::RBP) ) intFree.erase(X64RegAlloc::RBP);
-    if ( !usedColors.contains(X64RegAlloc::R12) ) intFree.erase(X64RegAlloc::R12);
-    if ( !usedColors.contains(X64RegAlloc::R13) ) intFree.erase(X64RegAlloc::R13);
-    if ( !usedColors.contains(X64RegAlloc::R14) ) intFree.erase(X64RegAlloc::R14);
-    if ( !usedColors.contains(X64RegAlloc::R15) ) intFree.erase(X64RegAlloc::R15);
-
-    RegGraph rg;
-    std::map<int, RegGraph::Node*> inserted;
-    typedef std::map< int, std::map<int, Link> > LinkTypes;
-    LinkTypes linkTypes;
-
-    // for each phi function in nextBB
-    for (me::InstrNode* iter = nextBB->firstPhi_; iter != nextBB->firstOrdinary_; iter = iter->next())
-    {
-        bool spilled = false;
-
-        swiftAssert( typeid(*iter->value_) == typeid(me::PhiInstr), 
-                "must be a PhiInstr here" );
-        me::PhiInstr* phi = (me::PhiInstr*) iter->value_;
-
-        // ignore phi functions of MemVars
-        if ( typeid(*phi->res_[0].var_) != typeid(me::Reg) )
-            continue;
-
-        // get regs
-        me::Reg* srcReg = (me::Reg*) phi->arg_[phiIndex].op_;
-        me::Reg* dstReg = (me::Reg*) phi->res_[0].var_;
-
-        if ( dstReg->isSpilled() )
-        {
-            swiftAssert(srcReg->isSpilled(), "must be spilled, too");
-            spilled = true;
-            std::cout << "spill TODO" << std::endl;
-        }
-
-        // is this a pointless definition? (should be optimized away)
-        if ( !phi->liveOut_.contains(dstReg) )
-            continue;
-
-        // is this a move of the dummy value UNDEF?
-        me::InstrNode* def = srcReg->def_.instrNode_;
-        if ( typeid(*def->value_) == typeid(me::AssignInstr) )
-        {
-            me::AssignInstr* ai = (me::AssignInstr*) def->value_;
-            if (ai->kind_ == '=')
-            {
-                if ( typeid(*ai->arg_[0].op_) == typeid(me::Undef) )
-                    continue; // yes -> so ignore this phi function
-            }
-        }
-
-        // get colors
-        int srcColor = srcReg->color_;
-        int dstColor = dstReg->color_;
-
-        // get Type
-        me::Op::Type type = dstReg->type_;
-        swiftAssert(srcReg->type_ == type, "types must match");
-
-        /* 
-         * check whether these colors have already been inserted 
-         * and insert if applicable
-         */
-        std::map<int, RegGraph::Node*>::iterator srcIter = inserted.find(srcColor);
-        if ( srcIter == inserted.end() )
-        {
-            srcIter = inserted.insert( std::make_pair(
-                        srcColor, rg.insert(new int(srcColor))) ).first;
-        }
-
-        std::map<int, RegGraph::Node*>::iterator dstIter = inserted.find(dstColor);
-        if ( dstIter == inserted.end() )
-        {
-            dstIter = inserted.insert( std::make_pair(
-                        dstColor, rg.insert(new int(dstColor))) ).first;
-        }
-
-        srcIter->second->link(dstIter->second);
-        linkTypes[srcColor][dstColor] = Link(type, spilled);
-    }
-
-    /*
-     * while there is an edge e = (r, s) with r != s 
-     * where the outdegree of s equals 0 ...
-     */
-    while (true)
-    {
-        RegGraph::Relative* iter = rg.nodes_.first();
-        while ( iter != rg.nodes_.sentinel() && !iter->value_->succ_.empty() )
-            iter = iter->next();
-
-        if ( iter != rg.nodes_.sentinel() )
-        {
-            RegGraph::Node* n = iter->value_;
-
-            // ... resolve this by a move p -> n
-            swiftAssert( n->pred_.size() == 1, 
-                    "must have exactly one predecessor" );
-            RegGraph::Node* p = n->pred_.first()->value_;
-
-            int p_color = *p->value_; // save color
-            int n_color = *n->value_; // save color
-            me::Op::Type type = linkTypes[p_color][n_color].type_;
-            genMove(type, p_color, n_color);
-
-            // p is free now while n is used now
-            if ( me::Op::isReal(type) )
-            {
-                xmmFree.insert(p_color);
-                xmmFree.erase (n_color);
-            }
-            else
-            {
-                intFree.insert(p_color);
-                intFree.erase (n_color);
-            }
-
-            rg.erase(n);
-
-            // if p doesn't have a predecessor erase it, too
-            if ( p->pred_.empty() )
-                rg.erase(p);
-        }
-        else
-            break;
-    }
-
-    /*
-     * now remove cycles
-     */
-
-    bool intPop = false;
-    bool xmmPop = false;
-
-    // while there are still nodes left
-    while ( !rg.nodes_.empty() )
-    {
-        // take first node
-        RegGraph::Relative* relative = rg.nodes_.first();
-        RegGraph::Node* node = relative->value_;
-
-        /*
-         * remove trivial self loops 
-         * without generating any instructions
-         */
-        if (node->succ_.first()->value_ == node)
-        {
-            rg.erase(node);
-            continue;
-        }
-            
-        /*
-         * -> we have a non-trivial cycle:
-         * R1 -> R2 -> R3 -> ... -> Rn -> R1
-         *
-         * -> generate these moves:
-         *  mov r1, free
-         *  mov rn, r1
-         *  ...
-         *  mov r2, r3
-         *  mov r1, r2
-         *  mov free, r1
-         */
-
-         // start with pred node
-        me::Op::Type type = linkTypes[*node->pred_.first()->value_->value_][*node->value_].type_;
-        int tmpRegColor;
-
-        if ( me::Op::isReal(type) )
-        {
-            if ( xmmFree.empty() )
-            {
-                // mov r1, mem: store in the 128 byte red zone area beyond RSP
-                ofs_ << "\tmovdqa\t" 
-                    << reg2str(*node->value_, type) 
-                    << ", -16(%rsp)\n";
-                xmmPop = true;
-            }
-            else
-            {
-                // mov r1, free
-                tmpRegColor = *xmmFree.begin();
-                swiftAssert(*node->value_ != tmpRegColor, "must be different");
-                genMove(type, *node->value_, tmpRegColor);
-            }
-        }
-        else
-        {
-            if ( intFree.empty() )
-            {
-                // mov r1, mem
-                ofs_ << "\tpushq\t" << reg2str(*node->value_, type) << '\n';
-                intPop = true;
-                std::cout << "not tested" << std::endl;
-            }
-            else
-            {
-                // mov r1, free
-                tmpRegColor = *intFree.begin();
-                swiftAssert(*node->value_ != tmpRegColor, "must be different");
-                genMove(type, *node->value_, tmpRegColor);
-            }
-        }
-
-        std::vector<RegGraph::Node*> toBeErased;
-
-        // iterate over the cycle
-        RegGraph::Node* dst = node; // current node
-        RegGraph::Node* src = node->pred_.first()->value_; // start with pred node
-        while (src != node) // until we reach r1 again
-        {
-            // mov r_current, r_pred
-            genMove(type, *src->value_, *dst->value_);
-
-            // remember for erasion
-            toBeErased.push_back(src);
-
-            // go to pred node
-            dst = src;
-            src = src->pred_.first()->value_;
-        }
-
-        int dstColor = *dst->value_;
-
-        /*
-         * mov free, rn
-         */
-        if (intPop)
-            ofs_ << "\tpopq\t%" << reg2str(dstColor, type) << '\n';
-        else if (xmmPop)
-        {
-            // stored in the 128 byte red zone area beyond RSP
-            ofs_ << "\tmovdqa\t-16(%rsp), " << reg2str(dstColor, type) << '\n';
-        }
-        else
-            genMove(type, tmpRegColor, dstColor);
-
-        toBeErased.push_back(node);
-
-        // remove all handled nodes
-        for (size_t i = 0; i < toBeErased.size(); ++i)
-            rg.erase( toBeErased[i] );
-    } // while there are still nodes left
+    // xmm registers
+    X64PhiImpl(X64PhiImpl::XMM_REG,
+            prevNode, nextNode, function_->usedColors_, ofs_).genPhiInstr();
 
 #ifdef SWIFT_DEBUG
     ofs_ << "\t /* end phi functions */\n";
