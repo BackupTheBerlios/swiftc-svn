@@ -113,6 +113,7 @@ struct SimdAnalysis
 {
     me::Reg* ptr_;
     int simdLength_;
+    int size_;
 };
 
 typedef std::vector<SimdAnalysis> SimdAnalyses;

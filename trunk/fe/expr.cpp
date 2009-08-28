@@ -402,8 +402,10 @@ void Id::simdAnalyze(SimdAnalyses& simdAnalyzes)
     type_ = var_->getType()->clone();
 
     const Simd* simd = dynamic_cast<const Simd*>(type_);
-    result.simdLength_ = 
-        simd->getInnerType()->lookupClass()->meSimdStruct_->getSimdLength();
+    const me::Struct* simdStruct = simd->getInnerType()->lookupClass()->meSimdStruct_;
+
+    result.simdLength_ = simdStruct->getSimdLength();
+    result.size_ = simdStruct->sizeOf();
 
     if (simd)
     {

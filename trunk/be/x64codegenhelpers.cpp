@@ -131,13 +131,13 @@ std::string reg2str(me::Reg* reg)
         {
             oss << '-' << (reg->color_ + 1) 
                 * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
-                + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rbp)";
+                + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rsp)";
         }
         else
         {
             oss << '-' << (reg->color_ + 1) 
                 * x64_stacklayout->places_[X64::OCTWORDS].itemSize_ 
-                + x64_stacklayout->places_[X64::OCTWORDS].offset_ + 8 << "(%rbp)";
+                + x64_stacklayout->places_[X64::OCTWORDS].offset_ + 8 << "(%rsp)";
         }
 
         return oss.str();

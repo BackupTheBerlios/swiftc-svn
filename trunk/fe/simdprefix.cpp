@@ -173,6 +173,10 @@ void SimdPrefix::genPostSSA(SimdAnalyses& simdAnalyzes)
     {
         SimdAnalysis& simd = simdAnalyzes[i];
 
+        me::Const* cst = me::functab->newConst(me::Op::R_UINT64);
+        cst->box().uint64_ = simd.size_;
+
+        // ptr = ptr + size
         me::functab->appendInstr( new me::AssignInstr( 
                     '+', simd.ptr_, simd.ptr_, cst) );
     }
