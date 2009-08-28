@@ -122,7 +122,7 @@ struct Op
 
     enum
     {
-        SIMD 
+        SIMD_TYPES 
             =  S_INT8 | S_INT16  |  S_INT32 |  S_INT64
             | S_UINT8 | S_UINT16 | S_UINT32 | S_UINT64
             | S_SAT8  | S_SAT16

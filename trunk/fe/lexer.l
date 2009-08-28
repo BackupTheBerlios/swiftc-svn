@@ -175,7 +175,7 @@ false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Litera
 {ID} { keyLine = currentLine; swiftlval.id_ = new std::string(yytext); return ID; }
 
 
-#[^\n].* { /* end of line commment */ }
+#[^\n]* { /* end of line commment */ }
 
 [ \t]   { /* skip whitespaces */ }
 
@@ -189,7 +189,7 @@ false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Litera
 
 
 <EOL_STATE>[ \t]    { /* skip whitespaces */ }
-<EOL_STATE>#[^\n].* { /* end of line commment */ }
+<EOL_STATE>#[^\n]*  { /* end of line commment */ }
 <EOL_STATE>\n       { ++currentLine; /* count line number */ }
 <EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
 

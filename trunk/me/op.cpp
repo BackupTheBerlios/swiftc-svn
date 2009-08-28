@@ -64,12 +64,12 @@ bool Op::isReal() const
 
 bool Op::isSimd() const
 {
-    return type_ & SIMD;
+    return type_ & SIMD_TYPES;
 }
 
 bool Op::isSimd(Type type) 
 {
-    return type & SIMD;
+    return type & SIMD_TYPES;
 }
 
 Reg* Op::isReg(int typeMask)
@@ -131,7 +131,7 @@ int Op::sizeOf(Type type)
             return -1;
 
         default:
-            swiftAssert(type & SIMD, "must a an simd type here");
+            swiftAssert(type & SIMD_TYPES, "must a an simd type here");
             return arch->getSimdWidth();
     }
 

@@ -98,7 +98,7 @@ public:
         FLOAT_TYPE_MASK
             = me::Op::R_REAL32| me::Op::R_REAL64,
 
-        SIMD_TYPE_MASK = me::Op::SIMD,
+        SIMD_TYPE_MASK = me::Op::SIMD_TYPES,
 
         XMM_TYPE_MASK = FLOAT_TYPE_MASK | SIMD_TYPE_MASK,
 
