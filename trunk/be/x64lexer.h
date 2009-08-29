@@ -17,44 +17,20 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef BE_X64_CODE_GEN_H
-#define BE_X64_CODE_GEN_H
+#ifndef X64_LEXER_H
+#define X64_LEXER_H
 
-#include <fstream>
-#include <string>
+#include "me/forward.h"
 
-#include "me/arch.h"
-#include "me/codepass.h"
+namespace me {
+    class StackLayout;
+}
 
-namespace be {
+int x64lex();
+void x64error(const char* s);
 
-/*
- * forward declarations
- */
+extern me::InstrNode* currentInstrNode;
+extern std::ofstream* x64_ofs;
+extern me::StackLayout* x64_stacklayout;
 
-struct StackLayout;
-
-//------------------------------------------------------------------------------
-
-class X64CodeGen : public me::CodeGen
-{
-public:
-
-    /*
-     * constructor
-     */
-
-    X64CodeGen(me::Function* function, std::ofstream& ofs);
-
-    /*
-     * further methods
-     */
-
-    virtual void process();
-    void genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode);
-};
-
-} // namespace be
-
-#endif // BE_X64_CODE_GEN_H
-
+#endif // X64_LEXER_H

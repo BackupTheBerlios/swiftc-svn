@@ -17,44 +17,15 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef BE_X64_CODE_GEN_H
-#define BE_X64_CODE_GEN_H
+#ifndef BE_TYPE_CONV_H
+#define BE_TYPE_CONV_H
 
-#include <fstream>
-#include <string>
-
-#include "me/arch.h"
-#include "me/codepass.h"
+#include "me/op.h"
 
 namespace be {
 
-/*
- * forward declarations
- */
+int meType2beType(me::Op::Type type);
 
-struct StackLayout;
+}
 
-//------------------------------------------------------------------------------
-
-class X64CodeGen : public me::CodeGen
-{
-public:
-
-    /*
-     * constructor
-     */
-
-    X64CodeGen(me::Function* function, std::ofstream& ofs);
-
-    /*
-     * further methods
-     */
-
-    virtual void process();
-    void genPhiInstr(me::BBNode* prevNode, me::BBNode* nextNode);
-};
-
-} // namespace be
-
-#endif // BE_X64_CODE_GEN_H
-
+#endif // BE_TYPE_CONV_H

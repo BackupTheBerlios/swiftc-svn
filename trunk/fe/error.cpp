@@ -25,7 +25,15 @@
 
 namespace swift {
 
+/*
+ * global
+ */
+
 ErrorHandler* error = 0;
+
+/*
+ * further methods
+ */
 
 void ErrorHandler::setFilename(const char* filename)
 {

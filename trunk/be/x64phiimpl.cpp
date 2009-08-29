@@ -22,47 +22,7 @@
 #include "be/x64codegenhelpers.h"
 #include "be/x64parser.h"
 #include "be/x64regalloc.h"
-
-/*
- * helper
- */
-
-namespace {
-
-int meType2beType(me::Op::Type type)
-{
-    switch (type)
-    {
-        case me::Op::R_BOOL:  return X64_BOOL;
-
-        case me::Op::R_INT8:  return X64_INT8;
-        case me::Op::R_INT16: return X64_INT16;
-        case me::Op::R_INT32: return X64_INT32;
-        case me::Op::R_INT64: return X64_INT64;
-
-        case me::Op::R_SAT8:  return X64_SAT8;
-        case me::Op::R_SAT16: return X64_SAT16;
-
-        case me::Op::R_UINT8:  return X64_UINT8;
-        case me::Op::R_UINT16: return X64_UINT16;
-        case me::Op::R_UINT32: return X64_UINT32;
-        case me::Op::R_PTR:
-        case me::Op::R_UINT64: return X64_UINT64;
-
-        case me::Op::R_USAT8:  return X64_USAT8;
-        case me::Op::R_USAT16: return X64_USAT16;
-
-        case me::Op::R_REAL32: return X64_REAL32;
-        case me::Op::R_REAL64: return X64_REAL64;
-
-        default:
-            swiftAssert(false, "unreachable code");
-    }
-
-    return -1;
-}
-
-}
+#include "be/x64typeconv.h"
 
 namespace be {
 
@@ -96,7 +56,7 @@ X64PhiImpl::X64PhiImpl(Kind kind,
             typeMask_ = X64RegAlloc::QUADWORD_TYPE_MASK;
             freeRegTypeMask_ = X64RegAlloc::INT_TYPE_MASK;
             break;
-        default:
+        case OCTWORD_SPILL_SLOTS:
             typeMask_ = X64RegAlloc::OCTWORD_TYPE_MASK;
             freeRegTypeMask_ = X64RegAlloc::XMM_TYPE_MASK;
             break;
@@ -146,7 +106,7 @@ void X64PhiImpl::genMove(me::Op::Type type, int r1, int r2)
             ofs_ << "\tpushq\t" << spilledReg2str(r1, type) << '\n';
             ofs_ << "\tpopq\t"  << spilledReg2str(r2, type) << '\n';
             break;
-        default: // OCTWORD_SPILL_SLOTS
+        case OCTWORD_SPILL_SLOTS:
             if (scratchColor_ == -1)
                 getScratchReg();
 
@@ -213,7 +173,7 @@ void X64PhiImpl::genReg2Tmp(me::Op::Type type, int r)
             }
             break;
 
-        default: // OCTWORD_SPILL_SLOTS
+        case OCTWORD_SPILL_SLOTS:
             if ( free_.empty() )
             {
                 // simply use %xmm1 and store old value at -32(%rsp) at the red zone
@@ -280,7 +240,7 @@ void X64PhiImpl::genTmp2Reg(me::Op::Type type, int r)
             }
             break;
 
-        default: // OCTWORD_SPILL_SLOTS
+        case OCTWORD_SPILL_SLOTS:
             if ( free_.empty() )
             {
                 // mov %xmm1, r

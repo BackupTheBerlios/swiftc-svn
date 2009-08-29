@@ -135,10 +135,12 @@ ADD_EXECUTABLE (swift
     be/x64.cpp
     be/x64codegen.cpp
     be/x64codegenhelpers.cpp
+    be/x64lexer.cpp
     be/x64regalloc.cpp
     be/x64parser.tab.cpp
     be/x64parser.tab.hpp
     be/x64phiimpl.cpp
+    be/x64typeconv.cpp
 )
 
 #-------------------------------------------------------------------------------
