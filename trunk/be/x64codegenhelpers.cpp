@@ -17,9 +17,9 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <typeinfo>
-
 #include "be/x64codegenhelpers.h"
+
+#include <typeinfo>
 
 #include "utils/box.h"
 
@@ -143,15 +143,15 @@ std::string reg2str(me::Reg* reg)
 
         if ( reg->isSimd() )
         {
-            oss << '-' << (reg->color_ + 1) 
-                * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
-                + x64_stacklayout->places_[X64::QUADWORDS].offset_ + 8 << "(%rsp)";
+            oss << (reg->color_) 
+                * x64_stacklayout->places_[X64::OCTWORDS].itemSize_ 
+                + x64_stacklayout->places_[X64::OCTWORDS].offset_ << "(%rsp)";
         }
         else
         {
-            oss << '-' << (reg->color_ + 1) 
-                * x64_stacklayout->places_[X64::OCTWORDS].itemSize_ 
-                + x64_stacklayout->places_[X64::OCTWORDS].offset_ + 8 << "(%rsp)";
+            oss << reg->color_ 
+                * x64_stacklayout->places_[X64::QUADWORDS].itemSize_ 
+                + x64_stacklayout->places_[X64::QUADWORDS].offset_ << "(%rsp)";
         }
 
         return oss.str();

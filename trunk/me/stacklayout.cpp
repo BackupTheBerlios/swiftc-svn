@@ -69,16 +69,9 @@ void StackLayout::arangeStackLayout()
         places_[0].offset_ = 0;
     else
     {
-        MemSlot& lastMemSlot= *color2MemSlot_.rbegin();
-
-        /* 
-         * firstPlaceOffset = align( 
-         *      lastMemSlot-offset + lastMemSlot-size, 
-         *      first-item-size )
-         */
+        // firstPlaceOffset = align(memSlotsSize_, first-item-size)
         places_[0].offset_ = arch->calcAlignedStackOffset(
-                lastMemSlot.offset_ + lastMemSlot.memVar_->aggregate_->sizeOf(), 
-                places_[0].itemSize_);
+                memSlotsSize_, places_[0].itemSize_);
     }
 
     swiftAssert( !places_.empty(), "places_ must not be empty" );
