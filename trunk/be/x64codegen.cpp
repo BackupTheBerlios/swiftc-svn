@@ -141,6 +141,12 @@ void X64CodeGen::process()
                     continue; // ignore defition of undefined vars
             }
         }
+        else if ( typeid(*instr) == typeid(me::Cast) )
+        {
+            me::Cast* cast = (me::Cast*) instr;
+            ofs_ << cast2str(cast);
+            continue;
+        }
         else if ( typeid(*instr) == typeid(me::PhiInstr) )
             continue;
         else if ( typeid(*instr) == typeid(me::SetParams) )

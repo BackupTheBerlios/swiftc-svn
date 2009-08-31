@@ -15,39 +15,41 @@
 # the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301, USA.
 
-class int
+class REAL
 
-    operator + (int i1, int i2) -> int res
-    end
-    operator - (int i1, int i2) -> int res
-    end
-    operator * (int i1, int i2) -> int res
-    end
-    operator / (int i1, int i2) -> int res
-    end
+    # operators for calculating
 
-#  operator += -= *= /= (int i1)
-#  end
-
-#    operator inc dec
-#    end
-
-    operator == (int i1, int i2) -> bool res
+    operator + (REAL r1, REAL r2) -> REAL result
     end
-    operator <> (int i1, int i2) -> bool res
+    operator - (REAL r1, REAL r2) -> REAL result
     end
-    operator <  (int i1, int i2) -> bool res
+    operator * (REAL r1, REAL r2) -> REAL result
     end
-    operator >  (int i1, int i2) -> bool res
-    end
-    operator <= (int i1, int i2) -> bool res
-    end
-    operator >= (int i1, int i2) -> bool res
+    operator / (REAL r1, REAL r2) -> REAL result
     end
 
-    # unary minus
-    operator - (int i) -> int res
+    # operators for comparisons
+
+    operator == (REAL r1, REAL r2) -> bool result
     end
+    operator <> (REAL r1, REAL r2) -> bool result
+    end
+    operator <  (REAL r1, REAL r2) -> bool result
+    end
+    operator >  (REAL r1, REAL r2) -> bool result
+    end
+    operator <= (REAL r1, REAL r2) -> bool result
+    end
+    operator >= (REAL r1, REAL r2) -> bool result
+    end
+
+    # reinterpret casts
+
+    # reader reinterpret_as_int() -> int result
+    # end
+
+    # reader reinterpret_as_uint() -> uint result
+    # end
 
     # normal casts
 
@@ -83,8 +85,6 @@ class int
     reader to_usat16() -> usat16 result
     end
 
-    reader to_real() -> real result
-    end
     reader to_real32() -> real32 result
     end
     reader to_real64() -> real64 result
@@ -95,13 +95,12 @@ class int
     reader to_index() -> index result
     end
 
-#    iterator int each(int begin, int ending, int step = 1)
+#    iterator real each(real begin, real ending, real step = 1)
 #    end
 
-#    iterator int up(int begin, int ending, int step = 1)
+#    iterator real up(real begin, real ending, real step = 1)
 #    end
 
-#    iterator int down(int begin, int ending, int step = -1)
+#    iterator real down(real begin, real ending, real step = -1)
 #    end
-
 end

@@ -133,6 +133,7 @@ ADD_EXECUTABLE (swift
     me/vectorizer.cpp
 
     be/x64.cpp
+    be/x64cast.cpp
     be/x64codegen.cpp
     be/x64codegenhelpers.cpp
     be/x64lexer.cpp

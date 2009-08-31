@@ -595,18 +595,6 @@ std::string AssignInstr::getOpString() const
     return opString;
 }
 
-Var* AssignInstr::resVar()
-{
-    swiftAssert( !res_.empty(), "must not be empty" );
-    return res_[0].var_;
-}
-
-Reg* AssignInstr::resReg()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
-}
-
 bool AssignInstr::isComparison() const
 {
     return (kind_ == EQ  || kind_ == NE  || 
@@ -623,6 +611,34 @@ bool AssignInstr::isArithmetic() const
 bool AssignInstr::isUnary() const
 {
     return arg_.size() == 1;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ * constructor
+ */
+
+Cast::Cast(Reg* result, Reg* reg)
+    : InstrBase(1, 1)
+{
+    res_[0] = Res(result);
+    arg_[0] = Arg(reg);
+}
+
+/*
+ * virtual methods
+ */
+
+Cast* Cast::toSimd(Vectorizer* vectorizer) const
+{
+    return new Cast((Reg*) res_[0].var_->toSimd(vectorizer), 
+                    (Reg*) arg_[0]. op_->toSimd(vectorizer) );
+}
+
+std::string Cast::toString() const
+{
+    return res_[0].var_->toString() + " = CAST(" + arg_[0].op_->toString() + ")";
 }
 
 //------------------------------------------------------------------------------
@@ -796,22 +812,6 @@ std::string Spill::toString() const
     return oss.str();
 }
 
-/*
- * further methods
- */
-
-Var* Spill::resVar()
-{
-    swiftAssert( !res_.empty(), "must not be empty" );
-    return res_[0].var_;
-}
-
-Reg* Spill::resReg()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -846,23 +846,6 @@ std::string Reload::toString() const
 
     return oss.str();
 }
-
-/*
- * further methods
- */
-
-Var* Reload::resVar()
-{
-    swiftAssert( !res_.empty(), "must not be empty" );
-    return res_[0].var_;
-}
-
-Reg* Reload::resReg()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
-}
-
 
 //------------------------------------------------------------------------------
 
@@ -929,12 +912,6 @@ size_t Load::getOffset() const
     return offset_ ? offset_->getOffset() : 0;
 }
 
-Reg* Load::resReg()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -995,12 +972,6 @@ std::string LoadPtr::toString() const
 size_t LoadPtr::getOffset() const
 {
     return offset_ ? offset_->getOffset() : 0;
-}
-
-Reg* LoadPtr::resReg()
-{
-    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg" );
-    return (Reg*) res_[0].var_;
 }
 
 //------------------------------------------------------------------------------

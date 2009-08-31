@@ -48,7 +48,7 @@
 echo -e '\E[32mAutogenerating builtin types \E[37m'
 
 for TYPE in \
-    index uint \
+    index int uint \
      int8  int16  int32  int64  sat8  sat16 \
     uint8 uint16 uint32 uint64 usat8 usat16
 do
@@ -62,7 +62,7 @@ do
     echo >> $FILE
 
     # substitute int with $TYPE
-    sed s/int/${TYPE}/g <int.swift >temp
+    sed s/INT/${TYPE}/g <int_template.swift >temp
 
     # append to the proper file
     cat temp >> $FILE
@@ -75,7 +75,7 @@ done
 # autogenerate real types from real.swift
 #
 
-for TYPE in real32 real64
+for TYPE in real real32 real64
 do
     # build file name
     FILE=$TYPE.swift
@@ -87,7 +87,7 @@ do
     echo >> $FILE
 
     # substitute real with $TYPE
-    sed s/real/${TYPE}/g <real.swift >temp
+    sed s/REAL/${TYPE}/g <real_template.swift >temp
 
     # append to the proper file
     cat temp >> $FILE

@@ -30,8 +30,40 @@
 #include "be/x64codegen.h"
 #include "be/x64parser.h"
 #include "be/x64regalloc.h"
+#include "be/x64typeconv.h"
 
 namespace be {
+
+std::string suffix(int type)
+{
+    switch (type)
+    {
+        case X64_BOOL:
+        case X64_INT8:
+        case X64_UINT8:
+            return "b"; // byte
+        case X64_INT16:
+        case X64_UINT16:
+            return "w"; // word
+        case X64_INT32:
+        case X64_UINT32:
+            return "l"; // long
+        case X64_INT64:
+        case X64_UINT64:
+            return "q"; // quad
+        case X64_REAL32:
+            return "ss";// scalar single
+        case X64_REAL64:
+            return "sd";// scalar double
+        default:
+            return "";
+    }
+}
+
+std::string suffix(me::Op::Type type)
+{
+    return suffix( be::meType2beType(type) );
+}
 
 std::string mnemonic(const std::string& str, int type)
 {
@@ -39,83 +71,65 @@ std::string mnemonic(const std::string& str, int type)
     std::string instr = str;
     std::string post;
 
-    switch (type)
+    post = suffix(type);
+
+    if ( post.empty() )
     {
-        case X64_BOOL:
-        case X64_INT8:
-        case X64_UINT8:
-            post = "b"; // byte
-            break;
-        case X64_INT16:
-        case X64_UINT16:
-            post = "w"; // word
-            break;
-        case X64_INT32:
-        case X64_UINT32:
-            post = "l"; // long
-            break;
-        case X64_INT64:
-        case X64_UINT64:
-            post = "q"; // quad
-            break;
-        case X64_REAL32:
-            post = "ss";// scalar single
-            break;
-        case X64_REAL64:
-            post = "sd";// scalar double
-            break;
-        case X64_S_REAL32:
-            post = "ps";// packed singles
-            if (instr == "mov")
-                instr = "mova";
-            break;
-        case X64_S_REAL64:
-            post = "pd";// packed doubles
-            if (instr == "mov")
-                instr = "mova";
-            break;
-        case X64_S_INT8:
-        case X64_S_UINT8:
-            if (instr == "mov")
-                instr = "movdqa";
-            else
-            {
-                post = "b";// byte
-                pre = "p"; // packed
-            }
-            break;
-        case X64_S_INT16:
-        case X64_S_UINT16:
-            if (instr == "mov")
-                instr = "movdqa";
-            else
-            {
-                post = "w";// word
-                pre = "p"; // packed
-            }
-            break;
-        case X64_S_INT32:
-        case X64_S_UINT32:
-            if (instr == "mov")
-                instr = "movdqa";
-            else
-            {
-                post = "d";// double word
-                pre = "p"; // packed
-            }
-            break;
-        case X64_S_INT64:
-        case X64_S_UINT64:
-            if (instr == "mov")
-                instr = "movdqa";
-            else
-            {
-                post = "q";// quad word
-                pre = "p"; // packed
-            }
-            break;
-        default:
-            return "TODO";
+        switch (type)
+        {
+            case X64_S_REAL32:
+                post = "ps";// packed singles
+                if (instr == "mov")
+                    instr = "mova";
+                break;
+            case X64_S_REAL64:
+                post = "pd";// packed doubles
+                if (instr == "mov")
+                    instr = "mova";
+                break;
+            case X64_S_INT8:
+            case X64_S_UINT8:
+                if (instr == "mov")
+                    instr = "movdqa";
+                else
+                {
+                    post = "b";// byte
+                    pre = "p"; // packed
+                }
+                break;
+            case X64_S_INT16:
+            case X64_S_UINT16:
+                if (instr == "mov")
+                    instr = "movdqa";
+                else
+                {
+                    post = "w";// word
+                    pre = "p"; // packed
+                }
+                break;
+            case X64_S_INT32:
+            case X64_S_UINT32:
+                if (instr == "mov")
+                    instr = "movdqa";
+                else
+                {
+                    post = "d";// double word
+                    pre = "p"; // packed
+                }
+                break;
+            case X64_S_INT64:
+            case X64_S_UINT64:
+                if (instr == "mov")
+                    instr = "movdqa";
+                else
+                {
+                    post = "q";// quad word
+                    pre = "p"; // packed
+                }
+                break;
+            default:
+                return "TODO";
+        }
     }
 
     return pre + instr + post;

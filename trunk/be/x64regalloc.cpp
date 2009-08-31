@@ -234,6 +234,8 @@ void X64RegAlloc::registerTargeting()
             targetStore(iter, currentBB);
         else if ( dynamic_cast<me::CallInstr*>(instr) )
             targetCallInstr(iter, currentBB);
+        else if ( dynamic_cast<me::Cast*>(instr) )
+            targetCast(iter);
     } // for each instruction
 }
 
@@ -561,6 +563,22 @@ void X64RegAlloc::targetSetResults(me::InstrNode* iter, me::BBNode* currentBB)
         sr->arg_[0].constraint_ = XMM0;
     else
         sr->arg_[0].constraint_ = RAX;
+}
+
+void X64RegAlloc::targetCast(me::InstrNode* iter)
+{
+    me::Cast* cast = (me::Cast*) iter->value_;
+    me::Reg* dst = (me::Reg*) cast->res_[0].var_;
+    me::Reg* src = (me::Reg*) cast->arg_[0].op_;
+
+    if (  ((src->type_ == me::Op:: R_INT8) || (src->type_ == me::Op:: R_UINT8) 
+        || (src->type_ == me::Op::R_INT16) || (src->type_ == me::Op::R_UINT16)
+        || (src->type_ == me::Op::R_INT64) || (src->type_ == me::Op::R_UINT64))
+        && (dst->type_ & FLOAT_TYPE_MASK) )
+    {
+        me::Var* dummy = function_->newSSAReg(me::Op::R_INT32);
+        cast->res_.push_back(dummy);
+    }
 }
 
 std::string X64RegAlloc::reg2String(const me::Reg* reg)

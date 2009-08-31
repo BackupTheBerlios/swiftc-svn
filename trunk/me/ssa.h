@@ -375,14 +375,29 @@ struct AssignInstr : public InstrBase
      * further methods
      */
 
-    Var* resVar();
-    Reg* resReg();
-
     bool isArithmetic() const;
     bool isComparison() const;
     bool isUnary() const;
 
     std::string getOpString() const;
+};
+
+//------------------------------------------------------------------------------
+
+struct Cast : public InstrBase
+{
+    /*
+     * constructor
+     */
+
+    Cast(Reg* result, Reg* reg);
+
+    /*
+     * virtual methods
+     */
+
+    virtual Cast* toSimd(Vectorizer* vectorizer) const;
+    virtual std::string toString() const;
 };
 
 //------------------------------------------------------------------------------
@@ -494,13 +509,6 @@ struct Spill : public InstrBase
 
     virtual Spill* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
-
-    /*
-     * virtual methods
-     */
-
-    Var* resVar();
-    Reg* resReg();
 };
 
 //------------------------------------------------------------------------------
@@ -519,13 +527,6 @@ struct Reload : public InstrBase
 
     virtual Reload* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
-
-    /*
-     * further methods
-     */
-
-    Var* resVar();
-    Reg* resReg();
 };
 
 //------------------------------------------------------------------------------
@@ -576,7 +577,6 @@ struct Load : public InstrBase
      */
 
     size_t getOffset() const;
-    Reg* resReg();
 };
 
 //------------------------------------------------------------------------------
@@ -631,7 +631,6 @@ struct LoadPtr : public InstrBase
      */
 
     size_t getOffset() const;
-    Reg* resReg();
 };
 
 //------------------------------------------------------------------------------

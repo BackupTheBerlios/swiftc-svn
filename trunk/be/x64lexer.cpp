@@ -214,6 +214,26 @@ int x64lex()
             LEX_END
         }
     }
+    //else if ( instrTypeId == typeid(me::Cast) )
+    //{
+        //me::Cast* cast = (me::Cast*) currentInstr;
+
+        //switch (pos)
+        //{
+            //case 0:
+                //x64lval.cast_ = cast;
+                //return X64_CAST;
+            //case 1:
+                //return meType2beType( cast->res_[0].var_->type_ );
+            //case 2:
+                //return findOutOp( cast->res_[0].var_ );
+            //case 3:
+                //return meType2beType( cast->arg_[0].op_->type_ );
+            //case 4:
+                //return findOutOp( cast->arg_[0].op_ );
+            //LEX_END
+        //}
+    //}
     else if ( instrTypeId == typeid(me::Spill) )
     {
         me::Spill* spill = (me::Spill*) currentInstr;

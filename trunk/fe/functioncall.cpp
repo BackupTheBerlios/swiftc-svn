@@ -439,19 +439,61 @@ bool MethodCall::analyze()
 
         if ( bt->isBuiltin() )
         {
-            // TODO
             memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
 
             if (!memberFunction_)
                 return false;
 
-            if (!tuple_)
+            me::Reg* res;
+
+            me::Op::Type newType;
+
+            if      (*id_ ==  "to_int8") newType = me::Op:: R_INT8;
+            else if (*id_ == "to_int16") newType = me::Op::R_INT16;
+            else if (*id_ == "to_int32") newType = me::Op::R_INT32;
+            else if (*id_ == "to_int64") newType = me::Op::R_INT64;
+
+            else if (*id_ == "to_uint8")  newType = me::Op:: R_UINT8;
+            else if (*id_ == "to_uint16") newType = me::Op::R_UINT16;
+            else if (*id_ == "to_uint32") newType = me::Op::R_UINT32;
+            else if (*id_ == "to_uint64") newType = me::Op::R_UINT64;
+
+            else if (*id_ == "to_real")   newType = me::Op::R_REAL32;
+            else if (*id_ == "to_real32") newType = me::Op::R_REAL32;
+            else if (*id_ == "to_real64") newType = me::Op::R_REAL64;
+
+            else if (*id_ == "to_int")  newType = me::Op:: R_INT32;
+            else if (*id_ == "to_uint") newType = me::Op::R_UINT32;
+            else if (*id_ == "to_index") newType = me::Op::R_UINT64;
+            else if (*id_ == "to_bool") newType = me::Op::R_BOOL;
+
+            else swiftAssert(false, "unreachable code");
+
+            if (tuple_)
             {
+                swiftAssert( typeid(*tuple_->getPlaceList()[0]) == typeid(me::Reg),
+                        "must be a Reg here" );
+                // TODO pointers
+                res = (me::Reg*) tuple_->getPlaceList()[0];
+            }
+            else
+            {
+#ifdef SWIFT_DEBUG
+                std::string resStr = std::string("res");
+                res = me::functab->newReg(newType, &resStr);
+#else // SWIFT_DEBUG
+                res = me::functab->newReg(newType);
+#endif // SWIFT_DEBUG
+
                 // set place and type as it is needed by the parent expr
                 place_ = memberFunction_->sig_->getOutParam(0)->getType()->createVar();
                 type_ = memberFunction_->sig_->getOutParam(0)->getType()->clone();
             }
-            // TODO
+
+            swiftAssert( typeid(*expr_->getPlace()) == typeid(me::Reg),
+                    "must be a Reg here" );
+            me::Cast* cast = new me::Cast( res, (me::Reg*) expr_->getPlace() );
+            me::functab->appendInstr(cast);
 
             return true;
         }

@@ -63,12 +63,12 @@ using namespace be;
 */
 
 /* instructions */
+%token <assign_> X64_DEREF
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
 %token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV X64_AND
 %token <assign_> X64_UN_MINUS
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
-%token <assign_>  X64_DEREF
 %token <goto_>   X64_GOTO
 %token <label_>  X64_LABEL
 %token <loadPtr_> X64_LOAD_PTR
@@ -183,6 +183,7 @@ call
     {
         EMIT("call\t" << $1->symbol_)
     }
+    ;
 
 spill_reload
     : X64_SPILL any_type X64_REG_SPILLED X64_REG_1
@@ -627,7 +628,7 @@ real_simd_add_mul
     | add_or_mul real_simd_type X64_REG_1 X64_REG_2 X64_REG_2 /* mov r2, r1; add r1, r1 */
     { 
         EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
-        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($1->resReg()) << ", " << reg2str($3)) 
+        EMIT(mnemonic(instr2str($1), $2) << '\t' << reg2str($3) << ", " << reg2str($3)) 
     }
     | add_or_mul real_simd_type X64_REG_1 X64_REG_2 X64_REG_3 /* mov r2, r1; add r3, r1 */
     { 

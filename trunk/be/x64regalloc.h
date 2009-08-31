@@ -152,6 +152,7 @@ public:
     void targetSetParams(me::InstrNode* iter, me::BBNode* currentBB);
     void targetSetResults(me::InstrNode* iter, me::BBNode* currentBB);
     void targetCallInstr(me::InstrNode* iter, me::BBNode* currentBB);
+    void targetCast(me::InstrNode* iter);
 
     static std::string reg2String(const me::Reg* reg);
 };
