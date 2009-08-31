@@ -316,7 +316,6 @@ LabelInstr* LabelInstr::toSimd(Vectorizer* vectorizer) const
         InstrNode* dst;
         dst = vectorizer->simdFunction_->lastLabelNode_;
         newLabel = (LabelInstr*) dst->value_;
-        //std::cout << "fjdkfjdk" << std::endl;
     }
     else
     {
@@ -1034,6 +1033,9 @@ std::string Store::toString() const
         oss << "Store("
             << arg_[0].op_->toString() << ", "
             << arg_[1].op_->toString();
+
+        if ( arg_.size() == 3 )
+            oss << ", " << arg_[2].op_->toString();
     }
     else
     {
@@ -1048,6 +1050,8 @@ std::string Store::toString() const
 
     if (offset_)
         oss << ", (" << offset_->toString() << ')';
+
+    oss << ')';
 
     return oss.str();
 }

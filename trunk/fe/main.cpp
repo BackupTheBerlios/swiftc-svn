@@ -150,11 +150,6 @@ int start(int argc, char** argv)
         return EXIT_FAILURE; // abort on error
     }
     
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-
-    //return EXIT_SUCCESS;
-
     /*
      * build up middle-end:
      *

@@ -61,7 +61,7 @@ public:
     std::string getId() const;
 #endif // SWIFT_DEBUG
 
-    Member* vectorize(int& simdLength) const;
+    Member* vectorize(int& simdLength);
 
 protected:
 
@@ -77,6 +77,10 @@ protected:
 
     ///< Offset in bytes of this \a Member relative to its direct root \a Struct.
     int offset_;
+
+public:
+
+    Member* vectorized_;
 };
 
 //------------------------------------------------------------------------------
@@ -147,8 +151,12 @@ protected:
     /// Size in bytes of this \a Aggregate or \a NOT_ANALYZED if not yet analyzed.
     int size_; 
 
+public:
+
     ///< Number of repetitions of one member before the next one.
     int simdLength_;
+
+    Aggregate* vectorized_;
 };
 
 //------------------------------------------------------------------------------

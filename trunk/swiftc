@@ -1,13 +1,15 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-    echo "no input file given"
+    echo "erro: no input file given"
     exit -1
 fi
 
 in=$1
 obj=$1.o
 asm=$1.asm
+
+# check options
 
 if [ $# -eq 1 ]; then
     out=$1.out
@@ -19,13 +21,16 @@ elif [ $3 == "--" ]; then
         out=$2
         shift 3
 else
-    echo "usage: swiftc IN [OUT] [-- route-through-options}"
+    echo "usage: swiftc IN [OUT] [-- route-through-options]"
     exit -1
 fi
 
-./swift $in
-gcc -ggdb -c test/lib.c -o test/lib.o
-as $asm -o $obj
+./swift $in     # compile
+as $asm -o $obj # assemble output
 
+# compile lib.c if necessary
+if [ ! -e 'test/lib.o' ]; then
+    gcc -ggdb -c test/lib.c -o test/lib.o
+fi
 
 gcc -nostdlib -lc test/lib.o $obj -o $out $*

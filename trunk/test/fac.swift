@@ -39,8 +39,8 @@ class Fac
 
         # for n = 1 .. 35
         while n <= 35
-            c_call print_float( ::fac(n.to_real()) )
-            c_call print_double( ::fac64(n.to_real64()) )
+            c_call print_float( ::fac(n:to_real()) )
+            c_call print_double( ::fac64(n:to_real64()) )
 
             n = n + 1
         end

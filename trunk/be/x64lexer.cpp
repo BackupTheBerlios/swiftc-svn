@@ -317,7 +317,7 @@ int x64lex()
                     regs_index = 0;
                     return 0;
                 }
-                return findOutOp( store->arg_[3].op_ );
+                return findOutOp( store->arg_[2].op_ );
             LEX_END
         }
     }

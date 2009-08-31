@@ -40,17 +40,38 @@ simd class Vec3
     end
 
     simd operator + (Vec3 v1, Vec3 v2) -> Vec3 result
-        result.x = v1.x + v2.x
-        result.y = v1.y + v2.y
-        result.z = v1.z + v2.z
+        # result.x = v1.x + v2.x
+        # result.y = v1.y + v2.y
+        # result.z = v1.z + v2.z
 
+        real resultx = v1.x + v2.x
+        real resulty = v1.y + v2.y
+        real resultz = v1.z + v2.z
+
+        result.x = resultx
+        result.y = resulty
+        result.z = resultz
     end
 
     simd routine cross(Vec3 v1, Vec3 v2) -> Vec3 result
-        result.x = v1.y * v2.z - v1.z * v2.y
-        result.y = v1.z * v2.x - v1.x * v2.z
-        result.z = v1.x * v2.y - v1.y * v2.x
+        #result.x = v1.y * v2.z - v1.z * v2.y
+        #result.y = v1.z * v2.x - v1.x * v2.z
+        #result.z = v1.x * v2.y - v1.y * v2.x
+        
+        real v1x = v1.x
+        real v1y = v1.y
+        real v1z = v1.z
+        real v2x = v2.x
+        real v2y = v2.y
+        real v2z = v2.z
 
+        real resultx = v1y * v2z - v1z * v2y
+        real resulty = v1z * v2x - v1x * v2z
+        real resultz = v1x * v2y - v1y * v2x
+
+        result.x = resultx
+        result.y = resulty
+        result.z = resultz
     end
 
 

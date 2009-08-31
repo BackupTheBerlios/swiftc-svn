@@ -77,7 +77,7 @@ size_t StructOffset::getOffset() const
 
 StructOffset* StructOffset::toSimd() const
 {
-    return 0;
+    return new StructOffset((Struct*) struct_->vectorized_, member_->vectorized_);
 }
 
 std::string StructOffset::toString() const
