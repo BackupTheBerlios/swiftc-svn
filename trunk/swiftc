@@ -12,9 +12,15 @@ asm=$1.asm
 if [ $# -eq 1 ]; then
     out=$1.out
     shift 1
+elif [ $2 == "--" ]; then
+        out=$1.out
+        shift 2
+elif [ $3 == "--" ]; then
+        out=$2
+        shift 3
 else
-    out=$2
-    shift 2
+    echo "usage: swiftc IN [OUT] [-- route-through-options}"
+    exit -1
 fi
 
 ./swift $in

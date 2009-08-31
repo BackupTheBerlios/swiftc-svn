@@ -16,6 +16,13 @@
 # the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301, USA.
 
+
+# compile with:
+# $ swiftc sdl_gl.swift -- -lGL -lGLU -lSDL
+# or:
+# $ swiftc sdl_gl.swift out -- -lGL -lGLU -lSDL
+
+
 class SDL_Surface
     int dummy
 end

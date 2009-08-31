@@ -1,3 +1,23 @@
+# Swift compiler framework
+# Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+#
+# This framework is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+#
+# This framework is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this framework; see the file LICENSE. If not, write to
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301, USA.
+
+
+
+
 
 simd class Vec3
     real x
@@ -23,42 +43,26 @@ simd class Vec3
         result.x = v1.x + v2.x
         result.y = v1.y + v2.y
         result.z = v1.z + v2.z
-    end
 
-    simd operator + (Vec3 v1, real r) -> Vec3 result
-        result.x = v1.x + r
-        result.y = v1.y + r
-        result.z = v1.z + r
     end
 
     simd routine cross(Vec3 v1, Vec3 v2) -> Vec3 result
         result.x = v1.y * v2.z - v1.z * v2.y
         result.y = v1.z * v2.x - v1.x * v2.z
         result.z = v1.x * v2.y - v1.y * v2.x
+
     end
 
+
     routine main() -> int result
-        #Vec3 v1 =  1.0, 2.0,  3.0
-        #Vec3 v2 = -2.0, 1.5, -3.0
-        ## Vec3 v3 = Vec3::cross(v1, v2) # yields -10.5, -3, 5.5
-        #Vec3 v3
-        #v3 = v1 + v2
-        #v3 = ::cross(v1 + v2, v2)
-
-        #c_call print_float(v3.x)
-        #c_call print_float(v3.y)
-        #c_call print_float(v3.z)
-
-        result = 0
-
         simd{Vec3} vecs1s = 40000000x
         simd{Vec3} vecs2s = 40000000x
         simd{Vec3} vecs3s = 40000000x
 
         simd[0x, 40000000x]: vecs1s = vecs2s + vecs3s
-        simd[0x, 40000000x]: vecs1s = Vec3::cross(vecs2s, vecs3s)
-        # simd[0x,0 10000x]: c_call print_float(v3.z)
-        # simd: vecs1 = vecs2 + @.to_real()
-    end
 
+        simd[0x, 40000000x]: vecs1s = Vec3::cross(vecs2s, vecs3s)
+
+        result = 0
+    end
 end
