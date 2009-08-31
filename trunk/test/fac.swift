@@ -24,4 +24,27 @@ class Fac
             result = result * n
         end
     end
+
+    routine fac64(real64 r) -> real64 result
+        real64 n = 1.0q
+        result = 1.0q
+        while n < r
+            n = n + 1.0q
+            result = result * n
+        end
+    end
+
+    routine main() -> int result
+        int n = 1
+
+        # for n = 1 .. 35
+        while n <= 35
+            c_call print_float( ::fac(n.to_real()) )
+            c_call print_double( ::fac64(n.to_real64()) )
+
+            n = n + 1
+        end
+
+        result = 0
+    end
 end

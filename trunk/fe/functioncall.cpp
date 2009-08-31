@@ -486,7 +486,7 @@ bool MethodCall::analyze()
 #endif // SWIFT_DEBUG
 
                 // set place and type as it is needed by the parent expr
-                place_ = memberFunction_->sig_->getOutParam(0)->getType()->createVar();
+                place_ = res;
                 type_ = memberFunction_->sig_->getOutParam(0)->getType()->clone();
             }
 

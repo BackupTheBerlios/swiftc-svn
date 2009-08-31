@@ -63,7 +63,7 @@ class Fibonacci
         int n = 0
 
         # for n = 0 .. 12
-        while n < 13
+        while n <= 13
             int fib = ::fibonacci(n)
             c_call print_int(fib)
             fib = ::fibonacci_rec(n)
@@ -74,5 +74,4 @@ class Fibonacci
 
         result = 0
     end
-
 end

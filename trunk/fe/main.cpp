@@ -149,6 +149,11 @@ int start(int argc, char** argv)
         cleanUpME();
         return EXIT_FAILURE; // abort on error
     }
+    
+    //me::functab->dumpSSA();
+    //me::functab->dumpDot();
+
+    //return EXIT_SUCCESS;
 
     /*
      * build up middle-end:
@@ -184,12 +189,6 @@ int start(int argc, char** argv)
         me::arch->regAlloc(function);
         me::StackColoring(function).process();
     }
-
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-
-    //return EXIT_SUCCESS;
-
 
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)

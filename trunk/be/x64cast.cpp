@@ -263,6 +263,27 @@ std::string cast2str(me::Cast* cast)
                     return oss.str();
                 default: swiftAssert(false, "unreachable code"); 
             }
+
+        /*
+         * real src type
+         */
+
+        case me::Op::R_REAL32:
+            switch (dst->type_)
+            {
+                case me::Op::R_REAL64:
+                    oss << "\tcvtss2sd\t" << reg2str(src) << ", " << reg2str(dst) << '\n';
+                    return oss.str();
+                default: swiftAssert(false, "TODO");
+            }
+        case me::Op::R_REAL64:
+            switch (dst->type_)
+            {
+                case me::Op::R_REAL32:
+                    oss << "\tcvtsd2ss\t" << reg2str(src) << ", " << reg2str(dst) << '\n';
+                    return oss.str();
+                default: swiftAssert(false, "TODO");
+            }
         default: swiftAssert(false, "TODO");
             return "error";
     }

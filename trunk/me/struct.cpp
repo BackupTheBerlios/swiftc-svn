@@ -299,7 +299,7 @@ Member* Struct::append(Aggregate* aggregate, const std::string& id)
 
 #else // SWIFT_DEBUG
 
-Member* Struct::append(Aggregate* aggregate);
+Member* Struct::append(Aggregate* aggregate)
 {
     Member* member = new Member(aggregate);
     members_.push_back(member);

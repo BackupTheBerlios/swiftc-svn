@@ -17,6 +17,13 @@
  * Boston, MA 02110-1301, USA.
  */
 
+/*
+ * compile with:
+ * $ g++ vector.cpp vector_main.cpp
+ * or:
+ * $ g++ vector.cpp vector_main.cpp -O3
+ */
+
 #include <vector>
 
 #include "vector.h"
