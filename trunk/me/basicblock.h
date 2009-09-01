@@ -128,6 +128,8 @@ struct BasicBlock
 
     bool hasConstrainedInstr() const;
 
+    bool isDomChild(const BBNode* bbNode) const;
+
     /// Returns the title string of this BasicBlock.
     std::string name() const;
 
@@ -142,6 +144,9 @@ struct BasicBlock
 
 #define BBLIST_EACH(iter, bbList) \
     for (me::BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
+
+#define BBLIST_CONST_EACH(iter, bbList) \
+    for (const me::BBList::Node* (iter) = (bbList).first(); (iter) != (bbList).sentinel(); (iter) = (iter)->next())
 
 #define BBSET_EACH(iter, bbSet) \
     for (me::BBSet::iterator (iter) = (bbSet).begin(); (iter) != (bbSet).end(); ++(iter))

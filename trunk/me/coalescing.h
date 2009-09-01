@@ -17,29 +17,25 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef ME_COLORING_H
-#define ME_COLORING_H
+#ifndef ME_COALESCING_H
+#define ME_COALESCING_H
 
 #include "utils/set.h"
 
 #include "me/codepass.h"
-#include "me/forward.h"
 
 namespace me {
 
-typedef Set<int> Colors;
-
-class Coloring : public CodePass
+class Coalescing : public CodePass
 {
 public:
 
     /*
-     * constructors
+     * constructor
      */
 
     /// Use this one for coloring of spill slots.
-    Coloring(Function* function, int typeMask, size_t stackPlace);
-    Coloring(Function* function, int typeMask, const Colors& reservoir);
+    Coalescing(Function* function, int typeMask);
 
     /*
      * virtual methods
@@ -49,31 +45,31 @@ public:
 
 private:
 
-    /*
-     * memory location coloring
-     */
+    struct Chunk
+    {
+        int todo_;
+    };
 
-    void colorRecursiveSpillSlots(BBNode* bbNode);
-    int getFreeSpillSlotColor(Colors& colors);
+    typedef Set<Chunk> Chunks;
 
-    /*
-     * register coloring
-     */
+    struct Node
+    {
+        int todo_;
+    };
 
-    void colorRecursive(BBNode* bbNode);
-    void colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColored);
-
-private: 
+    typedef Set<Node*> Nodes;
 
     /*
-     * data
+     * further methods
      */
 
-    int typeMask_;
-    const Colors reservoir_;
-    size_t stackPlace_;
+    Chunks buildChunks();
+    void recolorChunks(Chunk& chunk);
+    void recolor(Node& n, int color);
+    void setColor(Node& n, int color, Nodes nodes);
+    void avoidColor(Node& n, int color, Nodes nodes);
 };
 
 } // namespace me
 
-#endif // ME_COLORING_H
+#endif // ME_COALESCING_H

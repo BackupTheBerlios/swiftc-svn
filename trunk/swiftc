@@ -9,17 +9,17 @@ in=$1
 obj=$1.o
 asm=$1.asm
 
-# check options
+# check options and shift parameters accordingly
 
 if [ $# -eq 1 ]; then
     out=$1.out
     shift 1
 elif [ $2 == "--" ]; then
-        out=$1.out
-        shift 2
+    out=$1.out
+    shift 2
 elif [ $3 == "--" ]; then
-        out=$2
-        shift 3
+    out=$2
+    shift 3
 else
     echo "usage: swiftc IN [OUT] [-- route-through-options]"
     exit -1

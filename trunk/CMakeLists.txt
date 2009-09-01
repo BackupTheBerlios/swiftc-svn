@@ -112,6 +112,7 @@ ADD_EXECUTABLE (swift
 
     me/arch.cpp
     me/basicblock.cpp
+    me/coalescing.cpp
     me/codepass.cpp
     me/cfg.cpp
     me/coloring.cpp

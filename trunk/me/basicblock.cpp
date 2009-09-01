@@ -126,6 +126,21 @@ bool BasicBlock::hasConstrainedInstr() const
         && (firstOrdinary_->value_->isConstrained());
 }
 
+bool BasicBlock::isDomChild(const BBNode* bbNode) const
+{
+    BBLIST_CONST_EACH(iter, domChildren_)
+    {
+        const BBNode* currentBB = iter->value_;
+
+        if (currentBB == bbNode)
+            return true;
+
+        return currentBB->value_->isDomChild(bbNode);
+    }
+
+    return false;
+}
+
 std::string BasicBlock::name() const
 {
     std::ostringstream oss;

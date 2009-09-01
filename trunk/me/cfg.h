@@ -30,6 +30,7 @@
 namespace me {
 
 // forward declarations
+struct DefUse;
 struct Function;
 struct VarDefUse;
 
@@ -123,7 +124,6 @@ struct CFG : public Graph<BasicBlock>
      */
     void splitBB(me::InstrNode* instrNode, me::BBNode* bbNode);
 
-
     /*
      * SSA reconstruction and rewiring
      */
@@ -131,6 +131,16 @@ struct CFG : public Graph<BasicBlock>
     void reconstructSSAForm(VarDefUse* rdu);
 
     Var* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, VarDefUse* rdu, BBSet& iDF);
+
+    /*
+     * ommiting the interference graph
+     */
+
+    bool dominates(Var* x, Var* y) const;
+    bool dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const;
+    bool interferenceCheck(Var* x, Var* y) const;
+    VarSet intNeighbors(Var* var);
+    void findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& visited);
 
     /*
      * dump methods

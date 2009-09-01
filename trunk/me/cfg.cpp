@@ -944,6 +944,161 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
 }
 
 /*
+ * ommiting the interference graph
+ */
+
+bool CFG::dominates(Var* x, Var* y) const
+{
+    swiftAssert(x != y, "vars must be distinct"); // TODO really?
+
+    const DefUse& dx = x->def_;
+    const DefUse& dy = y->def_;
+
+    return dominates(dx.instrNode_, dx.bbNode_, dy.instrNode_, dy.bbNode_);
+}
+
+bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
+{
+    swiftAssert(i1 != i2, "instructions must be distinct"); // TODO really?
+
+    if (b1 != b2) 
+    {
+        /*
+         * -> the definitions are in different basic blocks
+         * is b2 a dom child of b1?
+         */
+        return b1->value_->isDomChild(b2);
+    }
+
+    /*
+     * -> the definitions are in same basic block
+     * check whether i1 precedes i2
+     */
+
+    const BasicBlock* bb = b1->value_;
+
+    for (const InstrNode* iter = i2->prev(); iter != bb->begin_; iter = iter->prev())
+    {
+        if (iter == i1)
+            return true;
+    }
+
+#ifdef SWIFT_DEBUG
+    // check in the debug version whether i2 precedes i1
+
+    for (const InstrNode* iter = i1->prev(); iter != bb->begin_; iter = iter->prev())
+    {
+        if (iter == i2)
+            return false;
+    }
+
+    swiftAssert(false, "i1 and i2 seem to be in different basic blocks");
+#endif // SWIFT_DEBUG
+
+    return false;
+}
+
+bool CFG::interferenceCheck(Var* x, Var* y) const
+{
+    swiftAssert(x != y, "vars must be distinct");
+
+    Var* t;
+    Var* b;
+
+    if ( dominates(x, y) )
+    {
+        t = x;
+        b = y;
+    }
+    else if ( dominates(y, x) )
+    {
+        t = y;
+        b = x;
+    }
+    else
+        return false;
+
+    // -> now t dominates b
+
+    // is there a way to get rid of the const_cast ?!
+    if ( b->def_.bbNode_->value_->liveOut_.contains(t) ) 
+        return true;
+
+    DefUse& db = b->def_;
+
+    // for all uses iter of t
+    DEFUSELIST_EACH(iter, t->uses_)
+    {
+        DefUse& ut = iter->value_;
+
+        if ( dominates(db.instrNode_, db.bbNode_, ut.instrNode_, ut.bbNode_) )
+            return true;
+    }
+
+    return false;
+}
+
+VarSet CFG::intNeighbors(Var* var)
+{
+    VarSet result;
+    BBSet walked;
+
+    // for all uses iter of var
+    DEFUSELIST_EACH(iter, var->uses_)
+        findInt(var, iter->value_.bbNode_, result, walked);
+
+    return result;
+}
+
+void CFG::findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& walked)
+{
+    BasicBlock* bb = bbNode->value_;
+
+    // remember as visited
+    walked.insert(bbNode);
+
+    InstrNode* last = bb->end_->prev();
+    VarSet l(last->value_->liveOut_);
+
+    for (InstrNode* iter = last; iter != bb->begin_ && iter != var->def_.instrNode_; iter = iter->prev())
+    {
+        InstrBase* instr = iter->value_;
+
+        // for each result
+        for (size_t i = 0; i < instr->res_.size(); ++i)
+            l.erase( instr->res_[i].var_ );
+        // -> l = l \ instr->res
+
+        // for each arg
+        for (size_t i = 0; i < instr->arg_.size(); ++i)
+        {
+            Var* arg = dynamic_cast<Var*>( instr->arg_[i].op_ );
+            if (arg)
+                l.insert(arg);
+        }
+        // -> l = l U instr->arg
+
+        // found a new result?
+        if ( l.contains(var) )
+            result.insert(var);
+    }
+
+    // for each unvisted predecessor of bbNode
+    RELATIVES_EACH(iter, bbNode->pred_)
+    {
+        BBNode* predNode = iter->value_;
+
+        if ( walked.contains(predNode) )
+            continue;
+
+        InstrNode* predLast = predNode->value_->end_->prev();
+        DefUse& dv = var->def_;
+        if ( dominates(dv.instrNode_, dv.bbNode_, predLast, predNode) )
+            findInt(var, predNode, result, walked);
+    }
+}
+
+/*
  * dump methods
  */
 
