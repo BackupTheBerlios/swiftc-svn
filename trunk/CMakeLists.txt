@@ -79,6 +79,7 @@ ENDIF (BUILD_RELEASE)
 # sources
 ADD_EXECUTABLE (swift
     utils/assert.cpp
+    utils/disjointsets.cpp
     utils/memmgr.cpp
     utils/stringhelper.cpp
 

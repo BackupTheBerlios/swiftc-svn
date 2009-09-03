@@ -30,25 +30,22 @@ class IGraph;
 
 class LivenessAnalysis : public CodePass
 {
-private:
-
-    /// Knows during the liveness analysis which basic blocks have already been visted.
-    BBSet walked_;
-
-#ifdef SWIFT_USE_IG
-    IGraph* ig_;
-#endif // SWIFT_USE_IG
-
 public:
 
     /*
      * constructor and destructor
      */
 
-    LivenessAnalysis(Function* function);
-#ifdef SWIFT_USE_IG
+#ifdef SWIFT_DEBUG
+
+    LivenessAnalysis(Function* function, bool dumpIG = false);
     ~LivenessAnalysis();
-#endif // SWIFT_USE_IG
+
+#else // SWIFT_DEBUG
+
+    LivenessAnalysis(Function* function);
+
+#endif // SWIFT_DEBUG
 
     /*
      * methods
@@ -66,6 +63,17 @@ private:
     void liveOutAtBlock(BBNode* bbNode, Var* var);
     void liveInAtInstr (InstrNode* instrNode, Var* var);
     void liveOutAtInstr(InstrNode* instrNode, Var* var);
+
+private:
+
+    /// Knows during the liveness analysis which basic blocks have already been visted.
+    BBSet walked_;
+
+#ifdef SWIFT_DEBUG
+    IGraph* ig_;
+    bool dumpIG_;
+#endif // SWIFT_DEBUG
+
 };
 
 } // namespace me

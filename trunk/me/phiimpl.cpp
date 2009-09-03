@@ -63,15 +63,12 @@ void PhiImpl::collectFreeRegs()
      */
     VARSET_EACH(iter, prevBB_->end_->prev_->value_->liveOut_) 
     {
-        if ( (*iter)->type_ == Op::R_MEM || (*iter)->isSpilled() )
-            continue; // ignore stack vars
+        Reg* reg = (*iter)->isReg(freeRegTypeMask_, false);
+        if (!reg)
+            continue;
 
-        if ( (*iter)->type_ & freeRegTypeMask_ )
-        {
-            swiftAssert( free_.contains((*iter)->color_), 
-                        "colors must be found here" );
-            free_.erase( (*iter)->color_ );
-        }
+        swiftAssert( free_.contains(reg->color_), "colors must be found here" );
+        free_.erase( reg->color_ );
     }
 
     // let the child class erase eventually forbidden colors

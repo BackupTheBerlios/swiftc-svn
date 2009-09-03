@@ -23,6 +23,7 @@
 
 #include <map>
 #include <typeinfo>
+#include <iostream>
 
 #include "me/functab.h"
 #include "me/defusecalc.h"
@@ -959,7 +960,8 @@ bool CFG::dominates(Var* x, Var* y) const
 
 bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
 {
-    swiftAssert(i1 != i2, "instructions must be distinct"); // TODO really?
+    if (i1 == i2)
+        return true; // a label always dominates itself
 
     if (b1 != b2) 
     {
@@ -1038,19 +1040,19 @@ bool CFG::interferenceCheck(Var* x, Var* y) const
     return false;
 }
 
-VarSet CFG::intNeighbors(Var* var)
+RegSet CFG::intNeighbors(Reg* reg, int typeMask, bool spilled)
 {
-    VarSet result;
+    RegSet result;
     BBSet walked;
 
     // for all uses iter of var
-    DEFUSELIST_EACH(iter, var->uses_)
-        findInt(var, iter->value_.bbNode_, result, walked);
+    DEFUSELIST_EACH(iter, reg->uses_)
+        findInt(reg, iter->value_.bbNode_, result, walked, typeMask, spilled);
 
     return result;
 }
 
-void CFG::findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& walked)
+void CFG::findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& walked, int typeMask, bool spilled)
 {
     BasicBlock* bb = bbNode->value_;
 
@@ -1058,29 +1060,68 @@ void CFG::findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& walked)
     walked.insert(bbNode);
 
     InstrNode* last = bb->end_->prev();
-    VarSet l(last->value_->liveOut_);
 
-    for (InstrNode* iter = last; iter != bb->begin_ && iter != var->def_.instrNode_; iter = iter->prev())
+    RegSet l;
+    VARSET_EACH(iter, last->value_->liveOut_)
+    {
+        Reg* liveOut = (*iter)->isReg(typeMask, spilled);
+        if (liveOut)
+            l.insert(liveOut);
+    }
+
+    for (InstrNode* iter = last; iter != bb->begin_ && iter != reg->def_.instrNode_; iter = iter->prev())
     {
         InstrBase* instr = iter->value_;
 
         // for each result
         for (size_t i = 0; i < instr->res_.size(); ++i)
-            l.erase( instr->res_[i].var_ );
+        {
+            Reg* res = instr->res_[i].var_->isReg(typeMask, spilled);
+            if (res)
+                l.erase(res);
+        }
         // -> l = l \ instr->res
 
         // for each arg
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            Var* arg = dynamic_cast<Var*>( instr->arg_[i].op_ );
+            Reg* arg = instr->arg_[i].op_->isReg(typeMask, spilled);
             if (arg)
                 l.insert(arg);
         }
         // -> l = l U instr->arg
 
         // found a new result?
-        if ( l.contains(var) )
-            result.insert(var);
+        if ( l.contains(reg) )
+        {
+            REGSET_EACH(lIter, l)
+            {
+                Reg* lReg = *lIter;
+                if (lReg != reg)
+                    result.insert(lReg);
+
+                if ( instr->isConstrained() )
+                {
+                    // for each result
+                    for (size_t i = 0; i < instr->res_.size(); ++i)
+                    {
+                        Reg* res = instr->res_[i].var_->isReg(typeMask, spilled);
+                        int constraint = instr->res_[i].constraint_;
+                        if (res && constraint != NO_CONSTRAINT)
+                            result.insert(res);
+                    }
+
+                    // for each arg
+                    for (size_t i = 0; i < instr->arg_.size(); ++i)
+                    {
+                        Reg* arg = instr->arg_[i].op_->isReg(typeMask, spilled);
+                        int constraint = instr->arg_[i].constraint_;
+                        if (arg && constraint != NO_CONSTRAINT && arg != reg)
+                            result.insert(arg);
+                    }
+                }
+            }
+        }
     }
 
     // for each unvisted predecessor of bbNode
@@ -1092,9 +1133,9 @@ void CFG::findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& walked)
             continue;
 
         InstrNode* predLast = predNode->value_->end_->prev();
-        DefUse& dv = var->def_;
+        DefUse& dv = reg->def_;
         if ( dominates(dv.instrNode_, dv.bbNode_, predLast, predNode) )
-            findInt(var, predNode, result, walked);
+            findInt(reg, predNode, result, walked, typeMask, spilled);
     }
 }
 

@@ -1,4 +1,4 @@
- /*
+/*
  * Swift compiler framework
  * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
  *

@@ -153,8 +153,9 @@ struct Op
     virtual bool typeCheck(int typeMask) const;
 
     virtual Reg* isReg(int typeMask);
+    virtual Reg* isReg(int typeMask, bool spilled);
 
-    virtual Reg* colorReg(int typeMask);
+    virtual Reg* isNotSpilled(int typeMask);
 
     /** 
      * @brief Checks whether this Reg is actually in a spilled aggregate location.
@@ -365,11 +366,19 @@ struct Reg : public Var
 
     virtual Reg* clone(int varNr) const;
     virtual Reg* isReg(int typeMask);
+    virtual Reg* isReg(int typeMask, bool spilled);
     virtual Reg* isSpilled();
     virtual Reg* isSpilled(int typeMask);
-    virtual Reg* colorReg(int typeMask);
+    virtual Reg* isNotSpilled(int typeMask);
     virtual Reg* toSimd(Vectorizer* vectorizer) const;
     virtual std::string toString() const;
+
+    /*
+     * further methods
+     */
+
+    bool isColorAdmissible(int color);
+    int getPreferedColor() const;
 };
 
 //------------------------------------------------------------------------------
@@ -406,6 +415,9 @@ struct MemVar : public Var
 
 #define REGSET_EACH(iter, regSet) \
     for (me::RegSet::iterator (iter) = (regSet).begin(); (iter) != (regSet).end(); ++(iter))
+
+#define REGMAP_EACH(iter, regMap) \
+    for (me::RegMap::iterator (iter) = (regMap).begin(); (iter) != (regMap).end(); ++(iter))
 
 /// Use this macro in order to easily visit all elements of a VarMap
 #define VARMAP_EACH(iter, varMap) \

@@ -209,7 +209,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
 
         for (size_t i = 0; i < constrainedInstr->arg_.size(); ++i)
         {
-            Reg* reg = constrainedInstr->arg_[i].op_->colorReg(typeMask_);
+            Reg* reg = constrainedInstr->arg_[i].op_->isNotSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -221,7 +221,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
 
         for (size_t i = 0; i < constrainedInstr->res_.size(); ++i)
         {
-            Reg* reg = constrainedInstr->res_[i].var_->colorReg(typeMask_);
+            Reg* reg = constrainedInstr->res_[i].var_->isNotSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -236,7 +236,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         {
             swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), "must be a PhiInstr" );
             PhiInstr* phi = (PhiInstr*) iter->value_;
-            Reg* phiRes = phi->result()->colorReg(typeMask_);
+            Reg* phiRes = phi->result()->isNotSpilled(typeMask_);
             if (!phiRes)
                 continue;
 
@@ -271,7 +271,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         // all vars in liveIn_ have already been colored
         VARSET_EACH(iter, bb->liveIn_)
         {
-            Reg* reg = (*iter)->colorReg(typeMask_);
+            Reg* reg = (*iter)->isNotSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -304,7 +304,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         // for each var on the right hand side
         for (size_t i = 0; i < instr->arg_.size(); ++i)
         {
-            Reg* reg = instr->arg_[i].op_->colorReg(typeMask_);
+            Reg* reg = instr->arg_[i].op_->isNotSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -338,7 +338,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         // for each var on the left hand side -> assign a color for result
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
-            Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+            Reg* reg = instr->res_[i].var_->isNotSpilled(typeMask_);
             if (!reg)
                 continue;
 
@@ -385,7 +385,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
     // init liveThrough and dyingArgs
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        Reg* reg = instr->arg_[i].op_->colorReg(typeMask_);
+        Reg* reg = instr->arg_[i].op_->isNotSpilled(typeMask_);
         if (!reg)
             continue;
 
@@ -403,7 +403,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
     RegSet unconstrainedDefs;
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+        Reg* reg = instr->res_[i].var_->isNotSpilled(typeMask_);
         if (!reg)
             continue;
 
@@ -416,7 +416,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
     // for each constrained arg
     for (size_t i = 0; i < instr->arg_.size(); ++i)
     {
-        Reg* reg = (Reg*) instr->arg_[i].op_->colorReg(typeMask_);
+        Reg* reg = (Reg*) instr->arg_[i].op_->isNotSpilled(typeMask_);
         if (!reg)
             continue;
 
@@ -445,7 +445,7 @@ void Coloring::colorConstraintedInstr(InstrNode* instrNode, VarSet& alreadyColor
     // for each constrained result
     for (size_t i = 0; i < instr->res_.size(); ++i)
     {
-        Reg* reg = instr->res_[i].var_->colorReg(typeMask_);
+        Reg* reg = instr->res_[i].var_->isNotSpilled(typeMask_);
         if (!reg)
             continue;
 

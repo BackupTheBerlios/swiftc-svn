@@ -28,7 +28,7 @@ namespace me {
     
 //------------------------------------------------------------------------------
 
-#ifdef SWIFT_USE_IG
+#ifdef SWIFT_DEBUG
 
 #include <sstream>
 
@@ -70,7 +70,16 @@ struct IGraph : public Graph<IVar>
 
     virtual std::string name() const
     {
-        return std::string("ig_") + name_;
+        // make the id readable for dot
+        std::string result = name_;
+
+        for (size_t i = 0; i < result.size(); ++i)
+        {
+            if (result[i] == '$')
+                result[i] = '_';
+        }
+
+        return result;
     }
 
     std::string name_;
@@ -78,7 +87,7 @@ struct IGraph : public Graph<IVar>
 
 typedef Graph<IVar>::Node VarNode;
 
-#endif // SWIFT_USE_IG
+#endif // SWIFT_DEBUG
 
 //------------------------------------------------------------------------------
 
@@ -86,21 +95,26 @@ typedef Graph<IVar>::Node VarNode;
  * constructor and destructor
  */
 
-LivenessAnalysis::LivenessAnalysis(Function* function)
-    : CodePass(function)
-#ifdef SWIFT_USE_IG
-    , ig_( new IGraph(*function->id_) )
-#endif // SWIFT_USE_IG
-{}
+#ifdef SWIFT_DEBUG
 
-#ifdef SWIFT_USE_IG
+LivenessAnalysis::LivenessAnalysis(Function* function, bool dumpIG /*= false*/)
+    : CodePass(function)
+    , ig_( new IGraph(*function->id_) )
+    , dumpIG_(dumpIG)
+{}
 
 LivenessAnalysis::~LivenessAnalysis()
 {
     delete ig_;
 }
 
-#endif // SWIFT_USE_IG
+#else // SWIFT_DEBUG
+
+LivenessAnalysis::LivenessAnalysis(Function* function)
+    : CodePass(function)
+{}
+
+#endif // SWIFT_DEBUG
 
 /*
  * methods
@@ -129,18 +143,18 @@ void LivenessAnalysis::process()
         }
     }
 
-#ifdef SWIFT_USE_IG
+#ifdef SWIFT_DEBUG
     /*
      * create nodes for the inteference graph
      */
-    REGMAP_EACH(iter, function_->vars_)
+    VARMAP_EACH(iter, function_->vars_)
     {
         Var* var = iter->second;
 
         VarNode* varNode = ig_->insert( new IVar(var) );
         var->varNode_ = varNode;
     }
-#endif // SWIFT_USE_IG
+#endif // SWIFT_DEBUG
 
     /*
      * start here
@@ -208,9 +222,10 @@ void LivenessAnalysis::process()
     }
 #endif
 
-#ifdef SWIFT_USE_IG
-    ig_->dumpDot( ig_->name() );
-#endif // SWIFT_USE_IG
+#ifdef SWIFT_DEBUG
+    if (dumpIG_)
+        ig_->dumpDot( ig_->name() );
+#endif // SWIFT_DEBUG
 
     function_->firstLiveness_ = true;
 }
@@ -244,7 +259,7 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Var* var)
     {
         if ( instr->res_[i].var_ != var )
         {
-#ifdef SWIFT_USE_IG
+#ifdef SWIFT_DEBUG
             Var* res = instr->res_[i].var_;
 
             // add (v, w) to interference graph if it does not already exist
@@ -253,7 +268,7 @@ void LivenessAnalysis::liveOutAtInstr(InstrNode* instrNode, Var* var)
             {
                 var->varNode_->link(res->varNode_);
             }
-#endif // SWIFT_USE_IG
+#endif // SWIFT_DEBUG
         }
         else
             varInLhs = true;

@@ -42,6 +42,7 @@ namespace {
     me::Reg* regs[5];
     int reg_nr[5];
     size_t regs_index = 0;
+    int reg_highest;
 }
 
 void x64error(const char *s)
@@ -80,33 +81,36 @@ int findOutOp(me::Op* op)
             return X64_REG_SPILLED;
         }
 
-        regs[regs_index++] = x64lval.reg_;
+        regs[regs_index] = x64lval.reg_;
     }
 
-    if (regs_index == 1)
+    if (regs_index == 0)
     {
+        reg_highest = X64_REG_1;
+        regs_index = 1;
         reg_nr[0] = X64_REG_1;
         return X64_REG_1;
     }
 
-    int highest = X64_REG_1;
-    for (size_t i = 0; i < regs_index - 1; ++i) // omit the newly added reg
+    for (size_t i = 0; i < regs_index; ++i) // omit the newly added reg
     {
         me::Reg* iReg = regs[i];
 
         if (iReg->color_ == reg->color_)
         {
-            reg_nr[regs_index] = reg_nr[i];
-            return reg_nr[i];
-        }
-        else
-        {
-            if (iReg->color_ > highest)
-                highest = iReg->color_;
+            if (i == regs_index - 1)
+            {
+                reg_nr[regs_index] = reg_nr[i];
+                ++regs_index;
+                return reg_nr[i];
+            }
         }
     }
 
-    return highest + 1;
+    ++reg_highest;
+    reg_nr[regs_index] = reg_highest;
+    ++regs_index;
+    return reg_highest;
 }
 
 #define LEX_END default: pos = -1; regs_index = 0; return 0;

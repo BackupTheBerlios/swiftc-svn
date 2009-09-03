@@ -552,7 +552,7 @@ void Spiller::spill(BBNode* bbNode)
         {
             Var* var = instr->res_[i].var_;
 
-            if ( var->typeCheck(typeMask_) )
+            if ( var->typeCheck(typeMask_) && instr->liveOut_.contains(var) )
                 ++numLhs;
         }
 

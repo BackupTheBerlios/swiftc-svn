@@ -139,8 +139,8 @@ struct CFG : public Graph<BasicBlock>
     bool dominates(Var* x, Var* y) const;
     bool dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const;
     bool interferenceCheck(Var* x, Var* y) const;
-    VarSet intNeighbors(Var* var);
-    void findInt(Var* var, BBNode* bbNode, VarSet& result, BBSet& visited);
+    RegSet intNeighbors(Reg* reg, int typeMask, bool spilled);
+    void findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& visited, int typeMask, bool spilled);
 
     /*
      * dump methods

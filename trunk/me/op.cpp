@@ -77,7 +77,12 @@ Reg* Op::isReg(int typeMask)
     return 0;
 }
 
-Reg* Op::colorReg(int /*typeMask*/)
+Reg* Op::isReg(int typeMask, bool spilled)
+{
+    return 0;
+}
+
+Reg* Op::isNotSpilled(int /*typeMask*/)
 {
     return 0;
 }
@@ -413,6 +418,11 @@ Reg* Reg::isReg(int typeMask)
     return typeCheck(typeMask) ? this : 0;
 }
 
+Reg* Reg::isReg(int typeMask, bool spilled)
+{
+    return ( !(spilled ^ isSpilled_) && typeCheck(typeMask) ) ? this : 0;
+}
+
 Reg* Reg::isSpilled()
 {
     return isSpilled_ ? this : 0;
@@ -423,9 +433,9 @@ Reg* Reg::isSpilled(int typeMask)
     return ( isSpilled_ && typeCheck(typeMask) ) ? this : 0;
 }
 
-Reg* Reg::colorReg(int typeMask)
+Reg* Reg::isNotSpilled(int typeMask)
 {
-    return ( !isSpilled() && typeCheck(typeMask) ) ? this : 0;
+    return ( !isSpilled_ && typeCheck(typeMask) ) ? this : 0;
 }
 
 Reg* Reg::toSimd(Vectorizer* vectorizer) const
@@ -469,6 +479,63 @@ std::string Reg::toString() const
         oss << " (" << me::arch->reg2String(this) << ')';
 
     return oss.str();
+}
+
+/*
+ * further methods
+ */
+
+bool Reg::isColorAdmissible(int color)
+{
+    // find definition
+    InstrBase* def = def_.instrNode_->value_;
+    for (size_t i = 0; i < def->res_.size(); ++i)
+    {
+        Res& res = def->res_[i];
+        if (res.var_ == this)
+        {
+            // -> found
+            if (res.constraint_ != NO_CONSTRAINT && res.constraint_ != color)
+                return false;
+            else
+            break;
+        }
+    }
+
+    DEFUSELIST_EACH(iter, uses_)
+    {
+        InstrBase* use = iter->value_.instrNode_->value_;
+        for (size_t i = 0; i < use->arg_.size(); ++i)
+        {
+            Arg& arg = use->arg_[i];
+            if (arg.op_ == this)
+            {
+                // -> found
+                if (arg.constraint_ != NO_CONSTRAINT && arg.constraint_ != color)
+                    return false;
+                else
+                    goto outer_loop;
+            }
+        }
+
+outer_loop:
+        continue;
+    }
+
+    return true;
+}
+
+int Reg::getPreferedColor() const
+{
+    AssignInstr* ai = dynamic_cast<AssignInstr*>(def_.instrNode_->value_);
+    if (ai)
+    {
+        Reg* arg = dynamic_cast<Reg*>( ai->arg_[0].op_ );
+        if (arg)
+            return arg->color_;
+    }
+
+    return color_;
 }
 
 //------------------------------------------------------------------------------

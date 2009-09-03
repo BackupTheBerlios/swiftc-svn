@@ -23,6 +23,7 @@
 #include <typeinfo>
 
 #include "me/cfg.h"
+#include "me/coalescing.h"
 #include "me/coloring.h"
 #include "me/constpool.h"
 #include "me/copyinsertion.h"
@@ -120,6 +121,18 @@ const me::Colors* X64RegAlloc::getXmmColors()
  *          |
  *          v
  *  color XMM registers
+ *          |
+ *          v
+ *  color splill slots
+ *          |
+ *          v
+ *  coalesce general purpose registers
+ *          |
+ *          v
+ *  coalesce XMM registers
+ *          |
+ *          v
+ *  coalesce splill slots
  */
 void X64RegAlloc::process()
 {
@@ -176,7 +189,7 @@ void X64RegAlloc::process()
     me::LiveRangeSplitting(function_).process();
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
-    me::LivenessAnalysis(function_).process();
+    me::LivenessAnalysis(function_, true).process();
     
     /*
      * coloring
@@ -191,6 +204,21 @@ void X64RegAlloc::process()
     // color spill slots
     me::Coloring(function_, QUADWORD_TYPE_MASK, X64::QUADWORDS).process();
     me::Coloring(function_,  OCTWORD_TYPE_MASK, X64:: OCTWORDS).process();
+
+    /*
+     * coalescing
+     */
+
+    // general purpose registers
+    me::Coalescing(function_, *intColors_, INT_TYPE_MASK).process();
+
+    // XMM registers
+    me::Coalescing(function_, *xmmColors_, XMM_TYPE_MASK).process(); 
+
+    // coalesce spill slots
+    //me::Coalescing(function_, QUADWORD_TYPE_MASK).process();
+    //me::Coalescing(function_,  OCTWORD_TYPE_MASK).process();
+
 }
 
 bool X64RegAlloc::arg2Reg(me::InstrNode* iter, size_t i)
