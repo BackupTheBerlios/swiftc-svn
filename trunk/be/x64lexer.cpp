@@ -86,9 +86,9 @@ int findOutOp(me::Op* op)
 
     if (regs_index == 0)
     {
-        reg_highest = X64_REG_1;
         regs_index = 1;
         reg_nr[0] = X64_REG_1;
+        reg_highest = X64_REG_1;
         return X64_REG_1;
     }
 
@@ -98,12 +98,9 @@ int findOutOp(me::Op* op)
 
         if (iReg->color_ == reg->color_)
         {
-            if (i == regs_index - 1)
-            {
-                reg_nr[regs_index] = reg_nr[i];
-                ++regs_index;
-                return reg_nr[i];
-            }
+            reg_nr[regs_index] = reg_nr[i];
+            ++regs_index;
+            return reg_nr[i];
         }
     }
 
