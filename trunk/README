@@ -23,14 +23,6 @@ INSTALLING
 $ cmake .
 $ make
 
-If you use KDE you can get syntax highlighting with proper symlinking.
-For example:
-$ cd contrib
-$ su
-$ ln -sf /home/username/swiftc/contrib/swift.xml /usr/kde/3.5/share/apps/katepart/syntax/.
-
-The last command depends on your Linux distro and/or KDE verions, of course.
-
 In Vim you can get highlighting with the syntax file provided in contrib/swift.vim
 
 If you want to use the memory leak finder copy or symlink utils/leakfinder to

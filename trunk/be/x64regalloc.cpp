@@ -189,7 +189,8 @@ void X64RegAlloc::process()
     me::LiveRangeSplitting(function_).process();
     // recalulate def-use and liveness stuff
     me::DefUseCalc(function_).process();
-    me::LivenessAnalysis(function_, true).process();
+    me::LivenessAnalysis(function_).process();
+    // me::LivenessAnalysis(function_, true).process(); // <- use this for the dump of the interference graph
     
     /*
      * coloring

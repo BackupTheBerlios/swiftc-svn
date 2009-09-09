@@ -602,7 +602,7 @@ std::string MemVar::toString() const
 {
     std::ostringstream oss;
     oss << Var::toString();
-    oss << " (" << color_ << ')';
+    //oss << " (" << color_ << ')';
 
     return oss.str();
 }

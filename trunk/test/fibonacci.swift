@@ -44,19 +44,19 @@ class Fibonacci
     end
 
     # recursive implementation
-    # routine fibonacci_rec(int n) -> int result
-    #     if n == 0
-    #         result = 0
-    #         return
-    #     end
+    routine fibonacci_rec(int n) -> int result
+        if n == 0
+            result = 0
+            return
+        end
 
-    #     if n == 1
-    #         result = 1
-    #         return
-    #     end
-    #     
-    #     result = ::fibonacci_rec(n - 1) + ::fibonacci_rec(n - 2)
-    # end
+        if n == 1
+            result = 1
+            return
+        end
+        
+        result = ::fibonacci_rec(n - 1) + ::fibonacci_rec(n - 2)
+    end
 
     # print fibonacci(0) till fibonacci(13) with the iterative and the recursive implementation
     routine main() -> int result
@@ -64,10 +64,8 @@ class Fibonacci
 
         # for n = 0 .. 13
         while n <= 13
-            int fib = ::fibonacci(n)
-            c_call print_int(fib)
-            # fib = ::fibonacci_rec(n)
-            # c_call print_int(fib)
+            c_call print_int( ::fibonacci(n) )
+            c_call print_int( ::fibonacci_rec(n) )
 
             n = n + 1
         end

@@ -43,7 +43,11 @@ struct IVar
 
     std::string name() const
     {
-        return var_->toString();
+        std::string result = var_->toString();
+        if (result[0] == '$')
+            result[0] = '_';
+
+        return result;
     }
 
     std::string toString() const

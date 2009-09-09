@@ -42,22 +42,31 @@ public:
     {
         Reg* from_;
         Reg* to_;
+        int costs_;
 
         AffinityEdge(Reg* from, Reg* to)
             : from_(from)
             , to_(to)
+            , costs_(0)
         {}
+
+        bool operator < (const AffinityEdge& ae) const  
+        {
+            return costs_ > ae.costs_;
+        }
     };
 
     struct Node
     {
         Reg* reg_;
+        int costs_;
         bool fixed_;
         int oldColor_;
 
         Node() {}
-        Node(Reg* reg, bool fixed = false)
+        Node(Reg* reg, int costs = 1, bool fixed = false)
             : reg_(reg)
+            , costs_(costs)
             , fixed_(fixed)
 #ifdef SWIFT_DEBUG
             , oldColor_(-1)
@@ -65,26 +74,59 @@ public:
         {}
         Node(const Node& n)
             : reg_(n.reg_)
+            , costs_(n.costs_)
             , fixed_(n.fixed_)
             , oldColor_(n.oldColor_)
         {}
     };
 
     typedef std::vector<AffinityEdge> AffinityEdges;
-    typedef std::vector<Node*> Chunk;
-    typedef std::vector<Chunk*> Chunks;
+    typedef std::vector<Node*> Nodes;
 
-    struct ChunkCmp
+
+    struct Chunk
     {
-        bool operator () (const Chunk* c1, 
-                          const Chunk* c2)
+        Nodes nodes_;
+        int costs_;
+
+        Chunk()
+            : nodes_( Nodes() )
+            , costs_(0)
+        {}
+        Chunk(const Chunk& chunk)
+            : nodes_(chunk.nodes_)
+            , costs_(chunk.costs_)
+        {}
+
+        void unfixNodes()
         {
-            return c1->size() > c2->size();
+            for (size_t i = 0; i < nodes_.size(); ++i)
+                nodes_[i]->fixed_ = false;
+        }
+
+        void calcCosts()
+        {
+            costs_ = 0;
+
+            for (size_t i = 0; i < nodes_.size(); ++i)
+                costs_ += nodes_[i]->costs_;
         }
     };
 
+
+    struct ChunkCmp
+    {
+        bool operator () (const Chunk* c1, const Chunk* c2)
+        {
+            return c1->costs_ < c2->costs_;
+        }
+    };
+
+    typedef std::vector<Chunk*> Chunks;
+
+
     typedef std::priority_queue<Chunk*, std::vector<Chunk*>, ChunkCmp> Q;
-    typedef Set<Node*> Nodes;
+    typedef Set<Node*> NodeSet;
 
     /*
      * constructor
@@ -112,8 +154,9 @@ private:
     void buildChunks();
     void recolorChunk();
     void recolor(Node* n, int color);
-    void setColor(Node* n, int color, Nodes& changed);
-    bool avoidColor(Node* n, int color, Nodes& changed);
+    void setColor(Node* n, int color, NodeSet& changed);
+    bool avoidColor(Node* n, int color, NodeSet& changed);
+    void coalesceVars();
 
     /*
      * data

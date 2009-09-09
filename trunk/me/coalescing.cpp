@@ -30,6 +30,22 @@
 #include "me/op.h"
 #include "me/ssa.h"
 
+/*
+ * helper
+ */
+
+namespace {
+
+struct NodeCmp
+{
+    bool operator () (const me::Coalescing::Node* n1, const me::Coalescing::Node* n2)
+    {
+        return n1->costs_ > n2->costs_;
+    }
+};
+
+}
+
 namespace me {
 
 /*
@@ -55,6 +71,7 @@ Coalescing::Coalescing(Function* function,
  * virtual methods
  */
 
+
 void Coalescing::process()
 {
     // create nodes for each regs in question
@@ -70,14 +87,23 @@ void Coalescing::process()
 
     // transfer chunks_ to q_
     for (size_t i = 0; i < chunks_.size(); ++i)
+    {
         q_.push( chunks_[i] );
+    }
 
     while ( !q_.empty() )
     {
         currentChunk_ = q_.top();
         q_.pop();
+
+        std::sort( currentChunk_->nodes_.begin(), 
+                   currentChunk_->nodes_.end(), 
+                   ::NodeCmp() );
+
         recolorChunk();
     }
+
+    regs_.clear();
 
     // clean up
     for (size_t i = 0; i < chunks_.size(); ++i)
@@ -101,17 +127,30 @@ void Coalescing::buildAffinityEdges()
 
         if (phi)
         {
-            Reg* from = phi->result()->isReg( typeMask_, isSpilled() );
+            size_t numArgs = phi->arg_.size();
 
-            if (!from)
+            Reg* to = phi->result()->isReg( typeMask_, isSpilled() );
+            reg2Node_[to].costs_ += 1;
+
+            if (!to)
                 continue;
 
             // for each arg
-            for (size_t i = 0; i < phi->arg_.size(); ++i)
+            for (size_t i = 0; i < numArgs; ++i)
             {
                 swiftAssert( phi->arg_[i].op_->isReg(typeMask_, isSpilled()),
                         "must be an appropriate reg" );
-                Reg* to = (Reg*) phi->arg_[i].op_;
+                Reg* from = (Reg*) phi->arg_[i].op_;
+
+                BBList& domFrontier = phi->sourceBBs_[i]->value_->domFrontier_;
+                if ( domFrontier.find( to->def_.bbNode_) != domFrontier.sentinel() )
+                {
+                    //std::cout << from->toString() << " -> " << to->toString() << std::endl;
+                    reg2Node_[from].costs_ += 100;
+                }
+                else
+                    reg2Node_[from].costs_ += 1;
+
 
                 affinityEdges_.push_back( AffinityEdge(from, to) );
                 regs_.insert(from);
@@ -119,6 +158,14 @@ void Coalescing::buildAffinityEdges()
             }
         }
     }
+
+    for (size_t i = 0; i < affinityEdges_.size(); ++i)
+    {
+        AffinityEdge& ae = affinityEdges_[i];
+        ae.costs_ = reg2Node_[ae.from_].costs_ + reg2Node_[ae.to_].costs_;
+    }
+
+    std::sort( affinityEdges_.begin(), affinityEdges_.end() );
 }
 
 void Coalescing::buildChunks()
@@ -207,8 +254,12 @@ outer_loop:
         else
             index = mapIter->second; // found
 
-        chunks_[index]->push_back( &reg2Node_[reg] );
+        chunks_[index]->nodes_.push_back( &reg2Node_[reg] );
     }
+
+    // calc costs
+    for (size_t i = 0; i < chunks_.size(); ++i)
+        chunks_[i]->calcCosts();
 }
 
 void Coalescing::recolorChunk()
@@ -221,33 +272,33 @@ void Coalescing::recolorChunk()
     for (Colors::iterator iter = reservoir_.begin(); iter != reservoir_.end(); ++iter)
     {
         // unfix all nodes in chunk
-        for (size_t i = 0; i < currentChunk_->size(); ++i)
-            (*currentChunk_)[i]->fixed_ = false;
+        currentChunk_->unfixNodes();
 
         int color = *iter;
 
         // try to bring all nodes to color
-        for (size_t i = 0; i < currentChunk_->size(); ++i)
+        for (size_t i = 0; i < currentChunk_->nodes_.size(); ++i)
         {
-            Node* n = (*currentChunk_)[i];
+            Node* n = currentChunk_->nodes_[i];
             recolor(n, color);
             n->fixed_ = true;
         }
 
         Chunk subChunk;
         // check which nodes got color 'color'
-        for (size_t i = 0; i < currentChunk_->size(); ++i)
+        for (size_t i = 0; i < currentChunk_->nodes_.size(); ++i)
         {
-            Node* n = (*currentChunk_)[i];
+            Node* n = currentChunk_->nodes_[i];
             if (n->reg_->color_ == color)
-                subChunk.push_back(n);
+                subChunk.nodes_.push_back(n);
         }
 
-        if ( int(subChunk.size()) > bestCosts )
+        subChunk.calcCosts();
+        if (subChunk.costs_ > bestCosts)
         {
             bestColor = color;
             bestSubChunk = subChunk;
-            bestCosts = int( subChunk.size() );
+            bestCosts = subChunk.costs_;
         }
     }
 
@@ -256,33 +307,33 @@ void Coalescing::recolorChunk()
      */
 
     // unfix all nodes in bestSubChunk
-    for (size_t i = 0; i < bestSubChunk.size(); ++i)
-        bestSubChunk[i]->fixed_ = false;
+    bestSubChunk.unfixNodes();
 
-    Nodes bestSubChunkNodes;
+    NodeSet bestSubChunkNodes;
 
     // try to bring all nodes to bestColor
-    for (size_t i = 0; i < bestSubChunk.size(); ++i)
+    for (size_t i = 0; i < bestSubChunk.nodes_.size(); ++i)
     {
-        Node* n = bestSubChunk[i];
+        Node* n = bestSubChunk.nodes_[i];
         recolor(n, bestColor);
         n->fixed_ = true;
         bestSubChunkNodes.insert(n);
     }
 
-    if ( bestSubChunk.size() != currentChunk_->size() )
+    if ( bestSubChunk.nodes_.size() != currentChunk_->nodes_.size() )
     {
         // -> build new chunk out of the rest
 
-        Chunk* restChunk = new Chunk();
+        Chunk* restChunk = new Chunk;;
 
-        for (size_t i = 0; i < currentChunk_->size(); ++i)
+        for (size_t i = 0; i < currentChunk_->nodes_.size(); ++i)
         {
-            Node* n = (*currentChunk_)[i];
+            Node* n = currentChunk_->nodes_[i];
             if ( !bestSubChunkNodes.contains(n) )
-                restChunk->push_back(n);
+                restChunk->nodes_.push_back(n);
         }
 
+        restChunk->calcCosts();
         chunks_.push_back(restChunk);
         q_.push(restChunk);
     }
@@ -299,7 +350,7 @@ void Coalescing::recolor(Node* n, int color)
     if ( !reg->isColorAdmissible(color) )
         return;
 
-    Nodes changed;
+    NodeSet changed;
     setColor(n, color, changed);
 
     RegSet neighbors = cfg_->intNeighbors( reg, typeMask_, isSpilled() );
@@ -317,7 +368,7 @@ void Coalescing::recolor(Node* n, int color)
             if ( !avoidColor(neighborNode, color, changed) )
             {
                 // -> that did not work so rollback
-                for (Nodes::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
+                for (NodeSet::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
                 {
                     Node* current = *nodeIter;
                     swiftAssert(current->oldColor_ != -1, "must be set");
@@ -327,11 +378,11 @@ void Coalescing::recolor(Node* n, int color)
         }
     }
 
-    for (Nodes::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
+    for (NodeSet::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
         (*nodeIter)->fixed_ = false;
 }
 
-void Coalescing::setColor(Node* n, int color, Nodes& changed)
+void Coalescing::setColor(Node* n, int color, NodeSet& changed)
 {
     n->fixed_ = true;
     n->oldColor_ = n->reg_->color_;
@@ -339,7 +390,7 @@ void Coalescing::setColor(Node* n, int color, Nodes& changed)
     changed.insert(n);
 }
 
-bool Coalescing::avoidColor(Node* n, int color, Nodes& changed)
+bool Coalescing::avoidColor(Node* n, int color, NodeSet& changed)
 {
     if (n->reg_->color_ != color)
         return true;
@@ -368,7 +419,6 @@ bool Coalescing::avoidColor(Node* n, int color, Nodes& changed)
     // select a color newColor in admissible which is used least in neighbors
     int min = std::numeric_limits<int>::max();
     int newColor;
-    int prefered = n->reg_->getPreferedColor();
 
     for (Colors::iterator iter = admissible.begin(); iter != admissible.end(); ++iter)
     {
@@ -382,7 +432,7 @@ bool Coalescing::avoidColor(Node* n, int color, Nodes& changed)
                 ++counter;
         }
 
-        if (min > counter || (currentColor == prefered && min >= counter) )
+        if (min > counter )
         {
             min = counter;
             newColor = currentColor;
