@@ -54,6 +54,9 @@ typedef Set<Reg*> RegSet;
 typedef std::vector<Var*> VarVec;
 typedef Set<int> Colors;
 
+#define COLORS_EACH(iter, colors) \
+    for (me::Colors::iterator (iter) = (colors).begin(); (iter) != (colors).end(); ++(iter))
+
 } // namespace me
 
 #endif // ME_FORWARD_H

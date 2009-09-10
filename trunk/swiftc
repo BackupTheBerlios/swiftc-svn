@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-    echo "erro: no input file given"
+    echo "error: no input file given"
     exit -1
 fi
 
@@ -9,7 +9,9 @@ in=$1
 obj=$1.o
 asm=$1.asm
 
+#
 # check options and shift parameters accordingly
+#
 
 if [ $# -eq 1 ]; then
     out=$1.out
@@ -33,4 +35,5 @@ if [ ! -e 'test/lib.o' ]; then
     gcc -ggdb -c test/lib.c -o test/lib.o
 fi
 
+# and link everything
 gcc -nostdlib -lc test/lib.o $obj -o $out $*

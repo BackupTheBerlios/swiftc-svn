@@ -143,14 +143,6 @@ struct CFG : public Graph<BasicBlock>
     void findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& visited, int typeMask, bool spilled);
 
     /*
-     * further methods
-     */
-
-    void findStronglyConnectedComponets();
-    bool isCycle(BBNode* src_dst, BBNode* via);
-    bool isCycleRec(BBNode* src_dst, BBNode* via);
-
-    /*
      * dump methods
      */
 

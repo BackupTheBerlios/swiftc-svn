@@ -44,9 +44,16 @@ simd class Vec3
         # result.y = v1.y + v2.y
         # result.z = v1.z + v2.z
 
-        real resultx = v1.x + v2.x
-        real resulty = v1.y + v2.y
-        real resultz = v1.z + v2.z
+        real v1x = v1.x
+        real v1y = v1.y
+        real v1z = v1.z
+        real v2x = v2.x
+        real v2y = v2.y
+        real v2z = v2.z
+
+        real resultx = v1x + v2x
+        real resulty = v1y + v2y
+        real resultz = v1z + v2z
 
         result.x = resultx
         result.y = resulty

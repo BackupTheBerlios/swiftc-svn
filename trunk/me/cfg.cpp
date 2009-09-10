@@ -1045,7 +1045,7 @@ RegSet CFG::intNeighbors(Reg* reg, int typeMask, bool spilled)
     RegSet result;
     BBSet walked;
 
-    // for all uses iter of var
+    // for all uses iter of reg
     DEFUSELIST_EACH(iter, reg->uses_)
         findInt(reg, iter->value_.bbNode_, result, walked, typeMask, spilled);
 
@@ -1069,7 +1069,18 @@ void CFG::findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& walked, int t
             l.insert(liveOut);
     }
 
-    for (InstrNode* iter = last; iter != bb->begin_ && iter != reg->def_.instrNode_; iter = iter->prev())
+    // found a new result?
+    if ( l.contains(reg) )
+    {
+        REGSET_EACH(lIter, l)
+        {
+            Reg* lReg = *lIter;
+            if (lReg != reg)
+                result.insert(lReg);
+        }
+    }
+
+    for (InstrNode* iter = last; iter != bb->begin_ && iter != reg->def_.instrNode_ && iter != bb->firstOrdinary_->prev_; iter = iter->prev())
     {
         InstrBase* instr = iter->value_;
 
@@ -1138,49 +1149,6 @@ void CFG::findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& walked, int t
             findInt(reg, predNode, result, walked, typeMask, spilled);
     }
 }
-
-/*
- * further methods
- */
-
-bool CFG::isCycle(BBNode* src_dst, BBNode* via)
-{
-    //size_t index = 0;                         // DFS node number counter 
-
-    //// an empty stack of basic blocks
-    //typedef std::stack<BBNode*> S;
-    //S s;
-
-   //r// for each basic block
-    //RELATIVES_EACH(iter, nodes_)
-    //{
-    //}
-    
-    //forall v in V do
-      //if (v.index is undefined)       // Start a DFS at each node
-        //tarjan(v)                     // we haven't visited yet
-
-    //procedure tarjan(v)
-      //v.index = index                 // Set the depth index for v
-      //v.lowlink = index
-      //index = index + 1
-      //S.push(v)                       // Push v on the stack
-      //forall (v, v') in E do          // Consider successors of v
-        //if (v'.index is undefined)    // Was successor v' visited?
-            //tarjan(v')                // Recurse
-            //v.lowlink = min(v.lowlink, v'.lowlink)
-        //else if (v' is in S)          // Was successor v' in stack S? 
-            //v.lowlink = min(v.lowlink, v'.index)
-      //if (v.lowlink == v.index)       // Is v the root of an SCC?
-        //print "SCC:"
-        //repeat
-          //v' = S.pop
-          //print v'
-        //until (v' == v)
-
-    return true;
-}
-
 
 /*
  * dump methods

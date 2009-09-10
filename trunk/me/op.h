@@ -329,6 +329,7 @@ struct Var : public Op
     bool isSSA() const;
 
     bool dontColor() const;
+    bool isUsedinPhiFunction() const;
 
     /**
      * Checks via an swiftAssert whether this is not SSA and returns the var
@@ -378,7 +379,7 @@ struct Reg : public Var
      */
 
     bool isColorAdmissible(int color);
-    int getPreferedColor() const;
+    int getPreferedColor();
 };
 
 //------------------------------------------------------------------------------

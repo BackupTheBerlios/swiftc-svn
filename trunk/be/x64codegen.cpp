@@ -127,6 +127,8 @@ void X64CodeGen::process()
             // there must be exactly one successor
             if ( currentNode->succ_.size() == 1 )
             {
+                swiftAssert( currentNode->succ_.first()->value_ == ((me::JumpInstr*) instr)->bbTargets_[0], 
+                        "must be the same" );
                 genPhiInstr( currentNode, currentNode->succ_.first()->value_ );
                 phisInserted = true;
             }

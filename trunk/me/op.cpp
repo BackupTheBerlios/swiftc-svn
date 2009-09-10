@@ -308,25 +308,8 @@ Var::Var(Type type, int varNr)
 #endif // SWIFT_DEBUG
 
 /*
- * further methods
+ * virtual methods
  */
-
-bool Var::isSSA() const
-{
-    return varNr_ >= 0;
-}
-
-bool Var::dontColor() const
-{
-    return color_ == DONT_COLOR;
-}
-
-size_t Var::var2Index() const
-{
-    swiftAssert(varNr_ < 0, "this is not a var");
-
-    return size_t(-varNr_);
-}
 
 bool Var::typeCheck(int typeMask) const
 {
@@ -368,6 +351,41 @@ std::string Var::toString() const
     }
 
     return oss.str();
+}
+
+/*
+ * further methods
+ */
+
+bool Var::isSSA() const
+{
+    return varNr_ >= 0;
+}
+
+bool Var::dontColor() const
+{
+    return color_ == DONT_COLOR;
+}
+
+bool Var::isUsedinPhiFunction() const
+{
+    if ( typeid(*def_.instrNode_->value_) == typeid(PhiInstr) )
+        return true;
+
+    DEFUSELIST_CONST_EACH(iter, uses_)
+    {
+        if ( typeid(*iter->value_.instrNode_->value_) == typeid(PhiInstr) )
+            return true;
+    }
+
+    return false;
+}
+
+size_t Var::var2Index() const
+{
+    swiftAssert(varNr_ < 0, "this is not a var");
+
+    return size_t(-varNr_);
 }
 
 
@@ -525,17 +543,29 @@ outer_loop:
     return true;
 }
 
-int Reg::getPreferedColor() const
+int Reg::getPreferedColor()
 {
-    AssignInstr* ai = dynamic_cast<AssignInstr*>(def_.instrNode_->value_);
-    if (ai)
+    InstrBase* last = 0;
+
+    DEFUSELIST_CONST_EACH(iter, uses_)
     {
-        Reg* arg = dynamic_cast<Reg*>( ai->arg_[0].op_ );
-        if (arg)
-            return arg->color_;
+        InstrBase* use = iter->value_.instrNode_->value_;
+        if ( !use->liveOut_.contains(this) )
+        {
+            last = use;
+            break;
+        }
     }
 
-    return color_;
+    if (!last)
+        return -1;
+
+    AssignInstr* ai = dynamic_cast<AssignInstr*>(last);
+
+    if (ai && ai->arg_[0].op_ == this)
+        return ai->res_[0].var_->color_;
+
+    return -1;
 }
 
 //------------------------------------------------------------------------------

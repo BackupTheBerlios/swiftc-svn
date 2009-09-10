@@ -19,6 +19,9 @@
 
 #include <vector>
 
+#ifndef SWIFT_DISJOINT_SETS
+#define SWIFT_DISJOINT_SETS
+
 class DisjointSets
 {
 public:
@@ -79,3 +82,5 @@ private:
     size_t numSets_; // the number of sets currently in the DisjointSets data structure.
     std::vector<Node*> nodes_;
 };
+
+#endif // SWIFT_DISJOINT_SETS

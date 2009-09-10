@@ -3,4 +3,4 @@
 - getters and setters + private use and better capsulation
 - better syntax handling
 - Param handling
-- make bool a int64 var
+- make bool a int64 var (really?)

@@ -18,7 +18,14 @@
  */
 
 /*
- * TODO update usedColors_
+ * remarks:
+ *
+ * - the nodes in recolorChunk must be sorted by costs, too
+ * - intNeighbors(var) must not return var itself
+ * - first/last instr must be examined in findInt, too
+ * - intNeighbors must examine the liveOut set once befor iteration
+ * - intNeighbors must ignore phi functions
+ * - constrained regs and args in intNeighbors must be returned, too
  */
 
 #include "me/coalescing.h"
@@ -45,6 +52,9 @@ struct NodeCmp
 };
 
 }
+
+#define NODESET_EACH(iter, nodeSet) \
+    for (me::Coalescing::NodeSet::iterator (iter) = (nodeSet).begin(); (iter) != (nodeSet).end(); ++(iter))
 
 namespace me {
 
@@ -87,9 +97,9 @@ void Coalescing::process()
 
     // transfer chunks_ to q_
     for (size_t i = 0; i < chunks_.size(); ++i)
-    {
         q_.push( chunks_[i] );
-    }
+
+    //std::cout << "-- " << *function_->id_ << " --" << std::endl;
 
     while ( !q_.empty() )
     {
@@ -100,10 +110,12 @@ void Coalescing::process()
                    currentChunk_->nodes_.end(), 
                    ::NodeCmp() );
 
+        //for (size_t i = 0; i < currentChunk_->nodes_.size(); ++i)
+            //std::cout << "\t" << currentChunk_->nodes_[i]->reg_->toString() << " | " << currentChunk_->nodes_[i]->costs_ << std::endl;
+        //std::cout << "---" << std::endl;
+
         recolorChunk();
     }
-
-    regs_.clear();
 
     // clean up
     for (size_t i = 0; i < chunks_.size(); ++i)
@@ -147,6 +159,7 @@ void Coalescing::buildAffinityEdges()
                 {
                     //std::cout << from->toString() << " -> " << to->toString() << std::endl;
                     reg2Node_[from].costs_ += 100;
+                    reg2Node_[to].costs_ += 10;
                 }
                 else
                     reg2Node_[from].costs_ += 1;
@@ -280,7 +293,7 @@ void Coalescing::recolorChunk()
         for (size_t i = 0; i < currentChunk_->nodes_.size(); ++i)
         {
             Node* n = currentChunk_->nodes_[i];
-            recolor(n, color);
+            recolor(n, color, false);
             n->fixed_ = true;
         }
 
@@ -306,8 +319,8 @@ void Coalescing::recolorChunk()
      * finally color all nodes to the best color
      */
 
-    // unfix all nodes in bestSubChunk
-    bestSubChunk.unfixNodes();
+    // unfix all nodes in currentChunk_
+    currentChunk_->unfixNodes();
 
     NodeSet bestSubChunkNodes;
 
@@ -315,7 +328,7 @@ void Coalescing::recolorChunk()
     for (size_t i = 0; i < bestSubChunk.nodes_.size(); ++i)
     {
         Node* n = bestSubChunk.nodes_[i];
-        recolor(n, bestColor);
+        recolor(n, bestColor, true);
         n->fixed_ = true;
         bestSubChunkNodes.insert(n);
     }
@@ -339,7 +352,7 @@ void Coalescing::recolorChunk()
     }
 }
 
-void Coalescing::recolor(Node* n, int color)
+void Coalescing::recolor(Node* n, int color, bool final)
 {
     Reg* reg = n->reg_;
 
@@ -351,7 +364,7 @@ void Coalescing::recolor(Node* n, int color)
         return;
 
     NodeSet changed;
-    setColor(n, color, changed);
+    setColor(n, color, changed, final);
 
     RegSet neighbors = cfg_->intNeighbors( reg, typeMask_, isSpilled() );
 
@@ -360,17 +373,18 @@ void Coalescing::recolor(Node* n, int color)
     {
         Reg* neighbor = *iter;
         swiftAssert( reg2Node_.contains(neighbor), "must be found" );
-        Node* neighborNode = &reg2Node_[neighbor];
 
         // does it also have color 'color'?
         if (neighbor->color_ == color)
         {
-            if ( !avoidColor(neighborNode, color, changed) )
+            Node* neighborNode = &reg2Node_[neighbor];
+
+            if ( !avoidColor(neighborNode, color, changed, final) )
             {
                 // -> that did not work so rollback
-                for (NodeSet::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
+                NODESET_EACH(changedIter, changed)
                 {
-                    Node* current = *nodeIter;
+                    Node* current = *changedIter;
                     swiftAssert(current->oldColor_ != -1, "must be set");
                     current->reg_->color_ = current->oldColor_;
                 }
@@ -378,19 +392,22 @@ void Coalescing::recolor(Node* n, int color)
         }
     }
 
-    for (NodeSet::iterator nodeIter = changed.begin(); nodeIter != changed.end(); ++nodeIter)
-        (*nodeIter)->fixed_ = false;
+    NODESET_EACH(changedIter, changed)
+        (*changedIter)->fixed_ = false;
 }
 
-void Coalescing::setColor(Node* n, int color, NodeSet& changed)
+void Coalescing::setColor(Node* n, int color, NodeSet& changed, bool final)
 {
     n->fixed_ = true;
     n->oldColor_ = n->reg_->color_;
     n->reg_->color_ = color;
     changed.insert(n);
+
+    if (final)
+        function_->usedColors_.insert(color);
 }
 
-bool Coalescing::avoidColor(Node* n, int color, NodeSet& changed)
+bool Coalescing::avoidColor(Node* n, int color, NodeSet& changed, bool final)
 {
     if (n->reg_->color_ != color)
         return true;
@@ -441,18 +458,20 @@ bool Coalescing::avoidColor(Node* n, int color, NodeSet& changed)
 
     swiftAssert( min != std::numeric_limits<int>::max(), 
             "at least one color must have been found" );
-    setColor(n, newColor, changed);
+    setColor(n, newColor, changed, final);
 
     REGSET_EACH(iter, neighbors)
     {
         Reg* neighbor = *iter;
         swiftAssert( reg2Node_.contains(neighbor), "must be found" );
         Node* neighborNode = &reg2Node_[neighbor];
-        if ( !avoidColor(neighborNode, newColor, changed) )
+        if ( !avoidColor(neighborNode, newColor, changed, final) )
             return false;
     }
 
     return true;
 }
+
+#undef NODESET_EACH
 
 } // namespace me

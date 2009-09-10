@@ -122,6 +122,7 @@ ADD_EXECUTABLE (swift
     me/defuse.cpp
     me/defusecalc.cpp
     me/functab.cpp
+    me/instrcoalescing.cpp
     me/livenessanalysis.cpp
     me/liverangesplitting.cpp
     me/op.cpp

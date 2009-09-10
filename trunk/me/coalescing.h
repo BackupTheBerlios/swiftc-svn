@@ -153,10 +153,9 @@ private:
     void buildAffinityEdges();
     void buildChunks();
     void recolorChunk();
-    void recolor(Node* n, int color);
-    void setColor(Node* n, int color, NodeSet& changed);
-    bool avoidColor(Node* n, int color, NodeSet& changed);
-    void coalesceVars();
+    void recolor(Node* n, int color, bool final);
+    void setColor(Node* n, int color, NodeSet& changed, bool final);
+    bool avoidColor(Node* n, int color, NodeSet& changed, bool final);
 
     /*
      * data
