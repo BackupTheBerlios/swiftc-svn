@@ -485,7 +485,6 @@ void FunctionTable::buildUpME()
         {
             Vectorizer vectorizer(function);
             vectorizer.process();
-            vectorizer.getSimdFunction()->cfg_->constructSSAForm();
         }
     }
 }

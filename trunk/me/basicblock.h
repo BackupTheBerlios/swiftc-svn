@@ -128,7 +128,7 @@ struct BasicBlock
 
     bool hasConstrainedInstr() const;
 
-    bool isDomChild(const BBNode* bbNode) const;
+    bool hasDomChild(const BBNode* bbNode) const;
 
     /// Returns the title string of this BasicBlock.
     std::string name() const;

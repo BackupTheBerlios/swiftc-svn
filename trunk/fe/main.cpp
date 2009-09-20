@@ -39,6 +39,7 @@
 #include "me/functab.h"
 #include "me/defusecalc.h"
 #include "me/livenessanalysis.h"
+#include "me/loopsfinder.h"
 #include "me/stackcoloring.h"
 
 #include "be/x64.h"
@@ -63,7 +64,7 @@ int main(int argc, char** argv)
     MemMgr::init();
 #endif // SWIFT_DEBUG
 
-    //MemMgr::setBreakpoint(32859);
+    //MemMgr::setBreakpoint(32961);
 
     int result = start(argc, argv);
 
@@ -184,6 +185,7 @@ int start(int argc, char** argv)
         me::arch->regAlloc(function);
         me::StackColoring(function).process();
     }
+
 
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)

@@ -126,7 +126,7 @@ bool BasicBlock::hasConstrainedInstr() const
         && (firstOrdinary_->value_->isConstrained());
 }
 
-bool BasicBlock::isDomChild(const BBNode* bbNode) const
+bool BasicBlock::hasDomChild(const BBNode* bbNode) const
 {
     BBLIST_CONST_EACH(iter, domChildren_)
     {
@@ -135,7 +135,8 @@ bool BasicBlock::isDomChild(const BBNode* bbNode) const
         if (currentBB == bbNode)
             return true;
 
-        return currentBB->value_->isDomChild(bbNode);
+        if ( currentBB->value_->hasDomChild(bbNode) )
+            return true;
     }
 
     return false;

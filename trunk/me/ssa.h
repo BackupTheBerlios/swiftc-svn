@@ -121,7 +121,7 @@ struct InstrBase
      * virtual methods
      */
 
-    virtual InstrBase* toSimd(Vectorizer* vectorizer) const = 0;
+    virtual InstrNode* toSimd(Vectorizer* v) = 0;
     virtual std::string toString() const = 0;
 
     /*
@@ -195,8 +195,7 @@ struct InstrBase
      * Computes whether this \p instr ist the first instruction which does not
      * have \p var in the \a liveOut_.
      *
-     * @param instrNode The instruction which should be tested. \p instr must have
-     *      a predecessor and must contain a BaseAssignInstr.
+     * @param instrNode The instruction which should be tested. 
      * @param var The Var which should be tested.
      */
     static bool isLastUse(InstrNode* instrNode, Var* var);
@@ -224,7 +223,7 @@ struct LabelInstr : public InstrBase
      * virtual methods
      */
 
-    virtual LabelInstr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -259,7 +258,7 @@ struct NOP : public InstrBase
      * virtual methods
      */
 
-    virtual NOP* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -292,7 +291,7 @@ struct PhiInstr : public InstrBase
      * virtual methods
      */
 
-    virtual PhiInstr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -368,7 +367,7 @@ struct AssignInstr : public InstrBase
      * virtual methods
      */
 
-    virtual AssignInstr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -396,7 +395,7 @@ struct Cast : public InstrBase
      * virtual methods
      */
 
-    virtual Cast* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -447,7 +446,7 @@ struct GotoInstr : public JumpInstr
      * virtual methods
      */
 
-    GotoInstr* toSimd(Vectorizer* vectorizer) const;
+    InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -457,14 +456,13 @@ struct BranchInstr : public JumpInstr
 {
     enum
     {
-        CC_NOT_SET = -1
+        CC_NOT_SET = -1,
+        TRUE_TARGET = 0,
+        FALSE_TARGET = 1,
     };
 
     /// Use this for some back-end specific stuff for condition code handling
     int cc_;
-
-    BBNode* trueBB_;
-    BBNode* falseBB_;
 
     /*
      * constructor
@@ -476,7 +474,7 @@ struct BranchInstr : public JumpInstr
      * virtual methods
      */
 
-    virtual BranchInstr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -507,7 +505,7 @@ struct Spill : public InstrBase
      * virtual methods
      */
 
-    virtual Spill* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -525,7 +523,7 @@ struct Reload : public InstrBase
      * virtual methods
      */
 
-    virtual Reload* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -569,7 +567,7 @@ struct Load : public InstrBase
      * further methods
      */
 
-    virtual Load* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -623,7 +621,7 @@ struct LoadPtr : public InstrBase
      * virtual methods
      */
     
-    virtual LoadPtr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -673,7 +671,7 @@ struct Store : public InstrBase
      * virtual methods
      */
 
-    virtual Store* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -698,7 +696,7 @@ struct SetParams : public InstrBase
      * virtual methods
      */
 
-    virtual SetParams* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -716,7 +714,7 @@ struct SetResults : public InstrBase
      * virtual methods
      */
 
-    virtual SetResults* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -754,7 +752,7 @@ struct CallInstr : public InstrBase
      * virtual methods
      */
 
-    virtual CallInstr* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 
     /*
@@ -825,7 +823,7 @@ public:
      * virtual methods
      */
 
-    virtual Pack* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 
@@ -845,7 +843,7 @@ public:
      * virtual methods
      */
 
-    virtual Unpack* toSimd(Vectorizer* vectorizer) const;
+    virtual InstrNode* toSimd(Vectorizer* v);
     virtual std::string toString() const;
 };
 

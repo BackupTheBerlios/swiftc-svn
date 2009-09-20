@@ -388,12 +388,12 @@ void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
      * check whether the preceding instruction is the definition
      * of bi->getOp()
      */
+    return;
 
-    me::InstrNode* preNode = iter->prev();
-
-    if ( dynamic_cast<me::Var*>(bi->getOp()) )
+    me::Var* var = dynamic_cast<me::Var*>(bi->getOp());
+    if (var)
     {
-        me::Var* var = (me::Var*) bi->getOp();
+        me::InstrNode* preNode = iter->prev();
 
         if (var->def_.instrNode_ == preNode)
         {

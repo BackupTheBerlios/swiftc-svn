@@ -149,6 +149,9 @@ Op::Type Op::toSimd(Type type)
     if (type == R_PTR)
         return R_PTR;
 
+    if (type == R_BOOL)
+        return S_UINT32; // TODO
+
     swiftAssert(type & VECTORIZABLE, "type not vectorizable");
     return (Type) (type << SIMD_OFFSET);
 }
@@ -562,7 +565,7 @@ int Reg::getPreferedColor()
 
     AssignInstr* ai = dynamic_cast<AssignInstr*>(last);
 
-    if (ai && ai->arg_[0].op_ == this)
+    if (ai && !ai->isComparison() && ai->arg_[0].op_ == this)
         return ai->res_[0].var_->color_;
 
     return -1;

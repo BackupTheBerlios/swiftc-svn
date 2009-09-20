@@ -160,6 +160,8 @@ void CFG::calcCFG()
 
             for (size_t i = 0; i < ji->numTargets_; ++i)
             {
+                swiftAssert( labelNode2BBNode_.contains(ji->instrTargets_[i]), 
+                            "must be found here" );
                 ji->bbTargets_[i] = labelNode2BBNode_[ ji->instrTargets_[i] ];
                 currentBB->link( ji->bbTargets_[i] );
             }
@@ -945,12 +947,12 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
 }
 
 /*
- * ommiting the interference graph
+ * domination stuff
  */
 
 bool CFG::dominates(Var* x, Var* y) const
 {
-    swiftAssert(x != y, "vars must be distinct"); // TODO really?
+    swiftAssert(x != y, "vars must be distinct");
 
     const DefUse& dx = x->def_;
     const DefUse& dy = y->def_;
@@ -967,9 +969,9 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
     {
         /*
          * -> the definitions are in different basic blocks
-         * is b2 a dom child of b1?
+         * does b1 dominates b2?
          */
-        return b1->value_->isDomChild(b2);
+        return b1->value_->hasDomChild(b2);
     }
 
     /*
@@ -1000,6 +1002,10 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
     return false;
 }
 
+/*
+ * ommiting the interference graph
+ */
+
 bool CFG::interferenceCheck(Var* x, Var* y) const
 {
     swiftAssert(x != y, "vars must be distinct");
@@ -1022,7 +1028,6 @@ bool CFG::interferenceCheck(Var* x, Var* y) const
 
     // -> now t dominates b
 
-    // is there a way to get rid of the const_cast ?!
     if ( b->def_.bbNode_->value_->liveOut_.contains(t) ) 
         return true;
 

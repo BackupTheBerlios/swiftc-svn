@@ -120,6 +120,8 @@ void X64CodeGen::process()
         }
         else if ( dynamic_cast<me::JumpInstr*>(instr) )
         {
+            me::JumpInstr* jump = (me::JumpInstr*) instr;
+
             // generate phi stuff already here
             swiftAssert( typeid(*iter->next()->value_) == typeid(me::LabelInstr),
                     "must be a LabelInstr here");
@@ -127,10 +129,24 @@ void X64CodeGen::process()
             // there must be exactly one successor
             if ( currentNode->succ_.size() == 1 )
             {
-                swiftAssert( currentNode->succ_.first()->value_ == ((me::JumpInstr*) instr)->bbTargets_[0], 
+                me::BBNode* target = currentNode->succ_.first()->value_;
+                swiftAssert( target == jump->bbTargets_[0], 
                         "must be the same" );
-                genPhiInstr( currentNode, currentNode->succ_.first()->value_ );
+                genPhiInstr(currentNode, target);
                 phisInserted = true;
+
+                me::InstrNode* labelIter = iter->next();
+                while ( labelIter != cfg_->instrList_.sentinel() 
+                        && typeid(*labelIter) == typeid(me::LabelInstr) )
+                {
+                    if (labelIter == jump->instrTargets_[0])
+                    {
+                        std::cout << labelIter->value_->toString() << std::endl;
+                        goto outer_loop;
+                    }
+
+                    labelIter = labelIter->next();
+                }
             }
         }
         else if ( typeid(*instr) == typeid(me::AssignInstr) )
@@ -166,6 +182,9 @@ void X64CodeGen::process()
         currentInstrNode = iter;
 
         x64parse();
+
+outer_loop:
+        continue;
     }
 
     /*

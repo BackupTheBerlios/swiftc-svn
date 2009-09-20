@@ -17,17 +17,14 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef ME_VECTORIZER_H
-#define ME_VECTORIZER_H
-
-#include "utils/map.h"
+#ifndef ME_LOOPS_FINDER_H
+#define ME_LOOPS_FINDER_H
 
 #include "me/codepass.h"
-#include "me/forward.h"
 
 namespace me {
 
-class Vectorizer : public CodePass
+class LoopsFinder : public CodePass
 {
 public:
 
@@ -35,38 +32,21 @@ public:
      * constructor
      */
 
-    Vectorizer(Function* function);
+    LoopsFinder(Function* function);
 
     /*
      * virtual methods
      */
 
-    void process();
+    virtual void process();
+
+private:
 
     /*
-     * further methods
+     * data
      */
-
-    Function* getSimdFunction();
-    Function* function();
-    int getSimdLength();
-
-    void eliminateIfElseClauses(BBNode* bbNode);
-
-//private:
-
-    Function* simdFunction_;
-
-    InstrNode* currentInstrNode_;
-    BBNode* currentBB_;
-
-    typedef Map<InstrNode*, InstrNode*> Label2Label;
-    Label2Label src2dstLabel_;
-
-    typedef Map<int, int> Nr2Nr;
-    Nr2Nr src2dstNr_;
 };
 
 } // namespace me
 
-#endif // ME_VECTORIZER_H
+#endif // MERCHANTABILITY

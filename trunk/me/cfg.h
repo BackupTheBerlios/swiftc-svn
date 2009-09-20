@@ -34,6 +34,35 @@ struct DefUse;
 struct Function;
 struct VarDefUse;
 
+/*
+ * helpers
+ */
+
+//struct Edge 
+//{
+    //me::BBNode* from_;
+    //me::BBNode* to_;
+
+    //Edge(me::BBNode* from, me::BBNode* to)
+        //: from_(from)
+        //, to_(to)
+    //{}
+
+    //bool operator == (const Edge& edge)
+    //{
+        //return from_ == edge.from_ && to_ == edge_.to_;
+    //}
+//};
+
+//typedef std::vector<Edge> Edges;
+
+//struct Loop
+//{
+    //BBNode* header_;
+    //BBSet body_;
+    //Edges exitEdges_;
+//};
+
 //------------------------------------------------------------------------------
 
 /** 
@@ -57,7 +86,7 @@ struct CFG : public Graph<BasicBlock>
 
     BBNode** idoms_;
 
-    typedef std::map<InstrNode*, BBNode*> LabelNode2BBNodeMap;
+    typedef Map<InstrNode*, BBNode*> LabelNode2BBNodeMap;
 
     /**
      * @brief With this data structure we can quickly find a BB with 
@@ -133,11 +162,16 @@ struct CFG : public Graph<BasicBlock>
     Var* findDef(size_t i, InstrNode* instrNode, BBNode* bbNode, VarDefUse* rdu, BBSet& iDF);
 
     /*
-     * ommiting the interference graph
+     * domination stuff
      */
 
     bool dominates(Var* x, Var* y) const;
     bool dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const;
+
+    /*
+     * ommiting the interference graph
+     */
+
     bool interferenceCheck(Var* x, Var* y) const;
     RegSet intNeighbors(Reg* reg, int typeMask, bool spilled);
     void findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& visited, int typeMask, bool spilled);
@@ -150,6 +184,7 @@ struct CFG : public Graph<BasicBlock>
     std::string dumpIdoms() const;
     std::string dumpDomChildren() const;
     std::string dumpDomFrontier() const;
+
 };
 
 #define CFG_RELATIVES_EACH(iter, relatives) \
