@@ -126,7 +126,7 @@ void X64::dumpConstants(std::ofstream& ofs)
      * short constants 
      */
 
-    ofs << "\t.align\t2\n";
+    ofs << "\n\t.align\t2\n";
 
     UINT16MAP_EACH(iter)
     {
@@ -142,7 +142,7 @@ void X64::dumpConstants(std::ofstream& ofs)
      * long constants 
      */
 
-    ofs << "\t.align\t4\n";
+    ofs << "\n\t.align\t4\n";
 
     UINT32MAP_EACH(iter)
     {
@@ -158,7 +158,7 @@ void X64::dumpConstants(std::ofstream& ofs)
      * quad constants 
      */
 
-    ofs << "\t.align\t8\n";
+    ofs << "\n\t.align\t8\n";
 
     UINT64MAP_EACH(iter)
     {
@@ -174,7 +174,7 @@ void X64::dumpConstants(std::ofstream& ofs)
      * double quad constants 
      */
 
-    ofs << "\t.align\t16\n";
+    ofs << "\n\t.align\t16\n";
 
     UINT128MAP_EACH(iter)
     {

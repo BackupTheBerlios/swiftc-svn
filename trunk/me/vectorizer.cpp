@@ -242,17 +242,20 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      */
 
     // remove branch
+    delete bb->end_->prev_->value_;
     simdFunction_->cfg_->instrList_.erase( bb->end_->prev_ );
     bb->fixPointers();
 
     // remove gotos
     if ( typeid(*lastIf->end_->prev_->value_) == typeid(GotoInstr) )
     {
+        delete lastIf->end_->prev_->value_;
         simdFunction_->cfg_->instrList_.erase(lastIf->end_->prev_);
     }
 
     if ( typeid(*lastElse->end_->prev_->value_) == typeid(GotoInstr) )
     {
+        delete lastElse->end_->prev_->value_;
         simdFunction_->cfg_->instrList_.erase(lastElse->end_->prev_);
     }
 

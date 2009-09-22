@@ -258,7 +258,8 @@ assign_instruction
     | real_simd_sub
     | real_simd_un_minus
     | real_simd_div
-    | real_simd_cmp
+    | real_cmp
+    | simd_cmp
     ;
 
 int_mov
@@ -555,19 +556,19 @@ int_cmp /* TODO any_reg */
     { 
           EMIT(mnemonic("cmp", $2) << '\t' << reg2str($5) << ", " << cst2str($4))
           if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($3)) 
+            EMIT("set" << ccsuffix($1) << "b\t" << reg2str($3)) 
     }
     | cmp int_type X64_REG_1 any_reg X64_CONST /* cmp r, c */
     { 
           EMIT(mnemonic("cmp", $2) << '\t' << cst2str($5) << ", " << reg2str($4))
           if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($3)) 
+            EMIT("set" << ccsuffix($1) << "b\t" << reg2str($3)) 
     }
     | cmp int_type X64_REG_1 any_reg any_reg   /* cmp r, r */
     { 
           EMIT(mnemonic("cmp", $2) << '\t' << reg2str($5) << ", " << reg2str($4))
           if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($3)) 
+            EMIT("set" << ccsuffix($1) << "b\t" << reg2str($3)) 
     }
     ;
     
@@ -742,28 +743,70 @@ real_simd_div
     }
     ;
 
-real_simd_cmp
-    : cmp real_simd_type X64_REG_1 X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
+real_cmp
+    : cmp real_type X64_REG_1 X64_CONST X64_CONST /* mov true, r1 or mov flase, r1 */
     { 
         EMIT("movb\t" << cst_op_cst($1, $4, $5, true) << ", " << reg2str($3)) 
     }
-    | cmp real_simd_type X64_REG_1 any_reg X64_CONST /* cmp c, r */
+    | cmp real_type X64_REG_1 any_reg X64_CONST /* cmp c, r */
     { 
         EMIT(mnemonic("ucomi", $2) << '\t' << mcst2str($5) << ", " << reg2str($4))
         if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($3)) 
+            EMIT("set" << ccsuffix($1) << "b\t" << reg2str($3)) 
     }
-    | cmp real_simd_type X64_REG_1 X64_CONST any_reg /* cmpn c, r */
+    | cmp real_type X64_REG_1 X64_CONST any_reg /* cmpn c, r */
     { 
         EMIT(mnemonic("ucomi", $2) << '\t' << mcst2str($4) << ", " << reg2str($5))
         if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2, true) << "b\t" << reg2str($3)) 
+            EMIT("set" << ccsuffix($1, true) << "b\t" << reg2str($3)) 
     }
-    | cmp real_simd_type X64_REG_1 any_reg any_reg   /* cmp r, r */
+    | cmp real_type X64_REG_1 any_reg any_reg   /* cmp r, r */
     { 
         EMIT(mnemonic("ucomi", $2) << '\t' << reg2str($5) << ", " << reg2str($4))
         if ($3->color_ != me::Var::DONT_COLOR)
-            EMIT("set" << ccsuffix($1, $2) << "b\t" << reg2str($3))
+            EMIT("set" << ccsuffix($1) << "b\t" << reg2str($3))
+    }
+    ;
+
+simd_cmp
+    : cmp simd_type X64_REG_1 X64_CONST X64_CONST /* TODO */
+    {
+        swiftAssert(false, "TODO");
+    }
+    | cmp simd_type X64_REG_1 X64_REG_1 X64_CONST /* cmp c, r */
+    {
+        EMIT(mnemonic("cmp" + simdcc($1), $2) << '\t' << mcst2str($5) << ", " << reg2str($4))
+    }
+    | cmp simd_type X64_REG_1 X64_CONST X64_REG_1 /* cmpn c, r */
+    {
+        EMIT(mnemonic("cmp" + simdcc($1, true), $2) << '\t' << mcst2str($4) << ", " << reg2str($5))
+    }
+    | cmp simd_type X64_REG_1 X64_REG_2 X64_CONST /* mov r2, r1; cmp c, r1 */
+    {
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("cmp" + simdcc($1), $2) << '\t' << mcst2str($5) << ", " << reg2str($3))
+    }
+    | cmp simd_type X64_REG_1 X64_CONST X64_REG_2 /* mov r2, r1; cmpn c, r1 */
+    {
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($5) << ", " << reg2str($3))
+        EMIT(mnemonic("cmp" + simdcc($1, true), $2) << '\t' << mcst2str($4) << ", " << reg2str($3))
+    }
+    | cmp simd_type X64_REG_1 X64_REG_1 X64_REG_1 /* TODO */
+    {
+        swiftAssert(false, "TODO");
+    }
+    | cmp simd_type X64_REG_1 X64_REG_1 X64_REG_2 /* cmp r2, r1 */
+    {
+        EMIT(mnemonic("cmp" + simdcc($1), $2) << '\t' << reg2str($5) << ", " << reg2str($4))
+    }
+    | cmp simd_type X64_REG_1 X64_REG_2 X64_REG_1 /* cmpn r2, r1 */
+    {
+        EMIT(mnemonic("cmp" + simdcc($1, true), $2) << '\t' << reg2str($4) << ", " << reg2str($5))
+    }
+    | cmp simd_type X64_REG_1 X64_REG_2 X64_REG_3 /* mov r2, r1; cmp r3, r1 */
+    {
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("cmp" + simdcc($1), $2) << '\t' << reg2str($5) << ", " << reg2str($3))
     }
     ;
 

@@ -516,7 +516,7 @@ void Spiller::spill(BBNode* bbNode)
                  * insert reload instruction
                  */
 
-                // check whether var hast been discaded but is actually in passed
+                // check whether var hast been discarded but is actually in passed
                 if ( !inB.contains(var) && passed.contains(var) )
                 {
                     // mark for later reload insertion

@@ -565,7 +565,7 @@ int Reg::getPreferedColor()
 
     AssignInstr* ai = dynamic_cast<AssignInstr*>(last);
 
-    if (ai && !ai->isComparison() && ai->arg_[0].op_ == this)
+    if (ai && (!ai->isComparison() || ai->res_[0].var_->type_ != R_BOOL) && ai->arg_[0].op_ == this)
         return ai->res_[0].var_->color_;
 
     return -1;

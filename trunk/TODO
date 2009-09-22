@@ -4,3 +4,4 @@
 - better syntax handling
 - Param handling
 - make bool a int64 var (really?)
+- NaNs are not handled correctly

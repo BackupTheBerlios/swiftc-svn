@@ -550,9 +550,54 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     return "error";
 }
 
-std::string ccsuffix(me::AssignInstr* ai, int type, bool neg /*= false*/)
+std::string simdcc(me::AssignInstr* ai, bool neg /*= false*/)
 {
     int kind = ai->kind_;
+    me::Op::Type type = ai->arg_[0].op_->type_;
+
+    /*
+     * for != and == just compare the bit pattern
+     */
+    if (kind == me::AssignInstr::EQ)
+    {
+        if (neg) 
+            return "neq"; 
+        else 
+            return  "eq";
+    }
+    else if (kind == me::AssignInstr::NE)
+    {
+        if (neg) 
+            return  "eq"; 
+        else 
+            return "neq";
+    }
+
+    switch (type)
+    {
+        case me::Op::S_REAL32:
+        case me::Op::S_REAL64:
+            switch (kind)
+            {
+                case '<': if (neg) return "nlt"; else return  "lt";
+                case '>': if (neg) return  "lt"; else return "nlt";
+                case me::AssignInstr::LE: if (neg) return "nle"; else return  "le";
+                case me::AssignInstr::GE: if (neg) return  "le"; else return "nle";
+                default:
+                    swiftAssert(false, "unreachable code"); 
+            }
+        default:
+            swiftAssert(false, "unreachable code"); 
+    }
+
+    return "error";
+}
+
+std::string ccsuffix(me::AssignInstr* ai, bool neg /*= false*/)
+{
+    int kind = ai->kind_;
+    me::Op::Type type = ai->arg_[0].op_->type_;
+
     /*
      * for != and == just compare the bit pattern
      */
@@ -576,29 +621,29 @@ std::string ccsuffix(me::AssignInstr* ai, int type, bool neg /*= false*/)
      */
     switch (type)
     {
-        case X64_INT8:
-        case X64_INT16:
-        case X64_INT32:
-        case X64_INT64:
+        case me::Op::R_INT8:
+        case me::Op::R_INT16:
+        case me::Op::R_INT32:
+        case me::Op::R_INT64:
             switch (kind)
             {
-                case '<' : if (neg) return "nl";  else return "l";
-                case '>' : if (neg) return "ng";  else return "g";
+                case '<': if (neg) return "nl";  else return "l";
+                case '>': if (neg) return "ng";  else return "g";
                 case me::AssignInstr::LE: if (neg) return "nle"; else return "le";
                 case me::AssignInstr::GE: if (neg) return "nge"; else return "ge";
                 default:
                     swiftAssert(false, "unreachable code"); 
             }
-        case X64_UINT8:
-        case X64_UINT16:
-        case X64_UINT32:
-        case X64_UINT64:
-        case X64_REAL32:
-        case X64_REAL64:
+        case me::Op::R_UINT8:
+        case me::Op::R_UINT16:
+        case me::Op::R_UINT32:
+        case me::Op::R_UINT64:
+        case me::Op::R_REAL32:
+        case me::Op::R_REAL64:
             switch (kind)
             {
-                case '<' : if (neg) return "nb";  else return "b";
-                case '>' : if (neg) return "na";  else return "a";
+                case '<': if (neg) return "nb";  else return "b";
+                case '>': if (neg) return "na";  else return "a";
                 case me::AssignInstr::LE: if (neg) return "nbe"; else return "be";
                 case me::AssignInstr::GE: if (neg) return "nae"; else return "ae";
                 default:

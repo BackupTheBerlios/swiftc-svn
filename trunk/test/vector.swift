@@ -59,7 +59,7 @@ simd class Vec3
         result.y = resulty
         result.z = resultz
 
-        if (result.x == 5.0)
+        if result.x >= result.y
             result.x = 6.0
         else
             result.x = 7.0
