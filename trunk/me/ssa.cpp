@@ -413,8 +413,16 @@ int PhiInstr::oldResultNr() const
 
 InstrNode* PhiInstr::toSimd(Vectorizer* v)
 {
-    swiftAssert(false, "unreachable code");
-    return 0;
+    PhiInstr* phi = new PhiInstr( res_[0].var_->toSimd(v), arg_.size() );
+
+    for (size_t i = 0; i < arg_.size(); ++i)
+    {
+        phi->arg_[i] = Arg( arg_[i].op_->toSimd(v) );
+        // remember src BBNode and substitute it later
+        phi->sourceBBs_[i] = sourceBBs_[i];
+    }
+
+    return new InstrNode(phi);
 }
 
 std::string PhiInstr::toString() const
@@ -552,6 +560,9 @@ std::string AssignInstr::getOpString() const
             break;
         case AND:
             opString = "AND";
+            break;
+        case NAND:
+            opString = "NAND";
             break;
         case OR:
             opString = "OR";

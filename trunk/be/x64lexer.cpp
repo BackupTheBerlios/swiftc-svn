@@ -192,14 +192,21 @@ int x64lex()
                     case me::AssignInstr::LE: return X64_LE;
                     case me::AssignInstr::GE: return X64_GE;
                     case '^': return X64_DEREF;
-                    case '&': return X64_AND;
+                    case me::AssignInstr::AND:  return X64_AND;
+                    case me::AssignInstr::NAND: return X64_NAND;
+                    case me::AssignInstr::OR:   return X64_OR;
+                    case me::AssignInstr::XOR:  return X64_XOR;
+                    case me::AssignInstr::NOT:  return X64_NOT;
                     case me::AssignInstr::UNARY_MINUS: return X64_UN_MINUS;
 
                     default:
                         swiftAssert(false, "unreachable code");
                 }
             case 1:
-                return meType2beType( ai->arg_[0].op_->type_ );
+                if (ai->isComparison() )
+                    return meType2beType( ai->arg_[0].op_->type_ );
+                else
+                    return meType2beType( ai->res_[0].var_->type_ );
             case 2:
                 return findOutOp( ai->res_[0].var_ );
             case 3:

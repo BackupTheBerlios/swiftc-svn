@@ -429,7 +429,7 @@ bool AssignStatement::analyzeAssignCreate()
                     me::functab->appendInstr(plus);
 
                     me::AssignInstr* _and = 
-                        new me::AssignInstr('&', size, size, not_simdLength_minus_one);
+                        new me::AssignInstr(me::AssignInstr::AND, size, size, not_simdLength_minus_one);
                     me::functab->appendInstr(_and);
                 }
 

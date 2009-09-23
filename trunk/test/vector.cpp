@@ -35,6 +35,12 @@ Vec3 Vec3::operator + (float r)
     result.x = x + r;
     result.y = y + r;
     result.z = z + r;
+
+    if (result.x < 5.0)
+        result.x = 4.0;
+    else
+        result.x = 7.0;
+
     return result;
 }
 

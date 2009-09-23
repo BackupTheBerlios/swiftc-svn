@@ -55,15 +55,15 @@ simd class Vec3
         real resulty = v1y + v2y
         real resultz = v1z + v2z
 
+        if resultx < 5.0
+            resultx = 4.0
+        else
+            resultx = 7.0
+        end
+
         result.x = resultx
         result.y = resulty
         result.z = resultz
-
-        if result.x >= result.y
-            result.x = 6.0
-        else
-            result.x = 7.0
-        end
     end
 
     simd routine cross(Vec3 v1, Vec3 v2) -> Vec3 result

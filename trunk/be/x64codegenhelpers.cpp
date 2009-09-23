@@ -403,7 +403,11 @@ std::string instr2str(me::AssignInstr* ai)
         case '-': return "sub";
         case '*': return "mul";
         case '/': return "div";
-        case '&': return "and";
+        case me::AssignInstr::AND:  return "and";
+        case me::AssignInstr::NAND: return "andn";
+        case me::AssignInstr::XOR:  return "xor";
+        case me::AssignInstr::OR:   return "or";
+        case me::AssignInstr::NOT:  return "not";
         default:
             swiftAssert(false, "unreachable code");
     }
@@ -489,7 +493,10 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     std::ostringstream oss;
     oss << '$';
     int kind = ai->kind_;
-    swiftAssert(kind != '&', "TODO");
+    swiftAssert(kind != me::AssignInstr::AND, "TODO");
+    swiftAssert(kind != me::AssignInstr::NAND, "TODO");
+    swiftAssert(kind != me::AssignInstr::OR, "TODO");
+    swiftAssert(kind != me::AssignInstr::XOR, "TODO");
 
     Box box;
 

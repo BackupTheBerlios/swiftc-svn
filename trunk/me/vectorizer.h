@@ -60,11 +60,14 @@ public:
     InstrNode* currentInstrNode_;
     BBNode* currentBB_;
 
+    typedef Map<int, int> Nr2Nr;
+    Nr2Nr src2dstNr_;
+
     typedef Map<InstrNode*, InstrNode*> Label2Label;
     Label2Label src2dstLabel_;
 
-    typedef Map<int, int> Nr2Nr;
-    Nr2Nr src2dstNr_;
+    typedef Map<BBNode*, BBNode*> BBNode2BBNode;
+    BBNode2BBNode src2dstBBNode_;
 };
 
 } // namespace me

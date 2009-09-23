@@ -55,6 +55,42 @@ void Vectorizer::process()
     }
 
     simdFunction_->cfg_->calcCFG();
+
+    // for each label instruction
+    INSTRLIST_EACH(iter, cfg_->instrList_)
+    {
+        if ( typeid(*iter->value_) != typeid(LabelInstr) )
+            continue;
+
+        swiftAssert( cfg_->labelNode2BBNode_.contains(iter), "must be found here" );
+        swiftAssert( src2dstLabel_.contains(iter), "must be found here" );
+        swiftAssert( simdFunction_->cfg_->labelNode2BBNode_.contains( 
+                    src2dstLabel_[iter]), "must be found here" );
+
+        // create map: srcBB -> dstBB
+        src2dstBBNode_[ cfg_->labelNode2BBNode_[iter] ] = 
+            simdFunction_->cfg_->labelNode2BBNode_[ src2dstLabel_[iter] ];
+    }
+
+    // for each phi function
+    INSTRLIST_EACH(iter, simdFunction_->instrList_)
+    {
+        PhiInstr* phi = dynamic_cast<PhiInstr*>(iter->value_);
+        if (!phi)
+            continue;
+
+        for (size_t i = 0; i < phi->arg_.size(); ++i)
+        {
+            swiftAssert( src2dstBBNode_.contains(phi->sourceBBs_[i]),
+                        "must be found here" );
+            phi->sourceBBs_[i] = src2dstBBNode_[ phi->sourceBBs_[i] ];
+        }
+    }
+
+    // for each BBNode
+    CFG_RELATIVES_EACH(iter, simdFunction_->cfg_->nodes_)
+        iter->value_->value_->fixPointers();
+
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
 
@@ -69,8 +105,8 @@ void Vectorizer::process()
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
 
-    simdFunction_->cfg_->placePhiFunctions();
-    simdFunction_->cfg_->renameVars();
+    //simdFunction_->cfg_->placePhiFunctions();
+    //simdFunction_->cfg_->renameVars();
 }
 
 /*
@@ -135,7 +171,7 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
     // this is the node where the control flow merges after the division by bb
     BBNode* nextNode = ifChild->domFrontier_.first()->value_;
-    //BasicBlock* next = nextNode->value_;
+    BasicBlock* next = nextNode->value_;
 
     swiftAssert( nextNode->pred_.size() == 2, "must exactly have two predecessors" );
 
@@ -242,25 +278,101 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      */
 
     // remove branch
+    me::Op* mask = branch->getOp(); // store mask
     delete bb->end_->prev_->value_;
-    simdFunction_->cfg_->instrList_.erase( bb->end_->prev_ );
+    simdFunction_->instrList_.erase( bb->end_->prev_ );
     bb->fixPointers();
 
     // remove gotos
     if ( typeid(*lastIf->end_->prev_->value_) == typeid(GotoInstr) )
     {
         delete lastIf->end_->prev_->value_;
-        simdFunction_->cfg_->instrList_.erase(lastIf->end_->prev_);
+        simdFunction_->instrList_.erase(lastIf->end_->prev_);
+        lastIf->fixPointers();
     }
 
     if ( typeid(*lastElse->end_->prev_->value_) == typeid(GotoInstr) )
     {
         delete lastElse->end_->prev_->value_;
-        simdFunction_->cfg_->instrList_.erase(lastElse->end_->prev_);
+        simdFunction_->instrList_.erase(lastElse->end_->prev_);
+        lastElse->fixPointers();
     }
 
-    // add mask stuff
-    //next->begin_
+    /*
+     * add mask stuff
+     */
+
+    std::vector<InstrBase*> toBeInserted;
+    std::vector<InstrNode*> toBeErased;
+
+    // for each phi function
+    for (InstrNode* iter = next->firstPhi_; iter != next->firstOrdinary_; iter = iter->next_)
+    {
+        swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
+                "must be a PhiInstr here" );
+        toBeErased.push_back(iter);
+        PhiInstr* phi = (PhiInstr*) iter->value_;
+
+        swiftAssert( phi->arg_.size() == 2, "must exactly have two results" );
+        swiftAssert( typeid(*phi->arg_[0].op_) == typeid(Reg), "TODO" );
+        swiftAssert( typeid(*phi->arg_[1].op_) == typeid(Reg), "TODO" );
+        swiftAssert( typeid(*phi->result())    == typeid(Reg), "TODO" );
+
+        me::Reg* ifReg; 
+        me::Reg* elseReg; 
+        me::Reg* resReg = (Reg*) phi->result(); 
+
+        if (phi->sourceBBs_[0] == lastIfNode)
+        {
+            swiftAssert( phi->sourceBBs_[1] == lastElseNode, 
+                    "the other one must be the else-BB" );
+
+            ifReg   = (Reg*) phi->arg_[0].op_;
+            elseReg = (Reg*) phi->arg_[1].op_;
+        }
+        else 
+        {
+            swiftAssert( phi->sourceBBs_[0] == lastElseNode, 
+                    "this must be the else-BB" );
+            swiftAssert( phi->sourceBBs_[1] == lastIfNode, 
+                    "the other one must be the if-BB" );
+
+              ifReg = (Reg*) phi->arg_[1].op_;
+            elseReg = (Reg*) phi->arg_[0].op_;
+        }
+
+#ifdef SWIFT_DEBUG
+        std::string andStr = "and";
+        std::string nandStr = "nand";
+        me::Reg*  andReg = me::functab->newReg(resReg->type_, & andStr);
+        me::Reg* nandReg = me::functab->newReg(resReg->type_, &nandStr);
+#else // SWIFT_DEBUG
+        me::Reg*  andReg = me::functab->newReg(resReg->type_);
+        me::Reg* nandReg = me::functab->newReg(resReg->type_);
+#endif // SWIFT_DEBUG
+
+        AssignInstr* _and = new AssignInstr(AssignInstr:: AND,  andReg, mask,   ifReg);
+        AssignInstr* nand = new AssignInstr(AssignInstr::NAND, nandReg, mask, elseReg);
+        AssignInstr*  _or = new AssignInstr(AssignInstr::  OR,  resReg, andReg, nandReg);
+
+        // push back in reverse order since they'll be prepended in reverse order
+        toBeInserted.push_back(_or);
+        toBeInserted.push_back(nand);
+        toBeInserted.push_back(_and);
+    }
+
+    // erase
+    for (size_t i = 0; i < toBeErased.size(); ++i)
+    {
+        delete toBeErased[i]->value_;
+        simdFunction_->instrList_.erase(toBeErased[i]);
+    }
+
+    // do the actual insert
+    for (size_t i = 0; i < toBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_, toBeInserted[i]);
+
+    next->fixPointers();
 }
 
 } // namespace me
