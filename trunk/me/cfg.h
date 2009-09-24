@@ -153,6 +153,8 @@ struct CFG : public Graph<BasicBlock>
      */
     void splitBB(me::InstrNode* instrNode, me::BBNode* bbNode);
 
+    void mergeBB(BBNode* topNode, BBNode* bottomNode);
+
     /*
      * SSA reconstruction and rewiring
      */

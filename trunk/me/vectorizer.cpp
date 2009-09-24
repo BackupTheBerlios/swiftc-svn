@@ -283,7 +283,7 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
     simdFunction_->instrList_.erase( bb->end_->prev_ );
     bb->fixPointers();
 
-    // remove gotos
+    // remove goto
     if ( typeid(*lastIf->end_->prev_->value_) == typeid(GotoInstr) )
     {
         delete lastIf->end_->prev_->value_;
@@ -291,6 +291,7 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         lastIf->fixPointers();
     }
 
+    // remove goto
     if ( typeid(*lastElse->end_->prev_->value_) == typeid(GotoInstr) )
     {
         delete lastElse->end_->prev_->value_;
@@ -373,6 +374,14 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         simdFunction_->instrList_.insert(next->begin_, toBeInserted[i]);
 
     next->fixPointers();
+
+    /*
+     * merge basic blocks
+     */
+
+    simdFunction_->cfg_->mergeBB(elseChildNode, nextNode);
+    simdFunction_->cfg_->mergeBB(lastIfNode, elseChildNode);
+    simdFunction_->cfg_->mergeBB(bbNode, ifChildNode);
 }
 
 } // namespace me

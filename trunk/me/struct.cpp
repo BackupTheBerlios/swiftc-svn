@@ -111,7 +111,7 @@ std::string Member::toString() const
 {
     std::ostringstream oss;
 #ifdef SWIFT_DEBUG
-    oss << id_ << '|';
+    oss << id_ << " - ";
 #endif // SWIFT_DEBUG
     oss << offset_;
 

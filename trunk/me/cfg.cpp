@@ -807,6 +807,44 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
 }
 
 
+void CFG::mergeBB(BBNode* topNode, BBNode* bottomNode)
+{
+    swiftAssert(    topNode->succ_.size() == 1, "must exactly have one successor" );
+    swiftAssert( bottomNode->pred_.size() == 1, "must exactly have one predecessor" );
+
+    BasicBlock* top    =    topNode->value_;
+    BasicBlock* bottom = bottomNode->value_;
+
+    GotoInstr* gi = dynamic_cast<GotoInstr*>(top->end_->prev_->value_);
+    if (gi)
+    {
+        swiftAssert( gi->instrTargets_[0] == bottom->begin_, "wrong target" );
+        delete top->end_->prev_->value_;
+        instrList_.erase(top->end_->prev_);
+    }
+
+    topNode->succ_.clear();
+    RELATIVES_EACH(iter, bottomNode->succ_)
+    {
+        BBNode* succNode = iter->value_;
+
+        topNode->succ_.append(succNode);
+        Relative* relative = succNode->pred_.find(bottomNode);
+        relative->value_ = topNode;
+        //succNode->pred_.erase( succNode->pred_.find(bottomNode) );
+        //succNode->pred_.append(topNode);
+    }
+
+    labelNode2BBNode_.erase(bottom->begin_);
+    delete bottom->begin_->value_;
+    instrList_.erase(bottom->begin_);
+    top->end_ = bottom->end_;
+    top->fixPointers();
+
+    nodes_.erase( nodes_.find(bottomNode) );
+    delete bottomNode;
+}
+
 /*
  * SSA reconstruction and rewiring
  */

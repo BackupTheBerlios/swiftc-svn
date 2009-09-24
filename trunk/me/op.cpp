@@ -253,7 +253,7 @@ std::string Const::toString() const
         }
 
         if (i != numBoxElems_ - 1)
-            oss << '|';
+            oss << " . ";
     }
 
     return oss.str();

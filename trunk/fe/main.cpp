@@ -186,6 +186,9 @@ int start(int argc, char** argv)
         me::StackColoring(function).process();
     }
 
+    //me::functab->dumpSSA();
+    //me::functab->dumpDot();
+    //return EXIT_SUCCESS;
 
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
