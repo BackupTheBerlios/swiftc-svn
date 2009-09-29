@@ -125,7 +125,6 @@ ADD_EXECUTABLE (swift
     me/instrcoalescing.cpp
     me/livenessanalysis.cpp
     me/liverangesplitting.cpp
-    me/loopsfinder.cpp
     me/op.cpp
     me/offset.cpp
     me/phiimpl.cpp

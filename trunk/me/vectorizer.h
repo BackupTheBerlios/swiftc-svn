@@ -52,6 +52,7 @@ public:
     int getSimdLength();
 
     void eliminateIfElseClauses(BBNode* bbNode);
+    void vectorizeLoops(BBNode* bbNode);
 
 //private:
 

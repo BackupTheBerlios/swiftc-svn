@@ -94,6 +94,8 @@ void Vectorizer::process()
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
 
+    //simdFunction_->cfg_->findLoops();
+
     // find and eliminate all if-else clauses
     eliminateIfElseClauses(simdFunction_->cfg_->entry_);
 
@@ -169,7 +171,7 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
     if ( ifChild->domFrontier_.first()->value_ != elseChild->domFrontier_.first()->value_ )
         return;
 
-    // this is the node where the control flow merges after the division by bb
+    // this is the node where the control flow merges after the split at bb
     BBNode* nextNode = ifChild->domFrontier_.first()->value_;
     BasicBlock* next = nextNode->value_;
 
@@ -306,6 +308,8 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
     std::vector<InstrBase*> toBeInserted;
     std::vector<InstrNode*> toBeErased;
 
+    next->fixPointers();
+
     // for each phi function
     for (InstrNode* iter = next->firstPhi_; iter != next->firstOrdinary_; iter = iter->next_)
     {
@@ -377,11 +381,17 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
     /*
      * merge basic blocks
+     *
+     * TODO
      */
 
-    simdFunction_->cfg_->mergeBB(elseChildNode, nextNode);
-    simdFunction_->cfg_->mergeBB(lastIfNode, elseChildNode);
-    simdFunction_->cfg_->mergeBB(bbNode, ifChildNode);
+    //simdFunction_->cfg_->mergeBB(elseChildNode, nextNode);
+    //simdFunction_->cfg_->mergeBB(lastIfNode, elseChildNode);
+    //simdFunction_->cfg_->mergeBB(bbNode, ifChildNode);
+}
+
+void Vectorizer::vectorizeLoops(BBNode* bbNode)
+{
 }
 
 } // namespace me

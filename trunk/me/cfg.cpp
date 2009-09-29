@@ -286,10 +286,32 @@ void CFG::eliminateCriticalEdges()
             labelNode2BBNode_[newLabelNode] = bbNode;
 
             /*
+             * add or fix jump instructions of all predecessors of bbNode which
+             * are not newBBNode
+             */
+
+            RELATIVES_EACH(bbPredIter, bbNode->pred_)
+            {
+                BBNode* bbPred = bbPredIter->value_;
+                if (bbPred == newBBNode)
+                    continue;
+
+                JumpInstr* prevJump = dynamic_cast<JumpInstr*>( bbPred->value_->end_->prev_->value_ );
+                if ( !prevJump)
+                {
+                    GotoInstr* gi = new GotoInstr(newLabelNode);
+                    gi->bbTargets_[0] = bbNode;
+                    instrList_.insert(bbPred->value_->end_->prev_, new InstrNode(gi));
+                }
+            }
+
+            /*
              * handle self loops
              */
+
             if (selfLoop)
             {
+                swiftAssert(false, "TODO");
                 // TODO perhaps this can be done smarter
                 BasicBlock* newBB = newBBNode->value_;
 
@@ -835,6 +857,37 @@ void CFG::mergeBB(BBNode* topNode, BBNode* bottomNode)
         //succNode->pred_.append(topNode);
     }
 
+    /*
+     * check whether bottom's dominance frontier hast phi functions
+     * and substitute the sourceBBs accordingly
+     */
+
+    //BBLIST_EACH(iter, bottom->domFrontier_)
+    //{
+        //BBNode* bbNode = iter->value_;
+        //BasicBlock* bb = bbNode->value_;
+
+        ////bb->fixPointers();
+
+        //// for each phi function in bb
+        //for (InstrNode* instrNode = bb->firstPhi_; instrNode != bb->firstOrdinary_; instrNode = instrNode->next())
+        //{
+            //swiftAssert( typeid(*instrNode) == typeid(PhiInstr),
+                    //"must be a PhiInstr here" );
+
+            //PhiInstr* phi = (PhiInstr*) instrNode->value_;
+
+            //// for each source basic block
+            //for (size_t i = 0; i < phi->arg_.size(); ++i)
+            //{
+                //BBNode* sourceNode = phi->sourceBBs_[i];
+
+                //if (sourceNode == bbNode)
+                    //phi->sourceBBs_[i] = topNode;
+            //}
+        //}
+    //}
+
     labelNode2BBNode_.erase(bottom->begin_);
     delete bottom->begin_->value_;
     instrList_.erase(bottom->begin_);
@@ -1038,6 +1091,41 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
 #endif // SWIFT_DEBUG
 
     return false;
+}
+
+/*
+ * loop finding
+ */
+
+void CFG::findLoops()
+{
+    //std::cout << "-- " << *function_->id_ << " --" << std::endl;
+    // for each node
+    RELATIVES_EACH(fromIter, nodes_)
+    {
+        BBNode* fromNode = fromIter->value_;
+        BasicBlock* from = fromNode->value_;
+
+        // for each successor
+        RELATIVES_EACH(toIter, fromNode->succ_)
+        {
+            BBNode* toNode = toIter->value_;
+            BasicBlock* to = toNode->value_;
+
+            /*
+             * examine edge 'from' -> 'to':
+             * does 'to' dominate 'from'?
+             */
+
+            if ( to->hasDomChild(fromNode) )
+            {
+                // yes, so 'from' -> 'to' is a back edge
+
+                // find loop body
+                std::cout << from->name() << " -> " << to->name() << std::endl;
+            }
+        }
+    }
 }
 
 /*

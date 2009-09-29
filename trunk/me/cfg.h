@@ -171,6 +171,12 @@ struct CFG : public Graph<BasicBlock>
     bool dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const;
 
     /*
+     * loop finding
+     */
+
+    void findLoops();
+
+    /*
      * ommiting the interference graph
      */
 

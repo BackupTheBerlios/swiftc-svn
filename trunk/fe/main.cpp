@@ -39,7 +39,6 @@
 #include "me/functab.h"
 #include "me/defusecalc.h"
 #include "me/livenessanalysis.h"
-#include "me/loopsfinder.h"
 #include "me/stackcoloring.h"
 
 #include "be/x64.h"
@@ -170,6 +169,10 @@ int start(int argc, char** argv)
     oss << cmdLineParser.filename_ << ".asm";
     std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
+    //me::functab->dumpSSA();
+    //me::functab->dumpDot();
+    //return EXIT_SUCCESS;
+
     /*
      * build up pipeline
      */
@@ -185,10 +188,6 @@ int start(int argc, char** argv)
         me::arch->regAlloc(function);
         me::StackColoring(function).process();
     }
-
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-    //return EXIT_SUCCESS;
 
     // finally generate assembly code
     for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)

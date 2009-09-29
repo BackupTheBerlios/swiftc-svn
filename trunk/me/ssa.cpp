@@ -308,7 +308,7 @@ InstrNode* LabelInstr::toSimd(Vectorizer* v)
 {
     InstrNode* src = v->currentInstrNode_;
 
-    // has label been already created?
+    // has label already been created?
     Vectorizer::Label2Label::iterator dstIter = v->src2dstLabel_.find(src);
 
     if ( dstIter != v->src2dstLabel_.end() )
