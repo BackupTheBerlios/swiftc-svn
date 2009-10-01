@@ -38,30 +38,33 @@ struct VarDefUse;
  * helpers
  */
 
-//struct Edge 
-//{
-    //me::BBNode* from_;
-    //me::BBNode* to_;
+struct Edge 
+{
+    me::BBNode* from_;
+    me::BBNode* to_;
 
-    //Edge(me::BBNode* from, me::BBNode* to)
-        //: from_(from)
-        //, to_(to)
-    //{}
+    Edge(me::BBNode* from, me::BBNode* to)
+        : from_(from)
+        , to_(to)
+    {}
 
-    //bool operator == (const Edge& edge)
-    //{
-        //return from_ == edge.from_ && to_ == edge_.to_;
-    //}
-//};
+    bool operator == (const Edge& edge) const
+    {
+        return from_ == edge.from_ && to_ == edge.to_;
+    }
+};
 
-//typedef std::vector<Edge> Edges;
+typedef std::vector<Edge> Edges;
 
-//struct Loop
-//{
-    //BBNode* header_;
-    //BBSet body_;
-    //Edges exitEdges_;
-//};
+struct Loop
+{
+    BBNode* header_;
+    BBSet body_;
+    Edges backEdges_; 
+    Edges exitEdges_;
+};
+
+typedef std::vector<Loop*> Loops;
 
 //------------------------------------------------------------------------------
 
@@ -96,6 +99,8 @@ struct CFG : public Graph<BasicBlock>
 
     typedef Map<int, BBNode*> FirstOccurance;
     FirstOccurance firstOccurance_;
+
+    Loops loops_;
 
     /*
      * constructor and destructor

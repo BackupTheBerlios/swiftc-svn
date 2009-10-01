@@ -1120,7 +1120,9 @@ void CFG::findLoops()
             if ( to->hasDomChild(fromNode) )
             {
                 // yes, so 'from' -> 'to' is a back edge
-
+                Loop* loop = new Loop();
+                loop->header_ = toNode;
+                loop->backEdges_.push_back( Edge(fromNode, toNode) );
                 // find loop body
                 std::cout << from->name() << " -> " << to->name() << std::endl;
             }

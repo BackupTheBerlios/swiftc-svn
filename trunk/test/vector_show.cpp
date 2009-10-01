@@ -39,7 +39,7 @@ struct Vec3 {
         z = _z;
     }
 
-    Vec3 Vec3::operator + (const Vec3& v2) { Vec3 result;
+    Vec3 operator + (const Vec3& v2) { Vec3 result;
         result.x = x + v2.x;
         result.y = y + v2.y;
         result.z = z + v2.z;
@@ -65,4 +65,3 @@ int main() {
         vecs1[i] = Vec3::cross(vecs2[i], vecs3[i]);
     return 0;
 }
-
