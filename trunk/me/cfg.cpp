@@ -45,6 +45,9 @@ CFG::CFG(Function* function)
 CFG::~CFG()
 {
     delete[] idoms_;
+
+    for (Loops::iterator iter = loops_.begin(); iter != loops_.end(); ++iter)
+        delete iter->second;
 }
 
 /*
@@ -1044,7 +1047,7 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
 bool CFG::dominates(BBNode* b1, BBNode* b2) const
 {
     if (b1 == b2)
-        return true;
+        return true; // a basic block always dominates itself
 
     return b1->value_->hasDomChild(b2);
 }
@@ -1107,6 +1110,9 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
 
 void CFG::findLoops()
 {
+    for (Loops::iterator iter = loops_.begin(); iter != loops_.end(); ++iter)
+        delete iter->second;
+
     loops_.clear();
 
     // for each node
@@ -1139,10 +1145,11 @@ void CFG::findLoops()
                 loop->header_ = toNode;
                 loop->backEdges_.push_back( Edge(fromNode, toNode) );
                 loop->body_.insert(toNode);
+                loop->body_.insert(fromNode);
 
                 typedef std::stack<BBNode*> BBNodeStack;
                 BBNodeStack stack;
-                stack.push(toNode);
+                stack.push(fromNode);
 
                 while ( !stack.empty() )
                 {

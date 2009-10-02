@@ -491,8 +491,13 @@ InstrNode* AssignInstr::toSimd(Vectorizer* v)
     else
     {
         swiftAssert( arg_.size() == 2, "must exactly have two arguments" );
-        simdAssign = new AssignInstr(kind_, 
-                res_[0].var_->toSimd(v), 
+
+        Var* res = res_[0].var_->toSimd(v);
+
+        if ( isComparison() )
+            res->type_ = Op::toSimd( arg_[0].op_->type_ );
+
+        simdAssign = new AssignInstr(kind_, res,
                 arg_[0]. op_->toSimd(v),
                 arg_[1]. op_->toSimd(v) );
     }
@@ -817,6 +822,13 @@ Op* BranchInstr::getOp()
 const Op* BranchInstr::getOp() const
 {
     return arg_[0].op_;
+}
+
+Reg* BranchInstr::getMask() 
+{
+    swiftAssert( res_.size() == 1, "must be 1" );
+    swiftAssert( typeid(*res_[0].var_) == typeid(Reg), "must be a Reg here" );
+    return (Reg*) res_[0].var_;
 }
 
 //------------------------------------------------------------------------------

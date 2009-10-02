@@ -489,6 +489,8 @@ struct BranchInstr : public JumpInstr
 
     Op* getOp();
     const Op* getOp() const;
+
+    Reg* getMask();
 };
 
 //------------------------------------------------------------------------------

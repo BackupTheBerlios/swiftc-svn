@@ -132,7 +132,7 @@ jump_instruction
         else
             EMIT("jmp\t" << $1->falseLabel()->asmName())
     }
-    | X64_BRANCH bool_type X64_REG_1 /* test r1, r1; jz falseLabel; jmp trueLabel */
+    | X64_BRANCH bool_type X64_REG_1 /* test r1, r1; jnz trueLabel; jmp falseLabel */
     { 
         if ($1->cc_ == me::BranchInstr::CC_NOT_SET)
         {
@@ -175,6 +175,25 @@ jump_instruction
         }
         else
             EMIT("j" << jcc($1, true) << '\t' << $1->falseLabel()->asmName())
+    }
+    | X64_BRANCH simd_type X64_REG_1 /* movmsk r1, reg32; test r32, r32; jnz trueLabel; jmp falseLabel */
+    { 
+        EMIT(mnemonic("movmsk", $2) << '\t' << reg2str($3) << ", " << reg2str($1->getMask()))
+        EMIT("testl\t" << reg2str($1->getMask()) << ", " << reg2str($1->getMask()))
+        EMIT("jnz\t" << $1->trueLabel()->asmName())
+        EMIT("jmp\t" << $1->falseLabel()->asmName()) 
+    }
+    | X64_BRANCH_TRUE simd_type X64_REG_1 
+    { 
+        EMIT(mnemonic("movmsk", $2) << '\t' << reg2str($3) << ", " << reg2str($1->getMask()))
+        EMIT("testl\t" << reg2str($1->getMask()) << ", " << reg2str($1->getMask()))
+        EMIT("jnz\t" << $1->trueLabel()->asmName())
+    }
+    | X64_BRANCH_FALSE simd_type X64_REG_1 
+    { 
+        EMIT(mnemonic("movmsk", $2) << '\t' << reg2str($3) << ", " << reg2str($1->getMask()))
+        EMIT("testl\t" << reg2str($1->getMask()) << ", " << reg2str($1->getMask()))
+        EMIT("jz\t" << $1->falseLabel()->asmName())
     }
     ;
 

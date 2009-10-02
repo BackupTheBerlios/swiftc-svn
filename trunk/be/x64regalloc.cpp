@@ -388,7 +388,14 @@ void X64RegAlloc::targetBranchInstr(me::InstrNode* iter, me::BBNode* currentBB)
      * check whether the preceding instruction is the definition
      * of bi->getOp()
      */
-    return;
+
+    if ( bi->getOp()->isSimd() )
+    {
+        me::Var* newVar = function_->newSSAReg(me::Op::R_INT32);
+        bi->res_.push_back( me::Res(newVar) );
+
+        return;
+    }
 
     me::Var* var = dynamic_cast<me::Var*>(bi->getOp());
     if (var)

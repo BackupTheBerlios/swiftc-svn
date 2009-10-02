@@ -388,16 +388,6 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         simdFunction_->instrList_.insert(next->begin_,  andToBeInserted[i]);
 
     next->fixPointers();
-
-    /*
-     * merge basic blocks
-     *
-     * TODO
-     */
-
-    //simdFunction_->cfg_->mergeBB(elseChildNode, nextNode);
-    //simdFunction_->cfg_->mergeBB(lastIfNode, elseChildNode);
-    //simdFunction_->cfg_->mergeBB(bbNode, ifChildNode);
 }
 
 void Vectorizer::vectorizeLoops(BBNode* bbNode)
@@ -407,7 +397,7 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
      * nested one
      */
 
-    //BasicBlock* bb = bbNode->value_;
+    BasicBlock* bb = bbNode->value_;
 
     BBLIST_EACH(iter, bbNode->value_->domChildren_)
     {
@@ -430,6 +420,42 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
     for (size_t i = 0; i < loop->exitEdges_.size(); ++i)
     {
     }
+
+    swiftAssert( typeid(*bb->end_->prev_->value_) == typeid(BranchInstr),
+            "must be a BranchInstr here" );
+    BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
+    
+    //std::cout << loop->header_->value_->name() << std::endl;
+
+    // only exit if everything is zero
+    if ( loop->body_.contains(branch->bbTargets_[BranchInstr::FALSE_TARGET]) )
+    {
+        // -> we must invert the comparision and the branch
+        swiftAssert( !loop->body_.contains(branch->bbTargets_[BranchInstr::TRUE_TARGET]), 
+                "true-target must not be in the loop" );
+
+        std::cout << "not tested" << std::endl;
+        swiftAssert( typeid(*branch->getOp()) == typeid(Reg), "TODO" );
+        me::Reg* reg = (Reg*) branch->getOp();
+
+#ifdef SWIFT_DEBUG
+        std::string notStr = "not";
+        me::Reg* notReg = me::functab->newSSAReg(reg->type_, &notStr);
+#else // SWIFT_DEBUG
+        me::Reg* notReg = me::functab->newSSAReg(reg->type_);
+#endif // SWIFT_DEBUG
+
+        AssignInstr* _not = new AssignInstr(AssignInstr::NOT, notReg, reg);
+        simdFunction_->instrList_.insert(bb->end_->prev_->prev_, _not);
+
+        branch->arg_[0].op_ = notReg;
+
+        std::swap( branch->instrTargets_[0], branch->instrTargets_[1] );
+        std::swap( branch->bbTargets_[0], branch->bbTargets_[1] );
+    }
+    else
+        swiftAssert( loop->body_.contains(branch->bbTargets_[BranchInstr::TRUE_TARGET]), 
+                "true-target must be in the loop" );
 }
 
 } // namespace me
