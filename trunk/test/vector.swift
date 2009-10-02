@@ -55,26 +55,22 @@ simd class Vec3
         real resulty = v1y + v2y
         real resultz = v1z + v2z
 
-        if resultx < 5.0
-            if resulty > 6.0
-                resultx = 8.0
-                if resultz >= 13.5
-                    resulty = 8.0
+        while (resultx < 10.0)
+            if resultx < 5.0
+                if resulty > 6.0
+                    resultx = 8.0
+                    if resultz >= 13.5
+                        resulty = 8.0
+                    end
+                else
+                    resultx = 4.0
                 end
             else
-                resultx = 4.0
+                resultx = 7.0
             end
-        else
-            resultx = 7.0
+
+            resulty = v1z + 8.0
         end
-
-        # if resultx < 5.0
-        #     resultx = 4.0
-        # end
-
-       # while (resultx < 10.0)
-       #      resulty = v1z + 8.0
-       # end
 
         result.x = resultx
         result.y = resulty

@@ -93,8 +93,7 @@ void Vectorizer::process()
 
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
-
-    //simdFunction_->cfg_->findLoops();
+    simdFunction_->cfg_->findLoops();
 
     // find and eliminate all if-else clauses
     eliminateIfElseClauses(simdFunction_->cfg_->entry_);
@@ -106,6 +105,9 @@ void Vectorizer::process()
     simdFunction_->cfg_->calcPostOrder(simdFunction_->cfg_->entry_);
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
+    simdFunction_->cfg_->findLoops();
+
+    vectorizeLoops(simdFunction_->cfg_->entry_);
 
     //simdFunction_->cfg_->placePhiFunctions();
     //simdFunction_->cfg_->renameVars();
@@ -148,6 +150,9 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
     if (bbNode->succ_.empty() || bbNode->succ_.size() == 1)
         return;
+
+    if ( simdFunction_->cfg_->loops_.find(bbNode) != simdFunction_->cfg_->loops_.end() )
+        return; // this is a loop
 
     swiftAssert( bbNode->succ_.size() == 2, "more than 2 successor are not allowed" );
     swiftAssert( typeid(*bb->end_->prev_->value_) == typeid(BranchInstr),
@@ -349,11 +354,11 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 #ifdef SWIFT_DEBUG
         std::string andStr = "and";
         std::string nandStr = "nand";
-        me::Reg*  andReg = me::functab->newReg(resReg->type_, & andStr);
-        me::Reg* nandReg = me::functab->newReg(resReg->type_, &nandStr);
+        me::Reg*  andReg = me::functab->newSSAReg(resReg->type_, & andStr);
+        me::Reg* nandReg = me::functab->newSSAReg(resReg->type_, &nandStr);
 #else // SWIFT_DEBUG
-        me::Reg*  andReg = me::functab->newReg(resReg->type_);
-        me::Reg* nandReg = me::functab->newReg(resReg->type_);
+        me::Reg*  andReg = me::functab->newSSAReg(resReg->type_);
+        me::Reg* nandReg = me::functab->newSSAReg(resReg->type_);
 #endif // SWIFT_DEBUG
 
         AssignInstr* _and = new AssignInstr(AssignInstr:: AND,  andReg, mask,   ifReg);
@@ -392,6 +397,34 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
 void Vectorizer::vectorizeLoops(BBNode* bbNode)
 {
+    /*
+     * do a post-order walk of the dominance tree so we start with the most
+     * nested one
+     */
+
+    //BasicBlock* bb = bbNode->value_;
+
+    BBLIST_EACH(iter, bbNode->value_->domChildren_)
+    {
+        BBNode* current = iter->value_;
+        vectorizeLoops(current);
+    }
+
+    Loops::iterator loopIter = simdFunction_->cfg_->loops_.find(bbNode);
+    if ( loopIter == simdFunction_->cfg_->loops_.end() )
+        return; // not a loop
+
+    Loop* loop = loopIter->second;
+
+    // for each back edge
+    for (size_t i = 0; i < loop->backEdges_.size(); ++i)
+    {
+    }
+
+    // for each exit edge
+    for (size_t i = 0; i < loop->exitEdges_.size(); ++i)
+    {
+    }
 }
 
 } // namespace me

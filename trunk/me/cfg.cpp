@@ -1099,35 +1099,87 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
 
 void CFG::findLoops()
 {
-    //std::cout << "-- " << *function_->id_ << " --" << std::endl;
+    loops_.clear();
+
     // for each node
     RELATIVES_EACH(fromIter, nodes_)
     {
         BBNode* fromNode = fromIter->value_;
-        BasicBlock* from = fromNode->value_;
 
         // for each successor
         RELATIVES_EACH(toIter, fromNode->succ_)
         {
             BBNode* toNode = toIter->value_;
-            BasicBlock* to = toNode->value_;
 
             /*
              * examine edge 'from' -> 'to':
              * does 'to' dominate 'from'?
              */
 
-            if ( to->hasDomChild(fromNode) )
+            if ( !toNode->value_->hasDomChild(fromNode) )
+                continue;
+
+            // yes, so 'from' -> 'to' is a back edge
+
+            // is there already a loop for this back edge?
+            Loops::iterator loopIter = loops_.find(toNode);
+
+            if ( loopIter == loops_.end() )
             {
-                // yes, so 'from' -> 'to' is a back edge
+                // -> make new loop
                 Loop* loop = new Loop();
                 loop->header_ = toNode;
                 loop->backEdges_.push_back( Edge(fromNode, toNode) );
-                // find loop body
-                std::cout << from->name() << " -> " << to->name() << std::endl;
+                loop->body_.insert(toNode);
+
+                typedef std::stack<BBNode*> BBNodeStack;
+                BBNodeStack stack;
+                stack.push(toNode);
+
+                while ( !stack.empty() )
+                {
+                    BBNode* currentNode = stack.top();
+                    stack.pop();
+
+                    RELATIVES_EACH(iter, currentNode->pred_)
+                    {
+                        BBNode* predNode = iter->value_;
+
+                        if ( !loop->body_.contains(predNode) )
+                        {
+                            loop->body_.insert(predNode);
+                            stack.push(predNode);
+                        }
+                    }
+                }
+
+                // find exit edges
+                BBSET_EACH(iter, loop->body_)
+                {
+                    BBNode* currentNode = *iter;
+
+                    RELATIVES_EACH(succIter, currentNode->succ_)
+                    {
+                        BBNode* succNode = succIter->value_;
+
+                        if ( !loop->body_.contains(succNode) )
+                        {
+                            // currentNode -> succNode is an exit edge
+                            loop->exitEdges_.push_back( Edge(currentNode, succNode) );
+                        }
+                    }
+                }
+
+                // add to data structure
+                loops_[toNode] = loop;
             }
-        }
-    }
+            else
+            {
+                // register back edge
+                loopIter->second->backEdges_.push_back( Edge(fromNode, toNode) );
+            }
+        } // for each successor
+    } // for each node
 }
 
 /*

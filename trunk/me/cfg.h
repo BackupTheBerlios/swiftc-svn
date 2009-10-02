@@ -64,7 +64,7 @@ struct Loop
     Edges exitEdges_;
 };
 
-typedef std::vector<Loop*> Loops;
+typedef Map<BBNode*, Loop*> Loops;
 
 //------------------------------------------------------------------------------
 
