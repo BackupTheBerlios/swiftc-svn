@@ -1041,6 +1041,14 @@ Var* CFG::findDef(size_t p, InstrNode* instrNode, BBNode* bbNode, VarDefUse* vdu
  * domination stuff
  */
 
+bool CFG::dominates(BBNode* b1, BBNode* b2) const
+{
+    if (b1 == b2)
+        return true;
+
+    return b1->value_->hasDomChild(b2);
+}
+
 bool CFG::dominates(Var* x, Var* y) const
 {
     swiftAssert(x != y, "vars must be distinct");
@@ -1116,7 +1124,7 @@ void CFG::findLoops()
              * does 'to' dominate 'from'?
              */
 
-            if ( !toNode->value_->hasDomChild(fromNode) )
+            if ( !dominates(toNode, fromNode) )
                 continue;
 
             // yes, so 'from' -> 'to' is a back edge

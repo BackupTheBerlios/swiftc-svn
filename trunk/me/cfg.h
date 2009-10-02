@@ -172,6 +172,7 @@ struct CFG : public Graph<BasicBlock>
      * domination stuff
      */
 
+    bool dominates(BBNode* b1, BBNode* b2) const;
     bool dominates(Var* x, Var* y) const;
     bool dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const;
 

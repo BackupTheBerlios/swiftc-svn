@@ -780,7 +780,7 @@ CFStatement::CFStatement(int kind, int line)
 
 bool CFStatement::analyze()
 {
-    me::functab->appendInstr( new me::GotoInstr(me::functab->getLastLabelNode()) );
+    me::functab->appendInstr( new me::GotoInstr(me::functab->getFunctionEpilogue()) );
     return true;
 }
 

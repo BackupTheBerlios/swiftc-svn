@@ -50,7 +50,7 @@ Function::Function(std::string* id, size_t stackPlaces, bool ignore, bool vector
     , cfg_( new CFG(this) )
     , firstLiveness_(false)
     , firstDefUse_(false)
-    , lastLabelNode_( new InstrNode(new LabelInstr()) )
+    , functionEpilogue_( new InstrNode(new LabelInstr()) )
     , stackLayout_( new StackLayout(stackPlaces) )
     , ignore_(ignore)
     , isMain_(false)
@@ -244,6 +244,11 @@ void Function::dumpSSA(ofstream& ofs)
 void Function::dumpDot(const string& baseFilename)
 {
     cfg_->dumpDot(baseFilename);
+}
+
+InstrNode* FunctionTable::getFunctionEpilogue()
+{
+    return currentFunction_->functionEpilogue_;
 }
 
 void Function::appendArg(Var* arg)
@@ -508,11 +513,6 @@ void FunctionTable::dumpDot()
 {
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
         iter->second->dumpDot(filename_ + '.' + *iter->second->id_);
-}
-
-InstrNode* FunctionTable::getLastLabelNode()
-{
-    return currentFunction_->lastLabelNode_;
 }
 
 void FunctionTable::appendArg(Var* arg)

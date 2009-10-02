@@ -77,7 +77,7 @@ struct Function
     /// Indicates whether a DefUseCalc CodePass has already been performed.
     bool firstDefUse_;
 
-    InstrNode* lastLabelNode_;
+    InstrNode* functionEpilogue_;
     InstrList instrList_;
 
     VarVec res_;
@@ -226,7 +226,7 @@ struct FunctionTable
 
     void appendInstr(InstrBase* instr);
     void appendInstrNode(InstrNode* node);
-    InstrNode* getLastLabelNode();
+    InstrNode* getFunctionEpilogue();
 
     void analyzeStructs();
     void buildUpME();

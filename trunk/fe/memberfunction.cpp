@@ -80,7 +80,7 @@ bool MemberFunction::analyze()
         result &= iter->analyze();
 
     // insert the last label since every function must end with one
-    me::functab->appendInstrNode( me::functab->getLastLabelNode() );
+    me::functab->appendInstrNode( me::functab->getFunctionEpilogue() );
 
     me::functab->buildFunctionExit();
 

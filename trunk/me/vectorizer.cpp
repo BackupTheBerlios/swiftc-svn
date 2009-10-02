@@ -40,8 +40,8 @@ Vectorizer::Vectorizer(Function* function)
 
 void Vectorizer::process()
 {
-    // map function_->lastLabelNode_ to simdFunction_->lastLabelNode_
-    src2dstLabel_[function_->lastLabelNode_] = simdFunction_->lastLabelNode_;
+    // map function_->functionEpilogue_ to simdFunction_->functionEpilogue_
+    src2dstLabel_[function_->functionEpilogue_] = simdFunction_->functionEpilogue_;
 
     // for each instruction
     INSTRLIST_EACH(iter, cfg_->instrList_)
@@ -182,28 +182,26 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
     swiftAssert( nextNode->pred_.size() == 2, "must exactly have two predecessors" );
 
-    // find last if-branch block
-    BBNode* lastIfNode = ifChildNode; 
-    while (lastIfNode->succ_.first()->value_ != nextNode) 
+    // find last if-branch block and last else-block
+    BBNode* lastIfNode   = nextNode->pred_.first()->value_;
+    BBNode* lastElseNode = nextNode->pred_.last()->value_;
+
+    if ( simdFunction_->cfg_->dominates(ifChildNode, lastIfNode) )
     {
-        swiftAssert(lastIfNode->succ_.size() == 1, "must exactly have 1 successor");
-        swiftAssert(!lastIfNode->value_->hasPhiInstr(), "must not have phi functions");
-
-        // move forward
-        lastIfNode = lastIfNode->succ_.first()->value_;
+        swiftAssert( simdFunction_->cfg_->dominates(elseChildNode, lastElseNode),
+                "elseChild must dominate lastElseNode")
     }
-    BasicBlock* lastIf = lastIfNode->value_;
-
-    // find last else-branch block
-    BBNode* lastElseNode = elseChildNode; 
-    while (lastElseNode->succ_.first()->value_ != nextNode) 
+    else
     {
-        swiftAssert(lastElseNode->succ_.size() == 1, "must exactly have 1 successor");
-        swiftAssert(!lastElseNode->value_->hasPhiInstr(), "must not have phi functions");
+        std::swap(lastIfNode, lastElseNode);
 
-        // move forward
-        lastElseNode = lastElseNode->succ_.first()->value_;
+        swiftAssert( simdFunction_->cfg_->dominates(  ifChildNode, lastIfNode),
+                "ifChild must dominate lastIfNode")
+        swiftAssert( simdFunction_->cfg_->dominates(elseChildNode, lastElseNode),
+                "elseChild must dominate lastElseNode")
     }
+
+    BasicBlock* lastIf   = lastIfNode->value_;
     BasicBlock* lastElse = lastElseNode->value_;
 
     /*
@@ -310,7 +308,9 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      * add mask stuff
      */
 
-    std::vector<InstrBase*> toBeInserted;
+    std::vector<InstrBase*>  andToBeInserted;
+    std::vector<InstrBase*> nandToBeInserted;
+    std::vector<InstrBase*>   orToBeInserted;
     std::vector<InstrNode*> toBeErased;
 
     next->fixPointers();
@@ -365,10 +365,9 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         AssignInstr* nand = new AssignInstr(AssignInstr::NAND, nandReg, mask, elseReg);
         AssignInstr*  _or = new AssignInstr(AssignInstr::  OR,  resReg, andReg, nandReg);
 
-        // push back in reverse order since they'll be prepended in reverse order
-        toBeInserted.push_back(_or);
-        toBeInserted.push_back(nand);
-        toBeInserted.push_back(_and);
+         andToBeInserted.push_back(_and);
+        nandToBeInserted.push_back(nand);
+          orToBeInserted.push_back(_or);
     }
 
     // erase
@@ -378,9 +377,15 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         simdFunction_->instrList_.erase(toBeErased[i]);
     }
 
-    // do the actual insert
-    for (size_t i = 0; i < toBeInserted.size(); ++i)
-        simdFunction_->instrList_.insert(next->begin_, toBeInserted[i]);
+    /*
+     * do the actual insert
+     */
+    for (size_t i = 0; i <   orToBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_,   orToBeInserted[i]);
+    for (size_t i = 0; i < nandToBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_, nandToBeInserted[i]);
+    for (size_t i = 0; i <  andToBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_,  andToBeInserted[i]);
 
     next->fixPointers();
 
