@@ -288,6 +288,18 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
     if ( ai->isComparison() )
         return;
 
+    if (ai->kind_ == me::AssignInstr::NOT)
+    {
+        if ( ai->res_[0].var_->isSimd() )
+        {
+            // add tmp result
+            me::Reg* tmp = function_->newSSAReg( ai->res_[0].var_->type_ );
+            ai->res_.push_back( me::Res(tmp) );
+        }
+
+        return;
+    }
+
     me::Op::Type type = ai->res_[0].var_->type_;
 
     /*

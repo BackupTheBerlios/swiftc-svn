@@ -483,10 +483,8 @@ void FunctionTable::buildUpME()
     for (FunctionMap::iterator iter = functions_.begin(); iter != functions_.end(); ++iter)
     {
         Function* function = iter->second;
-        if ( function->ignore() )
-            continue;
 
-        if (function->vectorize_)
+        if ( !function->ignore() && function->vectorize_)
         {
             Vectorizer vectorizer(function);
             vectorizer.process();

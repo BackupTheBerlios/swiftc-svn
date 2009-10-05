@@ -354,14 +354,14 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 #ifdef SWIFT_DEBUG
         std::string andStr = "and";
         std::string nandStr = "nand";
-        me::Reg*  andReg = me::functab->newSSAReg(resReg->type_, & andStr);
-        me::Reg* nandReg = me::functab->newSSAReg(resReg->type_, &nandStr);
+        me::Reg*  andReg = simdFunction_->newSSAReg(resReg->type_, & andStr);
+        me::Reg* nandReg = simdFunction_->newSSAReg(resReg->type_, &nandStr);
 #else // SWIFT_DEBUG
-        me::Reg*  andReg = me::functab->newSSAReg(resReg->type_);
-        me::Reg* nandReg = me::functab->newSSAReg(resReg->type_);
+        me::Reg*  andReg = simdFunction_->newSSAReg(resReg->type_);
+        me::Reg* nandReg = simdFunction_->newSSAReg(resReg->type_);
 #endif // SWIFT_DEBUG
 
-        AssignInstr* _and = new AssignInstr(AssignInstr:: AND,  andReg, mask,   ifReg);
+        AssignInstr* _and = new AssignInstr(AssignInstr:: AND,  andReg, mask, ifReg);
         AssignInstr* nand = new AssignInstr(AssignInstr::NAND, nandReg, mask, elseReg);
         AssignInstr*  _or = new AssignInstr(AssignInstr::  OR,  resReg, andReg, nandReg);
 
@@ -425,7 +425,7 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
             "must be a BranchInstr here" );
     BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
     
-    //std::cout << loop->header_->value_->name() << std::endl;
+    std::cout << loop->header_->value_->name() << std::endl;
 
     // only exit if everything is zero
     if ( loop->body_.contains(branch->bbTargets_[BranchInstr::FALSE_TARGET]) )
@@ -440,14 +440,13 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
 
 #ifdef SWIFT_DEBUG
         std::string notStr = "not";
-        me::Reg* notReg = me::functab->newSSAReg(reg->type_, &notStr);
+        me::Reg* notReg = simdFunction_->newSSAReg(reg->type_, &notStr);
 #else // SWIFT_DEBUG
-        me::Reg* notReg = me::functab->newSSAReg(reg->type_);
+        me::Reg* notReg = simdFunction_->newSSAReg(reg->type_);
 #endif // SWIFT_DEBUG
 
         AssignInstr* _not = new AssignInstr(AssignInstr::NOT, notReg, reg);
         simdFunction_->instrList_.insert(bb->end_->prev_->prev_, _not);
-
         branch->arg_[0].op_ = notReg;
 
         std::swap( branch->instrTargets_[0], branch->instrTargets_[1] );

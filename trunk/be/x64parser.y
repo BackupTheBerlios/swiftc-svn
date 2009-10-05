@@ -272,6 +272,7 @@ assign_instruction
     | sint_no8_div
     | uint_no8_div
     | int_cmp
+    | int_not
     | real_simd_mov
     | real_simd_commutative 
     | real_simd_sub
@@ -279,6 +280,7 @@ assign_instruction
     | real_simd_div
     | real_cmp
     | simd_cmp
+    | simd_not
     ;
 
 int_mov
@@ -826,6 +828,44 @@ simd_cmp
     {
         EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
         EMIT(mnemonic("cmp" + simdcc($1), $2) << '\t' << reg2str($5) << ", " << reg2str($3))
+    }
+    ;
+
+int_not
+    : X64_NOT int_type X64_REG_1 X64_CONST /* TODO */
+    {
+        swiftAssert(false, "TODO");
+    }
+    | X64_NOT int_type X64_REG_1 X64_REG_1 /* not r1 */
+    {
+        EMIT(mnemonic("not", $2) << '\t' << reg2str($3))
+    }
+    | X64_NOT int_type X64_REG_1 X64_REG_2 /* mov r2, r1; not r1 */
+    {
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("not", $2) << '\t' << reg2str($3))
+    }
+    ;
+
+simd_not
+    : X64_NOT simd_type X64_REG_1 X64_CONST /* TODO */
+    {
+        swiftAssert(false, "TODO");
+    }
+    | X64_NOT simd_type X64_REG_1 X64_REG_1 /* pcmpeqb tmp, tmp; andn tmp, r1 */
+    {
+        swiftAssert( $1->res_.size() == 2, "must exactly have two args" );
+        me::Reg* tmp = (me::Reg*) $1->res_[1].var_;
+        EMIT("pcmpeqb" << '\t' << reg2str(tmp) << ", " << reg2str(tmp))
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str(tmp) << ", " << reg2str($3))
+    }
+    | X64_NOT simd_type X64_REG_1 X64_REG_2 /* mov r2, r1; pcmpeqb tmp, tmp; andn tmp r1 */
+    {
+        swiftAssert( $1->res_.size() == 2, "must exactly have two args" );
+        me::Reg* tmp = (me::Reg*) $1->res_[1].var_;
+        EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT("pcmpeqb" << '\t' << reg2str(tmp) << ", " << reg2str(tmp))
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str(tmp) << ", " << reg2str($3))
     }
     ;
 

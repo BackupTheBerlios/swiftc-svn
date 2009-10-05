@@ -290,7 +290,6 @@ void Coloring::colorRecursive(BBNode* bbNode)
     for (InstrNode* iter = start; iter != bb->end_; iter = iter->next())
     {
         InstrBase* instr = iter->value_;
-
         std::vector<int> freeHere;
 
 #ifdef SWIFT_DEBUG
@@ -339,6 +338,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
         for (size_t i = 0; i < instr->res_.size(); ++i)
         {
             Reg* reg = instr->res_[i].var_->isNotSpilled(typeMask_);
+
             if (!reg)
                 continue;
 
@@ -348,6 +348,7 @@ void Coloring::colorRecursive(BBNode* bbNode)
                 int color = freeHere[0];
                 colors.insert(color);
                 reg->color_ = color;
+                freeHere.erase( freeHere.begin(), freeHere.begin() + 1 );
                 function_->usedColors_.insert(color); // remember color as used
             }
             else
