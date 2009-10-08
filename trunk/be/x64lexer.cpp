@@ -193,7 +193,7 @@ int x64lex()
                     case me::AssignInstr::GE: return X64_GE;
                     case '^': return X64_DEREF;
                     case me::AssignInstr::AND:  return X64_AND;
-                    case me::AssignInstr::NAND: return X64_NAND;
+                    case me::AssignInstr::ANDN: return X64_ANDN;
                     case me::AssignInstr::OR:   return X64_OR;
                     case me::AssignInstr::XOR:  return X64_XOR;
                     case me::AssignInstr::NOT:  return X64_NOT;

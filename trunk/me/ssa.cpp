@@ -566,8 +566,8 @@ std::string AssignInstr::getOpString() const
         case AND:
             opString = "AND";
             break;
-        case NAND:
-            opString = "NAND";
+        case ANDN:
+            opString = "ANDN";
             break;
         case OR:
             opString = "OR";

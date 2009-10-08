@@ -346,7 +346,7 @@ struct AssignInstr : public InstrBase
         // be sure not to collide with ASCII codes
         EQ = 256, NE,
         LE, GE,
-        AND, OR, XOR, NAND,
+        AND, OR, XOR, ANDN,
         NOT, UNARY_MINUS
     };
 

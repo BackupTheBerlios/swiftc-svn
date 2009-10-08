@@ -304,19 +304,23 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
 
     /*
         * forbidden instructions:
-        * r1 =  c / r1     ( reg = c / reg_dead )
+        * r1 =  c / r1      ( reg = c / reg_dead )
         *      rewrite as:
         *      tmp = c
         *      a = tmp / b
         *
-        * r1 = r2 / r1     ( reg = reg / reg_dead)
+        * r1 = r2 / r1      ( reg = reg or reg_dead / reg_dead )
         *      rewrite as:
         *      a = b / c
         *      NOP(c)
         *      
+        * r1 = andn(r2, r1) ( reg = annd(reg or reg_dead, reg_dead) )
+        *      rewrite as:
+        *      a = andn(b, c)
+        *      NOP(c)
         */
 
-    if (ai->kind_ == '/')
+    if (ai->kind_ == '/' || ai->kind_ == me::AssignInstr::ANDN)
     {
         swiftAssert( ai->arg_.size() == 2, "must have exactly two args" );
     
@@ -325,7 +329,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
 
         if (opType2 == me::InstrBase::VARIABLE_DEAD)
         {
-            if (opType1 == me::InstrBase::LITERAL)
+            if (opType1 == me::InstrBase::LITERAL && ai->kind_ == '/')
             {
                 swiftAssert( typeid(*ai->arg_[0].op_) == typeid(me::Const), 
                         "must be a Const here");
@@ -333,7 +337,7 @@ void X64RegAlloc::targetAssignInstr(me::InstrNode* iter, me::BBNode* currentBB)
                 swiftAssert( arg2Reg(iter, 0), "must be true" );
                 currentBB->value_->fixPointers();
             }
-            else if (opType1 == me::InstrBase::VARIABLE)
+            else if (ai->arg_[0].op_ != ai->arg_[1].op_) // allow r1 = r1 op r1
             {
                 // insert artificial use for all critical cases
                 me::Var* var = (me::Var*) ai->arg_[1].op_;

@@ -404,7 +404,7 @@ std::string instr2str(me::AssignInstr* ai)
         case '*': return "mul";
         case '/': return "div";
         case me::AssignInstr::AND:  return "and";
-        case me::AssignInstr::NAND: return "andn";
+        case me::AssignInstr::ANDN: return "andn";
         case me::AssignInstr::XOR:  return "xor";
         case me::AssignInstr::OR:   return "or";
         case me::AssignInstr::NOT:  return "not";
@@ -436,11 +436,8 @@ std::string mul2str(int type)
     return "error";
 }
 
-std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false*/)
+std::string un_minus_cst(me::Const* cst, bool mem /*= false*/)
 {
-    swiftAssert(ai->kind_ == me::AssignInstr::UNARY_MINUS, "must be unary minus here");
-    swiftAssert(ai->arg_.size() == 1, "must be unary minus here");
-
     std::ostringstream oss;
     oss << '$';
     Box box;
@@ -486,6 +483,61 @@ std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem /*= false
     return "error";
 }
 
+std::string neg_cst(me::Const* cst, bool mem /*= false*/)
+{
+    std::ostringstream oss;
+    oss << '$';
+    Box boxes[cst->numBoxElems_];
+
+    // simply negate all bits
+    for (size_t i = 0; i < cst->numBoxElems_; ++i)
+        boxes[i].uint64_ = not cst->boxes_[i].uint64_;
+
+    if (mem)
+    {
+        me::Const newCst(cst->type_, cst->numBoxElems_);
+        std::copy(boxes, boxes + cst->numBoxElems_, newCst.boxes_);
+
+        return mcst2str(&newCst);
+    }
+
+    Box& box = boxes[0];
+
+    switch (cst->type_)
+    {
+        case me::Op::R_INT8:
+        case me::Op::R_SAT8:
+        case me::Op::R_UINT8:
+        case me::Op::R_USAT8:
+            oss << box.uint8_;
+            return oss.str();
+
+        case me::Op::R_INT16:
+        case me::Op::R_SAT16:
+        case me::Op::R_UINT16:
+        case me::Op::R_USAT16:
+            oss << box.uint16_;
+            return oss.str();
+
+        case me::Op::R_INT32:
+        case me::Op::R_UINT32:
+        case me::Op::R_REAL32:
+            oss << box.uint32_;
+            return oss.str();
+
+        case me::Op::R_INT64:
+        case me::Op::R_UINT64:
+        case me::Op::R_REAL64:
+            oss << box.uint64_;
+            return oss.str();
+
+        default:
+            swiftAssert(false, "unreachable code");
+    }
+
+    return oss.str();
+}
+
 std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem /*= false*/)
 {
     swiftAssert(cst1->type_ == cst2->type_, "types must be equal" );
@@ -494,7 +546,7 @@ std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bo
     oss << '$';
     int kind = ai->kind_;
     swiftAssert(kind != me::AssignInstr::AND, "TODO");
-    swiftAssert(kind != me::AssignInstr::NAND, "TODO");
+    swiftAssert(kind != me::AssignInstr::ANDN, "TODO");
     swiftAssert(kind != me::AssignInstr::OR, "TODO");
     swiftAssert(kind != me::AssignInstr::XOR, "TODO");
 

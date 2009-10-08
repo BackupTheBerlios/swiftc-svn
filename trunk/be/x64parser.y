@@ -27,6 +27,7 @@
 #include "be/x64codegenhelpers.h"
 #include "be/x64lexer.h"
 
+#include <iostream>
 using namespace be;
 
 /*
@@ -65,7 +66,7 @@ using namespace be;
 /* instructions */
 %token <assign_> X64_DEREF
 %token <assign_> X64_EQ X64_NE X64_L X64_LE X64_G X64_GE
-%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV X64_AND X64_NAND X64_OR X64_XOR X64_NOT
+%token <assign_> X64_MOV X64_ADD X64_SUB X64_MUL X64_DIV X64_AND X64_ANDN X64_OR X64_XOR X64_NOT
 %token <assign_> X64_UN_MINUS
 %token <branch_> X64_BRANCH X64_BRANCH_TRUE X64_BRANCH_FALSE
 %token <call_>   X64_CALL
@@ -278,6 +279,7 @@ assign_instruction
     | real_simd_sub
     | real_simd_un_minus
     | real_simd_div
+    | real_simd_andn
     | real_cmp
     | simd_cmp
     | simd_not
@@ -451,7 +453,7 @@ int_sub
 sint_un_minus
     : X64_UN_MINUS sint_type X64_REG_1 X64_CONST /* mov -c, r1 */
     { 
-          EMIT(mnemonic("mov", $2) << '\t' << un_minus_cst($1, $4) << ", " << reg2str($3)) 
+          EMIT(mnemonic("mov", $2) << '\t' << un_minus_cst($4) << ", " << reg2str($3)) 
     } 
     | X64_UN_MINUS sint_type X64_REG_1 X64_REG_1 /* xor neg_mask, r1 */
     { 
@@ -666,7 +668,7 @@ real_simd_sub
     }
     | X64_SUB real_simd_type X64_REG_1 X64_CONST X64_REG_1 /* sub c, r1; xor signmask, r1 */
     {
-        EMIT(mnemonic(instr2str($1), $2) << '\t' << mcst2str($4) << ", " << reg2str($3))  
+        EMIT(mnemonic("sub", $2) << '\t' << mcst2str($4) << ", " << reg2str($3))  
         EMIT(mnemonic("xor", $2) << '\t' << neg_mask($2, true) << ", " << reg2str($3)) 
     }
     | X64_SUB real_simd_type X64_REG_1 X64_CONST X64_REG_2 /* mov c, r1; sub r2, r1 */ 
@@ -709,7 +711,7 @@ real_simd_sub
 real_simd_un_minus
     : X64_UN_MINUS real_simd_type X64_REG_1 X64_CONST /* mov -c, r1 */
     { 
-          EMIT(mnemonic("mov", $2) << '\t' << un_minus_cst($1, $4, true) << ", " << reg2str($3)) 
+          EMIT(mnemonic("mov", $2) << '\t' << un_minus_cst($4, true) << ", " << reg2str($3)) 
     } 
     | X64_UN_MINUS real_simd_type X64_REG_1 X64_REG_1 /* xor neg_mask, r1 */
     { 
@@ -761,6 +763,53 @@ real_simd_div
     {
         EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
         EMIT(mnemonic("div", $2) << '\t' << reg2str($5) << ", " << reg2str($3)) 
+    }
+    ;
+
+    /*
+        forbidden
+            - r1 = andn(r2, r1)
+    */
+real_simd_andn
+    : X64_ANDN real_simd_type X64_REG_1 X64_CONST X64_CONST /* TODO */
+    {
+        swiftAssert(false, "TODO");
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_CONST X64_REG_1 /* and neg(c), r1 */
+    {
+        EMIT(mnemonic("and", $2) << '\t' << neg_cst($4, true) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_CONST X64_REG_2 /* mov r2, r1; and neg(c), r1 */
+    {
+        EMIT(mnemonic("mov", $2) << '\t' <<       reg2str($5) << ", " << reg2str($3))
+        EMIT(mnemonic("and", $2) << '\t' << neg_cst($4, true) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_1 X64_CONST /* andn c, r1 */
+    {
+        EMIT(mnemonic("andn", $2) << '\t' << mcst2str($5) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_1 X64_REG_1 /* andn r1, r1 */
+    {
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str($3) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_1 X64_REG_2 /* andn r2, r1 */
+    {
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str($5) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_2 X64_CONST /* mov r2, r1; andn c, r1 */ 
+    {
+        EMIT(mnemonic( "mov", $2) << '\t' <<  reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("andn", $2) << '\t' << mcst2str($5) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_2 X64_REG_2 /* mov r2, r1; andn r2, r1 */
+    {
+        EMIT(mnemonic( "mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str($4) << ", " << reg2str($3)) 
+    }
+    | X64_ANDN real_simd_type X64_REG_1 X64_REG_2 X64_REG_3 /* mov r2, r1; andn r3, r1 */
+    {
+        EMIT(mnemonic( "mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+        EMIT(mnemonic("andn", $2) << '\t' << reg2str($5) << ", " << reg2str($3)) 
     }
     ;
 
@@ -832,9 +881,9 @@ simd_cmp
     ;
 
 int_not
-    : X64_NOT int_type X64_REG_1 X64_CONST /* TODO */
+    : X64_NOT int_type X64_REG_1 X64_CONST /* mov neg(c), r1 */
     {
-        swiftAssert(false, "TODO");
+        EMIT(mnemonic("mov", $2) << 't' << neg_cst($4) << ", " << reg2str($3))
     }
     | X64_NOT int_type X64_REG_1 X64_REG_1 /* not r1 */
     {
@@ -848,9 +897,9 @@ int_not
     ;
 
 simd_not
-    : X64_NOT simd_type X64_REG_1 X64_CONST /* TODO */
+    : X64_NOT simd_type X64_REG_1 X64_CONST /* mov neg(c), r1 */
     {
-        swiftAssert(false, "TODO");
+        EMIT(mnemonic("mov", $2) << 't' << neg_cst($4) << ", " << reg2str($3))
     }
     | X64_NOT simd_type X64_REG_1 X64_REG_1 /* pcmpeqb tmp, tmp; andn tmp, r1 */
     {
@@ -873,7 +922,6 @@ commutative
     : X64_ADD  { $$ = $1; }
     | X64_MUL  { $$ = $1; }
     | X64_AND  { $$ = $1; }
-    | X64_NAND { $$ = $1; }
     | X64_OR   { $$ = $1; }
     | X64_XOR  { $$ = $1; }
     ;

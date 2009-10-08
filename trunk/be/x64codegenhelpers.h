@@ -67,7 +67,8 @@ std::string mul2str(int type);
 std::string div2str(int type);
 
 std::string cst_op_cst(me::AssignInstr* ai, me::Const* cst1, me::Const* cst2, bool mem = false);
-std::string un_minus_cst(me::AssignInstr* ai, me::Const* cst, bool mem = false);
+std::string un_minus_cst(me::Const* cst, bool mem = false);
+std::string neg_cst(me::Const* cst, bool mem = false);
 
 std::string neg_mask(int type, bool mem = false);
 

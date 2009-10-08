@@ -30,7 +30,7 @@ namespace me {
 
 Vectorizer::Vectorizer(Function* function)
     : CodePass(function)
-    , simdFunction_( me::functab->insertFunction(
+    , simdFunction_( functab->insertFunction(
                 new std::string(*function->id_ + "simd"), false) )
 {}
 
@@ -157,7 +157,6 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
     swiftAssert( bbNode->succ_.size() == 2, "more than 2 successor are not allowed" );
     swiftAssert( typeid(*bb->end_->prev_->value_) == typeid(BranchInstr),
             "last instruction must be a BranchInstr" );
-
     BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
 
     BBNode*   ifChildNode = branch->bbTargets_[BranchInstr::TRUE_TARGET];
@@ -283,7 +282,7 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      */
 
     // remove branch
-    me::Op* mask = branch->getOp(); // store mask
+    Op* mask = branch->getOp(); // store mask
     delete bb->end_->prev_->value_;
     simdFunction_->instrList_.erase( bb->end_->prev_ );
     bb->fixPointers();
@@ -308,8 +307,8 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      * add mask stuff
      */
 
-    std::vector<InstrBase*>  andToBeInserted;
-    std::vector<InstrBase*> nandToBeInserted;
+    std::vector<InstrBase*> and_ToBeInserted;
+    std::vector<InstrBase*> andnToBeInserted;
     std::vector<InstrBase*>   orToBeInserted;
     std::vector<InstrNode*> toBeErased;
 
@@ -328,9 +327,9 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         swiftAssert( typeid(*phi->arg_[1].op_) == typeid(Reg), "TODO" );
         swiftAssert( typeid(*phi->result())    == typeid(Reg), "TODO" );
 
-        me::Reg* ifReg; 
-        me::Reg* elseReg; 
-        me::Reg* resReg = (Reg*) phi->result(); 
+        Reg* ifReg; 
+        Reg* elseReg; 
+        Reg* resReg = (Reg*) phi->result(); 
 
         if (phi->sourceBBs_[0] == lastIfNode)
         {
@@ -353,20 +352,20 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
 
 #ifdef SWIFT_DEBUG
         std::string andStr = "and";
-        std::string nandStr = "nand";
-        me::Reg*  andReg = simdFunction_->newSSAReg(resReg->type_, & andStr);
-        me::Reg* nandReg = simdFunction_->newSSAReg(resReg->type_, &nandStr);
+        std::string andnStr = "andn";
+        Reg* and_Reg = simdFunction_->newSSAReg(resReg->type_, & andStr);
+        Reg* andnReg = simdFunction_->newSSAReg(resReg->type_, &andnStr);
 #else // SWIFT_DEBUG
-        me::Reg*  andReg = simdFunction_->newSSAReg(resReg->type_);
-        me::Reg* nandReg = simdFunction_->newSSAReg(resReg->type_);
+        Reg* and_Reg = simdFunction_->newSSAReg(resReg->type_);
+        Reg* andnReg = simdFunction_->newSSAReg(resReg->type_);
 #endif // SWIFT_DEBUG
 
-        AssignInstr* _and = new AssignInstr(AssignInstr:: AND,  andReg, mask, ifReg);
-        AssignInstr* nand = new AssignInstr(AssignInstr::NAND, nandReg, mask, elseReg);
-        AssignInstr*  _or = new AssignInstr(AssignInstr::  OR,  resReg, andReg, nandReg);
+        AssignInstr* and_ = new AssignInstr(AssignInstr::AND,  and_Reg, mask, ifReg);
+        AssignInstr* andn = new AssignInstr(AssignInstr::ANDN, andnReg, mask, elseReg);
+        AssignInstr*  _or = new AssignInstr(AssignInstr::OR, resReg, and_Reg, andnReg);
 
-         andToBeInserted.push_back(_and);
-        nandToBeInserted.push_back(nand);
+        and_ToBeInserted.push_back(and_);
+        andnToBeInserted.push_back(andn);
           orToBeInserted.push_back(_or);
     }
 
@@ -382,10 +381,10 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
      */
     for (size_t i = 0; i <   orToBeInserted.size(); ++i)
         simdFunction_->instrList_.insert(next->begin_,   orToBeInserted[i]);
-    for (size_t i = 0; i < nandToBeInserted.size(); ++i)
-        simdFunction_->instrList_.insert(next->begin_, nandToBeInserted[i]);
-    for (size_t i = 0; i <  andToBeInserted.size(); ++i)
-        simdFunction_->instrList_.insert(next->begin_,  andToBeInserted[i]);
+    for (size_t i = 0; i < andnToBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_, andnToBeInserted[i]);
+    for (size_t i = 0; i < andnToBeInserted.size(); ++i)
+        simdFunction_->instrList_.insert(next->begin_, and_ToBeInserted[i]);
 
     next->fixPointers();
 }
@@ -405,11 +404,13 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
         vectorizeLoops(current);
     }
 
+    // is this a loop?
     Loops::iterator loopIter = simdFunction_->cfg_->loops_.find(bbNode);
     if ( loopIter == simdFunction_->cfg_->loops_.end() )
-        return; // not a loop
+        return;
 
     Loop* loop = loopIter->second;
+    swiftAssert(bbNode == loop->header_, "must be the header");
 
     // for each back edge
     for (size_t i = 0; i < loop->backEdges_.size(); ++i)
@@ -425,8 +426,6 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
             "must be a BranchInstr here" );
     BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
     
-    std::cout << loop->header_->value_->name() << std::endl;
-
     // only exit if everything is zero
     if ( loop->body_.contains(branch->bbTargets_[BranchInstr::FALSE_TARGET]) )
     {
@@ -436,13 +435,13 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
 
         std::cout << "not tested" << std::endl;
         swiftAssert( typeid(*branch->getOp()) == typeid(Reg), "TODO" );
-        me::Reg* reg = (Reg*) branch->getOp();
+        Reg* reg = (Reg*) branch->getOp();
 
 #ifdef SWIFT_DEBUG
         std::string notStr = "not";
-        me::Reg* notReg = simdFunction_->newSSAReg(reg->type_, &notStr);
+        Reg* notReg = simdFunction_->newSSAReg(reg->type_, &notStr);
 #else // SWIFT_DEBUG
-        me::Reg* notReg = simdFunction_->newSSAReg(reg->type_);
+        Reg* notReg = simdFunction_->newSSAReg(reg->type_);
 #endif // SWIFT_DEBUG
 
         AssignInstr* _not = new AssignInstr(AssignInstr::NOT, notReg, reg);
@@ -455,6 +454,80 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
     else
         swiftAssert( loop->body_.contains(branch->bbTargets_[BranchInstr::TRUE_TARGET]), 
                 "true-target must be in the loop" );
+
+    swiftAssert( loop->backEdges_.size() == 1, "TODO" );
+    BBNode* lastNode = loop->backEdges_[0].from_;
+    BasicBlock* lastBB = lastNode->value_;
+
+    std::vector<InstrBase*> and_ToBeInserted;
+    std::vector<InstrBase*> andnToBeInserted;
+    std::vector<InstrBase*>   orToBeInserted;
+    std::vector<InstrBase*> copyToBeInserted;
+
+    Op* mask = branch->getOp();
+
+    // for each phi function in the loop header
+    for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next_)
+    {
+        swiftAssert( typeid(*iter->value_) == typeid(PhiInstr), 
+                "must be a PhiInstr here" );
+        PhiInstr* phi = (PhiInstr*) iter->value_;
+
+        // get loop argument
+        size_t sourceIndex;
+        Reg* sourceReg;
+        swiftAssert( phi->arg_.size() == 2, "TODO" );
+        if ( loop->body_.contains(phi->sourceBBs_[0]) )
+        {
+            sourceIndex = 0;
+            sourceReg = (Reg*) phi->arg_[0].op_;
+        }
+        else
+        {
+            swiftAssert( loop->body_.contains(phi->sourceBBs_[1]), 
+                    "must be the loop source" );
+            sourceIndex = 1;
+            sourceReg = (Reg*) phi->arg_[1].op_;
+        }
+
+#ifdef SWIFT_DEBUG
+        std::string newStr = "new_" + sourceReg->id_;
+        Reg* newReg = simdFunction_->newSSAReg(sourceReg->type_, &newStr);
+#else // SWIFT_DEBUG
+        std::string newStr = "new_" + sourceReg->id_;
+        Reg* newReg = simdFunction_->newSSAReg(sourceReg->type_, &newStr);
+#endif // SWIFT_DEBUG
+
+        // subtitute phi source arg
+        phi->arg_[sourceIndex].op_ = newReg;
+
+        // save old value
+        swiftAssert( typeid(*lastBB->end_->prev_->value_) == typeid(GotoInstr),
+                "must be a GotoInstr here" );
+        InstrNode* insertionPoint = lastBB->end_->prev_->prev_;
+
+#ifdef SWIFT_DEBUG
+        std::string andStr = "and";
+        std::string andnStr = "andn";
+        Reg* and_Reg = simdFunction_->newSSAReg(sourceReg->type_, & andStr);
+        Reg* andnReg = simdFunction_->newSSAReg(sourceReg->type_, &andnStr);
+#else // SWIFT_DEBUG
+        Reg* and_Reg = simdFunction_->newSSAReg(sourceReg->type_);
+        Reg* andnReg = simdFunction_->newSSAReg(sourceReg->type_);
+#endif // SWIFT_DEBUG
+
+        AssignInstr* and_ = new AssignInstr(AssignInstr::AND,  and_Reg, mask, sourceReg);
+        AssignInstr* andn = new AssignInstr(AssignInstr::ANDN, andnReg, mask, (Reg*) phi->result() );
+        AssignInstr*  _or = new AssignInstr(AssignInstr::OR, newReg, and_Reg, andnReg);
+
+        and_ToBeInserted.push_back(and_);
+        andnToBeInserted.push_back(andn);
+          orToBeInserted.push_back(_or);
+
+        simdFunction_->instrList_.insert(insertionPoint, _or);
+        simdFunction_->instrList_.insert(insertionPoint, andn);
+        simdFunction_->instrList_.insert(insertionPoint, and_);
+    }
 }
 
 } // namespace me
