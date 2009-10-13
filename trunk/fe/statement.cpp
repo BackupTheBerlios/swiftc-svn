@@ -536,13 +536,10 @@ bool WhileStatement::analyze()
     bool result = expr_->analyze();
 
     // check whether expr_ is a boolean expr only if analyze resulted true
-    if (result)
+    if (result && !expr_->getType()->isBool() )
     {
-        if ( !expr_->getType()->isBool() )
-        {
-            errorf(line_, "the prefacing expression of an while statement must be a boolean expression");
-            result = false;
-        }
+        errorf(line_, "the prefacing expression of a while statement must be a boolean expression");
+        result = false;
     }
 
     me::InstrNode* trueLabelNode;
@@ -570,6 +567,80 @@ bool WhileStatement::analyze()
     {
         // generate instructions as you can see above
         me::functab->appendInstr( new me::GotoInstr(whileLabelNode) );
+        me::functab->appendInstrNode(nextLabelNode);
+    }
+
+    // return to parent scope
+    symtab->leaveScope();
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ *  constructor and destructor
+ */
+
+RepeatUntilStatement::RepeatUntilStatement(Statement* statements, Expr* expr, int line)
+    : Statement(line)
+    , expr_(expr)
+    , statements_(statements)
+{}
+
+RepeatUntilStatement::~RepeatUntilStatement()
+{
+    delete statements_;
+    delete expr_;
+}
+
+/*
+ * further methods
+ */
+
+bool RepeatUntilStatement::analyze()
+{
+    /*
+     * generate this SSA code:
+     *
+     * repeatLabelNode:
+     *     //...
+     *     expr
+     *     IF expr_result THEN repeatLabelNode ELSE nextLabelNode
+     * nextLabelNode:
+     *     //...
+     */
+
+    bool result = true;
+
+    // add repeatLabelNode
+    me::InstrNode* repeatLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+    me::functab->appendInstrNode(repeatLabelNode);
+
+    // update scoping
+    symtab->createAndEnterNewScope();
+
+    // analyze each statement in the loop and keep acount of the result
+    for (Statement* iter = statements_; iter != 0; iter = iter->next_)
+        result &= iter->analyze();
+
+    result &= expr_->analyze();
+
+    // check whether expr_ is a boolean expr only if analyze resulted true
+    if (result && !expr_->getType()->isBool() )
+    {
+        errorf(line_, "the concluding expression of a do ... while statement must be a boolean expression");
+        result = false;
+    }
+
+    if (result)
+    {
+        // create nextLabelNode
+        me::InstrNode* nextLabelNode = new me::InstrList::Node( new me::LabelInstr() );
+
+        // generate instructions as you can see above if types are correct
+        me::functab->appendInstr( new me::BranchInstr(
+                    expr_->getPlace(), nextLabelNode, repeatLabelNode) );
         me::functab->appendInstrNode(nextLabelNode);
     }
 

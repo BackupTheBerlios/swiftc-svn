@@ -102,12 +102,13 @@ xor= { return XOR_ASSIGN; }
 \<->    { return SWAP_OP; }
 ->      { return ARROW; }
 
-if       { return IF; }
-else     { return ELSE; }
-elif     { return ELIF; }
-for      { return FOR; }
-while    { return WHILE; }
-do_while { return DO_WHILE; }
+if      { return IF; }
+else    { return ELSE; }
+elif    { return ELIF; }
+for     { return FOR; }
+while   { return WHILE; }
+repeat  { return REPEAT; }
+until   { return UNTIL; }
 
 return   { return RETURN; }
 break    { return BREAK; }

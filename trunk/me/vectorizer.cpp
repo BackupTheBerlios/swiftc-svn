@@ -20,6 +20,7 @@
 #include "me/vectorizer.h"
 
 #include "me/cfg.h"
+#include "me/defusecalc.h"
 #include "me/functab.h"
 
 namespace me {
@@ -32,6 +33,7 @@ Vectorizer::Vectorizer(Function* function)
     : CodePass(function)
     , simdFunction_( functab->insertFunction(
                 new std::string(*function->id_ + "simd"), false) )
+    , simdLength_(4) // TODO
 {}
 
 /*
@@ -55,6 +57,14 @@ void Vectorizer::process()
     }
 
     simdFunction_->cfg_->calcCFG();
+
+#if 0
+    for (Label2Label::iterator iter = src2dstLabel_.begin(); iter != src2dstLabel_.end(); ++iter)
+    {
+        std::cout << iter->first ->value_->toString() << " -> "; 
+        std::cout << iter->second->value_->toString() << std::endl;
+    }
+#endif
 
     // for each label instruction
     INSTRLIST_EACH(iter, cfg_->instrList_)
@@ -106,11 +116,16 @@ void Vectorizer::process()
     simdFunction_->cfg_->calcDomTree();
     simdFunction_->cfg_->calcDomFrontier();
     simdFunction_->cfg_->findLoops();
+    DefUseCalc(simdFunction_).process();
 
     vectorizeLoops(simdFunction_->cfg_->entry_);
 
-    //simdFunction_->cfg_->placePhiFunctions();
-    //simdFunction_->cfg_->renameVars();
+    VDUMAP_EACH(iter, vduMap_)
+    {
+        VarDefUse* vdu = iter->second;
+        simdFunction_->cfg_->reconstructSSAForm(vdu);
+        delete vdu;
+    }
 }
 
 /*
@@ -148,38 +163,22 @@ void Vectorizer::eliminateIfElseClauses(BBNode* bbNode)
         eliminateIfElseClauses(current);
     }
 
-    if (bbNode->succ_.empty() || bbNode->succ_.size() == 1)
+    // this is the node where the control flow merges after the split at bb
+    BBNode* nextNode = simdFunction_->cfg_->isIfElseClause(bbNode);
+    if (!nextNode)
         return;
 
-    if ( simdFunction_->cfg_->loops_.find(bbNode) != simdFunction_->cfg_->loops_.end() )
-        return; // this is a loop
+    swiftAssert( nextNode->pred_.size() == 2, "must exactly have two predecessors" );
+    BasicBlock* next = nextNode->value_;
 
-    swiftAssert( bbNode->succ_.size() == 2, "more than 2 successor are not allowed" );
     swiftAssert( typeid(*bb->end_->prev_->value_) == typeid(BranchInstr),
             "last instruction must be a BranchInstr" );
     BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
 
     BBNode*   ifChildNode = branch->bbTargets_[BranchInstr::TRUE_TARGET];
     BBNode* elseChildNode = branch->bbTargets_[BranchInstr::FALSE_TARGET];
-    BasicBlock*   ifChild =   ifChildNode->value_;
-    BasicBlock* elseChild = elseChildNode->value_;
-
-    swiftAssert( !  ifChild->domFrontier_.empty(), "must not be empty" );
-    swiftAssert( !elseChild->domFrontier_.empty(), "must not be empty" );
-
-    if (ifChild->domFrontier_.size() != 1)
-        return;
-    if (elseChild->domFrontier_.size() != 1)
-        return;
-
-    if ( ifChild->domFrontier_.first()->value_ != elseChild->domFrontier_.first()->value_ )
-        return;
-
-    // this is the node where the control flow merges after the split at bb
-    BBNode* nextNode = ifChild->domFrontier_.first()->value_;
-    BasicBlock* next = nextNode->value_;
-
-    swiftAssert( nextNode->pred_.size() == 2, "must exactly have two predecessors" );
+    //BasicBlock*   ifChild =   ifChildNode->value_;
+    //BasicBlock* elseChild = elseChildNode->value_;
 
     // find last if-branch block and last else-block
     BBNode* lastIfNode   = nextNode->pred_.first()->value_;
@@ -412,19 +411,25 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
     Loop* loop = loopIter->second;
     swiftAssert(bbNode == loop->header_, "must be the header");
 
-    // for each back edge
-    for (size_t i = 0; i < loop->backEdges_.size(); ++i)
-    {
-    }
+    //std::cout << "header: " << bb->name() << std::endl;
 
-    // for each exit edge
-    for (size_t i = 0; i < loop->exitEdges_.size(); ++i)
-    {
-    }
+    //// for each back edge
+    //for (size_t i = 0; i < loop->backEdges_.size(); ++i)
+    //{
+        //std::cout << "back: " << loop->backEdges_[i].toString() << std::endl;
+    //}
 
-    swiftAssert( typeid(*bb->end_->prev_->value_) == typeid(BranchInstr),
+    //// for each exit edge
+    //for (size_t i = 0; i < loop->exitEdges_.size(); ++i)
+    //{
+        //std::cout << "exitEdges_: " << loop->exitEdges_[i].toString() << std::endl;
+    //}
+
+    BBNode* branchBBNode = loop->exitEdges_[0].from_;
+    InstrNode* branchNode = branchBBNode->value_->end_->prev_;
+    swiftAssert( typeid(*branchNode->value_) == typeid(BranchInstr),
             "must be a BranchInstr here" );
-    BranchInstr* branch = (BranchInstr*) bb->end_->prev_->value_;
+    BranchInstr* branch = (BranchInstr*) branchNode->value_;
     
     // only exit if everything is zero
     if ( loop->body_.contains(branch->bbTargets_[BranchInstr::FALSE_TARGET]) )
@@ -432,24 +437,7 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
         // -> we must invert the comparision and the branch
         swiftAssert( !loop->body_.contains(branch->bbTargets_[BranchInstr::TRUE_TARGET]), 
                 "true-target must not be in the loop" );
-
-        std::cout << "not tested" << std::endl;
-        swiftAssert( typeid(*branch->getOp()) == typeid(Reg), "TODO" );
-        Reg* reg = (Reg*) branch->getOp();
-
-#ifdef SWIFT_DEBUG
-        std::string notStr = "not";
-        Reg* notReg = simdFunction_->newSSAReg(reg->type_, &notStr);
-#else // SWIFT_DEBUG
-        Reg* notReg = simdFunction_->newSSAReg(reg->type_);
-#endif // SWIFT_DEBUG
-
-        AssignInstr* _not = new AssignInstr(AssignInstr::NOT, notReg, reg);
-        simdFunction_->instrList_.insert(bb->end_->prev_->prev_, _not);
-        branch->arg_[0].op_ = notReg;
-
-        std::swap( branch->instrTargets_[0], branch->instrTargets_[1] );
-        std::swap( branch->bbTargets_[0], branch->bbTargets_[1] );
+        twistBranch(branchBBNode);
     }
     else
         swiftAssert( loop->body_.contains(branch->bbTargets_[BranchInstr::TRUE_TARGET]), 
@@ -464,7 +452,27 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
     std::vector<InstrBase*>   orToBeInserted;
     std::vector<InstrBase*> copyToBeInserted;
 
-    Op* mask = branch->getOp();
+    swiftAssert( typeid(*branch->getOp()) == typeid(Reg), "TODO" );
+    Reg* mask = (Reg*) branch->getOp();
+
+    if (branchBBNode != loop->header_)
+    {
+        Const* falseConst = simdFunction_->newConst(mask->type_, simdLength_);
+        Box box;
+        box.uint64_ = 0xFFFFFFFFFFFFFFFFull; // set all bits
+        falseConst->broadcast(box);
+
+        AssignInstr* init = new AssignInstr('=', mask, falseConst);
+        InstrNode* initNode = simdFunction_->instrList_.insert(bb->firstOrdinary_->prev_, init);
+        bb->fixPointers();
+
+        VarDefUse* vdu = new VarDefUse();
+        vdu->defs_.append( DefUse(mask, initNode, branchBBNode) ); // new def
+        vdu->defs_.append( DefUse(mask, mask->def_.instrNode_, mask->def_.bbNode_) ); // original def
+        vdu->uses_ = mask->uses_; // original uses
+
+        vduMap_[mask] = vdu;
+    }
 
     // for each phi function in the loop header
     for (InstrNode* iter = bb->firstPhi_; iter != bb->firstOrdinary_; iter = iter->next_)
@@ -502,9 +510,7 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
         phi->arg_[sourceIndex].op_ = newReg;
 
         // save old value
-        swiftAssert( typeid(*lastBB->end_->prev_->value_) == typeid(GotoInstr),
-                "must be a GotoInstr here" );
-        InstrNode* insertionPoint = lastBB->end_->prev_->prev_;
+        InstrNode* insertionPoint = lastBB->getLastNonJump();
 
 #ifdef SWIFT_DEBUG
         std::string andStr = "and";
@@ -528,6 +534,56 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
         simdFunction_->instrList_.insert(insertionPoint, andn);
         simdFunction_->instrList_.insert(insertionPoint, and_);
     }
+}
+
+void Vectorizer::twistBranch(BBNode* bbNode)
+{
+    BasicBlock* bb = bbNode->value_;
+    InstrNode* branchInstrNode = bb->end_->prev_;
+    swiftAssert( typeid(*branchInstrNode->value_) == typeid(BranchInstr),
+            "must be a BranchInstr here" );
+    BranchInstr* branch = (BranchInstr*) branchInstrNode->value_;
+
+    Op* op = branch->getOp();
+
+#ifdef SWIFT_DEBUG
+    std::string notStr = "not";
+    Reg* notReg = simdFunction_->newSSAReg(op->type_, &notStr);
+#else // SWIFT_DEBUG
+    Reg* notReg = simdFunction_->newSSAReg(op->type_);
+#endif // SWIFT_DEBUG
+
+    AssignInstr* _not = new AssignInstr(AssignInstr::NOT, notReg, op);
+    InstrNode* notInstrNode = simdFunction_->instrList_.insert(
+            branchInstrNode->prev_, _not);
+    branch->arg_[0].op_ = notReg;
+
+    std::swap( branch->instrTargets_[0], branch->instrTargets_[1] );
+    std::swap( branch->bbTargets_[0], branch->bbTargets_[1] );
+
+    /*
+     * keep track of def-use stuff
+     */
+    Reg* reg = dynamic_cast<Reg*>(op);
+    if (reg)
+    {
+        // remove branch use
+        DEFUSELIST_EACH(iter, reg->uses_)
+        {
+            DefUse& du = iter->value_;
+            if (du.instrNode_ == branchInstrNode)
+            {
+                reg->uses_.erase(iter);
+                break;
+            }
+        }
+
+        // add not-assign use
+        reg->uses_.append( DefUse(reg, notInstrNode, bbNode) );
+    }
+
+    notReg->def_.set(notReg, notInstrNode, bbNode);
+    notReg->uses_.append( DefUse(notReg, branchInstrNode, bbNode) );
 }
 
 } // namespace me

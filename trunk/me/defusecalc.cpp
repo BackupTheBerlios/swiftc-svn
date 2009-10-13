@@ -147,9 +147,7 @@ void DefUseCalc::calcUse(Var* var, BBNode* bbNode)
         InstrBase* instr = iter->value_;
 
         if ( instr->isVarUsed(var) )
-        {
             var->uses_.append( DefUse(var, iter, bbNode) );
-        }
     } // for each instruction
 
     // for each child of bb in the dominator tree

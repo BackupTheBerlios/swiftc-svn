@@ -153,7 +153,7 @@ using namespace swift;
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN
 
 // control flow
-%token IF ELSE ELIF FOR WHILE DO_WHILE
+%token IF ELSE ELIF FOR WHILE REPEAT UNTIL
 %token RETURN RESULT BREAK CONTINUE
 
 // protection
@@ -404,6 +404,7 @@ statement
         control flow statements
     */
     | WHILE expr EOL statement_list END EOL { $$ = new WhileStatement($2, $4, currentLine-1); }
+    | REPEAT EOL statement_list UNTIL expr EOL  { $$ = new RepeatUntilStatement($3, $5, currentLine-1); }
 
     | SCOPE EOL statement_list END EOL      { $$ = new ScopeStatement($3, currentLine-1); }
 

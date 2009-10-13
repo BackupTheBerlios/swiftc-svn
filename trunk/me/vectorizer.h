@@ -23,6 +23,7 @@
 #include "utils/map.h"
 
 #include "me/codepass.h"
+#include "me/defuse.h"
 #include "me/forward.h"
 
 namespace me {
@@ -53,10 +54,12 @@ public:
 
     void eliminateIfElseClauses(BBNode* bbNode);
     void vectorizeLoops(BBNode* bbNode);
+    void twistBranch(BBNode* bbNode);
 
 //private:
 
     Function* simdFunction_;
+    int simdLength_;
 
     InstrNode* currentInstrNode_;
     BBNode* currentBB_;
@@ -69,6 +72,8 @@ public:
 
     typedef Map<BBNode*, BBNode*> BBNode2BBNode;
     BBNode2BBNode src2dstBBNode_;
+
+    VDUMap vduMap_;
 };
 
 } // namespace me

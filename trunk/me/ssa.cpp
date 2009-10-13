@@ -1176,8 +1176,12 @@ SetResults::SetResults(size_t numRhs)
 
 InstrNode* SetResults::toSimd(Vectorizer* v)
 {
-    // TODO
-    return 0;
+    SetResults* setResults = new SetResults( arg_.size() );
+
+    for (size_t i = 0; i < arg_.size(); ++i)
+        setResults->arg_[i] = Arg( arg_[i].op_->toSimd(v) );
+
+    return new InstrNode(setResults);
 }
 
 std::string SetResults::toString() const

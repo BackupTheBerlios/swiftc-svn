@@ -169,10 +169,6 @@ int start(int argc, char** argv)
     oss << cmdLineParser.filename_ << ".asm";
     std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
 
-    //me::functab->dumpSSA();
-    //me::functab->dumpDot();
-    //return EXIT_SUCCESS;
-
     /*
      * build up pipeline
      */

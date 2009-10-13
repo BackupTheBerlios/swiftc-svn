@@ -639,9 +639,9 @@ std::string simdcc(me::AssignInstr* ai, bool neg /*= false*/)
             switch (kind)
             {
                 case '<': if (neg) return "nlt"; else return  "lt";
-                case '>': if (neg) return  "lt"; else return "nlt";
+                case '>': if (neg) return  "le"; else return "nle";
                 case me::AssignInstr::LE: if (neg) return "nle"; else return  "le";
-                case me::AssignInstr::GE: if (neg) return  "le"; else return "nle";
+                case me::AssignInstr::GE: if (neg) return  "lt"; else return "nlt";
                 default:
                     swiftAssert(false, "unreachable code"); 
             }

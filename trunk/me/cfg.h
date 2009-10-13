@@ -52,6 +52,11 @@ struct Edge
     {
         return from_ == edge.from_ && to_ == edge.to_;
     }
+
+    std::string toString() const
+    {
+        return from_->value_->name() + " -> " + to_->value_->name();
+    }
 };
 
 typedef std::vector<Edge> Edges;
@@ -160,6 +165,8 @@ struct CFG : public Graph<BasicBlock>
 
     void mergeBB(BBNode* topNode, BBNode* bottomNode);
 
+    BBNode* findBBNode(InstrNode* instrNode);
+
     /*
      * SSA reconstruction and rewiring
      */
@@ -180,6 +187,7 @@ struct CFG : public Graph<BasicBlock>
      * loop finding
      */
 
+    BBNode* isIfElseClause(BBNode* headerNode);
     void findLoops();
 
     /*

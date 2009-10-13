@@ -225,10 +225,6 @@ void CFG::eliminateCriticalEdges()
             swiftAssert(typeid(*bb->begin_->value_) == typeid(LabelInstr), 
                     "must be a LabelInstr here");
 
-            // is this a self loop?
-            bool selfLoop = false;
-            if (pred == bb)
-                selfLoop = true;
             /*
              * Insert new basic block like this:
              *
@@ -279,8 +275,12 @@ void CFG::eliminateCriticalEdges()
             size_t jumpIndex = 0;
             RELATIVES_EACH(succIter, predNode->succ_)
             {
-                ji->bbTargets_[jumpIndex] = succIter->value_;
-                ji->instrTargets_[jumpIndex] = succIter->value_->value_->begin_;
+                if ( ji->bbTargets_[jumpIndex] == bbNode )
+                {
+                    ji->bbTargets_[jumpIndex] = newBBNode;
+                    ji->instrTargets_[jumpIndex] = newBBNode->value_->begin_;
+                }
+
                 ++jumpIndex;
             }
 
@@ -305,44 +305,7 @@ void CFG::eliminateCriticalEdges()
                     GotoInstr* gi = new GotoInstr(newLabelNode);
                     gi->bbTargets_[0] = bbNode;
                     instrList_.insert(bbPred->value_->end_->prev_, new InstrNode(gi));
-                }
-            }
-
-            /*
-             * handle self loops
-             */
-
-            if (selfLoop)
-            {
-                swiftAssert(false, "TODO");
-                // TODO perhaps this can be done smarter
-                BasicBlock* newBB = newBBNode->value_;
-
-                // find newBB's predecessor
-                InstrNode* backIter = newBB->begin_->prev();
-                while (true)
-                {
-                    InstrBase* instr = backIter->value_;
-                    swiftAssert( !dynamic_cast<JumpInstr*>(instr),
-                            "there may not be a jump" );
-
-                    if ( typeid(*instr) == typeid(LabelInstr) )
-                    {
-                        /*
-                         * this is the preceding basic block 
-                         * without a jump at the end
-                         */
-
-                        BBNode* toBeFixedNode = labelNode2BBNode_[backIter];
-
-                        GotoInstr* gi = new GotoInstr(toBeFixedNode->succ_.first()->value_->value_->begin_);
-                        gi->bbTargets_[0] = toBeFixedNode->succ_.first()->value_;
-                        instrList_.insert( toBeFixedNode->value_->end_->prev(), gi );
-
-                        break;
-                    }
-                    // iterate backwards
-                    backIter = backIter->prev();
+                    bbPred->value_->fixPointers();
                 }
             }
         } // for each predecessor
@@ -831,7 +794,6 @@ void CFG::splitBB(me::InstrNode* instrNode, me::BBNode* bbNode)
     labelNode2BBNode_[newLabelNode] = bbNode;
 }
 
-
 void CFG::mergeBB(BBNode* topNode, BBNode* bottomNode)
 {
     swiftAssert(    topNode->succ_.size() == 1, "must exactly have one successor" );
@@ -899,6 +861,14 @@ void CFG::mergeBB(BBNode* topNode, BBNode* bottomNode)
 
     nodes_.erase( nodes_.find(bottomNode) );
     delete bottomNode;
+}
+
+BBNode* CFG::findBBNode(InstrNode* instrNode)
+{
+    while ( typeid(*instrNode->value_) != typeid(LabelInstr) )
+        instrNode = instrNode->prev_;
+
+    return labelNode2BBNode_[instrNode];
 }
 
 /*
@@ -1108,6 +1078,45 @@ bool CFG::dominates(InstrNode* i1, BBNode* b1, InstrNode* i2, BBNode* b2) const
  * loop finding
  */
 
+BBNode* CFG::isIfElseClause(BBNode* headerNode)
+{
+    BasicBlock* header = headerNode->value_;
+
+    if ( headerNode->succ_.size() != 2 )
+        return 0;
+
+    swiftAssert( typeid(*header->end_->prev_->value_) == typeid(BranchInstr),
+            "must be a BranchInstr here" );
+    BranchInstr* branch = (BranchInstr*) header->end_->prev_->value_;
+
+    BBNode* mergeNodes[2];
+    for (size_t i = 0; i < 2; ++i)
+    {
+        BBNode* iter = branch->bbTargets_[i];
+
+        while ( iter->pred_.size() == 1 )
+        {
+            if ( !dominates(headerNode, iter) )
+            {
+                std::cout << "fjdk" << std::endl;
+                return false;
+            }
+
+            if ( iter->succ_.empty() )
+                return false;
+
+            iter = iter->succ_.first()->value_;
+        }
+
+        mergeNodes[i] = iter;
+    }
+
+    if ( mergeNodes[0] == mergeNodes[1] )
+        return mergeNodes[0];
+    else
+        return 0;
+}
+
 void CFG::findLoops()
 {
     for (Loops::iterator iter = loops_.begin(); iter != loops_.end(); ++iter)
@@ -1132,67 +1141,65 @@ void CFG::findLoops()
 
             if ( !dominates(toNode, fromNode) )
                 continue;
-
             // yes, so 'from' -> 'to' is a back edge
 
             // is there already a loop for this back edge?
             Loops::iterator loopIter = loops_.find(toNode);
-
+            Loop* loop;
             if ( loopIter == loops_.end() )
             {
                 // -> make new loop
-                Loop* loop = new Loop();
+                loop = new Loop();
                 loop->header_ = toNode;
-                loop->backEdges_.push_back( Edge(fromNode, toNode) );
-                loop->body_.insert(toNode);
-                loop->body_.insert(fromNode);
-
-                typedef std::stack<BBNode*> BBNodeStack;
-                BBNodeStack stack;
-                stack.push(fromNode);
-
-                while ( !stack.empty() )
-                {
-                    BBNode* currentNode = stack.top();
-                    stack.pop();
-
-                    RELATIVES_EACH(iter, currentNode->pred_)
-                    {
-                        BBNode* predNode = iter->value_;
-
-                        if ( !loop->body_.contains(predNode) )
-                        {
-                            loop->body_.insert(predNode);
-                            stack.push(predNode);
-                        }
-                    }
-                }
-
-                // find exit edges
-                BBSET_EACH(iter, loop->body_)
-                {
-                    BBNode* currentNode = *iter;
-
-                    RELATIVES_EACH(succIter, currentNode->succ_)
-                    {
-                        BBNode* succNode = succIter->value_;
-
-                        if ( !loop->body_.contains(succNode) )
-                        {
-                            // currentNode -> succNode is an exit edge
-                            loop->exitEdges_.push_back( Edge(currentNode, succNode) );
-                        }
-                    }
-                }
-
-                // add to data structure
-                loops_[toNode] = loop;
             }
             else
+                loop = loopIter->second;
+
+            loop->backEdges_.push_back( Edge(fromNode, toNode) );
+            loop->body_.insert(toNode);
+            loop->body_.insert(fromNode);
+
+            typedef std::stack<BBNode*> BBNodeStack;
+            BBNodeStack stack;
+            stack.push(fromNode);
+
+            while ( !stack.empty() )
             {
-                // register back edge
-                loopIter->second->backEdges_.push_back( Edge(fromNode, toNode) );
+                BBNode* currentNode = stack.top();
+                stack.pop();
+
+                RELATIVES_EACH(iter, currentNode->pred_)
+                {
+                    BBNode* predNode = iter->value_;
+
+                    if ( !loop->body_.contains(predNode) )
+                    {
+                        loop->body_.insert(predNode);
+                        stack.push(predNode);
+                    }
+                }
             }
+
+            // find exit edges
+            BBSET_EACH(iter, loop->body_)
+            {
+                BBNode* currentNode = *iter;
+
+                RELATIVES_EACH(succIter, currentNode->succ_)
+                {
+                    BBNode* succNode = succIter->value_;
+
+                    if ( !loop->body_.contains(succNode) )
+                    {
+                        // currentNode -> succNode is an exit edge
+                        loop->exitEdges_.push_back( Edge(currentNode, succNode) );
+                    }
+                }
+            }
+
+            // add to data structure
+            loops_[toNode] = loop;
+
         } // for each successor
     } // for each node
 }

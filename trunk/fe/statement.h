@@ -267,6 +267,32 @@ struct WhileStatement : public Statement
 //------------------------------------------------------------------------------
 
 /**
+ * Represents a while statement.
+ */
+struct RepeatUntilStatement : public Statement
+{
+    Expr* expr_;
+
+    Statement* statements_; ///< Linked List of statements of the while-loop.
+
+    /*
+     * constructor and destructor
+     */
+
+    RepeatUntilStatement(Statement* statements, Expr* expr, int line);
+    virtual ~RepeatUntilStatement();
+
+    /*
+     * virtual methods
+     */
+
+    virtual bool analyze();
+    virtual std::string toString() const { return std::string(""); }
+};
+
+//------------------------------------------------------------------------------
+
+/**
  * Holds either an if, an if-else or an if-elif statement.
  */
 struct IfElStatement : public Statement

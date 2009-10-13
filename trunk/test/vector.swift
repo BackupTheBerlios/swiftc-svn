@@ -55,41 +55,44 @@ simd class Vec3
         real resulty = v1y + v2y
         real resultz = v1z + v2z
 
-        # if resultx <= 2.0
-        #     while resultx < 10.0
-        #         if resultx < 5.0
+        if resultx <= 2.0
+            while resultx < 10.0
+                if resultx < 5.0
 
-        #             while resultz <> 5.0
-        #                 resultx = 6.0
-        #             end
+                    while resultz <> 5.0
+                        resultx = 6.0
+                    end
 
-        #             if resulty > 6.0
-        #                 resultx = 8.0
-        #                 if resultz >= 13.5
-        #                     resulty = 8.0
-        #                 end
-        #             else
-        #                 resultx = 4.0
-        #             end
-        #         else
-        #             resultx = 7.0
-        #         end
+                    if resulty > 6.0
+                        resultx = 8.0
+                        if resultz >= 13.5
+                            resulty = 8.0
+                        end
+                    else
+                        resultx = 4.0
+                    end
+                else
+                    resultx = 7.0
+                end
 
-        #         resulty = v1z + 8.0
-        #     end
-        # end
-
-        # if resultx == 4.0
-        #     resultx = 5.0
-        # else
-        #     resulty = 6.0
-        # end
-
-        resultx = 10.0
-        while resultx > 5.0
-            resultx = resultx - 2.5
-            resulty = resulty + resultx
+                resulty = v1z + 8.0
+            end
         end
+
+        if resultx == 4.0
+            resultx = 5.0
+        else
+            resulty = 6.0
+        end
+
+        repeat
+            if resultx == 10.0
+                resultx = 10.0
+            end
+
+            resultx = resultx - 2.5
+            resultx = resultx + 1.0
+        until resultx > 5.0
 
         result.x = resultx
         result.y = resulty
@@ -123,7 +126,7 @@ simd class Vec3
         simd{Vec3} vecs2s = 40000000x
         simd{Vec3} vecs3s = 40000000x
 
-        simd[0x, 40000000x]: vecs1s = vecs2s + vecs3s
+        # simd[0x, 40000000x]: vecs1s = vecs2s + vecs3s
 
         simd[0x, 40000000x]: vecs1s = Vec3::cross(vecs2s, vecs3s)
 
