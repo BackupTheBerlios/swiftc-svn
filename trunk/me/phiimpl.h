@@ -36,6 +36,7 @@ protected:
      */
 
     PhiImpl(BBNode* prevNode, BBNode* nextNode);
+    virtual ~PhiImpl() {}
 
     /*
      * virtual methods

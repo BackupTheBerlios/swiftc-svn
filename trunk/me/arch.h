@@ -58,6 +58,7 @@ public:
 class Arch
 {
 public:
+    virtual ~Arch() {}
 
     /*
      * prefered types and pointer size
