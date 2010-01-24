@@ -20,8 +20,21 @@ REQUIREMENTS
 
 INSTALLING
 
+Currently there is no way to really install the compiler. However, this must be
+done to use it:
 $ cmake .
 $ make
+
+Perhaps you want to try the benchmark:
+$ ./swiftc test/vector.swift
+$ time ./test/vector.swift.out
+$ g++ -O3 test/vector_main.cpp test/vector.cpp
+$ time ./a.out
+
+If you want to try the other samples:
+$ ./swiftc test/fibonacci.swift && ./test/fibonacci.swift.out
+$ ./swiftc test/fac.swift && ./test/fac.swift.out
+$ ./swiftc test/sdl_gl.swift -- -lGL -lGLU -lSDL && ./test/sdl_gl.swift.out
 
 In Vim you can get highlighting with the syntax file provided in contrib/swift.vim
 

@@ -502,8 +502,7 @@ void Vectorizer::vectorizeLoops(BBNode* bbNode)
         std::string newStr = "new_" + sourceReg->id_;
         Reg* newReg = simdFunction_->newSSAReg(sourceReg->type_, &newStr);
 #else // SWIFT_DEBUG
-        std::string newStr = "new_" + sourceReg->id_;
-        Reg* newReg = simdFunction_->newSSAReg(sourceReg->type_, &newStr);
+        Reg* newReg = simdFunction_->newSSAReg(sourceReg->type_);
 #endif // SWIFT_DEBUG
 
         // subtitute phi source arg
