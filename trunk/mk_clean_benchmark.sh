@@ -1,10 +1,13 @@
 #!/bin/bash
 
-rm benchmark/vec3add/cpp/*.cpp
-rm benchmark/vec3add/cpp/*.h
-rm benchmark/vec3add/cpp/*.out
-rm benchmark/vec3add/swift/*.o
-rm benchmark/vec3add/swift/*.asm
-rm benchmark/vec3add/swift/*.out
-rm benchmark/vec3add/swift/*.ssa
-rm benchmark/vec3add/swift/*.swift
+for file in vec3add vec3cross
+do
+    rm benchmark/$file/cpp/*.cpp
+    rm benchmark/$file/cpp/*.h
+    rm benchmark/$file/cpp/*.out
+    rm benchmark/$file/swift/*.o
+    rm benchmark/$file/swift/*.asm
+    rm benchmark/$file/swift/*.out
+    rm benchmark/$file/swift/*.ssa
+    rm benchmark/$file/swift/*.swift
+done

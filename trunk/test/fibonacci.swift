@@ -70,10 +70,6 @@ class Fibonacci
             n = n + 1
         end
 
-        int a = 70
-        a = a / 7
-        c_call print_int(a)
-
         result = 0
     end
 end

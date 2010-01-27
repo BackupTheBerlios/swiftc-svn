@@ -25,11 +25,9 @@ done to use it:
 $ cmake .
 $ make
 
-Perhaps you want to try the benchmark:
-$ ./swiftc test/vector.swift
-$ time ./test/vector.swift.out
-$ g++ -O3 test/vector_main.cpp test/vector.cpp
-$ time ./a.out
+Perhaps you want to try the benchmark. Just run
+$ ./mk_benchmark.sh
+This is currently a work in progress
 
 If you want to try the other samples:
 $ ./swiftc test/fibonacci.swift && ./test/fibonacci.swift.out
