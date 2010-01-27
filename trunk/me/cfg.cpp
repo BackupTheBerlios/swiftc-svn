@@ -1312,31 +1312,19 @@ void CFG::findInt(Reg* reg, BBNode* bbNode, RegSet& result, BBSet& walked, int t
         // found a new result?
         if ( l.contains(reg) )
         {
-            REGSET_EACH(lIter, l)
+            result.insert(l.begin(), l.end());
+            result.erase(reg);
+            // -> result = result U (l \ reg)
+
+            if ( instr->isConstrained() )
             {
-                Reg* lReg = *lIter;
-                if (lReg != reg)
-                    result.insert(lReg);
-
-                if ( instr->isConstrained() )
+                // for each result
+                for (size_t i = 0; i < instr->res_.size(); ++i)
                 {
-                    // for each result
-                    for (size_t i = 0; i < instr->res_.size(); ++i)
-                    {
-                        Reg* res = instr->res_[i].var_->isReg(typeMask, spilled);
-                        int constraint = instr->res_[i].constraint_;
-                        if (res && constraint != NO_CONSTRAINT)
-                            result.insert(res);
-                    }
-
-                    // for each arg
-                    for (size_t i = 0; i < instr->arg_.size(); ++i)
-                    {
-                        Reg* arg = instr->arg_[i].op_->isReg(typeMask, spilled);
-                        int constraint = instr->arg_[i].constraint_;
-                        if (arg && constraint != NO_CONSTRAINT && arg != reg)
-                            result.insert(arg);
-                    }
+                    Reg* res = instr->res_[i].var_->isReg(typeMask, spilled);
+                    int constraint = instr->res_[i].constraint_;
+                    if (res && constraint != NO_CONSTRAINT)
+                        result.insert(res);
                 }
             }
         }

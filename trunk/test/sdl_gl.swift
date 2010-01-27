@@ -67,7 +67,7 @@ class App
         c_call glLoadIdentity()
 
         # set our perspective 
-        real64 ratio = 640.0q / 480.0q #= width:to_real64() / height:to_real64() TODO
+        real64 ratio = width:to_real64() / height:to_real64()
         c_call gluPerspective(45.0q, ratio, 0.1q, 100.0q)
 
         # make sure we're chaning the model view and not the projection 

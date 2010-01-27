@@ -606,7 +606,7 @@ bool RepeatUntilStatement::analyze()
      * repeatLabelNode:
      *     //...
      *     expr
-     *     IF expr_result THEN repeatLabelNode ELSE nextLabelNode
+     *     IF expr_result THEN nextLabelNode ELSE repeatLabelNode
      * nextLabelNode:
      *     //...
      */
@@ -657,8 +657,8 @@ bool RepeatUntilStatement::analyze()
  */
 
 ScopeStatement::ScopeStatement(Statement* statements, int line)
-        : Statement(line)
-        , statements_(statements)
+    : Statement(line)
+    , statements_(statements)
 {}
 
 ScopeStatement::~ScopeStatement()
