@@ -1,0 +1,31 @@
+/*
+ * Swift compiler framework
+ * Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+ *
+ * This framework is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this framework; see the file LICENSE. If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
+#include "mat_TYPE.h"
+
+Vec3 Mat3x3::operator * (const Vec3& v) 
+{ 
+    Vec3 result;
+
+    result.x = e00 * v.x + e01 * v.y + e02 * v.z;
+    result.y = e10 * v.x + e11 * v.y + e12 * v.z;
+    result.z = e20 * v.x + e21 * v.y + e22 * v.z;
+
+    return result;
+}

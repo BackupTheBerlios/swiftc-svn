@@ -1,9 +1,8 @@
 #!/bin/bash 
 
-NUM_ITER=2
+NUM_ITER=5
 BENCH=0
 ALL_TYPES=uint8\ uint16\ uint32\ uint64\ real\ real64
-#ALL_TYPES=uint8
 REAL_TYPES=real\ real64
 
 benchmark () {
