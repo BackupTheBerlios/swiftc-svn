@@ -117,5 +117,4 @@ void ConstPool::insert(double value)
             std::make_pair( convert<double, uint64_t>(value), counter_++) );
 }
 
-
 } // namespace me

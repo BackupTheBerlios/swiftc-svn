@@ -37,6 +37,13 @@ build_and_benchmark () {
         sed s/TYPE/${TYPE}/g <benchmark/$2/cpp/$3_main.cpp.template >temp; cat temp > $file_main;
         sed s/TYPE/${TYPE}/g <benchmark/$2/cpp/$3.h.template >temp;        cat temp > $file_h;   
 
+        # substitute ZERO
+        if [[ $TYPE == real ]]; then
+            sed s/ZERO/0.0/g  <$file_swift >temp; cat temp > $file_swift;    
+        elif [[ $TYPE == real64 ]]; then
+            sed s/ZERO/0.0q/g <$file_swift >temp; cat temp > $file_swift;    
+        fi
+
         # and compile
         echo compiling file $file_swift
         ./swiftc $file_swift
@@ -60,3 +67,4 @@ build_and_benchmark () {
 build_and_benchmark "$ALL_TYPES" vec3add vec3
 build_and_benchmark "$REAL_TYPES" vec3cross vec3
 build_and_benchmark "$REAL_TYPES" matmul mat
+build_and_benchmark "$REAL_TYPES" ifelse vec3

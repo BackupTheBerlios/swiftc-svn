@@ -71,6 +71,14 @@ std::string mnemonic(const std::string& str, int type)
     std::string instr = str;
     std::string post;
 
+    if (str == "xor")
+    {
+        if (type == X64_REAL32)
+            return "xorps";
+        else if (type == X64_REAL64)
+            return "xorpd";
+    }
+
     post = suffix(type);
 
     if ( post.empty() )
@@ -758,6 +766,12 @@ std::string neg_mask(int type, bool mem /*= false*/)
             case X64_INT64:
             case X64_REAL64:
                 oss << "64";
+                break;
+            case X64_S_REAL32:
+                oss << "PS";
+                break;
+            case X64_S_REAL64:
+                oss << "PS";
                 break;
             default:
                 swiftAssert(false, "unreachable code"); 

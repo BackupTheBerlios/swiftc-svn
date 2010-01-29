@@ -135,8 +135,8 @@ void X64::dumpConstants(std::ofstream& ofs)
     }
 
     // sign mask for int16
-    ofs << ".LCS16:\n";
-    ofs << ".short " << 0x8000 << '\n';
+    //ofs << ".LCS16:\n";
+    //ofs << ".short " << 0x8000 << '\n';
 
     /*
      * long constants 
@@ -150,7 +150,7 @@ void X64::dumpConstants(std::ofstream& ofs)
         ofs << ".long " << iter->first << '\n';
     }
 
-    // sign mask for int32 and real32
+    // sign mask for real32
     ofs << ".LCS32:\n";
     ofs << ".long " << 0x80000000 << '\n';
 
@@ -166,9 +166,9 @@ void X64::dumpConstants(std::ofstream& ofs)
         ofs << ".quad " << iter->first << '\n';
     }
 
-    // sign mask for int64 and real64
+    // sign mask for real64
     ofs << ".LCS64:\n";
-    ofs << ".quad " << 0x8000000000000000ULL << '\n';
+    ofs << ".quad " << 0x8000000000000000ull << '\n';
 
     /*
      * double quad constants 
@@ -182,6 +182,18 @@ void X64::dumpConstants(std::ofstream& ofs)
         ofs << ".quad " << iter->first.uint64_[0] << '\n'; // correct or other way round?
         ofs << ".quad " << iter->first.uint64_[1] << '\n';
     }
+
+    // sign mask for 4 packed singles
+    ofs << ".LCSPS:\n";
+    ofs << ".long " << 0x80000000 << '\n';
+    ofs << ".long " << 0x80000000 << '\n';
+    ofs << ".long " << 0x80000000 << '\n';
+    ofs << ".long " << 0x80000000 << '\n';
+
+    // sign mask for 2 packed doubles
+    ofs << ".LCSPD:\n";
+    ofs << ".quad " << 0x8000000000000000ull << '\n';
+    ofs << ".quad " << 0x8000000000000000ull << '\n';
 
     ofs << '\n';
 }
@@ -201,7 +213,7 @@ void X64::emitStart(std::ofstream& ofs) const
         << "\t.globl\t_start\n"
         << "_start:\n"
         << "\t.cfi_startproc\n"
-        << "\tandq\t$" << 0xFFFFFFFFFFFFFFF0ULL << ", %rsp\n"
+        << "\tandq\t$" << 0xFFFFFFFFFFFFFFF0ull << ", %rsp\n"
         << "\tcall\tmain\n"
         << "\tmovq\t%rax, %rdi\n"
         << "\tmovq\t$0x3c, %rax\n"
