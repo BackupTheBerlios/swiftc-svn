@@ -1,7 +1,10 @@
 #!/bin/bash 
 
-NUM_ITER=5
+NUM_ITER=2
 BENCH=0
+ALL_TYPES=uint8\ uint16\ uint32\ uint64\ real\ real64
+#ALL_TYPES=uint8
+REAL_TYPES=real\ real64
 
 benchmark () {
     echo benchmarking $1
@@ -16,80 +19,45 @@ benchmark () {
     echo " -> $BENCH"
 }
 
-#*******************************************************************************
-# vec3add
-#*******************************************************************************
-
-for TYPE in \
-    uint8 uint16 uint32 uint64 \
-    real real64
-do
-    echo "### runnig vec3add benchmark ###"
-
-    # build file names
-    file_swift=benchmark/vec3add/swift/vec3_$TYPE.swift
-    file_cpp=benchmark/vec3add/cpp/vec3_$TYPE.cpp
-    file_main=benchmark/vec3add/cpp/vec3_main_$TYPE.cpp
-    file_h=benchmark/vec3add/cpp/vec3_$TYPE.h
-
-    # substitute TYPE with $TYPE
-    sed s/TYPE/${TYPE}/g <benchmark/vec3add/swift/vec3.swift.template >temp;  cat temp > $file_swift;    
-    sed s/TYPE/${TYPE}/g <benchmark/vec3add/cpp/vec3.cpp.template >temp;      cat temp > $file_cpp; 
-    sed s/TYPE/${TYPE}/g <benchmark/vec3add/cpp/vec3_main.cpp.template >temp; cat temp > $file_main;
-    sed s/TYPE/${TYPE}/g <benchmark/vec3add/cpp/vec3.h.template >temp;        cat temp > $file_h;   
-
-    # and compile
-    echo compiling file $file_swift
-    ./swiftc $file_swift
-    echo compiling file $file_cpp and $file_main
-    g++ $file_cpp $file_main -O3 -fomit-frame-pointer -funsafe-math-optimizations -o $file_cpp.out
-
-    benchmark $file_swift.out
-    cpp=$BENCH
-
-    benchmark $file_cpp.out
-    swift=$BENCH
-
-    speedup=$(echo "scale=2; $swift / $cpp" | bc)
-    echo "---> speedup: $speedup"
+build_and_benchmark () {
     echo
-done
-
-#*******************************************************************************
-# vec3cross
-#*******************************************************************************
-
-for TYPE in real real64
-do
-    echo "### runnig vec3cross benchmark ###"
-
-    # build file names
-    file_swift=benchmark/vec3cross/swift/vec3_$TYPE.swift
-    file_cpp=benchmark/vec3cross/cpp/vec3_$TYPE.cpp
-    file_main=benchmark/vec3cross/cpp/vec3_main_$TYPE.cpp
-    file_h=benchmark/vec3cross/cpp/vec3_$TYPE.h
-
-    # substitute TYPE with $TYPE
-    sed s/TYPE/${TYPE}/g <benchmark/vec3cross/swift/vec3.swift.template >temp;  cat temp > $file_swift;    
-    sed s/TYPE/${TYPE}/g <benchmark/vec3cross/cpp/vec3.cpp.template >temp;      cat temp > $file_cpp; 
-    sed s/TYPE/${TYPE}/g <benchmark/vec3cross/cpp/vec3_main.cpp.template >temp; cat temp > $file_main;
-    sed s/TYPE/${TYPE}/g <benchmark/vec3cross/cpp/vec3.h.template >temp;        cat temp > $file_h;   
-
-    # and compile
-    echo compiling file $file_swift
-    ./swiftc $file_swift
-    echo compiling file $file_cpp and $file_main
-    g++ $file_cpp $file_main -O3 -fomit-frame-pointer -funsafe-math-optimizations -o $file_cpp.out
-
-    benchmark $file_swift.out
-    cpp=$BENCH
-
-    benchmark $file_cpp.out
-    swift=$BENCH
-
-    speedup=$(echo "scale=2; $swift / $cpp" | bc)
-    echo "---> speedup: $speedup"
+    echo "### runnig $2 benchmark ###"
     echo
-done
 
-rm temp
+    for TYPE in $1
+    do
+        # build file names
+        file_swift=benchmark/$2/swift/$3_$TYPE.swift
+        file_cpp=benchmark/$2/cpp/$3_$TYPE.cpp
+        file_main=benchmark/$2/cpp/$3_main_$TYPE.cpp
+        file_h=benchmark/$2/cpp/$3_$TYPE.h
+
+        # substitute TYPE with $TYPE
+        sed s/TYPE/${TYPE}/g <benchmark/$2/swift/$3.swift.template >temp;  cat temp > $file_swift;    
+        sed s/TYPE/${TYPE}/g <benchmark/$2/cpp/$3.cpp.template >temp;      cat temp > $file_cpp; 
+        sed s/TYPE/${TYPE}/g <benchmark/$2/cpp/$3_main.cpp.template >temp; cat temp > $file_main;
+        sed s/TYPE/${TYPE}/g <benchmark/$2/cpp/$3.h.template >temp;        cat temp > $file_h;   
+
+        # and compile
+        echo compiling file $file_swift
+        ./swiftc $file_swift
+        echo compiling file $file_cpp and $file_main
+        g++ $file_cpp $file_main -O3 -fomit-frame-pointer -funsafe-math-optimizations -o $file_cpp.out
+
+        benchmark $file_swift.out
+        cpp=$BENCH
+
+        benchmark $file_cpp.out
+        swift=$BENCH
+
+        speedup=$(echo "scale=2; $swift / $cpp" | bc)
+        echo "---> speedup: $speedup"
+        echo
+    done
+
+    rm temp
+}
+
+build_and_benchmark "$ALL_TYPES" vec3add vec3
+build_and_benchmark "$REAL_TYPES" vec3cross vec3
+build_and_benchmark "$REAL_TYPES" matmul mat

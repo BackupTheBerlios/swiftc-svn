@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for file in vec3add vec3cross
+for file in vec3add vec3cross matmul
 do
     rm benchmark/$file/cpp/*.cpp
     rm benchmark/$file/cpp/*.h
