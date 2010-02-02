@@ -144,13 +144,28 @@ int Op::sizeOf(Type type)
     return -1;
 }
 
-Op::Type Op::toSimd(Type type)
+Op::Type Op::toSimd(Type type, int simdLength)
 {
     if (type == R_PTR)
         return R_PTR;
 
     if (type == R_BOOL)
-        return S_UINT32; // TODO
+    {
+        int width = arch->getSimdWidth() / simdLength;
+        switch (width)
+        {
+            case 1:
+                return S_UINT8;
+            case 2:
+                return S_UINT16;
+            case 4:
+                return S_UINT32;
+            case 8:
+                return S_UINT64;
+            default:
+                swiftAssert(false, "unreachable code");
+        }
+    }
 
     swiftAssert(type & VECTORIZABLE, "type not vectorizable");
     return (Type) (type << SIMD_OFFSET);
@@ -158,9 +173,9 @@ Op::Type Op::toSimd(Type type)
 
 //------------------------------------------------------------------------------
 
-Undef* Undef::toSimd(Vectorizer* vectorizer) const
+Undef* Undef::toSimd(Vectorizer* v) const
 {
-    return vectorizer->simdFunction_->newUndef( Op::toSimd(type_) );
+    return v->simdFunction_->newUndef( Op::toSimd(type_, v->getSimdLength()) );
 }
 
 //------------------------------------------------------------------------------
@@ -181,11 +196,11 @@ Const::Const(Type type, size_t numBoxElems /*= 1*/)
  * virtual methods
  */
 
-Const* Const::toSimd(Vectorizer* vectorizer) const
+Const* Const::toSimd(Vectorizer* v) const
 {
     swiftAssert( !isSimd(), "must not be an simd type" );
-    int simdLength = vectorizer->getSimdLength();
-    Const* cst = vectorizer->simdFunction_->newConst( Op::toSimd(type_), simdLength );
+    int simdLength = v->getSimdLength();
+    Const* cst = v->simdFunction_->newConst( Op::toSimd(type_, simdLength), simdLength );
 
     // broadcast original constant
     cst->broadcast(boxes_[0]);
@@ -319,7 +334,7 @@ bool Var::typeCheck(int typeMask) const
     return !dontColor() && Op::typeCheck(typeMask);
 }
 
-Var* Var::toSimd(Vectorizer* vectorizer) const
+Var* Var::toSimd(Vectorizer* v) const
 {
     swiftAssert(false, "unreachable code");
     return 0;
@@ -459,28 +474,28 @@ Reg* Reg::isNotSpilled(int typeMask)
     return ( !isSpilled_ && typeCheck(typeMask) ) ? this : 0;
 }
 
-Reg* Reg::toSimd(Vectorizer* vectorizer) const
+Reg* Reg::toSimd(Vectorizer* v) const
 {
     // is it already created?
-    Vectorizer::Nr2Nr::iterator iter = vectorizer->src2dstNr_.find(varNr_);
+    Vectorizer::Nr2Nr::iterator iter = v->src2dstNr_.find(varNr_);
 
-    if ( iter != vectorizer->src2dstNr_.end() )
+    if ( iter != v->src2dstNr_.end() )
     {
         // yes -> return the already created one
-        swiftAssert( vectorizer->simdFunction_->vars_.contains(iter->second),
+        swiftAssert( v->simdFunction_->vars_.contains(iter->second),
                 "must be found here" );
-        return (Reg*) vectorizer->simdFunction_->vars_[iter->second];
+        return (Reg*) v->simdFunction_->vars_[iter->second];
     }
     // else
 
 #ifdef SWIFT_DEBUG
     std::string simdStr = "s_" + id_;
-    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_), &simdStr );
+    Reg* reg = v->simdFunction_->newSSAReg( Op::toSimd(type_, v->getSimdLength()), &simdStr );
 #else // SWIFT_DEBUG
-    Reg* reg = vectorizer->simdFunction_->newSSAReg( Op::toSimd(type_) );
+    Reg* reg = v->simdFunction_->newSSAReg( Op::toSimd(type_, v->getSimdLength()) );
 #endif // SWIFT_DEBUG
 
-    vectorizer->src2dstNr_[varNr_] = reg->varNr_;
+    v->src2dstNr_[varNr_] = reg->varNr_;
 
     return reg;
 }
@@ -603,30 +618,30 @@ MemVar* MemVar::clone(int varNr) const
 
 #endif // SWIFT_DEBUG
 
-MemVar* MemVar::toSimd(Vectorizer* vectorizer) const
+MemVar* MemVar::toSimd(Vectorizer* v) const
 {
     // is it already created?
-    Vectorizer::Nr2Nr::iterator iter = vectorizer->src2dstNr_.find(varNr_);
+    Vectorizer::Nr2Nr::iterator iter = v->src2dstNr_.find(varNr_);
 
-    if ( iter != vectorizer->src2dstNr_.end() )
+    if ( iter != v->src2dstNr_.end() )
     {
         // yes -> return the already created one
-        swiftAssert( vectorizer->simdFunction_->vars_.contains(iter->second),
+        swiftAssert( v->simdFunction_->vars_.contains(iter->second),
                 "must be found here" );
-        return (MemVar*) vectorizer->simdFunction_->vars_[iter->second];
+        return (MemVar*) v->simdFunction_->vars_[iter->second];
     }
     // else
 
 #ifdef SWIFT_DEBUG
     std::string simdStr = "s_" + id_;
-    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd(), &simdStr );
+    //MemVar* memVar = v->simdFunction_->newSSAMemVar( aggregate->toSimd(), &simdStr );
 #else // SWIFT_DEBUG
-    //MemVar* memVar = vectorizer->simdFunction_->newSSAMemVar( aggregate->toSimd() );
+    //MemVar* memVar = v->simdFunction_->newSSAMemVar( aggregate->toSimd() );
 #endif // SWIFT_DEBUG
     MemVar* memVar = 0;
     swiftAssert(false, "TODO");
 
-    vectorizer->src2dstNr_[varNr_] = memVar->varNr_;
+    v->src2dstNr_[varNr_] = memVar->varNr_;
 
     return memVar;
 }

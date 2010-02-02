@@ -71,7 +71,7 @@ public:
     bool moreThanOne() const;
     void emitStoreIfApplicable(Expr* expr);
     void setSimdLength(int simdLength);
-    void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    void simdAnalyze(SimdAnalysis& simdAnalysis);
 
 private:
 

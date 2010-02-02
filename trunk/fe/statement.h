@@ -192,7 +192,7 @@ public:
      */
 
     bool analyzeFunctionCall();
-    bool analyzeAssignCreate();
+    bool analyzeAssignCreate(int simdLength);
     bool constCheck();
 
 private:

@@ -54,7 +54,7 @@ public:
      */
 
     void genPreSSA();
-    void genPostSSA(SimdAnalyses& simdAnalyzes);
+    void genPostSSA(SimdAnalysis& simdAnalysis);
     bool analyze();
 
 private:

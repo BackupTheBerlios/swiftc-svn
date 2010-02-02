@@ -98,6 +98,7 @@ ADD_EXECUTABLE (swift
     fe/memberfunction.cpp
     fe/module.cpp
     fe/scope.cpp
+    fe/simdanalysis.cpp
     fe/simdprefix.cpp
     fe/signature.cpp
     fe/statement.cpp

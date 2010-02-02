@@ -74,7 +74,7 @@ public:
     ExprList* next();
     const ExprList* next() const;
     void setSimdLength(int simdLength);
-    void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    void simdAnalyze(SimdAnalysis& simdAnalysis);
 
 private:
 

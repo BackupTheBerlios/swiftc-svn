@@ -171,10 +171,11 @@ void AtomicAggregate::analyze()
 
 AtomicAggregate* AtomicAggregate::vectorize(int& simdLength)
 {
-    AtomicAggregate* aggregate = new AtomicAggregate( Op::toSimd(type_) );
+    simdLength = arch->getSimdWidth() / size_;
+
+    AtomicAggregate* aggregate = new AtomicAggregate( Op::toSimd(type_, simdLength) );
+    aggregate->simdLength_ = simdLength;
     aggregate->analyze();
-    aggregate->simdLength_ = arch->getSimdWidth() / size_;
-    simdLength = aggregate->simdLength_;
     vectorized_ = aggregate;
 
     return aggregate;
@@ -198,10 +199,11 @@ void ArrayAggregate::analyze()
 
 ArrayAggregate* ArrayAggregate::vectorize(int& simdLength)
 {
-    ArrayAggregate* aggregate = new ArrayAggregate( Op::toSimd(type_), num_);
+    simdLength = arch->getSimdWidth() / size_;
+
+    ArrayAggregate* aggregate = new ArrayAggregate( Op::toSimd(type_, simdLength), num_);
+    aggregate->simdLength_ = simdLength;
     aggregate->analyze();
-    aggregate->simdLength_ = arch->getSimdWidth() / size_;
-    simdLength = aggregate->simdLength_;
     vectorized_ = aggregate;
 
     return aggregate;

@@ -30,6 +30,7 @@
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
 #include "fe/memberfunction.h"
+#include "fe/simdanalysis.h"
 #include "fe/simdprefix.h"
 #include "fe/signature.h"
 #include "fe/symtab.h"
@@ -145,6 +146,8 @@ ExprStatement::~ExprStatement()
 bool ExprStatement::analyze()
 {
     bool result = true;
+    //SimdAnalyses simdAnalyzes;
+    //int simdLength = 0;
 
     if (simdPrefix_)
     {
@@ -192,34 +195,21 @@ AssignStatement::~AssignStatement()
 bool AssignStatement::analyze()
 {
     bool result = true;
-    SimdAnalyses simdAnalyzes;
+    SimdAnalysis simdAnalysis;
+    int simdLength = 0;
 
     if (simdPrefix_)
     {
-        exprList_->simdAnalyze(simdAnalyzes);
-        tuple_->simdAnalyze(simdAnalyzes);
+        exprList_->simdAnalyze(simdAnalysis);
+        tuple_->simdAnalyze(simdAnalysis);
 
-        if ( simdAnalyzes.empty() )
-        {
-            errorf(line_, "simd statement does not contain any simd containers");
+        simdLength = simdAnalysis.checkAndGetSimdLength(line_);
+        if (simdLength == -1)
             return false;
-        }
-
-        int simdLength = simdAnalyzes[0].simdLength_;
-
-        for (size_t i = 0; i < simdAnalyzes.size(); ++i)
-        {
-            SimdAnalysis& simd = simdAnalyzes[i];
-
-            if (simd.simdLength_ != simdLength)
-            {
-                errorf(line_, "different simd lengths used in this simd statement");
-                return false;
-            }
-        }
 
         exprList_->setSimdLength(simdLength);
         tuple_->setSimdLength(simdLength);
+
         result &= simdPrefix_->analyze();
         simdPrefix_->genPreSSA();
     }
@@ -234,7 +224,7 @@ bool AssignStatement::analyze()
             return false;
         }
 
-        return analyzeAssignCreate();
+        return analyzeAssignCreate(simdLength);
     }
 
     FunctionCall* fc = exprList_->getFunctionCall();
@@ -242,10 +232,10 @@ bool AssignStatement::analyze()
     if (fc)
         result &= analyzeFunctionCall();
     else
-        result &= analyzeAssignCreate();
+        result &= analyzeAssignCreate(simdLength);
 
     if (result && simdPrefix_)
-        simdPrefix_->genPostSSA(simdAnalyzes);
+        simdPrefix_->genPostSSA(simdAnalysis);
 
     return result;
 }
@@ -341,7 +331,7 @@ void AssignStatement::atomicAssignment()
     }
 }
 
-bool AssignStatement::analyzeAssignCreate()
+bool AssignStatement::analyzeAssignCreate(int simdLength)
 {
     const Decl* decl = dynamic_cast<const Decl*>(tuple_->typeNode());
 
@@ -466,7 +456,7 @@ bool AssignStatement::analyzeAssignCreate()
         {
             swiftAssert( typeid(*out[0]) == typeid(BaseType), "TODO" );
 
-            Call call(exprList_, tuple_, assignCreate->sig_, simdPrefix_);
+            Call call(exprList_, tuple_, assignCreate->sig_, simdLength);
             swiftAssert( typeid(*tuple_->typeNode()->getPlace()) == typeid(me::Reg),
                     "must be a Reg here" );
             call.addSelf( (me::Reg*) tuple_->typeNode()->getPlace() );

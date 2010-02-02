@@ -495,7 +495,7 @@ InstrNode* AssignInstr::toSimd(Vectorizer* v)
         Var* res = res_[0].var_->toSimd(v);
 
         if ( isComparison() )
-            res->type_ = Op::toSimd( arg_[0].op_->type_ );
+            res->type_ = Op::toSimd( arg_[0].op_->type_, v->getSimdLength() );
 
         simdAssign = new AssignInstr(kind_, res,
                 arg_[0]. op_->toSimd(v),
@@ -1302,8 +1302,6 @@ Memcpy::Memcpy(Reg* src, Reg* dst)
 Pack::Pack(Reg* result, Op* op)
     : InstrBase(1, 1)
 {
-    swiftAssert( me::Op::toSimd(op->type_) == result->type_,
-            "result->type_ must be the simd version of reg->type_");
     res_[0] = Res(result);
     arg_[0] = Arg(op);
 }
@@ -1332,8 +1330,6 @@ std::string Pack::toString() const
 Unpack::Unpack(Reg* result, Op* op)
     : InstrBase(1, 1)
 {
-    swiftAssert( me::Op::toSimd(result->type_) == op->type_,
-            "reg->type_ must be the simd version of result->type_");
     res_[0] = Res(result);
     arg_[0] = Arg(op);
 }

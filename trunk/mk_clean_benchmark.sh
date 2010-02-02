@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for file in vec3add vec3cross matmul ifelse
+for file in vec3add vec3cross matmul ifelse while
 do
     rm benchmark/$file/cpp/*.cpp
     rm benchmark/$file/cpp/*.h

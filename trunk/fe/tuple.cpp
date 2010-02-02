@@ -145,10 +145,10 @@ void Tuple::setSimdLength(int simdLength)
         iter->typeNode_->setSimdLength(simdLength);
 }
 
-void Tuple::simdAnalyze(SimdAnalyses& simdAnalyzes) 
+void Tuple::simdAnalyze(SimdAnalysis& simdAnalysis) 
 {
     for (Tuple* iter = this; iter != 0; iter = iter->next_)
-        iter->typeNode_->simdAnalyze(simdAnalyzes);
+        iter->typeNode_->simdAnalyze(simdAnalysis);
 }
 
 } // namespace swift

@@ -17,8 +17,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_CALL_H
-#define SWIFT_CALL_H
+#ifndef SWIFT_SIMD_H
+#define SWIFT_SIMD_H
 
 #include <vector>
 
@@ -27,55 +27,35 @@
  */
 
 namespace me {
-    class Op;
-    class Var;
     class Reg;
 }
 
 namespace swift {
 
-class ExprList;
-class Signature;
-class Tuple;
-class Type;
+//------------------------------------------------------------------------------
 
-class Call
+struct SimdInfo
 {
-public:
-
-    /*
-     * constructor
-     */
-
-    Call(ExprList* exprList, Tuple* tuple, Signature* sig, int simdLength);
-
-    /*
-     * further methods
-     */
-
-    void emitCall();
-
-    me::Var* getPrimaryPlace();
-    Type* getPrimaryType();
-
-    void addSelf(me::Reg*);
-
-private:
-
-    /*
-     * data
-     */
-
-    ExprList* exprList_; ///< Right hand side arguments.
-    Tuple* tuple_; ///< Left hand side if present.
-    Signature* sig_;
+    me::Reg* ptr_;
     int simdLength_;
+    int size_;
+};
 
-    std::vector<me::Op*> in_;
-    std::vector<me::Var*> out_;
-    me::Var* place_;
+//------------------------------------------------------------------------------
+
+struct SimdAnalysis : public std::vector<SimdInfo> 
+{
+    /**
+     * @brief Checks the different simd lengths given in this vector and emits
+     * an error message if appropiate.
+     *
+     * @param line The line number - needed if an error message must be thrown.
+     * @return -1, on error, 0 if no definite result could have been made, >0
+     * otherwise.
+     */
+    int checkAndGetSimdLength(int line) const;
 };
 
 } // namespace swift
 
-#endif // SWIFT_CALL_H
+#endif // SWIFT_SIMD_H

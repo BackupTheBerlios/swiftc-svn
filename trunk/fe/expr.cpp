@@ -218,7 +218,7 @@ void Literal::genSSA()
     me::Const* literal;
     if (simdLength_)
     {
-        literal = me::functab->newConst( me::Op::toSimd(toType()), simdLength_ );
+        literal = me::functab->newConst( me::Op::toSimd(toType(), simdLength_), simdLength_ );
         literal->broadcast(box_);
     }
     else
@@ -320,7 +320,7 @@ bool Id::analyze()
         {
             if ( type_->isAtomic() )
             {
-                me::Op::Type simdType = me::Op::toSimd( type_->toMeType() );
+                me::Op::Type simdType = me::Op::toSimd( type_->toMeType(), simdLength_ );
 #ifdef SWIFT_DEBUG
                 std::string tmpStr = std::string("s_") + *id_;
                 me::Reg* simdVar = me::functab->newReg(simdType, &tmpStr);
@@ -385,9 +385,9 @@ bool Id::analyze()
     return true;
 }
 
-void Id::simdAnalyze(SimdAnalyses& simdAnalyzes)
+void Id::simdAnalyze(SimdAnalysis& simdAnalysis)
 {
-    SimdAnalysis result;
+    SimdInfo result;
     result.ptr_ = 0;
     result.simdLength_ = 0;
 
@@ -430,7 +430,7 @@ void Id::simdAnalyze(SimdAnalyses& simdAnalyzes)
         result.ptr_ = ptr;
     }
 
-    simdAnalyzes.push_back(result);
+    simdAnalysis.push_back(result);
 }
 
 std::string Id::toString() const
@@ -510,9 +510,9 @@ void UnExpr::setSimdLength(int simdLength)
     op_->setSimdLength(simdLength);
 }
 
-void UnExpr::simdAnalyze(SimdAnalyses& simdAnalyzes)
+void UnExpr::simdAnalyze(SimdAnalysis& simdAnalysis)
 {
-    op_->simdAnalyze(simdAnalyzes);
+    op_->simdAnalyze(simdAnalysis);
 }
 
 std::string UnExpr::toString() const

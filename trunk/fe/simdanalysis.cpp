@@ -17,65 +17,49 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_CALL_H
-#define SWIFT_CALL_H
+#include "fe/simdanalysis.h"
 
-#include <vector>
+#include <iostream>
+#include <sstream>
+#include <stack>
 
-/*
- * forward declarations
- */
+#include "utils/assert.h"
 
-namespace me {
-    class Op;
-    class Var;
-    class Reg;
-}
+#include "fe/error.h"
+#include "fe/module.h"
+#include "fe/symtab.h"
+#include "fe/type.h"
+
+#include "me/arch.h"
+#include "me/ssa.h"
 
 namespace swift {
 
-class ExprList;
-class Signature;
-class Tuple;
-class Type;
-
-class Call
+int SimdAnalysis::checkAndGetSimdLength(int line) const
 {
-public:
+    if ( empty() )
+        return 0;
 
-    /*
-     * constructor
-     */
+    int tmp = 0;
 
-    Call(ExprList* exprList, Tuple* tuple, Signature* sig, int simdLength);
+    for (size_t i = 0; i < size(); ++i)
+    {
+        int simdLength = (*this)[i].simdLength_;
 
-    /*
-     * further methods
-     */
+        if (tmp == 0)
+            tmp = simdLength;
+        else if (tmp != simdLength)
+        {
+            errorf(line, "different simd lengths used in this simd statement");
+            return -1;
+        }
+    }
 
-    void emitCall();
+    if (tmp == 0)
+        return me::arch->getSimdWidth();
+    // else
 
-    me::Var* getPrimaryPlace();
-    Type* getPrimaryType();
-
-    void addSelf(me::Reg*);
-
-private:
-
-    /*
-     * data
-     */
-
-    ExprList* exprList_; ///< Right hand side arguments.
-    Tuple* tuple_; ///< Left hand side if present.
-    Signature* sig_;
-    int simdLength_;
-
-    std::vector<me::Op*> in_;
-    std::vector<me::Var*> out_;
-    me::Var* place_;
-};
+    return tmp;
+}
 
 } // namespace swift
-
-#endif // SWIFT_CALL_H

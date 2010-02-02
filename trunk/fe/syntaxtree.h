@@ -26,6 +26,7 @@
 
 #include "utils/assert.h"
 #include "fe/parser.h"
+#include "fe/simdanalysis.h"
 
 /*
  * forward declaration
@@ -109,18 +110,6 @@ struct Symbol : public Node
 
 //------------------------------------------------------------------------------
 
-struct SimdAnalysis 
-{
-    me::Reg* ptr_;
-    int simdLength_;
-    int size_;
-};
-
-typedef std::vector<SimdAnalysis> SimdAnalyses;
-
-//------------------------------------------------------------------------------
-
-
 class TypeNode : public Node
 {
 public:
@@ -137,7 +126,7 @@ public:
      */
     
     virtual bool analyze() = 0;
-    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    virtual void simdAnalyze(SimdAnalysis& simdAnalysis);
     virtual void setSimdLength(int simdLength);
 
     /*

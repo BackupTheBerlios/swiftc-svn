@@ -149,7 +149,7 @@ struct Id : public Expr
      */
 
     virtual bool analyze();
-    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    virtual void simdAnalyze(SimdAnalysis& simdAnalysis);
     virtual std::string toString() const;
 
     /*
@@ -188,7 +188,7 @@ struct UnExpr : public Expr
 
     virtual bool analyze();
     virtual void setSimdLength(int simdLength);
-    virtual void simdAnalyze(SimdAnalyses& simdAnalyzes);
+    virtual void simdAnalyze(SimdAnalysis& simdAnalysis);
     virtual std::string toString() const;
 
     /*

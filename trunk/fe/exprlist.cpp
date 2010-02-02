@@ -139,10 +139,10 @@ void ExprList::setSimdLength(int simdLength)
         iter->expr_->setSimdLength(simdLength);
 }
 
-void ExprList::simdAnalyze(SimdAnalyses& simdAnalyzes) 
+void ExprList::simdAnalyze(SimdAnalysis& simdAnalysis) 
 {
     for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        iter->expr_->simdAnalyze(simdAnalyzes);
+        iter->expr_->simdAnalyze(simdAnalysis);
 }
 
 } // namespace swift

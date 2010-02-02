@@ -36,11 +36,11 @@ namespace swift {
  * constructor
  */
 
-Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig, bool simd)
+Call::Call(ExprList* exprList, Tuple* tuple, Signature* sig, int simdLength)
     : exprList_(exprList)
     , tuple_(tuple)
     , sig_(sig)
-    , simd_(simd)
+    , simdLength_(simdLength)
     , place_(0)
 {}
 
@@ -96,8 +96,8 @@ void Call::emitCall()
                 // -> this one is an ordinary out-param
 
                 me::Op::Type type = param->getType()->toMeType();
-                if (simd_)
-                    type = me::Op::toSimd(type);
+                if (simdLength_)
+                    type = me::Op::toSimd(type, simdLength_);
 
 #ifdef SWIFT_DEBUG
                 std::string resStr = std::string("res");
@@ -123,7 +123,7 @@ void Call::emitCall()
                 Class* _class = bt->lookupClass();
                 me::Struct* _struct;
 
-                if (simd_)
+                if (simdLength_)
                     _struct = _class->meSimdStruct_;
                 else
                     _struct = _class->meStruct_;
@@ -170,7 +170,7 @@ void Call::emitCall()
      */
 
     std::string id = sig_->getMeId();
-    if (simd_)
+    if (simdLength_)
         id += "simd";
 
     me::CallInstr* call = new me::CallInstr( out_.size(), in_.size(), id, false );

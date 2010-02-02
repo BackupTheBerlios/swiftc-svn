@@ -60,9 +60,9 @@ void FunctionCall::setSimdLength(int simdLength)
     exprList_->setSimdLength(simdLength);
 }
 
-void FunctionCall::simdAnalyze(SimdAnalyses& simdAnalyzes)
+void FunctionCall::simdAnalyze(SimdAnalysis& simdAnalysis)
 {
-    exprList_->simdAnalyze(simdAnalyzes);
+    exprList_->simdAnalyze(simdAnalysis);
 }
 
 /*

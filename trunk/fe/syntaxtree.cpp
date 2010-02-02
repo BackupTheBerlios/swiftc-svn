@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "syntaxtree.h"
+#include "fe/syntaxtree.h"
 
 #include <iostream>
 #include <sstream>
@@ -117,7 +117,7 @@ TypeNode::~TypeNode()
  * virtual methods
  */
 
-void TypeNode::simdAnalyze(SimdAnalyses& simdAnalyzes)
+void TypeNode::simdAnalyze(SimdAnalysis& simdAnalysis)
 {
 }
 
