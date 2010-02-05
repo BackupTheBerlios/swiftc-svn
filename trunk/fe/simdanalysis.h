@@ -43,8 +43,20 @@ struct SimdInfo
 
 //------------------------------------------------------------------------------
 
-struct SimdAnalysis : public std::vector<SimdInfo> 
+class SimdAnalysis : public std::vector<SimdInfo> 
 {
+public:
+
+    /*
+     * constructor 
+     */
+
+    SimdAnalysis();
+
+    /*
+     * further methods
+     */
+
     /**
      * @brief Checks the different simd lengths given in this vector and emits
      * an error message if appropiate.
@@ -53,7 +65,19 @@ struct SimdAnalysis : public std::vector<SimdInfo>
      * @return -1, on error, 0 if no definite result could have been made, >0
      * otherwise.
      */
-    int checkAndGetSimdLength(int line) const;
+    int checkAndGetSimdLength(int line);
+
+    /// Returns the precalculated simd length.
+    int getSimdLength() const;
+
+private:
+
+    enum 
+    {
+        NOT_ANALYZED = -1,
+    };
+
+    int simdLength_;
 };
 
 } // namespace swift

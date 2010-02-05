@@ -35,10 +35,26 @@
 
 namespace swift {
 
-int SimdAnalysis::checkAndGetSimdLength(int line) const
+/*
+ * constructor 
+ */
+
+SimdAnalysis::SimdAnalysis()
+    : std::vector<SimdInfo>()
+    , simdLength_(NOT_ANALYZED)
+{}
+
+/*
+ * further methods
+ */
+
+int SimdAnalysis::checkAndGetSimdLength(int line)
 {
     if ( empty() )
-        return 0;
+    {
+        simdLength_ = me::arch->getSimdWidth();
+        return simdLength_;
+    }
 
     int tmp = 0;
 
@@ -56,10 +72,17 @@ int SimdAnalysis::checkAndGetSimdLength(int line) const
     }
 
     if (tmp == 0)
-        return me::arch->getSimdWidth();
-    // else
+        simdLength_ = me::arch->getSimdWidth();
+    else
+        simdLength_ = tmp;
 
-    return tmp;
+    return simdLength_;
+}
+
+int SimdAnalysis::getSimdLength() const
+{
+    swiftAssert(simdLength_ != NOT_ANALYZED, "has not been analyzed yet");
+    return simdLength_;
 }
 
 } // namespace swift

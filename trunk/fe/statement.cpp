@@ -146,20 +146,25 @@ ExprStatement::~ExprStatement()
 bool ExprStatement::analyze()
 {
     bool result = true;
-    //SimdAnalyses simdAnalyzes;
-    //int simdLength = 0;
+    SimdAnalysis simdAnalysis;
 
     if (simdPrefix_)
     {
-        expr_->setSimdLength(4); // TODO simd
+        expr_->simdAnalyze(simdAnalysis);
+
+        int simdLength = simdAnalysis.checkAndGetSimdLength(line_);
+        if (simdLength == -1)
+            return false;
+
+        expr_->setSimdLength(simdLength);
         result &= simdPrefix_->analyze();
-        simdPrefix_->genPreSSA(); // TODO
+        simdPrefix_->genPreSSA();
     }
 
     result &= expr_->analyze();
 
-    //if (result && simdPrefix_)
-        //simdPrefix_->genPostSSA(); // TODO
+    if (result && simdPrefix_)
+        simdPrefix_->genPostSSA(simdAnalysis); 
 
     return result;
 }

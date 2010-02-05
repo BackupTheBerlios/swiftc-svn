@@ -35,8 +35,7 @@ SimdPrefix::SimdPrefix(Expr* leftExpr, Expr* rightExpr, int line)
     : Node(line)
     , leftExpr_(leftExpr)
     , rightExpr_(rightExpr)
-{
-}
+{}
 
 SimdPrefix::~SimdPrefix()
 {
@@ -163,9 +162,9 @@ void SimdPrefix::genPostSSA(SimdAnalysis& simdAnalysis)
      *     //...
      */
 
-    // $simd_counter = $simd_counter + simdLength_
+    // $simd_counter = $simd_counter + simdLength
     me::Const* cst = me::functab->newConst(me::Op::R_UINT64);
-    cst->box().uint64_ = simdAnalysis[0].simdLength_;
+    cst->box().uint64_ = simdAnalysis.getSimdLength();
     me::functab->appendInstr( new me::AssignInstr(
                 '+', counter_, counter_, cst) );
 
