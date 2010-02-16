@@ -551,6 +551,11 @@ bool MethodCall::analyze()
     return true;
 }
 
+void MethodCall::simdAnalyze(SimdAnalysis& simdAnalysis)
+{
+    std::cout << "fjdkjdfk" << std::endl;
+}
+
 std::string MethodCall::toString() const
 {
     return expr_->toString() + concatentationStr() + callToString();

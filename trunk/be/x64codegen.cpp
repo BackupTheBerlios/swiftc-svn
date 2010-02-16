@@ -67,6 +67,7 @@ void X64CodeGen::process()
          << "\t.globl\t" << id << '\n'
          << "\t.type\t" << id << ", @function\n"
          << id << ":\n"
+         << ".p2align 4\n"
          << ".LFB" << counter << ":\n";
 
     const me::Colors& usedColors = function_->usedColors_;

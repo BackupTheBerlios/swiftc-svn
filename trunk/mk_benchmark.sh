@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-NUM_ITER=5
+NUM_ITER=$1
 BENCH=0
 ALL_TYPES=uint8\ uint16\ uint32\ uint64\ real\ real64
 REAL_TYPES=real\ real64
@@ -48,7 +48,7 @@ build_and_benchmark () {
         echo compiling file $file_swift
         ./swiftc $file_swift
         echo compiling file $file_cpp and $file_main
-        g++ $file_cpp $file_main -O3 -fomit-frame-pointer -funsafe-math-optimizations -o $file_cpp.out
+        g++ $file_cpp $file_main -O3 -fomit-frame-pointer -ffinite-math-only -o $file_cpp.out
 
         benchmark $file_swift.out
         cpp=$BENCH
@@ -63,6 +63,15 @@ build_and_benchmark () {
 
     rm temp
 }
+
+echo "*** RUNNING BENCHMARK WITH $1 ITERATIONS EACH ***"
+echo "*** system specification ***"
+uname -a
+echo 
+cat /proc/cpuinfo
+echo 
+g++ --version
+echo 
 
 build_and_benchmark "$ALL_TYPES" vec3add vec3
 build_and_benchmark "$REAL_TYPES" vec3cross vec3

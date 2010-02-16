@@ -180,6 +180,8 @@ false           { swiftlval.expr_ = new Literal(L_FALSE,  currentLine); ((Litera
 
 [ \t]   { /* skip whitespaces */ }
 
+\\\n { ++currentLine; }
+
 \n {
     BEGIN EOL_STATE;
     ++currentLine; // count line number

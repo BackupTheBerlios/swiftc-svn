@@ -238,6 +238,7 @@ public:
      */
 
     virtual bool analyze();
+    virtual void simdAnalyze(SimdAnalysis& simdAnalysis);
     virtual std::string toString() const;
     virtual bool handleReadOnlyBaseType() const = 0;
     virtual std::string concatentationStr() const = 0;
