@@ -32,6 +32,8 @@
 
 #include <limits>
 
+#include "utils/disjointsets.h"
+
 #include "me/cfg.h"
 #include "me/functab.h"
 #include "me/op.h"

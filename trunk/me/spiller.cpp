@@ -552,7 +552,8 @@ void Spiller::spill(BBNode* bbNode)
         {
             Var* var = instr->res_[i].var_;
 
-            if ( var->typeCheck(typeMask_) && instr->liveOut_.contains(var) )
+            // if ( var->typeCheck(typeMask_) && instr->liveOut_.contains(var) ) not needed?
+            if ( var->typeCheck(typeMask_) )
                 ++numLhs;
         }
 

@@ -455,13 +455,14 @@ sint_un_minus
     { 
           EMIT(mnemonic("mov", $2) << '\t' << un_minus_cst($4) << ", " << reg2str($3)) 
     } 
-    | X64_UN_MINUS sint_type X64_REG_1 X64_REG_1 /* neg r1, r1 */
+    | X64_UN_MINUS sint_type X64_REG_1 X64_REG_1 /* neg r1 */
     { 
-          EMIT(mnemonic("neg", $2) << '\t' << reg2str($3) << ", " << reg2str($3)) 
+          EMIT(mnemonic("neg", $2) << '\t' << reg2str($3)) 
     }
-    | X64_UN_MINUS sint_type X64_REG_1 X64_REG_2 X64_CONST /* neg r2, r1 */
+    | X64_UN_MINUS sint_type X64_REG_1 X64_REG_2 /* mov r2, r1; neg r1 */
     { 
-          EMIT(mnemonic("neg", $2) << '\t' << reg2str($4) << ", " << reg2str($3)) 
+          EMIT(mnemonic("mov", $2) << '\t' << reg2str($4) << ", " << reg2str($3))
+          EMIT(mnemonic("neg", $2) << '\t' << reg2str($3)) 
     }
     ;
 

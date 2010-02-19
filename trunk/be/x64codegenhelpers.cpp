@@ -760,16 +760,16 @@ std::string neg_mask(int type, bool mem /*= false*/)
                 oss << "16";
                 break;
             case X64_INT32:
-            case X64_REAL32:
                 oss << "32";
                 break;
             case X64_INT64:
-            case X64_REAL64:
                 oss << "64";
                 break;
+            case X64_REAL32:
             case X64_S_REAL32:
                 oss << "PS";
                 break;
+            case X64_REAL64:
             case X64_S_REAL64:
                 oss << "PS";
                 break;
@@ -788,11 +788,9 @@ std::string neg_mask(int type, bool mem /*= false*/)
                 oss << 0x8000;
                 break;
             case X64_INT32:
-            case X64_REAL32:
                 oss << 0x80000000;
                 break;
             case X64_INT64:
-            case X64_REAL64:
                 oss << 0x80000000;
                 break;
             default:
