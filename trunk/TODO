@@ -1,7 +1,0 @@
-- clean up std::string toString() stuff
-- const correctness
-- getters and setters + private use and better capsulation
-- better syntax handling
-- Param handling
-- make bool a int64 var (really?)
-- NaNs are not handled correctly
