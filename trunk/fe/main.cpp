@@ -25,12 +25,11 @@
 #include "utils/memmgr.h"
 #include "utils/stringhelper.h"
 
+#include "fe/auto.h"
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/module.h"
-#include "fe/lexer.h"
-#include "fe/parser.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
 #include "fe/type.h"

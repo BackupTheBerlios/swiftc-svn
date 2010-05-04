@@ -25,7 +25,8 @@
 #include <vector>
 
 #include "utils/assert.h"
-#include "fe/parser.h"
+
+#include "fe/auto.h"
 #include "fe/simdanalysis.h"
 
 /*

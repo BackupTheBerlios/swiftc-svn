@@ -26,9 +26,9 @@
 
 #include "utils/assert.h"
 
+#include "fe/auto.h"
 #include "fe/error.h"
 #include "fe/expr.h"
-#include "fe/parser.h"
 #include "fe/syntaxtree.h"
 
 

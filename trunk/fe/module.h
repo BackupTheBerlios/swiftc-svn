@@ -25,8 +25,8 @@
 #include "utils/list.h"
 #include "utils/stringhelper.h"
 
+#include "fe/auto.h"
 #include "fe/syntaxtree.h"
-#include "fe/parser.h"
 
 namespace swift {
 

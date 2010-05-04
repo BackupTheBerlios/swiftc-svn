@@ -17,10 +17,39 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_LEXER_H
-#define SWIFT_LEXER_H
+#ifndef SWIFT_AUTO_H
+#define SWIFT_AUTO_H
 
 namespace swift {
+
+// it is important to declare all union members of YYSTYPE here
+class Class;
+class ClassMember;
+class Decl;
+class Definition;
+class Expr;
+class ExprList;
+class Lexer;
+class MemberVar;
+class MemberFunction;
+class Module;
+class Param;
+class SimdPrefix;
+class Statement;
+class Tuple;
+class Type;
+
+//------------------------------------------------------------------------------
+
+std::string* operatorToString(int _operator);
+
+}
+
+// include auto generated parser header before tokens
+#include "parser.inner.h"
+
+namespace swift {
+typedef Parser::token Token;
 
 extern int g_line;
 
@@ -30,7 +59,4 @@ FILE* lexer_init(const char* filename);
 
 int swift_lex(swift::Parser::semantic_type* val, swift::Parser::location_type* loc);
 
-int swiftlex();
-
-#endif // SWIFT_LEXER_H
-
+#endif // SWIFT_AUTO_H

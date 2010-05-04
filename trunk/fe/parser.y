@@ -29,6 +29,7 @@
 
 #include <iostream>
 
+#include "fe/auto.h"
 #include "fe/class.h"
 #include "fe/decl.h"
 #include "fe/error.h"
@@ -37,7 +38,6 @@
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
 #include "fe/memberfunction.h"
-#include "fe/lexer.h"
 #include "fe/simdprefix.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"

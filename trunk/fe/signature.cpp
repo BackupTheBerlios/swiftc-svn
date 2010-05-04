@@ -23,9 +23,9 @@
 
 #include "utils/assert.h"
 
+#include "fe/auto.h"
 #include "fe/class.h"
 #include "fe/memberfunction.h"
-#include "fe/parser.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
 #include "fe/type.h"
