@@ -35,13 +35,13 @@ INCLUDE_DIRECTORIES(.)
 # call bison for the front-end
 IF (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
-        OUTPUT  fe/parser.cpp fe/parser.inner.h
-        COMMAND bison --language=C++ --locations -p swift --defines=fe/parser.inner.h -o fe/parser.cpp fe/parser.y
+        OUTPUT  fe/parser.cpp fe/parser.inner.h fe/location.hh fe/position.hh fe/stack.hh
+        COMMAND bison --language=C++ --locations -p swift_ --defines=fe/parser.inner.h -o fe/parser.cpp fe/parser.y
         DEPENDS fe/parser.y
     )
 ELSE (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
-        OUTPUT  fe/parser.cpp fe/parser.inner.h fe/parser.output
+        OUTPUT  fe/parser.cpp fe/parser.inner.h fe/parser.output fe/location.hh fe/position.hh fe/stack.hh
         COMMAND bison --language=C++ --locations -p swift_ --defines=fe/parser.inner.h -t -v -o fe/parser.cpp fe/parser.y && ./repair_position.sh
         DEPENDS fe/parser.y
     )
@@ -49,8 +49,8 @@ ENDIF (BUILD_RELEASE)
 
 # call flex for the front-end and patch the output file to get rid of the warning
 ADD_CUSTOM_COMMAND (
-    OUTPUT  fe/lex.yy.cpp
-    COMMAND flex -P swift_ -o fe/lex.yy.cpp fe/lexer.l 
+    OUTPUT  fe/lexer.cpp
+    COMMAND flex -P swift_ -o fe/lexer.cpp fe/lexer.l 
 
     DEPENDS fe/lexer.l
 )
@@ -84,9 +84,8 @@ ADD_EXECUTABLE (swift
     utils/memmgr.cpp
     utils/stringhelper.cpp
 
-    fe/lex.yy.cpp
+    fe/lexer.cpp
     fe/parser.cpp
-    fe/parser.inner.h
 
     fe/access.cpp
     fe/call.cpp
