@@ -22,6 +22,9 @@
     TODO remove right recursion in favour of left recursion 
 */
 
+%define namespace "swift"
+%define parser_class_name "Parser"
+
 %{
 
 #include <iostream>
@@ -33,8 +36,8 @@
 #include "fe/expr.h"
 #include "fe/exprlist.h"
 #include "fe/functioncall.h"
-#include "fe/lexer.h"
 #include "fe/memberfunction.h"
+#include "fe/lexer.h"
 #include "fe/simdprefix.h"
 #include "fe/statement.h"
 #include "fe/symtab.h"
@@ -47,7 +50,7 @@
 
 namespace swift {
 
-int pointercount = -1;
+int currentLine = 0;
 
 std::string* operatorToString(int _operator)
 {
@@ -55,16 +58,16 @@ std::string* operatorToString(int _operator)
 
     switch (_operator)
     {
-        case AND_OP: *str = "and"; break;
-        case OR_OP: *str = "or"; break;
-        case XOR_OP: *str = "xor"; break;
-        case NOT_OP: *str = "not"; break;
-        case EQ_OP: *str = "eq"; break;
-        case NE_OP: *str = "ne"; break;
-        case LE_OP: *str = "le"; break;
-        case GE_OP: *str = "ge"; break;
-        case MOD_OP: *str = "mod"; break;
-        case DIV_OP: *str = "div"; break;
+        case Token::AND_OP: *str = "and"; break;
+        case Token::OR_OP:  *str = "or"; break;
+        case Token::XOR_OP: *str = "xor"; break;
+        case Token::NOT_OP: *str = "not"; break;
+        case Token::EQ_OP:  *str = "eq"; break;
+        case Token::NE_OP:  *str = "ne"; break;
+        case Token::LE_OP:  *str = "le"; break;
+        case Token::GE_OP:  *str = "ge"; break;
+        case Token::MOD_OP: *str = "mod"; break;
+        case Token::DIV_OP: *str = "div"; break;
         case '+': *str = "add"; break;
         case '-': *str = "sub"; break;
         case '*': *str = "mul"; break;
@@ -88,23 +91,23 @@ using namespace swift;
 
 %union
 {
-    int                     int_;
-    bool                    bool_;
-    std::string*            id_;
+    int              int_;
+    bool             bool_;
+    std::string*     id_;
 
-    swift::Class*           class_;
-    swift::ClassMember*     classMember_;
-    swift::Decl*            decl_;
-    swift::Definition*      definition_;
-    swift::Expr*            expr_;
-    swift::ExprList*        exprList_;
-    swift::MemberVar*       memberVar_;
-    swift::MemberFunction*  memberFunction_;
-    swift::Module*          module_;
-    swift::SimdPrefix*      simdPrefix_;
-    swift::Statement*       statement_;
-    swift::Tuple*           tuple_;
-    swift::Type*            type_;
+    Class*           class_;
+    ClassMember*     classMember_;
+    Decl*            decl_;
+    Definition*      definition_;
+    Expr*            expr_;
+    ExprList*        exprList_;
+    MemberVar*       memberVar_;
+    MemberFunction*  memberFunction_;
+    Module*          module_;
+    SimdPrefix*      simdPrefix_;
+    Statement*       statement_;
+    Tuple*           tuple_;
+    Type*            type_;
 };
 
 /*
@@ -249,9 +252,9 @@ class_member
 */
 
 method_qualifier
-    : READER    { $$ = READER; }
-    | WRITER    { $$ = WRITER; }
-    | ROUTINE   { $$ = ROUTINE; }
+    : READER    { $$ = Token::READER; }
+    | WRITER    { $$ = Token::WRITER; }
+    | ROUTINE   { $$ = Token::ROUTINE; }
     ;
 
 member_function
@@ -259,16 +262,16 @@ member_function
         {
             switch ($2)
             {
-                case READER: 
-                    $<memberFunction_>$ = new Reader($1, $3, symtab->class_, getKeyLine() );
+                case Token::READER: 
+                    $<memberFunction_>$ = new Reader($1, $3, symtab->class_, currentLine );
                     break;
 
-                case WRITER: 
-                    $<memberFunction_>$ = new Writer($1, $3, symtab->class_, getKeyLine() );
+                case Token::WRITER: 
+                    $<memberFunction_>$ = new Writer($1, $3, symtab->class_, currentLine );
                     break;
 
-                case ROUTINE: 
-                    $<memberFunction_>$ = new Routine($1, $3, symtab->class_, getKeyLine() );
+                case Token::ROUTINE: 
+                    $<memberFunction_>$ = new Routine($1, $3, symtab->class_, currentLine );
                     break;
 
                 default:
@@ -285,7 +288,7 @@ member_function
         }
     | simd_modifier OPERATOR operator
         {
-            $<memberFunction_>$ = new Operator( $1, operatorToString($3), symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Operator( $1, operatorToString($3), symtab->class_, currentLine );
             symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')' arrow_return_type_list
@@ -296,7 +299,7 @@ member_function
         }
     | simd_modifier ASSIGN 
         {
-            $<memberFunction_>$ = new Assign($1, symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Assign($1, symtab->class_, currentLine );
             symtab->insert($<memberFunction_>$);
         }
         '(' parameter_list ')'
@@ -307,7 +310,7 @@ member_function
         }
     | simd_modifier CREATE
         {
-            $<memberFunction_>$ = new Create($1, symtab->class_, getKeyLine() );
+            $<memberFunction_>$ = new Create($1, symtab->class_, currentLine );
             symtab->insert($<memberFunction_>$);
             symtab->class_->hasCreate_ = true;
         }
@@ -325,18 +328,18 @@ operator
     |   '-'     { $$ = '-'; }
     |   '*'     { $$ = '*'; }
     |   '/'     { $$ = '/'; }
-    |   MOD_OP  { $$ = MOD_OP; }
-    |   DIV_OP  { $$ = DIV_OP; }
-    |   EQ_OP   { $$ = EQ_OP; }
-    |   NE_OP   { $$ = NE_OP; }
+    |   MOD_OP  { $$ = Token::MOD_OP; }
+    |   DIV_OP  { $$ = Token::DIV_OP; }
+    |   EQ_OP   { $$ = Token::EQ_OP;  }
+    |   NE_OP   { $$ = Token::NE_OP;  }
     |   '<'     { $$ = '<'; }
     |   '>'     { $$ = '>'; }
-    |   LE_OP   { $$ = LE_OP; }
-    |   GE_OP   { $$ = GE_OP; }
-    |   AND_OP  { $$ = AND_OP; }
-    |   OR_OP   { $$ = OR_OP; }
-    |   XOR_OP  { $$ = XOR_OP; }
-    |   NOT_OP  { $$ = NOT_OP; }
+    |   LE_OP   { $$ = Token::LE_OP;  }
+    |   GE_OP   { $$ = Token::GE_OP;  }
+    |   AND_OP  { $$ = Token::AND_OP; }
+    |   OR_OP   { $$ = Token::OR_OP;  }
+    |   XOR_OP  { $$ = Token::XOR_OP; }
+    |   NOT_OP  { $$ = Token::NOT_OP; }
     |   '='     { $$ = '='; }
     ;
 
@@ -392,13 +395,13 @@ statement
     */
     : decl EOL                          { $$ = new DeclStatement($1, currentLine-1); }
     | expr EOL                          { $$ = new ExprStatement(0, $1, currentLine-1); }
-    | tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(0, '=', $1, $3, currentLine-1) }
+    | tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement(0, '=', $1, $3, currentLine-1); }
 
     /*
         simd statements
     */
     | simd_prefix expr EOL                          { $$ = new ExprStatement($1, $2, currentLine-1); }
-    | simd_prefix tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement($1, '=', $2, $4, currentLine-1) }
+    | simd_prefix tuple '=' expr_list_not_empty EOL { $$ = new AssignStatement($1, '=', $2, $4, currentLine-1); }
 
     /*
         control flow statements
@@ -414,9 +417,9 @@ statement
     /* 
         jump statements
     */
-    | RETURN    EOL { $$ = new CFStatement(RETURN, currentLine);   }
-    | BREAK     EOL { $$ = new CFStatement(BREAK, currentLine);    }
-    | CONTINUE  EOL { $$ = new CFStatement(CONTINUE, currentLine); }
+    | RETURN    EOL { $$ = new CFStatement(Token::RETURN, currentLine);   }
+    | BREAK     EOL { $$ = new CFStatement(Token::BREAK, currentLine);    }
+    | CONTINUE  EOL { $$ = new CFStatement(Token::CONTINUE, currentLine); }
     ;
 
 /*
@@ -441,16 +444,16 @@ simd_prefix
 
 expr
     : rel_expr              { $$ = $1; }
-    | expr EQ_OP add_expr   { $$ = new BinExpr(EQ_OP, $1, $3, currentLine); }
-    | expr NE_OP add_expr   { $$ = new BinExpr(NE_OP, $1, $3, currentLine); }
+    | expr EQ_OP add_expr   { $$ = new BinExpr(Token::EQ_OP, $1, $3, currentLine); }
+    | expr NE_OP add_expr   { $$ = new BinExpr(Token::NE_OP, $1, $3, currentLine); }
     ;
 
 rel_expr
     : add_expr              { $$ = $1; }
     | expr '<' add_expr     { $$ = new BinExpr('<', $1, $3, currentLine); }
     | expr '>' add_expr     { $$ = new BinExpr('>', $1, $3, currentLine); }
-    | expr LE_OP add_expr   { $$ = new BinExpr(LE_OP, $1, $3, currentLine); }
-    | expr GE_OP add_expr   { $$ = new BinExpr(GE_OP, $1, $3, currentLine); }
+    | expr LE_OP add_expr   { $$ = new BinExpr(Token::LE_OP, $1, $3, currentLine); }
+    | expr GE_OP add_expr   { $$ = new BinExpr(Token::GE_OP, $1, $3, currentLine); }
     ;
 
 add_expr
@@ -471,7 +474,7 @@ un_expr
     | '&' un_expr           { $$ = new UnExpr(   '&', $2, currentLine); }
     | '-' un_expr           { $$ = new UnExpr(   '-', $2, currentLine); }
     | '+' un_expr           { $$ = new UnExpr(   '+', $2, currentLine); }
-    | NOT_OP un_expr        { $$ = new UnExpr(NOT_OP, $2, currentLine); }
+    | NOT_OP un_expr        { $$ = new UnExpr(Token::NOT_OP, $2, currentLine); }
     ;
 
 postfix_expr
@@ -487,10 +490,10 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall($2,  C_CALL, $3, $5, currentLine); }
-    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall($2, VC_CALL, $3, $5, currentLine); }
-    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall( 0,  C_CALL, $2, $4, currentLine); }
-    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall( 0, VC_CALL, $2, $4, currentLine); }
+    |  C_CALL type ID '(' expr_list ')'     { $$ = new CCall($2, Token:: C_CALL, $3, $5, currentLine); }
+    | VC_CALL type ID '(' expr_list ')'     { $$ = new CCall($2, Token::VC_CALL, $3, $5, currentLine); }
+    |  C_CALL ID '(' expr_list ')'          { $$ = new CCall( 0, Token:: C_CALL, $2, $4, currentLine); }
+    | VC_CALL ID '(' expr_list ')'          { $$ = new CCall( 0, Token::VC_CALL, $2, $4, currentLine); }
 
     /* 
         routines 
@@ -543,9 +546,9 @@ expr_list
 
 expr_list_not_empty
     :       expr                         { $$ = new ExprList(    0, $1,  0, currentLine); }
-    | INOUT expr                         { $$ = new ExprList(INOUT, $2,  0, currentLine); }
+    | INOUT expr                         { $$ = new ExprList(Token::INOUT, $2,  0, currentLine); }
     |       expr ',' expr_list_not_empty { $$ = new ExprList(    0, $1, $3, currentLine); }
-    | INOUT expr ',' expr_list_not_empty { $$ = new ExprList(INOUT, $2, $4, currentLine); }
+    | INOUT expr ',' expr_list_not_empty { $$ = new ExprList(Token::INOUT, $2, $4, currentLine); }
     ;
 
 decl
@@ -567,14 +570,14 @@ bare_type
     ;
 
 type
-    : ID                       { $$ = new BaseType(  VAR, $1, currentLine); }
-    | CONST ID                 { $$ = new BaseType(CONST, $2, currentLine); }
-    | PTR         '{' type '}' { $$ = new      Ptr(  VAR, $3, currentLine); }
-    | CONST PTR   '{' type '}' { $$ = new      Ptr(CONST, $4, currentLine); }
-    | ARRAY       '{' type '}' { $$ = new    Array(  VAR, $3, currentLine); }
-    | CONST ARRAY '{' type '}' { $$ = new    Array(CONST, $4, currentLine); }
-    | SIMD        '{' type '}' { $$ = new     Simd(  VAR, $3, currentLine); }
-    | CONST SIMD  '{' type '}' { $$ = new     Simd(CONST, $4, currentLine); }
+    : ID                       { $$ = new BaseType(Token::  VAR, $1, currentLine); }
+    | CONST ID                 { $$ = new BaseType(Token::CONST, $2, currentLine); }
+    | PTR         '{' type '}' { $$ = new      Ptr(Token::  VAR, $3, currentLine); }
+    | CONST PTR   '{' type '}' { $$ = new      Ptr(Token::CONST, $4, currentLine); }
+    | ARRAY       '{' type '}' { $$ = new    Array(Token::  VAR, $3, currentLine); }
+    | CONST ARRAY '{' type '}' { $$ = new    Array(Token::CONST, $4, currentLine); }
+    | SIMD        '{' type '}' { $$ = new     Simd(Token::  VAR, $3, currentLine); }
+    | CONST SIMD  '{' type '}' { $$ = new     Simd(Token::CONST, $4, currentLine); }
     ;
 
 %%
@@ -583,7 +586,7 @@ type
     FIXME better syntax error handling
 */
 
-void swifterror(const char *s)
+void Parser::error(const location_type& loc, const std::string& str)
 {
-    errorf(currentLine, s);
+    errorf(0, str.c_str());
 }

@@ -198,7 +198,7 @@ Type* Call::getPrimaryType()
         : 0;
 
     if ( type && !type->isAtomic() )
-        type->modifier() = REF;
+        type->modifier() = Parser::token::REF;
 
     return type;
 }

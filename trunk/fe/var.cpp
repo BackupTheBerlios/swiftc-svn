@@ -96,9 +96,9 @@ InParam::InParam(bool inout, Type* type, std::string* id, int line /*= NO_LINE*/
     , inout_(inout)
 {
     if ( !type->isAtomic() )
-        type_->modifier() = inout ? REF : CONST_REF;
+        type_->modifier() = inout ? Token::REF : Token::CONST_REF;
     else
-        type_->modifier() = inout ? VAR : CONST;
+        type_->modifier() = inout ? Token::VAR : Token::CONST;
 }
 
 //------------------------------------------------------------------------------
@@ -111,9 +111,9 @@ OutParam::OutParam(Type* type, std::string* id, int line /*= NO_LINE*/)
     : Param(type, id, line)
 {
     if ( !type->isAtomic() )
-        type_->modifier() = REF;
+        type_->modifier() = Token::REF;
     else
-        type_->modifier() = VAR;
+        type_->modifier() = Token::VAR;
 }
 
 } // namespace swift

@@ -28,8 +28,8 @@
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"
 #include "fe/expr.h"
-#include "fe/lexer.h"
 #include "fe/module.h"
+#include "fe/lexer.h"
 #include "fe/parser.h"
 #include "fe/symtab.h"
 #include "fe/syntaxtree.h"
@@ -91,7 +91,7 @@ int start(int argc, char** argv)
     Literal::initTypeMap();
 
     syntaxtree = new SyntaxTree();
-    syntaxtree->rootModule_ = new Module(new std::string("default"), currentLine);
+    syntaxtree->rootModule_ = new Module(new std::string("default"), g_line);
 
     symtab = new SymTab();
     symtab->insert(syntaxtree->rootModule_);
@@ -107,7 +107,7 @@ int start(int argc, char** argv)
     readBuiltinTypes();
 
     // try to open the input file and init the lexer
-    FILE* file = lexerInit(cmdLineParser.filename_);
+    FILE* file = lexer_init(cmdLineParser.filename_);
     if (!file)
     {
         std::cerr << "error: failed to open input file" << std::endl;
@@ -121,7 +121,8 @@ int start(int argc, char** argv)
      * Since not all symbols can be found in the first pass there will be gaps
      * in the SymbolTable.
      */
-    swiftparse(); // call generated parser which on its part calls swiftlex
+    Parser parser;
+    parser.parse(); // call generated parser which on its part calls swift_lex
 
     /*
      * Check types of all expressions, fill all gaps in the symtab and
@@ -271,8 +272,9 @@ void readBuiltinTypes()
 
     for (size_t i = 0; i < builtin.size(); ++i)
     {
-        file = lexerInit(builtin[i]);
-        swiftparse();
+        file = lexer_init(builtin[i]);
+        Parser parser;
+        parser.parse();
         fclose(file);
     }
 }

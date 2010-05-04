@@ -160,7 +160,7 @@ std::string CCall::toString() const
 {
     std::string result;
 
-    if (kind_ == C_CALL)
+    if (kind_ == Token::C_CALL)
         result = "c_call ";
     else
         result = "vc_call ";
@@ -345,16 +345,16 @@ bool BinExpr::analyze()
 
         switch (kind_)
         {
-            case EQ_OP:
+            case Token::EQ_OP:
                 kind = me::AssignInstr::EQ;
                 break;
-            case NE_OP:
+            case Token::NE_OP:
                 kind = me::AssignInstr::NE;
                 break;
-            case LE_OP:
+            case Token::LE_OP:
                 kind = me::AssignInstr::LE;
                 break;
-            case GE_OP:
+            case Token::GE_OP:
                 kind = me::AssignInstr::GE;
                 break;
             default:

@@ -35,14 +35,14 @@ INCLUDE_DIRECTORIES(.)
 # call bison for the front-end
 IF (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
-        OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp
-        COMMAND bison -p swift -d -o fe/parser.tab.cpp fe/parser.y
+        OUTPUT  fe/parser.cpp fe/parser.inner.h
+        COMMAND bison --language=C++ --locations -p swift --defines=fe/parser.inner.h -o fe/parser.cpp fe/parser.y
         DEPENDS fe/parser.y
     )
 ELSE (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
-        OUTPUT  fe/parser.tab.cpp fe/parser.tab.hpp fe/parser.output
-        COMMAND bison -p swift -t -d -v -o fe/parser.tab.cpp fe/parser.y
+        OUTPUT  fe/parser.cpp fe/parser.inner.h fe/parser.output
+        COMMAND bison --language=C++ --locations -p swift_ --defines=fe/parser.inner.h -t -v -o fe/parser.cpp fe/parser.y && ./repair_position.sh
         DEPENDS fe/parser.y
     )
 ENDIF (BUILD_RELEASE)
@@ -50,10 +50,11 @@ ENDIF (BUILD_RELEASE)
 # call flex for the front-end and patch the output file to get rid of the warning
 ADD_CUSTOM_COMMAND (
     OUTPUT  fe/lex.yy.cpp
-    COMMAND flex -P swift -o fe/lex.yy.cpp fe/lexer.l && sed 's/^[ \\t]*int n\;/\\t\\tsize_t n\;/' <fe/lex.yy.cpp >tmp && mv tmp fe/lex.yy.cpp
+    COMMAND flex -P swift_ -o fe/lex.yy.cpp fe/lexer.l 
 
     DEPENDS fe/lexer.l
 )
+
 
 #-------------------------------------------------------------------------------
 
@@ -84,8 +85,8 @@ ADD_EXECUTABLE (swift
     utils/stringhelper.cpp
 
     fe/lex.yy.cpp
-    fe/parser.tab.cpp
-    fe/parser.tab.hpp
+    fe/parser.cpp
+    fe/parser.inner.h
 
     fe/access.cpp
     fe/call.cpp

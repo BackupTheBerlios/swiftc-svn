@@ -181,7 +181,7 @@ Reader::Reader(bool simd, std::string* id, Symbol* parent, int line)
 
 int Reader::getSelfModifier() const
 {
-    return CONST_REF;
+    return Token::CONST_REF;
 }
 
 std::string Reader::qualifierString() const
@@ -205,7 +205,7 @@ Writer::Writer(bool simd, std::string* id, Symbol* parent, int line)
 
 int Writer::getSelfModifier() const
 {
-    return REF;
+    return Token::REF;
 }
 
 std::string Writer::qualifierString() const
@@ -229,7 +229,7 @@ Create::Create(bool simd, Symbol* parent, int line /*= NO_LINE*/)
 
 int Create::getSelfModifier() const
 {
-    return REF;
+    return Token::REF;
 }
 
 std::string Create::qualifierString() const
@@ -272,7 +272,7 @@ bool Assign::specialAnalyze()
 
 int Assign::getSelfModifier() const
 {
-    return REF;
+    return Token::REF;
 }
 
 std::string Assign::qualifierString() const

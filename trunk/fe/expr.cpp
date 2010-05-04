@@ -113,30 +113,30 @@ bool Literal::analyze()
 
     switch (kind_)
     {
-        case L_INDEX:   type_ = new BaseType(CONST, new std::string("index")); break;
+        case Token::L_INDEX:   type_ = new BaseType(Token::CONST, new std::string("index")); break;
 
-        case L_INT:     type_ = new BaseType(CONST, new std::string("int"));   break;
-        case L_INT8:    type_ = new BaseType(CONST, new std::string("int8"));  break;
-        case L_INT16:   type_ = new BaseType(CONST, new std::string("int16")); break;
-        case L_INT32:   type_ = new BaseType(CONST, new std::string("int32")); break;
-        case L_INT64:   type_ = new BaseType(CONST, new std::string("int64")); break;
-        case L_SAT8:    type_ = new BaseType(CONST, new std::string("sat8"));  break;
-        case L_SAT16:   type_ = new BaseType(CONST, new std::string("sat16")); break;
+        case Token::L_INT:     type_ = new BaseType(Token::CONST, new std::string("int"));   break;
+        case Token::L_INT8:    type_ = new BaseType(Token::CONST, new std::string("int8"));  break;
+        case Token::L_INT16:   type_ = new BaseType(Token::CONST, new std::string("int16")); break;
+        case Token::L_INT32:   type_ = new BaseType(Token::CONST, new std::string("int32")); break;
+        case Token::L_INT64:   type_ = new BaseType(Token::CONST, new std::string("int64")); break;
+        case Token::L_SAT8:    type_ = new BaseType(Token::CONST, new std::string("sat8"));  break;
+        case Token::L_SAT16:   type_ = new BaseType(Token::CONST, new std::string("sat16")); break;
 
-        case L_UINT:    type_ = new BaseType(CONST, new std::string("uint"));   break;
-        case L_UINT8:   type_ = new BaseType(CONST, new std::string("uint8"));  break;
-        case L_UINT16:  type_ = new BaseType(CONST, new std::string("uint16")); break;
-        case L_UINT32:  type_ = new BaseType(CONST, new std::string("uint32")); break;
-        case L_UINT64:  type_ = new BaseType(CONST, new std::string("uint64")); break;
-        case L_USAT8:   type_ = new BaseType(CONST, new std::string("usat8"));  break;
-        case L_USAT16:  type_ = new BaseType(CONST, new std::string("usat16")); break;
+        case Token::L_UINT:    type_ = new BaseType(Token::CONST, new std::string("uint"));   break;
+        case Token::L_UINT8:   type_ = new BaseType(Token::CONST, new std::string("uint8"));  break;
+        case Token::L_UINT16:  type_ = new BaseType(Token::CONST, new std::string("uint16")); break;
+        case Token::L_UINT32:  type_ = new BaseType(Token::CONST, new std::string("uint32")); break;
+        case Token::L_UINT64:  type_ = new BaseType(Token::CONST, new std::string("uint64")); break;
+        case Token::L_USAT8:   type_ = new BaseType(Token::CONST, new std::string("usat8"));  break;
+        case Token::L_USAT16:  type_ = new BaseType(Token::CONST, new std::string("usat16")); break;
 
-        case L_REAL:    type_ = new BaseType(CONST, new std::string("real"));   break;
-        case L_REAL32:  type_ = new BaseType(CONST, new std::string("real32")); break;
-        case L_REAL64:  type_ = new BaseType(CONST, new std::string("real64")); break;
+        case Token::L_REAL:    type_ = new BaseType(Token::CONST, new std::string("real"));   break;
+        case Token::L_REAL32:  type_ = new BaseType(Token::CONST, new std::string("real32")); break;
+        case Token::L_REAL64:  type_ = new BaseType(Token::CONST, new std::string("real64")); break;
 
-        case L_TRUE: // like L_FALSE
-        case L_FALSE:   type_ = new BaseType(CONST, new std::string("bool"));   break;
+        case Token::L_TRUE: // like L_FALSE
+        case Token::L_FALSE:   type_ = new BaseType(Token::CONST, new std::string("bool"));   break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -153,40 +153,40 @@ std::string Literal::toString() const
 
     switch (kind_)
     {
-        case L_INDEX:   oss << box_.size_       << "x";     break;
+        case Token::L_INDEX:   oss << box_.size_       << "x";     break;
 
-        case L_INT:     oss << box_.int_;                    break;
-        case L_INT8:    oss << int(box_.int8_)   << "b";     break;
-        case L_INT16:   oss << box_.int16_       << "w";     break;
-        case L_INT32:   oss << box_.int32_       << "d";     break;
-        case L_INT64:   oss << box_.int64_       << "q";     break;
-        case L_SAT8:    oss << int(box_.int8_)   << "sb";    break;
-        case L_SAT16:   oss << box_.int16_       << "sw";    break;
+        case Token::L_INT:     oss << box_.int_;                    break;
+        case Token::L_INT8:    oss << int(box_.int8_)   << "b";     break;
+        case Token::L_INT16:   oss << box_.int16_       << "w";     break;
+        case Token::L_INT32:   oss << box_.int32_       << "d";     break;
+        case Token::L_INT64:   oss << box_.int64_       << "q";     break;
+        case Token::L_SAT8:    oss << int(box_.int8_)   << "sb";    break;
+        case Token::L_SAT16:   oss << box_.int16_       << "sw";    break;
 
-        case L_UINT:    oss << box_.uint_;                   break;
-        case L_UINT8:   oss << int(box_.uint8_)  << "ub";    break;
-        case L_UINT16:  oss << box_.uint16_      << "uw";    break;
-        case L_UINT32:  oss << box_.uint32_      << "ud";    break;
-        case L_UINT64:  oss << box_.uint64_      << "uq";    break;
-        case L_USAT8:   oss << int(box_.uint8_)  << "usb";   break;
-        case L_USAT16:  oss << box_.uint16_      << "usw";   break;
+        case Token::L_UINT:    oss << box_.uint_;                   break;
+        case Token::L_UINT8:   oss << int(box_.uint8_)  << "ub";    break;
+        case Token::L_UINT16:  oss << box_.uint16_      << "uw";    break;
+        case Token::L_UINT32:  oss << box_.uint32_      << "ud";    break;
+        case Token::L_UINT64:  oss << box_.uint64_      << "uq";    break;
+        case Token::L_USAT8:   oss << int(box_.uint8_)  << "usb";   break;
+        case Token::L_USAT16:  oss << box_.uint16_      << "usw";   break;
 
-        case L_TRUE:    oss << "true";                  break;
-        case L_FALSE:   oss << "false";                 break;
+        case Token::L_TRUE:    oss << "true";                  break;
+        case Token::L_FALSE:   oss << "false";                 break;
 
         // hence it is real, real32 or real64
 
-        case L_REAL:
+        case Token::L_REAL:
             oss << box_.float_;
         break;
-        case L_REAL32:
+        case Token::L_REAL32:
             oss << box_.float_;
             if ( fmod(box_.float_, 1.0) == 0.0 )
                 oss << ".d";
             else
                 oss << "d";
             break;
-        case L_REAL64:
+        case Token::L_REAL64:
             oss << box_.double_;
             if ( fmod(box_.double_, 1.0) == 0.0 )
                 oss << ".q";
@@ -238,32 +238,32 @@ void Literal::initTypeMap()
 {
     typeMap_ = new Literal::TypeMap();
 
-    (*typeMap_)[L_TRUE]   = me::Op::R_BOOL;
-    (*typeMap_)[L_FALSE]  = me::Op::R_BOOL;
+    (*typeMap_)[Token::L_TRUE]   = me::Op::R_BOOL;
+    (*typeMap_)[Token::L_FALSE]  = me::Op::R_BOOL;
 
-    (*typeMap_)[L_INT8]   = me::Op::R_INT8;
-    (*typeMap_)[L_INT16]  = me::Op::R_INT16;
-    (*typeMap_)[L_INT32]  = me::Op::R_INT32;
-    (*typeMap_)[L_INT64]  = me::Op::R_INT64;
+    (*typeMap_)[Token::L_INT8]   = me::Op::R_INT8;
+    (*typeMap_)[Token::L_INT16]  = me::Op::R_INT16;
+    (*typeMap_)[Token::L_INT32]  = me::Op::R_INT32;
+    (*typeMap_)[Token::L_INT64]  = me::Op::R_INT64;
 
-    (*typeMap_)[L_SAT8]   = me::Op::R_SAT8;
-    (*typeMap_)[L_SAT16]  = me::Op::R_SAT16;
+    (*typeMap_)[Token::L_SAT8]   = me::Op::R_SAT8;
+    (*typeMap_)[Token::L_SAT16]  = me::Op::R_SAT16;
 
-    (*typeMap_)[L_UINT8]  = me::Op::R_UINT8;
-    (*typeMap_)[L_UINT16] = me::Op::R_UINT16;
-    (*typeMap_)[L_UINT32] = me::Op::R_UINT32;
-    (*typeMap_)[L_UINT64] = me::Op::R_UINT64;
+    (*typeMap_)[Token::L_UINT8]  = me::Op::R_UINT8;
+    (*typeMap_)[Token::L_UINT16] = me::Op::R_UINT16;
+    (*typeMap_)[Token::L_UINT32] = me::Op::R_UINT32;
+    (*typeMap_)[Token::L_UINT64] = me::Op::R_UINT64;
 
-    (*typeMap_)[L_USAT8]  = me::Op::R_USAT8;
-    (*typeMap_)[L_USAT16] = me::Op::R_USAT16;
+    (*typeMap_)[Token::L_USAT8]  = me::Op::R_USAT8;
+    (*typeMap_)[Token::L_USAT16] = me::Op::R_USAT16;
 
-    (*typeMap_)[L_REAL32] = me::Op::R_REAL32;
-    (*typeMap_)[L_REAL64] = me::Op::R_REAL64;
+    (*typeMap_)[Token::L_REAL32] = me::Op::R_REAL32;
+    (*typeMap_)[Token::L_REAL64] = me::Op::R_REAL64;
 
-    (*typeMap_)[L_INT]    = me::arch->getPreferedInt();
-    (*typeMap_)[L_UINT]   = me::arch->getPreferedUInt();
-    (*typeMap_)[L_INDEX]  = me::arch->getPreferedIndex();
-    (*typeMap_)[L_REAL]   = me::arch->getPreferedReal();
+    (*typeMap_)[Token::L_INT]    = me::arch->getPreferedInt();
+    (*typeMap_)[Token::L_UINT]   = me::arch->getPreferedUInt();
+    (*typeMap_)[Token::L_INDEX]  = me::arch->getPreferedIndex();
+    (*typeMap_)[Token::L_REAL]   = me::arch->getPreferedReal();
 }
 
 void Literal::destroyTypeMap()
@@ -361,14 +361,14 @@ bool Id::analyze()
             me::functab->appendInstr(load);
 
             place_ = ptr;
-            type_->modifier() = REF;
+            type_->modifier() = Token::REF;
         }
         else if (doNotLoadPtr_)
             place_ = var_->getMeVar();
         else
         {
             // mark type as reference
-            type_->modifier() = REF;
+            type_->modifier() = Token::REF;
 
 #ifdef SWIFT_DEBUG
             std::string tmpStr = std::string("p_") + var_->getMeVar()->id_;
@@ -425,7 +425,7 @@ void Id::simdAnalyze(SimdAnalysis& simdAnalysis)
         me::functab->appendInstr(load);
 
         place_ = ptr;
-        type_->modifier() = REF;
+        type_->modifier() = Token::REF;
 
         result.ptr_ = ptr;
     }
@@ -486,7 +486,7 @@ bool UnExpr::analyze()
 
         type_ = ptr->getInnerType()->clone();
     }
-    else if (kind_ == NOT_OP)
+    else if (kind_ == Token::NOT_OP)
     {
         if ( !op_->getType()->isBool() )
         {
@@ -539,7 +539,7 @@ void UnExpr::genSSA()
         case '-':
             kind = me::AssignInstr::UNARY_MINUS;
             break;
-        case NOT_OP:
+        case Token::NOT_OP:
             kind = me::AssignInstr::NOT;
             break;
         default:
@@ -575,7 +575,7 @@ bool Nil::analyze()
     if ( !innerType_->validate() )
         return false;
     
-    type_ = new Ptr( CONST, innerType_->clone() );
+    type_ = new Ptr( Token::CONST, innerType_->clone() );
 
     me::Const* literal = me::functab->newConst(me::Op::R_PTR);
     literal->box().ptr_ = 0;
@@ -605,7 +605,7 @@ Self::Self(int line)
 
 bool Self::analyze()
 {
-    int selfModifier = REF;
+    int selfModifier = Token::REF;
     const std::type_info& methodQualifier = typeid( *symtab->currentMemberFunction() );
 
     if ( methodQualifier == typeid(Routine) )
@@ -619,7 +619,7 @@ bool Self::analyze()
         return false;
     }
     else if ( methodQualifier == typeid(Reader) )
-        selfModifier = CONST_REF;
+        selfModifier = Token::CONST_REF;
 
     swiftAssert( dynamic_cast<Method*>(symtab->currentMemberFunction()),
             "must be castable to Method" );

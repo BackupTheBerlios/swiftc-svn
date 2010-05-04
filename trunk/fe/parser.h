@@ -20,8 +20,6 @@
 #ifndef SWIFT_PARSER_H
 #define SWIFT_PARSER_H
 
-extern "C" int swiftparse();
-
 namespace swift {
 
 // it is important to declare all union members of YYSTYPE here
@@ -31,6 +29,7 @@ class Decl;
 class Definition;
 class Expr;
 class ExprList;
+class Lexer;
 class MemberVar;
 class MemberFunction;
 class Module;
@@ -44,9 +43,13 @@ class Type;
 
 std::string* operatorToString(int _operator);
 
-} // namespace swift
+}
 
 // include auto generated parser header before tokens
 #include "parser.tab.hpp"
+
+namespace swift {
+typedef Parser::token Token;
+}
 
 #endif // SWIFT_PARSER_H

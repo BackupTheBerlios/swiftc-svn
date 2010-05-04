@@ -75,7 +75,7 @@ bool Type::isInt() const
 Type* Type::constClone() const
 {
     Type* type = this->clone();
-    type->modifier_ = CONST;
+    type->modifier_ = Token::CONST;
 
     return type;
 }
@@ -83,7 +83,7 @@ Type* Type::constClone() const
 Type* Type::varClone() const
 {
     Type* type = this->clone();
-    type->modifier_ = VAR;
+    type->modifier_ = Token::VAR;
 
     return type;
 }
@@ -110,7 +110,7 @@ const int& Type::modifier() const
 
 bool Type::isReadOnly() const
 {
-    return modifier_ == CONST || modifier_ == CONST_REF;
+    return modifier_ == Token::CONST || modifier_ == Token::CONST_REF;
 }
 
 me::Reg* Type::loadPtr(me::Var* var) const
@@ -210,7 +210,7 @@ me::Op::Type BaseType::toMeType() const
             return me::Op::R_PTR; // params are passed in pointers
         else
         {
-            swiftAssert(modifier_ == VAR || modifier_ == CONST, 
+            swiftAssert(modifier_ == Token::VAR || modifier_ == Token::CONST, 
                     "impossible modifier_ value");
             return me::Op::R_MEM;
         }
@@ -262,7 +262,7 @@ size_t BaseType::sizeOf() const
 
 bool BaseType::isActuallyPtr() const
 {
-    return modifier_ == CONST_REF || modifier_ == REF;
+    return modifier_ == Token::CONST_REF || modifier_ == Token::REF;
 }
 
 me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
@@ -617,7 +617,7 @@ bool Container::isAtomic() const
 
 bool Container::isInternalAtomic() const
 {
-    return modifier_ == CONST_REF || modifier_ == REF;
+    return modifier_ == Token::CONST_REF || modifier_ == Token::REF;
 }
 
 bool Container::isActuallyPtr() const

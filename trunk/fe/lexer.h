@@ -22,13 +22,15 @@
 
 namespace swift {
 
-FILE* lexerInit(const char* filename);
+extern int g_line;
 
-extern int currentLine;
-extern int getKeyLine();
+FILE* lexer_init(const char* filename);
 
 }
+
+int swift_lex(swift::Parser::semantic_type* val, swift::Parser::location_type* loc);
 
 int swiftlex();
 
 #endif // SWIFT_LEXER_H
+
