@@ -207,9 +207,6 @@ class App
     routine main() -> int result
         App app
 
-        # main loop variable 
-        bool done = false
-
         # initialize SDL 
         uint SDL_INIT_VIDEO = 32u
         c_call int SDL_Init(SDL_INIT_VIDEO)
