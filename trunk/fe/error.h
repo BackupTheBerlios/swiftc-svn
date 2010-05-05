@@ -23,10 +23,12 @@
 #include <cstdarg>
 #include <cstring>
 
+#include "fe/location.hh"
+
 namespace swift {
 
-void errorf(int line, const char* fs, ...);
-void warningf(int line, const char* fs, ...);
+void   errorf(const location& loc, const char* fs, ...);
+void warningf(const location& loc, const char* fs, ...);
 
 struct ErrorHandler
 {

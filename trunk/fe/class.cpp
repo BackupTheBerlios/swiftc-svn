@@ -42,8 +42,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Class::Class(bool simd, std::string* id, Symbol* parent, int line)
-    : Definition(id, parent, line)
+Class::Class(bool simd, std::string* id, Symbol* parent, location loc)
+    : Definition(id, parent, loc)
     , simd_(simd)
     , defaultCreate_(DEFAULT_NONE)
     , copyCreate_(COPY_USER)
@@ -70,7 +70,7 @@ void Class::addDefaultCreate()
 {
     // check whether there is already a default constructor
     TypeList in;
-    Method* create = symtab->lookupCreate(this, in, 0);
+    Method* create = symtab->lookupCreate(this, in, location()); // TODO location
 
     if (create)
         defaultCreate_ = DEFAULT_USER;
@@ -82,7 +82,7 @@ void Class::addDefaultCreate()
         */
         defaultCreate_ = DEFAULT_TRIVIAL;
 
-        create = new Create(simd_, this);
+        create = new Create(simd_, this, location()); // TODO location
         symtab->insert(create);
         create->statements_ = 0;
 
@@ -96,16 +96,16 @@ void Class::addCopyCreate()
     BaseType* newType = new BaseType(0, this);
     TypeList in;
     in.push_back(newType);
-    Method* create = symtab->lookupCreate(this, in, 0);
+    Method* create = symtab->lookupCreate(this, in, location()); // TODO location
 
     if (!create)
     {
         copyCreate_ = COPY_AUTO;
 
-        create = new Create(simd_, this);
+        create = new Create(simd_, this, location()); // TODO location
         create->statements_ = 0;
         symtab->insert(create);
-        symtab->insertInParam( new InParam(false, newType, new std::string("arg")) );
+        symtab->insertInParam( new InParam(false, newType, new std::string("arg"), location()) ); // TODO location
 
         prependMember(create);
     }
@@ -132,16 +132,16 @@ void Class::addAssignOperators()
             continue;
 
         // check wether there is already an assign operator defined with this in-types
-        Assign* assign = symtab->lookupAssign(this, create->sig_->getIn(), 0);
+        Assign* assign = symtab->lookupAssign(this, create->sig_->getIn(), location()); // TODO location
 
         if (!assign)
         {
-            assign = new Assign(simd_, this);
+            assign = new Assign(simd_, this, location()); // TODO location
             assign->statements_ = 0;
             symtab->insert(assign);
 
             for (size_t i = 0; i < in.size(); ++i)
-                symtab->insertInParam( new InParam(false, in[i]->clone(), new std::string("arg")) );
+                symtab->insertInParam( new InParam(false, in[i]->clone(), new std::string("arg"), location()) ); // TODO location
 
             prependMember(assign);
         }
@@ -210,10 +210,10 @@ bool Class::analyze()
                 if ( methodIter->second->sig_->check(memberFunction->sig_) )
                 {
                     // TODO better error message
-                    errorf( methodIter->second->line_, 
+                    errorf( methodIter->second->loc_, 
                             "there is already a member function '%s' defined in '%s' line %i",
                             methodIter->second->toString().c_str(),
-                            memberFunction->getFullName().c_str(), memberFunction->line_ );
+                            memberFunction->getFullName().c_str(), memberFunction->loc_.begin.line );
 
                     result = false;
 
@@ -241,8 +241,8 @@ BaseType* Class::createType(int modifier) const
  * constructor and destructor
  */
 
-ClassMember::ClassMember(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
-    : Symbol(id, parent, line)
+ClassMember::ClassMember(std::string* id, Symbol* parent, location loc)
+    : Symbol(id, parent, loc)
     , next_(0)
 {}
 
@@ -257,8 +257,8 @@ ClassMember::~ClassMember()
  * constructor and destructor
  */
 
-MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, int line /*= NO_LINE*/)
-    : ClassMember(id, parent, line)
+MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, location loc)
+    : ClassMember(id, parent, loc)
     , type_(type)
 {}
 

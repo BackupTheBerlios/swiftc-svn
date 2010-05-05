@@ -28,8 +28,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Decl::Decl(Type* type, std::string* id, int line)
-    : TypeNode(type, line)
+Decl::Decl(Type* type, std::string* id, location loc)
+    : TypeNode(type, loc)
     , id_(id)
     , local_(0) // This will be created in analyze
     , standAlone_(false)
@@ -53,7 +53,7 @@ bool Decl::analyze()
     if ( !type_->validate() )
         return false;
 
-    std::pair<Local*, bool> p = symtab->createNewLocal(type_, id_, line_);
+    std::pair<Local*, bool> p = symtab->createNewLocal(type_, id_, loc_);
     local_ = p.first;
     me::Var* meVar = local_->getMeVar();
 

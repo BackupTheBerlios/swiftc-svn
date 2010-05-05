@@ -25,6 +25,7 @@
 #include <stack>
 #include <map>
 
+#include "fe/location.hh"
 #include "fe/typelist.h"
 #include "fe/var.h"
 
@@ -62,11 +63,6 @@ struct SymbolTable
     MemberFunction* memberFunction_;///< Current \a MemberFunction.
     Signature* sig_;                ///< Current \a Signature.
     ScopeStack scopeStack_;         ///< Top of stack knows the current Scope.
-
-    enum
-    {
-        NO_LINE = -1
-    };
 
     /*
      * constructor and init stuff
@@ -131,45 +127,45 @@ struct SymbolTable
      * @param id The identifier of the member function to be lookuped.
      * @param methodQualifier Either READER, WRITER, ROUTINE, CREATE or OPERATOR.
      * @param in in-signature the member function should have.
-     * @param line The line number of the MemberFunction call.
+     * @param loc The location of the MemberFunction call.
      *          Use 0 if you want to omit error output.
      */
     MemberFunction* lookupMemberFunction(Class* _class,
                                          const std::string* id,
                                          const TypeList& in,
-                                         int line);
+                                         location loc);
 
     /**
      * Looks up a constructor.
      *
      * @param _class The contructor's class.
      * @param in The in-signature the method should have.
-     * @param line The line number of the method call.
+     * @param loc The location of the method call.
      *          Use 0 if you want to omit error output.
      */
     Create* lookupCreate(Class* _class,
                          const TypeList& in,
-                         int line);
+                         location loc);
 
     /**
      * Looks up the assign operator.
      *
      * @param _class The assign operator's class.
      * @param in The in-signature the method should have.
-     * @param line The line number of the method call.
+     * @param loc The location of the method call.
      *          Use 0 if you want to omit error output.
      */
-    Assign* lookupAssign(Class* _class, const TypeList& in, int line);
+    Assign* lookupAssign(Class* _class, const TypeList& in, location loc);
 
     /**
      * Looks up the assign constructor.
      *
      * @param _class The method's class.
      * @param in The in-signature the method should have.
-     * @param line The line number of the method call.
+     * @param loc The location of the method call.
      *          Use 0 if you want to omit error output.
      */
-    Method* lookupAssignCreate(Class* _class, const TypeList& in, bool create, int line);
+    Method* lookupAssignCreate(Class* _class, const TypeList& in, bool create, location loc);
 
     /*
      * current getters
@@ -187,16 +183,15 @@ struct SymbolTable
      */
 
     /**
-     * Creates a new Local with Type \p type, \p id and an optional \p line
-     * number.
+     * Creates a new Local with Type \p type, \p id and an \p location.
      *
      * @param type Type the new Local should have. It will be cloned via Type::clone().
      * @param id Identifier the new Local should have.
-     * @param line An optional line number the Local should have.
+     * @param loc An location the Local should have.
      */
     std::pair<Local*, bool> createNewLocal(const Type* type, 
                                            std::string* id, 
-                                           int line = NO_LINE);
+                                           location loc);
 };
 
 typedef SymbolTable SymTab;

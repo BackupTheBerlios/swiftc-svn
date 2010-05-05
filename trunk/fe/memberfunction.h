@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "fe/class.h"
+#include "fe/location.hh"
 #include "fe/typelist.h"
 
 /*
@@ -56,7 +57,7 @@ public:
      * constructor and destructor
      */
 
-    MemberFunction(bool simd, std::string* id, Symbol* parent, int line);
+    MemberFunction(bool simd, std::string* id, Symbol* parent, location loc);
     virtual ~MemberFunction();
 
     /*
@@ -98,7 +99,7 @@ public:
      * constructor
      */
 
-    Method(bool simd, std::string* id, Symbol* parent, int line);
+    Method(bool simd, std::string* id, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -128,7 +129,7 @@ public:
      * constructor
      */
 
-    Reader(bool simd, std::string* id, Symbol* parent, int line);
+    Reader(bool simd, std::string* id, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -148,7 +149,7 @@ public:
      * constructor
      */
 
-    Writer(bool simd, std::string* id, Symbol* parent, int line);
+    Writer(bool simd, std::string* id, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -168,7 +169,7 @@ public:
      * constructor
      */
 
-    Create(bool simd, Symbol* parent, int line = NO_LINE);
+    Create(bool simd, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -188,7 +189,7 @@ public:
      * constructor 
      */
 
-    Assign(bool simd, Symbol* parent, int line = NO_LINE);
+    Assign(bool simd, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -209,7 +210,7 @@ public:
      * constructor
      */
 
-    StaticMethod(bool simd, std::string* id, Symbol* parent, int line);
+    StaticMethod(bool simd, std::string* id, Symbol* parent, location loc);
 };
 
 //------------------------------------------------------------------------------
@@ -222,7 +223,7 @@ public:
      * constructor
      */
 
-    Routine(bool simd, std::string *id, Symbol* parent, int line);
+    Routine(bool simd, std::string *id, Symbol* parent, location loc);
 
     /*
      * virtual methods
@@ -242,7 +243,7 @@ public:
      * constructor 
      */
 
-    Operator(bool simd, std::string* id, Symbol* parent, int line);
+    Operator(bool simd, std::string* id, Symbol* parent, location loc);
 
     /*
      * virtual methods

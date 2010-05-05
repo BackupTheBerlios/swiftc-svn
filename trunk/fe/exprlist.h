@@ -50,7 +50,7 @@ public:
      * constructor and destructor
      */
 
-    ExprList(int modifier, Expr* expr, ExprList* next, int line = NO_LINE);
+    ExprList(int modifier, Expr* expr, ExprList* next, location loc);
     virtual ~ExprList();
 
     /*

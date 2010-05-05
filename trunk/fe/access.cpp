@@ -35,8 +35,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Access::Access(Expr* postfixExpr, int line)
-    : Expr(line)
+Access::Access(Expr* postfixExpr, location loc)
+    : Expr(loc)
     , postfixExpr_(postfixExpr)
     , nextAccess_(0)
     , firstInAChain_(false)
@@ -129,7 +129,7 @@ bool Access::analyze()
         // TODO const check
         if (!method)
         {
-            errorf( line_, "%ss do not have a 'self' argument", 
+            errorf(loc_, "%ss do not have a 'self' argument", 
                     mf->qualifierString().c_str() );
             return false;
         }
@@ -147,7 +147,7 @@ bool Access::analyze()
         me::Var* exprPlace = dynamic_cast<me::Var*>( postfixExpr_->getPlace() );
         if (!exprPlace)
         {
-            errorf(line_, "trying to access a literal");
+            errorf(loc_, "trying to access a literal");
             return false;
         }
 
@@ -281,8 +281,8 @@ void Access::emitStoreIfApplicable(Expr* expr)
  * constructor and destructor
  */
 
-MemberAccess::MemberAccess(Expr* postfixExpr, std::string* id, int line)
-    : Access(postfixExpr, line)
+MemberAccess::MemberAccess(Expr* postfixExpr, std::string* id, location loc)
+    : Access(postfixExpr, loc)
     , id_(id)
 {}
 
@@ -309,7 +309,7 @@ bool MemberAccess::analyzeAccess()
 
     if ( iter == _class->memberVars_.end() )
     {
-        errorf( line_, "class '%s' does not have a member named %s", 
+        errorf( loc_, "class '%s' does not have a member named %s", 
                 _class->id_->c_str(), id_->c_str() );
 
         return false;
@@ -338,8 +338,8 @@ std::string MemberAccess::toString() const
  * constructor and destructor
  */
 
-IndexExpr::IndexExpr(Expr* postfixExpr, Expr* indexExpr, int line)
-    : Access(postfixExpr, line)
+IndexExpr::IndexExpr(Expr* postfixExpr, Expr* indexExpr, location loc)
+    : Access(postfixExpr, loc)
     , indexExpr_(indexExpr)
 {}
 
@@ -362,7 +362,7 @@ bool IndexExpr::analyzeAccess()
 
     if (!container)
     {
-        errorf(line_, "an index expression must only be used "
+        errorf(loc_, "an index expression must only be used "
                 "with an 'array' or 'simd' type");
 
         return false;
@@ -370,7 +370,7 @@ bool IndexExpr::analyzeAccess()
 
     if ( !indexExpr_->getType()->isIndex() )
     {
-        errorf(line_, 
+        errorf(loc_, 
                "indexing expression must be of type 'index' but '%s' is given",
                indexExpr_->getType()->toString().c_str() );
 

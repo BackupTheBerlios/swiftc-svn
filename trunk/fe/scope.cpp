@@ -66,8 +66,8 @@ bool Scope::insert(Local* local, const Signature* sig)
 
     if ( !p.second )
     {
-        errorf(local->line_, "there is already a local '%s' defined in this scope in line %i",
-            local->id_->c_str(), p.first->second->line_);
+        errorf(local->loc_, "there is already a local '%s' defined in this scope in line %i",
+            local->id_->c_str(), p.first->second->loc_.begin.line);
 
         return false;
     }
@@ -75,7 +75,7 @@ bool Scope::insert(Local* local, const Signature* sig)
     const Param* found = sig->findParam(local->id_);
     if (found)
     {
-        errorf(local->line_, "local '%s' shadows a parameter", local->id_->c_str());
+        errorf(local->loc_, "local '%s' shadows a parameter", local->id_->c_str());
         return false;
     }
 

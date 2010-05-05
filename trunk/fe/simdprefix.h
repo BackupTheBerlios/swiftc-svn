@@ -40,7 +40,7 @@ public:
      * constructor and destructor
      */
 
-    SimdPrefix(Expr* leftExpr_, Expr* rightExpr, int line);
+    SimdPrefix(Expr* leftExpr_, Expr* rightExpr, location loc);
     virtual ~SimdPrefix();
 
     /*

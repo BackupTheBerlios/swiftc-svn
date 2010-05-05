@@ -40,8 +40,8 @@ namespace swift {
  * constructor and destructor
  */
 
-MemberFunction::MemberFunction(bool simd, std::string* id, Symbol* parent, int line)
-    : ClassMember(id, parent, line)
+MemberFunction::MemberFunction(bool simd, std::string* id, Symbol* parent, location loc)
+    : ClassMember(id, parent, loc)
     , simd_(simd)
     , rootScope_( new Scope(0) )
     , sig_( new Signature() )
@@ -134,8 +134,8 @@ bool MemberFunction::isTrivial() const
  * constructor
  */
 
-Method::Method(bool simd, std::string* id, Symbol* parent, int line)
-    : MemberFunction(simd, id, parent, line)
+Method::Method(bool simd, std::string* id, Symbol* parent, location loc)
+    : MemberFunction(simd, id, parent, loc)
 {}
 
 /*
@@ -171,8 +171,8 @@ BaseType* Method::createSelfType() const
  * constructor
  */
 
-Reader::Reader(bool simd, std::string* id, Symbol* parent, int line)
-    : Method(simd, id, parent, line)
+Reader::Reader(bool simd, std::string* id, Symbol* parent, location loc)
+    : Method(simd, id, parent, loc)
 {}
 
 /*
@@ -195,8 +195,8 @@ std::string Reader::qualifierString() const
  * constructor
  */
 
-Writer::Writer(bool simd, std::string* id, Symbol* parent, int line)
-    : Method(simd, id, parent, line)
+Writer::Writer(bool simd, std::string* id, Symbol* parent, location loc)
+    : Method(simd, id, parent, loc)
 {}
 
 /*
@@ -219,8 +219,8 @@ std::string Writer::qualifierString() const
  * constructor
  */
 
-Create::Create(bool simd, Symbol* parent, int line /*= NO_LINE*/)
-    : Method( simd, new std::string("create"), parent, line )
+Create::Create(bool simd, Symbol* parent, location loc)
+    : Method( simd, new std::string("create"), parent, loc )
 {}
 
 /*
@@ -243,8 +243,8 @@ std::string Create::qualifierString() const
  * constructor
  */
 
-Assign::Assign(bool simd, Symbol* parent, int line /*= NO_LINE*/)
-    : Method( simd, new std::string("assign"), parent, line)
+Assign::Assign(bool simd, Symbol* parent, location loc)
+    : Method( simd, new std::string("assign"), parent, loc)
 {}
 
 /*
@@ -261,7 +261,7 @@ bool Assign::specialAnalyze()
 
     if ( in.empty() || !out.empty() )
     {
-        errorf(line_, "an assignment must have exactly one or more "
+        errorf(loc_, "an assignment must have exactly one or more "
                 "incoming parameters and no outgoing parameters");
 
         return false;
@@ -286,8 +286,8 @@ std::string Assign::qualifierString() const
  * constructor
  */
 
-StaticMethod::StaticMethod(bool simd, std::string* id, Symbol* parent, int line)
-    : MemberFunction(simd, id, parent, line)
+StaticMethod::StaticMethod(bool simd, std::string* id, Symbol* parent, location loc)
+    : MemberFunction(simd, id, parent, loc)
 {}
 
 //------------------------------------------------------------------------------
@@ -296,8 +296,8 @@ StaticMethod::StaticMethod(bool simd, std::string* id, Symbol* parent, int line)
  * constructor
  */
 
-Routine::Routine(bool simd, std::string* id, Symbol* parent, int line)
-    : StaticMethod(simd, id, parent, line)
+Routine::Routine(bool simd, std::string* id, Symbol* parent, location loc)
+    : StaticMethod(simd, id, parent, loc)
 {}
 
 /*
@@ -328,8 +328,8 @@ std::string Routine::qualifierString() const
  * constructor
  */
 
-Operator::Operator(bool simd, std::string* id, Symbol* parent, int line)
-    : StaticMethod(simd, id, parent, line)
+Operator::Operator(bool simd, std::string* id, Symbol* parent, location loc)
+    : StaticMethod(simd, id, parent, loc)
 {}
 
 /*
@@ -350,7 +350,7 @@ bool Operator::specialAnalyze()
         const BaseType* bt = dynamic_cast<const BaseType*>( in[0] );
         if ( !bt || *symtab->class_->id_ != *bt->getId() )
         {
-            errorf( line_, "the first parameter of the '%s'-operator "
+            errorf( loc_, "the first parameter of the '%s'-operator "
                     "must be of type %s",
                     id_->c_str(),
                     symtab->class_->id_->c_str() );
@@ -384,7 +384,7 @@ bool Operator::specialAnalyze()
                 unaryMinus = true;
             else
             {
-                errorf( line_, "the '%s'-operator must exactly have two "
+                errorf( loc_, "the '%s'-operator must exactly have two "
                         "incoming and one outgoing parameter", 
                         id_->c_str() );
 
@@ -401,13 +401,13 @@ bool Operator::specialAnalyze()
         {
             if (*id_ == "-")
             {
-                errorf(line_, "the '-'-operator must either have exactly "
+                errorf(loc_, "the '-'-operator must either have exactly "
                         "two incoming and one outgoing or one incoming " 
                         "and one outgoing parameter");
             }
             else
             {
-                errorf( line_, "the '%s'-operator must exactly have "
+                errorf( loc_, "the '%s'-operator must exactly have "
                         "one incoming and one outgoing parameter",
                         id_->c_str() );
             }

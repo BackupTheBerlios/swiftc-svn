@@ -39,8 +39,9 @@ namespace swift {
  * constructor 
  */
 
-SimdAnalysis::SimdAnalysis()
+SimdAnalysis::SimdAnalysis(location loc)
     : std::vector<SimdInfo>()
+    , loc_(loc)
     , simdLength_(NOT_ANALYZED)
 {}
 
@@ -48,7 +49,7 @@ SimdAnalysis::SimdAnalysis()
  * further methods
  */
 
-int SimdAnalysis::checkAndGetSimdLength(int line)
+int SimdAnalysis::checkAndGetSimdLength()
 {
     if ( empty() )
     {
@@ -66,7 +67,7 @@ int SimdAnalysis::checkAndGetSimdLength(int line)
             tmp = simdLength;
         else if (tmp != simdLength)
         {
-            errorf(line, "different simd lengths used in this simd statement");
+            errorf(loc_, "different simd lengths used in this simd statement");
             return -1;
         }
     }

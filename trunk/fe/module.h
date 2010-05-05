@@ -26,6 +26,7 @@
 #include "utils/stringhelper.h"
 
 #include "fe/auto.h"
+#include "fe/location.hh"
 #include "fe/syntaxtree.h"
 
 namespace swift {
@@ -51,7 +52,7 @@ struct Module : public Symbol
      * constructor and destructor
      */
 
-    Module(std::string* id, int line = NO_LINE);
+    Module(std::string* id, location loc);
     virtual ~Module();
 
     /*
@@ -73,7 +74,7 @@ struct Definition : public Symbol
      * constructor
      */
 
-    Definition(std::string* id, Symbol* parent, int line = NO_LINE);
+    Definition(std::string* id, Symbol* parent, location loc);
 
     /*
      * further methods

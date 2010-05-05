@@ -26,6 +26,7 @@
 #include "utils/list.h"
 
 #include "fe/module.h"
+#include "fe/location.hh"
 
 /*
  * forward declarations
@@ -92,7 +93,7 @@ struct Class : public Definition
      * constructor and destructor
      */
 
-    Class(bool simd, std::string* id, Symbol* parent, int line);
+    Class(bool simd, std::string* id, Symbol* parent, location loc);
     virtual ~Class();
 
     /*
@@ -127,7 +128,7 @@ struct ClassMember : public Symbol
      * constructor and destructor
      */
 
-    ClassMember(std::string* id, Symbol* parent, int line = NO_LINE);
+    ClassMember(std::string* id, Symbol* parent, location loc);
     virtual ~ClassMember();
 
     /*
@@ -151,7 +152,7 @@ struct MemberVar : public ClassMember
      * constructor and destructor
      */
 
-    MemberVar(Type* type, std::string* id, Symbol* parent = 0, int line = NO_LINE);
+    MemberVar(Type* type, std::string* id, Symbol* parent, location loc);
     virtual ~MemberVar();
 
     /*

@@ -20,6 +20,7 @@
 #ifndef SWIFT_TUPLE_H
 #define SWIFT_TUPLE_H
 
+#include "fe/location.hh"
 #include "fe/syntaxtree.h"
 #include "fe/typelist.h"
 
@@ -48,7 +49,7 @@ public:
      * constructor and destructor
      */
 
-    Tuple(TypeNode* typeNode, Tuple* next, int line = NO_LINE);
+    Tuple(TypeNode* typeNode, Tuple* next, location loc);
     virtual ~Tuple();
 
     /*

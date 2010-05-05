@@ -44,8 +44,8 @@ namespace swift {
  * constructor
  */
 
-Type::Type(int modifier, int line /*= NO_LINE*/)
-    : Node(line) 
+Type::Type(int modifier, location loc)
+    : Node(loc) 
     , modifier_(modifier)
 {}
 
@@ -140,14 +140,14 @@ BaseType::TypeMap* BaseType::typeMap_ = 0;
  * constructor and destructor
  */
 
-BaseType::BaseType(int modifier, std::string* id, int line /*= NO_LINE*/)
-    : Type(modifier, line)
+BaseType::BaseType(int modifier, std::string* id, location loc)
+    : Type(modifier, loc)
     , id_(id)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
 
 BaseType::BaseType(int modifier, const Class* _class)
-    : Type(modifier, NO_LINE)
+    : Type(modifier, location() ) // TODO location
     , id_( new std::string(*_class->id_) )
     , builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
 {}
@@ -163,14 +163,14 @@ BaseType::~BaseType()
 
 BaseType* BaseType::clone() const
 {
-    return new BaseType( modifier_, new std::string(*id_), NO_LINE );
+    return new BaseType( modifier_, new std::string(*id_), loc_);
 }
 
 bool BaseType::validate() const
 {
     if ( symtab->lookupClass(id_) == 0 )
     {
-        errorf( line_, "class '%s' is not defined in this module", id_->c_str() );
+        errorf( loc_, "class '%s' is not defined in this module", id_->c_str() );
         return false;
     }
 
@@ -319,7 +319,7 @@ const Ptr* BaseType::unnestInnerstPtr() const
 
 bool BaseType::hasAssignCreate(const TypeList& /*in*/, 
                                bool /*isCreate*/, 
-                               int /*line*/) const
+                               location loc) const
 {
     swiftAssert(false, "unreachable code");
     return false;
@@ -397,8 +397,8 @@ void BaseType::destroyTypeMap()
  * constructor and destructor
  */
 
-NestedType::NestedType(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : Type(modifier, line)
+NestedType::NestedType(int modifier, Type* innerType, location loc)
+    : Type(modifier, loc)
     , innerType_(innerType)
 {}
 
@@ -459,13 +459,13 @@ const Type* NestedType::getInnerType() const
  * constructor
  */
 
-Ptr::Ptr(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : NestedType(modifier, innerType, line)
+Ptr::Ptr(int modifier, Type* innerType, location loc)
+    : NestedType(modifier, innerType, loc)
 {}
 
 Ptr* Ptr::clone() const
 {
-    return new Ptr(modifier_, innerType_->clone(), NO_LINE);
+    return new Ptr(modifier_, innerType_->clone(), location() ); // TODO location
 }
 
 /*
@@ -547,19 +547,19 @@ me::Reg* Ptr::derefToInnerstPtr(me::Var* var) const
     return (me::Reg*) var;
 }
 
-bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
+bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, location loc) const
 {
     std::string methodStr = hasCreate ? "constructer" : "assignment";
 
     if ( in.size() != 1 )
     {
-        errorf(line, "a 'ptr' %s takes exactly one argument", methodStr.c_str() );
+        errorf(loc, "a 'ptr' %s takes exactly one argument", methodStr.c_str() );
         return false;
     }
 
     if ( !check(in[0]) )
     {
-        errorf( line_, "types do not match in 'ptr' %s", methodStr.c_str() );
+        errorf( loc_, "types do not match in 'ptr' %s", methodStr.c_str() );
         return false;
     }
 
@@ -588,8 +588,8 @@ me::Member* Container::meContainerSize_ = 0;
  * constructor
  */
 
-Container::Container(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : NestedType(modifier, innerType, line)
+Container::Container(int modifier, Type* innerType, location loc)
+    : NestedType(modifier, innerType, loc)
 {}
 
 /*
@@ -635,13 +635,13 @@ me::Reg* Container::derefToInnerstPtr(me::Var* var) const
     return loadPtr(var);
 }
 
-bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) const
+bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, location loc) const
 {
     std::string methodStr = hasCreate ? "constructer" : "assignment";
 
     if ( in.size() != 1 )
     {
-        errorf(line, "a '%s' container %s takes exactly one argument", 
+        errorf(loc, "a '%s' container %s takes exactly one argument", 
                 containerStr().c_str(),
                 methodStr.c_str() );
         return false;
@@ -654,13 +654,13 @@ bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, int line) co
 
         else
         {
-            errorf( line_, "'%s' container constructor expects one argument of class 'index'", 
+            errorf( loc_, "'%s' container constructor expects one argument of class 'index'", 
                     containerStr().c_str() );
         }
     }
     else if ( !check(in[0]) )
     {
-        errorf( line_, "types do not match in '%s' container %s", 
+        errorf( loc_, "types do not match in '%s' container %s", 
                 containerStr().c_str(),
                 methodStr.c_str() );
         return false;
@@ -745,8 +745,8 @@ size_t Container::getContainerSize()
  * constructor
  */
 
-Array::Array(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : Container(modifier, innerType, line)
+Array::Array(int modifier, Type* innerType, location loc)
+    : Container(modifier, innerType, loc)
 {}
 
 /*
@@ -755,7 +755,7 @@ Array::Array(int modifier, Type* innerType, int line /*= NO_LINE*/)
 
 Array* Array::clone() const
 {
-    return new Array(modifier_, innerType_->clone(), NO_LINE);
+    return new Array(modifier_, innerType_->clone(), location() ); // TODO location
 }
 
 std::string Array::containerStr() const
@@ -769,8 +769,8 @@ std::string Array::containerStr() const
  * constructor
  */
 
-Simd::Simd(int modifier, Type* innerType, int line /*= NO_LINE*/)
-    : Container(modifier, innerType, line)
+Simd::Simd(int modifier, Type* innerType, location loc)
+    : Container(modifier, innerType, loc)
 {}
 
 /*
@@ -779,7 +779,7 @@ Simd::Simd(int modifier, Type* innerType, int line /*= NO_LINE*/)
 
 Simd* Simd::clone() const
 {
-    return new Simd(modifier_, innerType_->clone(), NO_LINE);
+    return new Simd(modifier_, innerType_->clone(), location() ); // TODO location
 }
 
 std::string Simd::containerStr() const

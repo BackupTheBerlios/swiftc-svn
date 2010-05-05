@@ -51,7 +51,8 @@ std::string* operatorToString(int _operator);
 namespace swift {
 typedef Parser::token Token;
 
-extern int g_line;
+extern int g_lexer_line;
+extern std::string* g_lexer_filename;
 
 FILE* lexer_init(const char* filename);
 

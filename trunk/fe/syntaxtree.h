@@ -27,6 +27,7 @@
 #include "utils/assert.h"
 
 #include "fe/auto.h"
+#include "fe/location.hh"
 #include "fe/simdanalysis.h"
 
 /*
@@ -59,13 +60,13 @@ struct Node
         NO_LINE = -1 ///< if this node does not map to a line number -1 is used
     };
 
-    int line_;///< the line number which this node is mapped to
+    location loc_;
 
     /*
      * constructor and destructor
      */
 
-    Node(int line = NO_LINE);
+    Node(location loc_);
     virtual ~Node() {}
 
     /*
@@ -89,7 +90,7 @@ struct Symbol : public Node
      * constructor and destructor
      */
 
-    Symbol(std::string* id, Symbol* parent, int line = NO_LINE);
+    Symbol(std::string* id, Symbol* parent, location loc_);
     virtual ~Symbol();
 
     /*
@@ -119,7 +120,7 @@ public:
      * constructor and destructor
      */
 
-    TypeNode(Type* type, int line = NO_LINE);
+    TypeNode(Type* type, location loc_);
     virtual ~TypeNode();
 
     /*

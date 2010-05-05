@@ -17,6 +17,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
+%option noyywrap
+
 %{
 
 #include <string>
@@ -27,19 +29,22 @@
 #include "utils/assert.h"
 
 #include "fe/auto.h"
+#include "fe/cmdlineparser.h"
 #include "fe/error.h"
 #include "fe/expr.h"
 #include "fe/syntaxtree.h"
 
 
 namespace swift {
-    int g_line = 0;
-    int g_comment_level;
+    int g_lexer_line = 0;
+    int g_lexer_comment_level;
+    std::string* g_lexer_filename = 0;
 }
 
 using namespace swift;
 
 #define YY_DECL int swift_lex (Parser::semantic_type* val, Parser::location_type* loc)
+#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = g_lexer_line; loc->step();
 
 %}
 
@@ -59,111 +64,116 @@ INTEGER     {DIGIT}+
 
 %%
 
-[+\-*/%&|\^=()\[\]{},.;:\<>@] { // single character tokens
-    return yytext[0];
+[&|\^=()\[\]{},.;:@] { // single character tokens
+    SET_LOC return yytext[0];
 }
 
-::  { return Token::DOUBLE_COLON; }
+::  { SET_LOC; return Token::DOUBLE_COLON; }
 
-mod { return Token::MOD_OP; }
-div { return Token::DIV_OP; }
-==  { return Token::EQ_OP; }
-\<> { return Token::NE_OP; }
-\<= { return Token::LE_OP; }
->=  { return Token::GE_OP; }
-and { return Token::AND_OP; }
-or  { return Token::OR_OP; }
-xor { return Token::XOR_OP; }
-not { return Token::NOT_OP; }
+\+  { SET_LOC; return Token::ADD; }
+-   { SET_LOC; return Token::SUB; }
+\*  { SET_LOC; return Token::MUL; }
+\/  { SET_LOC; return Token::DIV; }
+mod { SET_LOC; return Token::MOD; }
+==  { SET_LOC; return Token::EQ; }
+\<> { SET_LOC; return Token::NE; }
+\<= { SET_LOC; return Token::LE; }
+>=  { SET_LOC; return Token::GE; }
+\<  { SET_LOC; return Token::LT; }
+>   { SET_LOC; return Token::GT; }
+and { SET_LOC; return Token::AND; }
+or  { SET_LOC; return Token::OR; }
+xor { SET_LOC; return Token::XOR; }
+not { SET_LOC; return Token::NOT; }
 
-c_call  { return Token:: C_CALL; }
-vc_call { return Token::VC_CALL; }
+c_call  { SET_LOC; return Token:: C_CALL; }
+vc_call { SET_LOC; return Token::VC_CALL; }
 
-inc { return Token::INC_OP; }
-dec { return Token::DEC_OP; }
+inc { SET_LOC; return Token::INC; }
+dec { SET_LOC; return Token::DEC; }
 
-\+= { return  Token::ADD_ASSIGN; }
-\-= { return  Token::SUB_ASSIGN; }
-\*= { return  Token::MUL_ASSIGN; }
-\/= { return  Token::DIV_ASSIGN; }
-mod= { return Token::MOD_ASSIGN; }
-and= { return Token::AND_ASSIGN; }
-or=  { return Token:: OR_ASSIGN; }
-xor= { return Token::XOR_ASSIGN; }
+\+= { SET_LOC; return  Token::ASSIGN_ADD; }
+\-= { SET_LOC; return  Token::ASSIGN_SUB; }
+\*= { SET_LOC; return  Token::ASSIGN_MUL; }
+\/= { SET_LOC; return  Token::ASSIGN_DIV; }
+mod= { SET_LOC; return Token::ASSIGN_MOD; }
+and= { SET_LOC; return Token::ASSIGN_AND; }
+or=  { SET_LOC; return Token::ASSIGN_OR; }
+xor= { SET_LOC; return Token::ASSIGN_XOR; }
 
-\<-     { return Token::MOVE_OP; }
-\<->    { return Token::SWAP_OP; }
-->      { return Token::ARROW; }
+\<-     { SET_LOC; return Token::MOVE; }
+\<->    { SET_LOC; return Token::SWAP; }
+->      { SET_LOC; return Token::ARROW; }
 
-if      { return Token::IF; }
-else    { return Token::ELSE; }
-elif    { return Token::ELIF; }
-for     { return Token::FOR; }
-while   { return Token::WHILE; }
-repeat  { return Token::REPEAT; }
-until   { return Token::UNTIL; }
+if      { SET_LOC; return Token::IF; }
+else    { SET_LOC; return Token::ELSE; }
+elif    { SET_LOC; return Token::ELIF; }
+for     { SET_LOC; return Token::FOR; }
+while   { SET_LOC; return Token::WHILE; }
+repeat  { SET_LOC; return Token::REPEAT; }
+until   { SET_LOC; return Token::UNTIL; }
 
-return   { return Token::RETURN; }
-break    { return Token::BREAK; }
-continue { return Token::CONTINUE; }
+return   { SET_LOC; return Token::RETURN; }
+break    { SET_LOC; return Token::BREAK; }
+continue { SET_LOC; return Token::CONTINUE; }
 
-scope    { return Token::SCOPE; }
-class    { return Token::CLASS; }
-end      { return Token::END; }
-create   { return Token::CREATE; }
-destroy  { return Token::DESTROY; }
-reader   { return Token::READER; }
-writer   { return Token::WRITER; }
-assign   { return Token::ASSIGN; }
-routine  { return Token::ROUTINE; }
-operator { return Token::OPERATOR; }
+scope    { SET_LOC; return Token::SCOPE; }
+class    { SET_LOC; return Token::CLASS; }
+end      { SET_LOC; return Token::END; }
+create   { SET_LOC; return Token::CREATE; }
+destroy  { SET_LOC; return Token::DESTROY; }
+reader   { SET_LOC; return Token::READER; }
+writer   { SET_LOC; return Token::WRITER; }
+assign   { SET_LOC; return Token::ASSIGN; }
+routine  { SET_LOC; return Token::ROUTINE; }
+operator { SET_LOC; return Token::OPERATOR; }
 
 
-inout   { return Token::INOUT; }
+inout   { SET_LOC; return Token::INOUT; }
 
-shl     { return Token::SHL; }
-shr     { return Token::SHR; }
-rol     { return Token::ROL; }
-ror     { return Token::ROR; }
+shl     { SET_LOC; return Token::SHL; }
+shr     { SET_LOC; return Token::SHR; }
+rol     { SET_LOC; return Token::ROL; }
+ror     { SET_LOC; return Token::ROR; }
 
-var   { return Token::VAR; }
-const { return Token::CONST; }
-ptr   { return Token::PTR; }
-array { return Token::ARRAY; }
-simd  { return Token::SIMD; }
+var   { SET_LOC; return Token::VAR; }
+const { SET_LOC; return Token::CONST; }
+ptr   { SET_LOC; return Token::PTR; }
+array { SET_LOC; return Token::ARRAY; }
+simd  { SET_LOC; return Token::SIMD; }
 
-public      { return Token::PUBLIC; }
-protected   { return Token::PROTECTED; }
-package     { return Token::PACKAGE; }
-private     { return Token::PRIVATE; }
+public      { SET_LOC; return Token::PUBLIC; }
+protected   { SET_LOC; return Token::PROTECTED; }
+package     { SET_LOC; return Token::PACKAGE; }
+private     { SET_LOC; return Token::PRIVATE; }
 
-nil   { return Token::NIL; }
-self  { return Token::SELF; }
+nil   { SET_LOC; return Token::NIL; }
+self  { SET_LOC; return Token::SELF; }
 
-{INTEGER}x      { val->expr_ = new Literal(Token::L_INDEX,  g_line); ((Literal*) val->expr_)->box_.size_   = strtol (yytext, 0, 10); return Token::L_INDEX; }
+{INTEGER}x      { SET_LOC; Literal* l = new Literal(Token::L_INDEX,  *loc); val->expr_ = l; l->box_.size_   = strtol  (yytext, 0, 10); return Token::L_INDEX; }
 
-{INTEGER}       { val->expr_ = new Literal(Token::L_INT,    g_line); ((Literal*) val->expr_)->box_.int_    = strtol (yytext, 0, 10); return Token::L_INT; }
-{INTEGER}b      { val->expr_ = new Literal(Token::L_INT8,   g_line); ((Literal*) val->expr_)->box_.int8_   = strtol (yytext, 0, 10); return Token::L_INT8; }
-{INTEGER}w      { val->expr_ = new Literal(Token::L_INT16,  g_line); ((Literal*) val->expr_)->box_.int16_  = strtol (yytext, 0, 10); return Token::L_INT16; }
-{INTEGER}d      { val->expr_ = new Literal(Token::L_INT32,  g_line); ((Literal*) val->expr_)->box_.int32_  = strtol (yytext, 0, 10); return Token::L_INT32; }
-{INTEGER}q      { val->expr_ = new Literal(Token::L_INT64,  g_line); ((Literal*) val->expr_)->box_.int64_  = strtoll(yytext, 0, 10); return Token::L_INT64; }
-{INTEGER}sb     { val->expr_ = new Literal(Token::L_SAT8,   g_line); ((Literal*) val->expr_)->box_.sat8_   = strtol (yytext, 0, 10); return Token::L_SAT8; }
-{INTEGER}sw     { val->expr_ = new Literal(Token::L_SAT16,  g_line); ((Literal*) val->expr_)->box_.sat16_  = strtol (yytext, 0, 10); return Token::L_SAT16; }
+{INTEGER}       { SET_LOC; Literal* l = new Literal(Token::L_INT,    *loc); val->expr_ = l; l->box_.int_    = strtol  (yytext, 0, 10); return Token::L_INT; }
+{INTEGER}b      { SET_LOC; Literal* l = new Literal(Token::L_INT8,   *loc); val->expr_ = l; l->box_.int8_   = strtol  (yytext, 0, 10); return Token::L_INT8; }
+{INTEGER}w      { SET_LOC; Literal* l = new Literal(Token::L_INT16,  *loc); val->expr_ = l; l->box_.int16_  = strtol  (yytext, 0, 10); return Token::L_INT16; }
+{INTEGER}d      { SET_LOC; Literal* l = new Literal(Token::L_INT32,  *loc); val->expr_ = l; l->box_.int32_  = strtol  (yytext, 0, 10); return Token::L_INT32; }
+{INTEGER}q      { SET_LOC; Literal* l = new Literal(Token::L_INT64,  *loc); val->expr_ = l; l->box_.int64_  = strtoll (yytext, 0, 10); return Token::L_INT64; }
+{INTEGER}sb     { SET_LOC; Literal* l = new Literal(Token::L_SAT8,   *loc); val->expr_ = l; l->box_.sat8_   = strtol  (yytext, 0, 10); return Token::L_SAT8; }
+{INTEGER}sw     { SET_LOC; Literal* l = new Literal(Token::L_SAT16,  *loc); val->expr_ = l; l->box_.sat16_  = strtol  (yytext, 0, 10); return Token::L_SAT16; }
 
-{INTEGER}u      { val->expr_ = new Literal(Token::L_UINT,   g_line); ((Literal*) val->expr_)->box_.uint_   = strtoul (yytext, 0, 10); return Token::L_UINT; }
-{INTEGER}ub     { val->expr_ = new Literal(Token::L_UINT8,  g_line); ((Literal*) val->expr_)->box_.uint8_  = strtoul (yytext, 0, 10); return Token::L_UINT8; }
-{INTEGER}uw     { val->expr_ = new Literal(Token::L_UINT16, g_line); ((Literal*) val->expr_)->box_.uint16_ = strtoul (yytext, 0, 10); return Token::L_UINT16; }
-{INTEGER}ud     { val->expr_ = new Literal(Token::L_UINT32, g_line); ((Literal*) val->expr_)->box_.uint32_ = strtoul (yytext, 0, 10); return Token::L_UINT32; }
-{INTEGER}uq     { val->expr_ = new Literal(Token::L_UINT64, g_line); ((Literal*) val->expr_)->box_.uint64_ = strtoull(yytext, 0, 10); return Token::L_UINT64; }
-{INTEGER}usb    { val->expr_ = new Literal(Token::L_USAT8,  g_line); ((Literal*) val->expr_)->box_.usat8_  = strtoul (yytext, 0, 10); return Token::L_USAT8; }
-{INTEGER}usw    { val->expr_ = new Literal(Token::L_USAT16, g_line); ((Literal*) val->expr_)->box_.usat16_ = strtoul (yytext, 0, 10); return Token::L_USAT16; }
+{INTEGER}u      { SET_LOC; Literal* l = new Literal(Token::L_UINT,   *loc); val->expr_ = l; l->box_.uint_   = strtoul (yytext, 0, 10); return Token::L_UINT; }
+{INTEGER}ub     { SET_LOC; Literal* l = new Literal(Token::L_UINT8,  *loc); val->expr_ = l; l->box_.uint8_  = strtoul (yytext, 0, 10); return Token::L_UINT8; }
+{INTEGER}uw     { SET_LOC; Literal* l = new Literal(Token::L_UINT16, *loc); val->expr_ = l; l->box_.uint16_ = strtoul (yytext, 0, 10); return Token::L_UINT16; }
+{INTEGER}ud     { SET_LOC; Literal* l = new Literal(Token::L_UINT32, *loc); val->expr_ = l; l->box_.uint32_ = strtoul (yytext, 0, 10); return Token::L_UINT32; }
+{INTEGER}uq     { SET_LOC; Literal* l = new Literal(Token::L_UINT64, *loc); val->expr_ = l; l->box_.uint64_ = strtoull(yytext, 0, 10); return Token::L_UINT64; }
+{INTEGER}usb    { SET_LOC; Literal* l = new Literal(Token::L_USAT8,  *loc); val->expr_ = l; l->box_.usat8_  = strtoul (yytext, 0, 10); return Token::L_USAT8; }
+{INTEGER}usw    { SET_LOC; Literal* l = new Literal(Token::L_USAT16, *loc); val->expr_ = l; l->box_.usat16_ = strtoul (yytext, 0, 10); return Token::L_USAT16; }
 
-{FLOAT}         { val->expr_ = new Literal(Token::L_REAL,   g_line); ((Literal*) val->expr_)->box_.float_  = strtod(yytext, 0); return Token::L_REAL; }
-{FLOAT}d        { val->expr_ = new Literal(Token::L_REAL32, g_line); ((Literal*) val->expr_)->box_.float_  = strtod(yytext, 0); return Token::L_REAL32; }
-{FLOAT}q        { val->expr_ = new Literal(Token::L_REAL64, g_line); ((Literal*) val->expr_)->box_.double_ = strtod(yytext, 0); return Token::L_REAL64; }
+{FLOAT}         { SET_LOC; Literal* l = new Literal(Token::L_REAL,   *loc); val->expr_ = l; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL; }
+{FLOAT}d        { SET_LOC; Literal* l = new Literal(Token::L_REAL32, *loc); val->expr_ = l; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL32; }
+{FLOAT}q        { SET_LOC; Literal* l = new Literal(Token::L_REAL64, *loc); val->expr_ = l; l->box_.double_ = strtod(yytext, 0);       return Token::L_REAL64; }
 
-true            { val->expr_ = new Literal(Token::L_TRUE,   g_line); ((Literal*) val->expr_)->box_.bool_   = true;  return Token::L_TRUE; }
-false           { val->expr_ = new Literal(Token::L_FALSE,  g_line); ((Literal*) val->expr_)->box_.bool_   = false; return Token::L_TRUE; }
+true            { SET_LOC; Literal* l = new Literal(Token::L_TRUE,   *loc); val->expr_ = l; l->box_.bool_   = true;                    return Token::L_TRUE; }
+false           { SET_LOC; Literal* l = new Literal(Token::L_FALSE,  *loc); val->expr_ = l; l->box_.bool_   = false;                   return Token::L_TRUE; }
 
 {ID} { val->id_ = new std::string(yytext); return Token::ID; }
 
@@ -172,46 +182,45 @@ false           { val->expr_ = new Literal(Token::L_FALSE,  g_line); ((Literal*)
 
 [ \t]   { /* skip whitespaces */ }
 
-\\\n { ++g_line; }
+\\\n { ++g_lexer_line; }
 
 \n {
     BEGIN EOL_STATE;
-    ++g_line; // count line number
+    SET_LOC
+    ++g_lexer_line; // count line number
     return Token::EOL;
 }
 
-. { printf("%i: error: invalid input character '%c'\n", g_line, yytext[0]); }
+. { printf("%i: error: invalid input character '%c'\n", g_lexer_line, yytext[0]); }
 
 
 <EOL_STATE>[ \t]    { /* skip whitespaces */ }
 <EOL_STATE>#[^\n]*  { /* end of line commment */ }
-<EOL_STATE>\n       { ++g_line; /* count line number */ }
+<EOL_STATE>\n       { ++g_lexer_line; /* count line number */ }
 <EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
 
 \/\*            { BEGIN COMMENT; }
 <COMMENT>\*\/   { BEGIN INITIAL; }
-<COMMENT>\n     { ++g_line; /* count line number */ }
+<COMMENT>\n     { ++g_lexer_line; /* count line number */ }
 <COMMENT>.      { /*skip*/  }
 
-\/\+                    { BEGIN NESTED_COMMENT; ++g_comment_level; }
-<NESTED_COMMENT>\/\+    { ++g_comment_level;  }
-<NESTED_COMMENT>\+\/    { --g_comment_level; if (g_comment_level == 0) BEGIN INITIAL; }
-<NESTED_COMMENT>\n      { ++g_line; }
+\/\+                    { BEGIN NESTED_COMMENT; ++g_lexer_comment_level; }
+<NESTED_COMMENT>\/\+    { ++g_lexer_comment_level;  }
+<NESTED_COMMENT>\+\/    { --g_lexer_comment_level; if (g_lexer_comment_level == 0) BEGIN INITIAL; }
+<NESTED_COMMENT>\n      { ++g_lexer_line; }
 <NESTED_COMMENT>.       { /*skip*/ }
 
-
 %%
-
-int yywrap()
-{
-    return 1;
-}
 
 namespace swift {
     FILE* lexer_init(const char* filename) 
     {
-        g_line = 1;
+        delete g_lexer_filename;
+        g_lexer_filename = new std::string(filename);
+        g_lexer_line = 1;
         yyin = fopen(filename, "r");
         return yyin;
     }
 }
+
+#undef SET_LOC

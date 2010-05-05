@@ -62,8 +62,8 @@ namespace swift {
  * constructor
  */
 
-Expr::Expr(int line)
-    : TypeNode(0, line)
+Expr::Expr(location loc)
+    : TypeNode(0, loc)
     , neededAsLValue_(false)
     , doNotLoadPtr_(false)
 {}
@@ -94,8 +94,8 @@ Literal::TypeMap* Literal::typeMap_ = 0;
  * constructor
  */
 
-Literal::Literal(int kind, int line /*= NO_LINE*/)
-    : Expr(line)
+Literal::Literal(int kind, location loc)
+    : Expr(loc)
     , kind_(kind)
 {}
 
@@ -107,36 +107,36 @@ bool Literal::analyze()
 {
     if ( neededAsLValue_ )
     {
-        errorf(line_, "lvalue required as left operand of assignment");
+        errorf(loc_, "lvalue required as left operand of assignment");
         return false;
     }
 
     switch (kind_)
     {
-        case Token::L_INDEX:   type_ = new BaseType(Token::CONST, new std::string("index")); break;
+        case Token::L_INDEX:   type_ = new BaseType(Token::CONST, new std::string("index"),   loc_); break;
 
-        case Token::L_INT:     type_ = new BaseType(Token::CONST, new std::string("int"));   break;
-        case Token::L_INT8:    type_ = new BaseType(Token::CONST, new std::string("int8"));  break;
-        case Token::L_INT16:   type_ = new BaseType(Token::CONST, new std::string("int16")); break;
-        case Token::L_INT32:   type_ = new BaseType(Token::CONST, new std::string("int32")); break;
-        case Token::L_INT64:   type_ = new BaseType(Token::CONST, new std::string("int64")); break;
-        case Token::L_SAT8:    type_ = new BaseType(Token::CONST, new std::string("sat8"));  break;
-        case Token::L_SAT16:   type_ = new BaseType(Token::CONST, new std::string("sat16")); break;
+        case Token::L_INT:     type_ = new BaseType(Token::CONST, new std::string("int"),     loc_); break;
+        case Token::L_INT8:    type_ = new BaseType(Token::CONST, new std::string("int8"),    loc_); break;
+        case Token::L_INT16:   type_ = new BaseType(Token::CONST, new std::string("int16"),   loc_); break;
+        case Token::L_INT32:   type_ = new BaseType(Token::CONST, new std::string("int32"),   loc_); break;
+        case Token::L_INT64:   type_ = new BaseType(Token::CONST, new std::string("int64"),   loc_); break;
+        case Token::L_SAT8:    type_ = new BaseType(Token::CONST, new std::string("sat8"),    loc_); break;
+        case Token::L_SAT16:   type_ = new BaseType(Token::CONST, new std::string("sat16"),   loc_); break;
 
-        case Token::L_UINT:    type_ = new BaseType(Token::CONST, new std::string("uint"));   break;
-        case Token::L_UINT8:   type_ = new BaseType(Token::CONST, new std::string("uint8"));  break;
-        case Token::L_UINT16:  type_ = new BaseType(Token::CONST, new std::string("uint16")); break;
-        case Token::L_UINT32:  type_ = new BaseType(Token::CONST, new std::string("uint32")); break;
-        case Token::L_UINT64:  type_ = new BaseType(Token::CONST, new std::string("uint64")); break;
-        case Token::L_USAT8:   type_ = new BaseType(Token::CONST, new std::string("usat8"));  break;
-        case Token::L_USAT16:  type_ = new BaseType(Token::CONST, new std::string("usat16")); break;
+        case Token::L_UINT:    type_ = new BaseType(Token::CONST, new std::string("uint"),    loc_); break;
+        case Token::L_UINT8:   type_ = new BaseType(Token::CONST, new std::string("uint8"),   loc_); break;
+        case Token::L_UINT16:  type_ = new BaseType(Token::CONST, new std::string("uint16"),  loc_); break;
+        case Token::L_UINT32:  type_ = new BaseType(Token::CONST, new std::string("uint32"),  loc_); break;
+        case Token::L_UINT64:  type_ = new BaseType(Token::CONST, new std::string("uint64"),  loc_); break;
+        case Token::L_USAT8:   type_ = new BaseType(Token::CONST, new std::string("usat8"),   loc_); break;
+        case Token::L_USAT16:  type_ = new BaseType(Token::CONST, new std::string("usat16"),  loc_); break;
 
-        case Token::L_REAL:    type_ = new BaseType(Token::CONST, new std::string("real"));   break;
-        case Token::L_REAL32:  type_ = new BaseType(Token::CONST, new std::string("real32")); break;
-        case Token::L_REAL64:  type_ = new BaseType(Token::CONST, new std::string("real64")); break;
+        case Token::L_REAL:    type_ = new BaseType(Token::CONST, new std::string("real"),    loc_); break;
+        case Token::L_REAL32:  type_ = new BaseType(Token::CONST, new std::string("real32"),  loc_); break;
+        case Token::L_REAL64:  type_ = new BaseType(Token::CONST, new std::string("real64"),  loc_); break;
 
         case Token::L_TRUE: // like L_FALSE
-        case Token::L_FALSE:   type_ = new BaseType(Token::CONST, new std::string("bool"));   break;
+        case Token::L_FALSE:   type_ = new BaseType(Token::CONST, new std::string("bool"),    loc_); break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -277,8 +277,8 @@ void Literal::destroyTypeMap()
  * constructor and destructor
  */
 
-Id::Id(std::string* id, int line /*= NO_LINE*/)
-    : Expr(line)
+Id::Id(std::string* id, location loc)
+    : Expr(loc)
     , id_(id)
 {}
 
@@ -299,7 +299,7 @@ bool Id::analyze()
 
         if (var_ == 0)
         {
-            errorf(line_, "'%s' was not declared in this scope", id_->c_str());
+            errorf(loc_, "'%s' was not declared in this scope", id_->c_str());
             return false;
         }
 
@@ -395,7 +395,7 @@ void Id::simdAnalyze(SimdAnalysis& simdAnalysis)
 
     if (var_ == 0)
     {
-        errorf(line_, "'%s' was not declared in this scope", id_->c_str());
+        errorf(loc_, "'%s' was not declared in this scope", id_->c_str());
         return;
     }
 
@@ -444,8 +444,8 @@ std::string Id::toString() const
  * constructor and destructor
  */
 
-UnExpr::UnExpr(int kind, Expr* op, int line /*= NO_LINE*/)
-    : Expr(line)
+UnExpr::UnExpr(int kind, Expr* op, location loc)
+    : Expr(loc)
     , kind_(kind)
     , op_(op)
 {}
@@ -463,7 +463,7 @@ bool UnExpr::analyze()
 {
     if ( neededAsLValue_ )
     {
-        errorf(line_, "lvalue required as left operand of assignment");
+        errorf(loc_, "lvalue required as left operand of assignment");
         return false;
     }
 
@@ -480,17 +480,17 @@ bool UnExpr::analyze()
 
         if (!ptr)
         {
-            errorf(op_->line_, "unary ^ tried to dereference a non-pointer");
+            errorf(op_->loc_, "unary ^ tried to dereference a non-pointer");
             return false;
         }
 
         type_ = ptr->getInnerType()->clone();
     }
-    else if (kind_ == Token::NOT_OP)
+    else if (kind_ == Token::NOT)
     {
         if ( !op_->getType()->isBool() )
         {
-            errorf(op_->line_, "unary ! not used with a bool");
+            errorf(op_->loc_, "unary ! not used with a bool");
             return false;
         }
 
@@ -536,12 +536,8 @@ void UnExpr::genSSA()
 
     switch (kind_)
     {
-        case '-':
-            kind = me::AssignInstr::UNARY_MINUS;
-            break;
-        case Token::NOT_OP:
-            kind = me::AssignInstr::NOT;
-            break;
+        case '-': kind = me::AssignInstr::UNARY_MINUS; break;
+        case Token::NOT: kind = me::AssignInstr::NOT; break;
         default:
             swiftAssert(kind_ == '^', "impossible switch/case value");
             kind = kind_;
@@ -556,8 +552,8 @@ void UnExpr::genSSA()
  * constructor and destructor
  */
 
-Nil::Nil(Type* innerType, int line)
-    : Expr(line)
+Nil::Nil(Type* innerType, location loc)
+    : Expr(loc)
     , innerType_(innerType)
 {}
 
@@ -575,7 +571,7 @@ bool Nil::analyze()
     if ( !innerType_->validate() )
         return false;
     
-    type_ = new Ptr( Token::CONST, innerType_->clone() );
+    type_ = new Ptr( Token::CONST, innerType_->clone(), loc_ );
 
     me::Const* literal = me::functab->newConst(me::Op::R_PTR);
     literal->box().ptr_ = 0;
@@ -595,8 +591,8 @@ std::string Nil::toString() const
  * constructor 
  */
 
-Self::Self(int line)
-    : Expr(line)
+Self::Self(location loc)
+    : Expr(loc)
 {}
 
 /*
@@ -610,12 +606,12 @@ bool Self::analyze()
 
     if ( methodQualifier == typeid(Routine) )
     {
-        errorf(line_, "routines do not have a 'self' argument");
+        errorf(loc_, "routines do not have a 'self' argument");
         return false;
     }
     else if ( methodQualifier == typeid(Operator) )
     {
-        errorf(line_, "operators do not have a 'self' argument");
+        errorf(loc_, "operators do not have a 'self' argument");
         return false;
     }
     else if ( methodQualifier == typeid(Reader) )
@@ -641,8 +637,8 @@ std::string Self::toString() const
  * constructor 
  */
 
-SimdIndex::SimdIndex(int line)
-    : Expr(line)
+SimdIndex::SimdIndex(location loc)
+    : Expr(loc)
 {}
 
 /*

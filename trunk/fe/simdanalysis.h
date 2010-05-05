@@ -22,6 +22,8 @@
 
 #include <vector>
 
+#include "fe/location.hh"
+
 /*
  * forward declarations
  */
@@ -51,7 +53,7 @@ public:
      * constructor 
      */
 
-    SimdAnalysis();
+    SimdAnalysis(location loc);
 
     /*
      * further methods
@@ -61,11 +63,10 @@ public:
      * @brief Checks the different simd lengths given in this vector and emits
      * an error message if appropiate.
      *
-     * @param line The line number - needed if an error message must be thrown.
      * @return -1, on error, 0 if no definite result could have been made, >0
      * otherwise.
      */
-    int checkAndGetSimdLength(int line);
+    int checkAndGetSimdLength();
 
     /// Returns the precalculated simd length.
     int getSimdLength() const;
@@ -77,6 +78,7 @@ private:
         NOT_ANALYZED = -1,
     };
 
+    location loc_;
     int simdLength_;
 };
 

@@ -30,8 +30,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Tuple::Tuple(TypeNode* typeNode, Tuple* next, int line /*= NO_LINE*/)
-    : Node(line)
+Tuple::Tuple(TypeNode* typeNode, Tuple* next, location loc)
+    : Node(loc)
     , typeNode_(typeNode)
     , next_(next)
 {}

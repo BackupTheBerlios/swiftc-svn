@@ -49,7 +49,7 @@ public:
      * constructor and destructor
      */
 
-    Var(Type* type, me::Var* var, std::string* id, int line = NO_LINE);
+    Var(Type* type, me::Var* var, std::string* id, location loc);
     virtual ~Var();
 
     /*
@@ -83,7 +83,7 @@ public:
      * constructor
      */
 
-    Local(Type* type, me::Var* var, std::string* id, int line = NO_LINE);
+    Local(Type* type, me::Var* var, std::string* id, location loc);
 };
 
 //------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ protected:
      * constructor
      */
 
-    Param(Type* type, std::string* id, int line);
+    Param(Type* type, std::string* id, location loc);
 
 public:
 
@@ -126,7 +126,7 @@ public:
      * constructor
      */
 
-    InParam(bool inout, Type* type, std::string* id, int line = NO_LINE);
+    InParam(bool inout, Type* type, std::string* id, location loc);
 
     /*
      * private
@@ -147,7 +147,7 @@ public:
      * constructor
      */
 
-    OutParam(Type* type, std::string* id, int line = NO_LINE);
+    OutParam(Type* type, std::string* id, location loc);
 };
 
 } // namespace swift

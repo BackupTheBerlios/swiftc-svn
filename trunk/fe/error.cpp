@@ -44,11 +44,11 @@ void ErrorHandler::setFilename(const char* filename)
     strcpy(filename_, filename);
 }
 
-void errorf(int line, const char* fs, ...)
+void errorf(const location& loc, const char* fs, ...)
 {
     swiftAssert(error, "error is null");
 
-    fprintf(stderr, "%s:%i: error: ", error->filename_, line);
+    fprintf(stderr, "%s:%i: error: ", error->filename_, loc.begin.line);
 
     va_list argptr;
     va_start(argptr, fs);
@@ -58,11 +58,11 @@ void errorf(int line, const char* fs, ...)
     fprintf(stderr, "\n");
 }
 
-void warningf(int line, const char* fs, ...)
+void warningf(const location& loc, const char* fs, ...)
 {
     swiftAssert(error, "error is null");
 
-    fprintf(stderr, "%s:%i: warning: ", error->filename_, line);
+    fprintf(stderr, "%s:%i: warning: ", error->filename_, loc.begin.line);
 
     va_list argptr;
     va_start(argptr, fs);

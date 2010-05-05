@@ -20,6 +20,7 @@
 #ifndef SWIFT_TYPE_H
 #define SWIFT_TYPE_H
 
+#include "fe/location.hh"
 #include "fe/syntaxtree.h"
 #include "fe/typelist.h"
 
@@ -69,7 +70,7 @@ public:
      * constructor and destructor
      */
 
-    Type(int modifier, int line = NO_LINE);
+    Type(int modifier, location line);
     virtual ~Type() {}
 
     /*
@@ -121,7 +122,7 @@ public:
 
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
-                                 int line) const = 0;
+                                 location line) const = 0;
 
     virtual std::string toString() const = 0;
 
@@ -171,7 +172,7 @@ public:
      * constructor and destructor
      */
     
-    BaseType(int modifier, std::string* id, int line = NO_LINE);
+    BaseType(int modifier, std::string* id, location loc);
     BaseType(int modifier, const Class* _class);
     ~BaseType();
 
@@ -199,7 +200,7 @@ public:
 
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
-                                 int line) const;
+                                 location loc) const;
 
     virtual std::string toString() const;
 
@@ -241,7 +242,7 @@ public:
      * constructor and destructor
      */
      
-    NestedType(int modifier, Type* innerType, int line = NO_LINE);
+    NestedType(int modifier, Type* innerType, location loc);
     ~NestedType();
 
     /*
@@ -279,7 +280,7 @@ public:
      * constructor and destructor
      */
 
-    Ptr(int modifier, Type* innerType, int line = NO_LINE);
+    Ptr(int modifier, Type* innerType, location loc);
 
     /* 
      * virtual methods
@@ -298,7 +299,7 @@ public:
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
-                                 int line) const;
+                                 location loc) const;
 
     virtual std::string toString() const;
 };
@@ -313,7 +314,7 @@ public:
      * constructor
      */
      
-    Container(int modifier, Type* innerType, int line = NO_LINE);
+    Container(int modifier, Type* innerType, location loc);
 
     /*
      * virtual methods
@@ -329,7 +330,7 @@ public:
     virtual me::Reg* derefToInnerstPtr(me::Var* var) const;
     virtual bool hasAssignCreate(const TypeList& in, 
                                  bool hasCreate, 
-                                 int line) const;
+                                 location loc) const;
 
     virtual const BaseType* unnestPtr() const;
     virtual const Ptr* unnestInnerstPtr() const;
@@ -367,7 +368,7 @@ public:
      * constructor and destructor
      */
 
-    Array(int modifier, Type* innerType, int line = NO_LINE);
+    Array(int modifier, Type* innerType, location loc);
 
     /* 
      * virtual methods
@@ -387,7 +388,7 @@ public:
      * constructor and destructor
      */
 
-    Simd(int modifier, Type* innerType, int line = NO_LINE);
+    Simd(int modifier, Type* innerType, location loc);
 
     /* 
      * virtual methods

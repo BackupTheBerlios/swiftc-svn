@@ -53,7 +53,7 @@ struct Statement : public Node
      * constructor and destructor
      */
 
-    Statement(int line);
+    Statement(location loc);
     virtual ~Statement();
 
     /*
@@ -77,7 +77,7 @@ public:
      * constructor and destructor
      */
 
-    DeclStatement(Decl* decl, int line);
+    DeclStatement(Decl* decl, location loc);
     virtual ~DeclStatement();
 
     /*
@@ -111,7 +111,7 @@ public:
      * constructor and destructor
      */
 
-    ActionStatement(SimdPrefix* simd, int line);
+    ActionStatement(SimdPrefix* simd, location loc);
     virtual ~ActionStatement();
 
     /*
@@ -142,7 +142,7 @@ public:
      * constructor and destructor
      */
 
-    ExprStatement(SimdPrefix* simd, Expr* expr, int line);
+    ExprStatement(SimdPrefix* simd, Expr* expr, location loc);
     virtual ~ExprStatement();
 
     /*
@@ -177,7 +177,7 @@ public:
      * constructor and destructor
      */
 
-    AssignStatement(SimdPrefix* simdPrefix, int kind, Tuple* tuple, ExprList* exprList, int line);
+    AssignStatement(SimdPrefix* simdPrefix, int kind, Tuple* tuple, ExprList* exprList, location loc);
     virtual ~AssignStatement();
 
     /*
@@ -227,7 +227,7 @@ struct ScopeStatement : public Statement
      * constructor and destructor
      */
 
-    ScopeStatement(Statement* statements, int line);
+    ScopeStatement(Statement* statements, location loc);
     virtual ~ScopeStatement();
 
     /*
@@ -253,7 +253,7 @@ struct WhileStatement : public Statement
      * constructor and destructor
      */
 
-    WhileStatement(Expr* expr, Statement* statements, int line);
+    WhileStatement(Expr* expr, Statement* statements, location loc);
     virtual ~WhileStatement();
 
     /*
@@ -279,7 +279,7 @@ struct RepeatUntilStatement : public Statement
      * constructor and destructor
      */
 
-    RepeatUntilStatement(Statement* statements, Expr* expr, int line);
+    RepeatUntilStatement(Statement* statements, Expr* expr, location loc);
     virtual ~RepeatUntilStatement();
 
     /*
@@ -306,7 +306,7 @@ struct IfElStatement : public Statement
      * constructor and destructor
      */
 
-    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line);
+    IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, location loc);
     virtual ~IfElStatement();
 
     /*
@@ -327,7 +327,7 @@ struct CFStatement : public Statement
      * constructor
      */
 
-    CFStatement(int kind, int line);
+    CFStatement(int kind, location loc);
 
     /*
      * virtual methods

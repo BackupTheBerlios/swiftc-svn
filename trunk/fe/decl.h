@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "fe/location.hh"
 #include "fe/syntaxtree.h"
 
 namespace swift {
@@ -43,7 +44,7 @@ public:
      * constructor and destructor
      */
 
-    Decl(Type* type, std::string* id, int line);
+    Decl(Type* type, std::string* id, location loc);
     virtual ~Decl();
 
     /*

@@ -84,8 +84,8 @@ bool SymbolTable::insert(Class* _class)
         // insertion was not successfull
 
         // give proper error
-        errorf(_class->line_, "there there is already a class '%s' defined in line %i",
-            p.first->second->getFullName().c_str(), p.first->second->line_);
+        errorf(_class->loc_, "there there is already a class '%s' defined in line %i",
+            p.first->second->getFullName().c_str(), p.first->second->loc_.begin.line);
 
         return false;
     }
@@ -105,8 +105,8 @@ bool SymbolTable::insert(MemberVar* memberVar)
     {
         // insertion was not successfull
 
-        errorf(memberVar->line_, "there is already a member '%s' defined in '%s' line %i",
-            p.first->second->id_, memberVar->getFullName().c_str(), p.first->second->line_);
+        errorf(memberVar->loc_, "there is already a member '%s' defined in '%s' line %i",
+            p.first->second->id_, memberVar->getFullName().c_str(), p.first->second->loc_.begin.line);
 
         return false;
     }
@@ -141,7 +141,7 @@ void SymbolTable::insertInParam(InParam* param)
 {
     if ( sig_->findParam(param->id_) )
     {
-        errorf(param->line_, 
+        errorf(param->loc_, 
                 "there is already a parameter '%s' defined in this procedure",
                 param->id_->c_str());
         return;
@@ -157,13 +157,13 @@ void SymbolTable::insertOutParam(OutParam* param)
     {
         if ( typeid(*found) == typeid(OutParam) )
         {
-            errorf(param->line_, 
+            errorf(param->loc_, 
                     "there is already a return value '%s' defined for this procedure",
                     param->id_->c_str());
         }
         else
         {
-            errorf(param->line_, 
+            errorf(param->loc_, 
                     "there is already a parameter '%s' defined for this procedure", 
                     param->id_->c_str());
         }
@@ -270,7 +270,7 @@ Class* SymbolTable::lookupClass(const std::string* id)
 MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
                                           const std::string* id,
                                           const TypeList& in,
-                                          int line)
+                                          location loc)
 {
     // lookup method
     Class::MemberFunctionMap::const_iterator iter = 
@@ -278,9 +278,9 @@ MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
 
     if (iter == _class->memberFunctions_.end())
     {
-        if (line)
+        if (loc.begin.filename)
         {
-            errorf( line, "there is no method named '%s' in class '%s'",
+            errorf( loc, "there is no method named '%s' in class '%s'",
                 id->c_str(), _class->id_->c_str() );
         }
 
@@ -305,10 +305,9 @@ MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
 
     if (!memberFunction)
     {
-        if (line)
+        if (loc.begin.filename)
         {
-            errorf(line, "there is no member function '%s(%s)' defined in class '%s'",
-                    //memberFunction->qualifierString().c_str(), 
+            errorf(loc, "there is no member function '%s(%s)' defined in class '%s'",
                     id->c_str(), 
                     in.toString().c_str(), 
                     _class->id_->c_str());
@@ -320,27 +319,27 @@ MemberFunction* SymbolTable::lookupMemberFunction(Class* _class,
     return memberFunction;
 }
 
-Create* SymbolTable::lookupCreate(Class* _class, const TypeList& in, int line)
+Create* SymbolTable::lookupCreate(Class* _class, const TypeList& in, location loc)
 {
     std::string create("create");
-    return (Create*) lookupMemberFunction(_class, &create, in, line);
+    return (Create*) lookupMemberFunction(_class, &create, in, loc);
 }
 
-Assign* SymbolTable::lookupAssign(Class* _class, const TypeList& in, int line)
+Assign* SymbolTable::lookupAssign(Class* _class, const TypeList& in, location loc)
 {
     std::string op("assign");
-    return (Assign*) lookupMemberFunction(_class, &op, in, line);
+    return (Assign*) lookupMemberFunction(_class, &op, in, loc);
 }
 
 Method* SymbolTable::lookupAssignCreate(Class* _class, 
                                         const TypeList& in, 
                                         bool create, 
-                                        int line)
+                                        location loc)
 {
     if (create)
-        return lookupCreate(_class, in, line);
+        return lookupCreate(_class, in, loc);
     else
-        return lookupAssign(_class, in, line);
+        return lookupAssign(_class, in, loc);
 }
 
 /*
@@ -368,9 +367,9 @@ MemberFunction* SymbolTable::currentMemberFunction()
 
 std::pair<Local*, bool> SymbolTable::createNewLocal(const Type* type, 
                                                     std::string* id, 
-                                                    int line /*= NO_LINE*/)
+                                                    location loc)
 {
-    Local* local = new Local(type->clone(), type->createVar(id), id, line);
+    Local* local = new Local(type->clone(), type->createVar(id), id, loc);
     bool b = symtab->insert(local);
 
     return std::make_pair(local, b);

@@ -29,8 +29,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Var::Var(Type* type, me::Var* var, std::string* id, int line /*= NO_LINE*/)
-    : Symbol(id, 0, line) // Vars (Params or Locals) never have parents
+Var::Var(Type* type, me::Var* var, std::string* id, location loc)
+    : Symbol(id, 0, loc) // Vars (Params or Locals) never have parents
     , type_(type)
     , meVar_(var)
 {}
@@ -60,8 +60,8 @@ me::Var* Var::getMeVar()
  * constructor
  */
 
-Local::Local(Type* type, me::Var* var, std::string* id, int line /*= NO_LINE*/)
-    : Var(type, var, id, line)
+Local::Local(Type* type, me::Var* var, std::string* id, location loc)
+    : Var(type, var, id, loc)
 {}
 
 //------------------------------------------------------------------------------
@@ -70,8 +70,8 @@ Local::Local(Type* type, me::Var* var, std::string* id, int line /*= NO_LINE*/)
  * constructor and destructor
  */
 
-Param::Param(Type* type, std::string* id, int line)
-    : Var(type, 0, id, line)
+Param::Param(Type* type, std::string* id, location loc)
+    : Var(type, 0, id, loc)
 {}
 
 /*
@@ -91,8 +91,8 @@ bool Param::validateAndCreateVar()
  * constructor and destructor
  */
 
-InParam::InParam(bool inout, Type* type, std::string* id, int line /*= NO_LINE*/)
-    : Param(type, id, line)
+InParam::InParam(bool inout, Type* type, std::string* id, location loc)
+    : Param(type, id, loc)
     , inout_(inout)
 {
     if ( !type->isAtomic() )
@@ -107,8 +107,8 @@ InParam::InParam(bool inout, Type* type, std::string* id, int line /*= NO_LINE*/
  * constructor and destructor
  */
 
-OutParam::OutParam(Type* type, std::string* id, int line /*= NO_LINE*/)
-    : Param(type, id, line)
+OutParam::OutParam(Type* type, std::string* id, location loc)
+    : Param(type, id, loc)
 {
     if ( !type->isAtomic() )
         type_->modifier() = Token::REF;

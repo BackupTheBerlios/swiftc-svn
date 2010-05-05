@@ -90,7 +90,7 @@ int start(int argc, char** argv)
     Literal::initTypeMap();
 
     syntaxtree = new SyntaxTree();
-    syntaxtree->rootModule_ = new Module(new std::string("default"), g_line);
+    syntaxtree->rootModule_ = new Module(new std::string("default"), location() ); // TODO location
 
     symtab = new SymTab();
     symtab->insert(syntaxtree->rootModule_);
@@ -139,6 +139,7 @@ int start(int argc, char** argv)
     delete syntaxtree;
     delete symtab;
     delete error;
+    delete g_lexer_filename;
     Literal::destroyTypeMap();
     BaseType::destroyTypeMap();
 

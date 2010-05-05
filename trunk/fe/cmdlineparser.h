@@ -29,7 +29,7 @@ struct CmdLineParser
 {
     int argc_;
     char** argv_;
-    char* filename_;
+    const char* filename_;
     bool error_;
     bool optimize_;
 

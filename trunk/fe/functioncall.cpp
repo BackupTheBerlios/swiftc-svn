@@ -37,8 +37,8 @@ namespace swift {
  * constructor and destructor
  */
 
-FunctionCall::FunctionCall(std::string* id, ExprList* exprList, int line)
-    : Expr(line)
+FunctionCall::FunctionCall(std::string* id, ExprList* exprList, location loc)
+    : Expr(loc)
     , id_(id)
     , exprList_(exprList)
     , tuple_(0)
@@ -96,8 +96,8 @@ CCall::CCall(Type* returnType,
              int kind,
              std::string* id, 
              ExprList* exprList, 
-             int line)
-    : FunctionCall(id, exprList, line)
+             location loc)
+    : FunctionCall(id, exprList, loc)
     , returnType_(returnType)
     , kind_(kind)
 {}
@@ -179,8 +179,8 @@ std::string CCall::toString() const
  * constructor
  */
 
-MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int line)
-    : FunctionCall(id, exprList, line)
+MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, location loc)
+    : FunctionCall(id, exprList, loc)
 {}
 
 //------------------------------------------------------------------------------
@@ -189,8 +189,8 @@ MemberFunctionCall::MemberFunctionCall(std::string* id, ExprList* exprList, int 
  * constructor
  */
 
-StaticMethodCall::StaticMethodCall(std::string* id, ExprList* exprList, int line)
-    : MemberFunctionCall(id, exprList, line)
+StaticMethodCall::StaticMethodCall(std::string* id, ExprList* exprList, location loc)
+    : MemberFunctionCall(id, exprList, loc)
 {}
 
 //------------------------------------------------------------------------------
@@ -202,8 +202,8 @@ StaticMethodCall::StaticMethodCall(std::string* id, ExprList* exprList, int line
 RoutineCall::RoutineCall(std::string* classId, 
                          std::string* id, 
                          ExprList* exprList, 
-                         int line)
-    : StaticMethodCall(id, exprList, line)
+                         location loc)
+    : StaticMethodCall(id, exprList, loc)
     , classId_(classId)
 {}
 
@@ -231,7 +231,7 @@ bool RoutineCall::analyze()
         
         if (!class_)
         {
-            errorf(line_, "class '%s' is not defined in this module", 
+            errorf(loc_, "class '%s' is not defined in this module", 
                     classId_->c_str() );
             return false;
         }
@@ -239,7 +239,7 @@ bool RoutineCall::analyze()
     else
         class_ = symtab->currentClass();
 
-    memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+    memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, loc_);
 
     if (!memberFunction_)
         return false;
@@ -268,8 +268,8 @@ std::string RoutineCall::toString() const
  * constructor
  */
 
-BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, int line /*= NO_LINE*/)
-    : StaticMethodCall( 0, new ExprList(0, op1, new ExprList(0, op2, 0)), line )
+BinExpr::BinExpr(int kind, Expr* op1, Expr* op2, location loc)
+    : StaticMethodCall( 0, new ExprList(0, op1, new ExprList(0, op2, 0, loc), loc), loc )
     , kind_(kind)
     , op1_(op1)
     , op2_(op2)
@@ -302,7 +302,7 @@ bool BinExpr::analyze()
 {
     if ( neededAsLValue_ )
     {
-        errorf(line_, "lvalue required as left operand of assignment");
+        errorf(loc_, "lvalue required as left operand of assignment");
         return false;
     }
 
@@ -316,7 +316,7 @@ bool BinExpr::analyze()
 
     if ( ptr1 || ptr2 )
     {
-        errorf( op1_->line_, "%s used with pointer type", getExprName().c_str() );
+        errorf( op1_->loc_, "%s used with pointer type", getExprName().c_str() );
         return false;
     }
 
@@ -327,7 +327,7 @@ bool BinExpr::analyze()
 
     std::string* opString = operatorToString(kind_);
     MemberFunction* memberFunction = symtab->lookupMemberFunction(
-            symtab->lookupClass(bt1->getId()), opString, argTypeList, line_);
+            symtab->lookupClass(bt1->getId()), opString, argTypeList, loc_);
 
     delete opString;
 
@@ -345,20 +345,20 @@ bool BinExpr::analyze()
 
         switch (kind_)
         {
-            case Token::EQ_OP:
-                kind = me::AssignInstr::EQ;
-                break;
-            case Token::NE_OP:
-                kind = me::AssignInstr::NE;
-                break;
-            case Token::LE_OP:
-                kind = me::AssignInstr::LE;
-                break;
-            case Token::GE_OP:
-                kind = me::AssignInstr::GE;
-                break;
+            case Token::ADD: kind = '+'; break;
+            case Token::SUB: kind = '-'; break;
+            case Token::MUL: kind = '*'; break;
+            case Token::DIV: kind = '/'; break;
+
+            case Token::EQ: kind = me::AssignInstr::EQ; break;
+            case Token::NE: kind = me::AssignInstr::NE; break;
+            case Token::LE: kind = me::AssignInstr::LE; break;
+            case Token::LT: kind = '<'; break;
+            case Token::GE: kind = me::AssignInstr::GE; break;
+            case Token::GT: kind = '>'; break;
+
             default:
-                kind = kind_;
+                swiftAssert(false, "unreachable code");
         }
 
         me::functab->appendInstr( 
@@ -404,8 +404,8 @@ std::string BinExpr::toString() const
  * constructor and destructor
  */
 
-MethodCall::MethodCall(Expr* expr, std::string* id, ExprList* exprList, int line)
-    : MemberFunctionCall(id, exprList, line)
+MethodCall::MethodCall(Expr* expr, std::string* id, ExprList* exprList, location loc)
+    : MemberFunctionCall(id, exprList, loc)
     , expr_(expr)
 {}
 
@@ -439,7 +439,7 @@ bool MethodCall::analyze()
 
         if ( bt->isBuiltin() )
         {
-            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, loc_);
 
             if (!memberFunction_)
                 return false;
@@ -502,7 +502,7 @@ bool MethodCall::analyze()
             swiftAssert( dynamic_cast<const me::Var*>(expr_->getPlace()),
                     "must be castable to Var" );
 
-            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+            memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, loc_);
             self = expr_->getType()->derefToInnerstPtr( (me::Var*) expr_->getPlace() );
         }
     }
@@ -518,16 +518,16 @@ bool MethodCall::analyze()
             return false;
         else if ( currentMethodQualifier == typeid(Routine) ) 
         {
-            errorf(line_, "routines do not have a 'self' argument");
+            errorf(loc_, "routines do not have a 'self' argument");
             return false;
         }
         else if ( currentMethodQualifier == typeid(Operator) ) 
         {
-            errorf(line_, "operators do not have a 'self' argument");
+            errorf(loc_, "operators do not have a 'self' argument");
             return false;
         }
 
-        memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, line_);
+        memberFunction_ = symtab->lookupMemberFunction(class_, id_, argTypeList, loc_);
         self = ((Method*) memberFunction_)->self_;
     }
 
@@ -567,8 +567,8 @@ std::string MethodCall::toString() const
  * constructor
  */
 
-ReaderCall::ReaderCall(Expr* expr, std::string* id, ExprList* exprList, int line)
-    : MethodCall(expr, id, exprList, line)
+ReaderCall::ReaderCall(Expr* expr, std::string* id, ExprList* exprList, location loc)
+    : MethodCall(expr, id, exprList, loc)
 {}
 
 /*
@@ -591,8 +591,8 @@ std::string ReaderCall::concatentationStr() const
  * constructor
  */
 
-WriterCall::WriterCall(Expr* expr, std::string* id, ExprList* exprList, int line)
-    : MethodCall(expr, id, exprList, line)
+WriterCall::WriterCall(Expr* expr, std::string* id, ExprList* exprList, location loc)
+    : MethodCall(expr, id, exprList, loc)
 {}
 
 /*
@@ -602,10 +602,10 @@ WriterCall::WriterCall(Expr* expr, std::string* id, ExprList* exprList, int line
 bool WriterCall::handleReadOnlyBaseType() const
 {
     if (expr_)
-        errorf( line_, "'writer' used on read-only location '%s'",
+        errorf( loc_, "'writer' used on read-only location '%s'",
                 expr_->toString().c_str() );
     else
-        errorf(line_, "'writer' of 'self' must not be used within a 'reader'");
+        errorf(loc_, "'writer' of 'self' must not be used within a 'reader'");
 
     return false;
 }

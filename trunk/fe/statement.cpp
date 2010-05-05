@@ -51,8 +51,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Statement::Statement(int line)
-    : Node(line)
+Statement::Statement(location loc)
+    : Node(loc)
     , next_(0)
 {}
 
@@ -68,8 +68,8 @@ Statement::~Statement()
  * constructor and destructor
  */
 
-DeclStatement::DeclStatement(Decl* decl, int line)
-    : Statement(line)
+DeclStatement::DeclStatement(Decl* decl, location loc)
+    : Statement(loc)
     , decl_(decl)
 {
     decl_->setAsStandAlone();
@@ -96,7 +96,7 @@ bool DeclStatement::analyze()
 
         if (_class->defaultCreate_ == Class::DEFAULT_NONE)
         {
-            errorf( line_, "class '%s' does not provide a default constructor 'create()'",
+            errorf( loc_, "class '%s' does not provide a default constructor 'create()'",
                     _class->id_->c_str() );
 
             return false;
@@ -117,8 +117,8 @@ std::string DeclStatement::toString() const
  * constructor and destructor
  */
 
-ActionStatement::ActionStatement(SimdPrefix* simdPrefix, int line)
-    : Statement(line)
+ActionStatement::ActionStatement(SimdPrefix* simdPrefix, location loc)
+    : Statement(loc)
     , simdPrefix_(simdPrefix)
 {}
 
@@ -133,8 +133,8 @@ ActionStatement::~ActionStatement()
  * constructor and destructor
  */
 
-ExprStatement::ExprStatement(SimdPrefix* simdPrefix, Expr* expr, int line)
-    : ActionStatement(simdPrefix, line)
+ExprStatement::ExprStatement(SimdPrefix* simdPrefix, Expr* expr, location loc)
+    : ActionStatement(simdPrefix, loc)
     , expr_(expr)
 {}
 
@@ -146,13 +146,13 @@ ExprStatement::~ExprStatement()
 bool ExprStatement::analyze()
 {
     bool result = true;
-    SimdAnalysis simdAnalysis;
+    SimdAnalysis simdAnalysis(loc_);
 
     if (simdPrefix_)
     {
         expr_->simdAnalyze(simdAnalysis);
 
-        int simdLength = simdAnalysis.checkAndGetSimdLength(line_);
+        int simdLength = simdAnalysis.checkAndGetSimdLength();
         if (simdLength == -1)
             return false;
 
@@ -180,8 +180,8 @@ AssignStatement::AssignStatement(
         int kind, 
         Tuple* tuple, 
         ExprList* exprList, 
-        int line)
-    : ActionStatement(simdPrefix, line)
+        location loc)
+    : ActionStatement(simdPrefix, loc)
     , kind_(kind)
     , tuple_(tuple)
     , exprList_(exprList)
@@ -200,7 +200,7 @@ AssignStatement::~AssignStatement()
 bool AssignStatement::analyze()
 {
     bool result = true;
-    SimdAnalysis simdAnalysis;
+    SimdAnalysis simdAnalysis(loc_);
     int simdLength = 0;
 
     if (simdPrefix_)
@@ -208,7 +208,7 @@ bool AssignStatement::analyze()
         exprList_->simdAnalyze(simdAnalysis);
         tuple_->simdAnalyze(simdAnalysis);
 
-        simdLength = simdAnalysis.checkAndGetSimdLength(line_);
+        simdLength = simdAnalysis.checkAndGetSimdLength();
         if (simdLength == -1)
             return false;
 
@@ -223,7 +223,7 @@ bool AssignStatement::analyze()
     {
         if ( tuple_->moreThanOne() )
         {
-            errorf(line_, "either the left-hand side or the right-hand side of an "
+            errorf(loc_, "either the left-hand side or the right-hand side of an "
                     "assignment statement must have exactly one element");
 
             return false;
@@ -263,13 +263,13 @@ bool AssignStatement::constCheck()
 
             if (id)
             {
-                errorf(line_, "assignment of read-only variable '%s'", 
+                errorf(loc_, "assignment of read-only variable '%s'", 
                         id->id_->c_str() );
                 return false;
             }
             else
             {
-                errorf(line_, "assignment of read-only location '%s'", 
+                errorf(loc_, "assignment of read-only location '%s'", 
                         expr->toString().c_str() );
                 return false;
             }
@@ -288,7 +288,7 @@ bool AssignStatement::analyzeFunctionCall()
 
     if (!fc)
     {
-        errorf(line_, "the right-hand side of an assignment statement with"
+        errorf(loc_, "the right-hand side of an assignment statement with"
                 "more than one item on the left-hand side" 
                 "must be a function call");
 
@@ -351,7 +351,7 @@ bool AssignStatement::analyzeAssignCreate(int simdLength)
     
     if ( out[0]->isNonInnerBuiltin() )
     {
-        result = out[0]->hasAssignCreate(in, decl, line_);
+        result = out[0]->hasAssignCreate(in, decl, loc_);
 
         if (!result)
             return false;
@@ -401,7 +401,7 @@ bool AssignStatement::analyzeAssignCreate(int simdLength)
 
                     if (!bt)
                     {
-                        errorf(line_, "only simd-containers of base types are allowed");
+                        errorf(loc_, "only simd-containers of base types are allowed");
                         return false;
                     }
 
@@ -448,7 +448,7 @@ bool AssignStatement::analyzeAssignCreate(int simdLength)
 
     const BaseType* bt = (const BaseType*) out[0];
     Class* _class = bt->lookupClass();
-    Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, line_);
+    Method* assignCreate = symtab->lookupAssignCreate(_class, in, decl, loc_);
 
     if (!assignCreate)
         return false;
@@ -494,8 +494,8 @@ std::string AssignStatement::toString() const
  *  constructor and destructor
  */
 
-WhileStatement::WhileStatement(Expr* expr, Statement* statements, int line)
-    : Statement(line)
+WhileStatement::WhileStatement(Expr* expr, Statement* statements, location loc)
+    : Statement(loc)
     , expr_(expr)
     , statements_(statements)
 {}
@@ -533,7 +533,7 @@ bool WhileStatement::analyze()
     // check whether expr_ is a boolean expr only if analyze resulted true
     if (result && !expr_->getType()->isBool() )
     {
-        errorf(line_, "the prefacing expression of a while statement must be a boolean expression");
+        errorf(loc_, "the prefacing expression of a while statement must be a boolean expression");
         result = false;
     }
 
@@ -577,8 +577,8 @@ bool WhileStatement::analyze()
  *  constructor and destructor
  */
 
-RepeatUntilStatement::RepeatUntilStatement(Statement* statements, Expr* expr, int line)
-    : Statement(line)
+RepeatUntilStatement::RepeatUntilStatement(Statement* statements, Expr* expr, location loc)
+    : Statement(loc)
     , expr_(expr)
     , statements_(statements)
 {}
@@ -624,7 +624,7 @@ bool RepeatUntilStatement::analyze()
     // check whether expr_ is a boolean expr only if analyze resulted true
     if (result && !expr_->getType()->isBool() )
     {
-        errorf(line_, "the concluding expression of a do ... while statement must be a boolean expression");
+        errorf(loc_, "the concluding expression of a do ... while statement must be a boolean expression");
         result = false;
     }
 
@@ -651,8 +651,8 @@ bool RepeatUntilStatement::analyze()
  *  constructor and destructor
  */
 
-ScopeStatement::ScopeStatement(Statement* statements, int line)
-    : Statement(line)
+ScopeStatement::ScopeStatement(Statement* statements, location loc)
+    : Statement(loc)
     , statements_(statements)
 {}
 
@@ -687,8 +687,8 @@ bool ScopeStatement::analyze()
  * constructor and destructor
  */
 
-IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, int line)
-    : Statement(line)
+IfElStatement::IfElStatement(Expr* expr, Statement* ifBranch, Statement* elBranch, location loc)
+    : Statement(loc)
     , expr_(expr)
     , ifBranch_(ifBranch)
     , elBranch_(elBranch)
@@ -714,7 +714,7 @@ bool IfElStatement::analyze()
     {
         if ( !expr_->getType()->isBool() )
         {
-            errorf(line_, "the prefacing expression of an if statement must be a boolean expression");
+            errorf(loc_, "the prefacing expression of an if statement must be a boolean expression");
             result = false;
         }
     }
@@ -835,8 +835,8 @@ bool IfElStatement::analyze()
  * constructor
  */
 
-CFStatement::CFStatement(int kind, int line)
-    : Statement(line)
+CFStatement::CFStatement(int kind, location loc)
+    : Statement(loc)
     , kind_(kind)
 {}
 

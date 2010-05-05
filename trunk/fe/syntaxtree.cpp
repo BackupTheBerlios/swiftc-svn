@@ -41,8 +41,8 @@ SyntaxTree* syntaxtree = 0;
  * constructor
  */
 
-Node::Node(int line /*= NO_LINE*/)
-    : line_(line)
+Node::Node(location loc)
+    : loc_(loc)
 {}
 
 //------------------------------------------------------------------------------
@@ -51,8 +51,8 @@ Node::Node(int line /*= NO_LINE*/)
  * constructor
  */
 
-Symbol::Symbol(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
-    : Node(line)
+Symbol::Symbol(std::string* id, Symbol* parent, location loc)
+    : Node(loc)
     , id_(id)
     , parent_(parent)
 {}
@@ -101,8 +101,8 @@ std::string Symbol::getFullName() const
  * constructor and destructor
  */
 
-TypeNode::TypeNode(Type* type, int line /*= NO_LINE*/)
-    : Node(line)
+TypeNode::TypeNode(Type* type, location loc)
+    : Node(loc)
     , type_(type)
     , storeNecessary_(false)
     , simdLength_(0)

@@ -18,6 +18,7 @@
  */
 
 #include "fe/expr.h" 
+#include "fe/location.hh"
 #include "fe/typelist.h" 
 
 namespace swift {
@@ -37,7 +38,7 @@ public:
      * constructor and destructor
      */
 
-    FunctionCall(std::string* id, ExprList* exprList, int line);
+    FunctionCall(std::string* id, ExprList* exprList, location line);
     virtual ~FunctionCall();
 
     /*
@@ -85,7 +86,7 @@ public:
           int kind, 
           std::string* id, 
           ExprList* exprList, 
-          int line);
+          location line);
 
     virtual ~CCall();
 
@@ -116,7 +117,7 @@ public:
      * constructor 
      */
 
-    MemberFunctionCall(std::string* id, ExprList* exprList, int line);
+    MemberFunctionCall(std::string* id, ExprList* exprList, location line);
 
 protected:
 
@@ -139,7 +140,7 @@ public:
      * constructor 
      */
 
-    StaticMethodCall(std::string* id, ExprList* exprList, int line);
+    StaticMethodCall(std::string* id, ExprList* exprList, location line);
 };
 
 //------------------------------------------------------------------------------
@@ -155,7 +156,7 @@ public:
     RoutineCall(std::string* classId, 
                 std::string* id, 
                 ExprList* exprList, 
-                int line);
+                location line);
 
     virtual ~RoutineCall();
 
@@ -198,7 +199,7 @@ struct BinExpr : public StaticMethodCall
      * constructor
      */
 
-    BinExpr(int kind, Expr* op1, Expr* op2, int line = NO_LINE);
+    BinExpr(int kind, Expr* op1, Expr* op2, location line);
 
     /*
      * virtual methods
@@ -229,7 +230,7 @@ public:
     MethodCall(Expr* expr, 
                std::string* id, 
                ExprList* exprList, 
-               int line);
+               location line);
 
     virtual ~MethodCall();
 
@@ -265,7 +266,7 @@ public:
     ReaderCall(Expr* expr, 
                std::string* id, 
                ExprList* exprList, 
-               int line);
+               location line);
 
     /*
      * virtual methods
@@ -296,7 +297,7 @@ public:
     WriterCall(Expr* expr, 
                std::string* id, 
                ExprList* exprList, 
-               int line);
+               location line);
 
     /*
      * virtual methods

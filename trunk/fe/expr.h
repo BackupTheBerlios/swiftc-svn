@@ -60,7 +60,7 @@ public:
      * constructor
      */
 
-    Expr(int line);
+    Expr(location loc);
 
     /*
      * further methods
@@ -90,7 +90,7 @@ public:
      * constructor
      */
 
-    Literal(int kind, int line = NO_LINE);
+    Literal(int kind, location loc);
 
     /*
      * virtual methods
@@ -141,7 +141,7 @@ struct Id : public Expr
      * constructor and destructor
      */
 
-    Id(std::string* id, int line = NO_LINE);
+    Id(std::string* id, location loc);
     virtual ~Id();
 
     /*
@@ -179,7 +179,7 @@ struct UnExpr : public Expr
      * constructor and destructor
      */
 
-    UnExpr(int kind, Expr* op, int line = NO_LINE);
+    UnExpr(int kind, Expr* op, location loc);
     virtual ~UnExpr();
 
     /*
@@ -208,7 +208,7 @@ public:
      * constructor and destructor
      */
 
-    Nil(Type* innerType, int line);
+    Nil(Type* innerType, location loc);
     virtual ~Nil();
 
     /*
@@ -243,7 +243,7 @@ public:
      * constructor
      */
 
-    Self(int line);
+    Self(location loc);
 
     /*
      * virtual methods
@@ -269,7 +269,7 @@ public:
      * constructor
      */
 
-    SimdIndex(int line);
+    SimdIndex(location loc);
 
     /*
      * virtual methods

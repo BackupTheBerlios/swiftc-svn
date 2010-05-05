@@ -18,6 +18,7 @@
  */
 
 #include "fe/expr.h"
+#include "fe/location.hh"
 
 namespace swift {
 
@@ -31,7 +32,7 @@ public:
      * constructor and destructor
      */
 
-    Access(Expr* postfixExpr, int line);
+    Access(Expr* postfixExpr, location loc);
     virtual ~Access();
 
     /*
@@ -87,7 +88,7 @@ public:
      * constructor and destructor
      */
 
-    MemberAccess(Expr* expr_, std::string* id, int line = NO_LINE);
+    MemberAccess(Expr* expr_, std::string* id, location loc);
     virtual ~MemberAccess();
 
     /*
@@ -117,7 +118,7 @@ public:
      * constructor and destructor
      */
 
-    IndexExpr(Expr* postfixExpr, Expr* indexExpr, int line);
+    IndexExpr(Expr* postfixExpr, Expr* indexExpr, location loc);
     virtual ~IndexExpr();
 
     /*

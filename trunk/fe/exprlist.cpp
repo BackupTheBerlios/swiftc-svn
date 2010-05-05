@@ -30,8 +30,8 @@ namespace swift {
  * constructor and destructor
  */
 
-ExprList::ExprList(int modifier, Expr* expr, ExprList* next, int line /*= NO_LINE*/)
-    : Node(line)
+ExprList::ExprList(int modifier, Expr* expr, ExprList* next, location loc)
+    : Node(loc)
     , modifier_(modifier)
     , expr_(expr)
     , next_(next)

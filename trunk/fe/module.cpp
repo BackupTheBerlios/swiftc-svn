@@ -35,8 +35,8 @@ namespace swift {
  * constructor and destructor
  */
 
-Module::Module(std::string* id, int line /*= NO_LINE*/)
-    : Symbol(id, 0, line) // modules don't have parents
+Module::Module(std::string* id, location loc)
+    : Symbol(id, 0, loc) // modules don't have parents
 {}
 
 Module::~Module()
@@ -127,8 +127,8 @@ std::string Module::toString() const
  * constructor
  */
 
-Definition::Definition(std::string* id, Symbol* parent, int line /*= NO_LINE*/)
-    : Symbol(id, parent, line)
+Definition::Definition(std::string* id, Symbol* parent, location loc)
+    : Symbol(id, parent, loc)
 {}
 
 } // namespace swift

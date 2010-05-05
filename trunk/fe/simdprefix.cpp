@@ -31,8 +31,8 @@ namespace swift {
  * constructor and destructor
  */
 
-SimdPrefix::SimdPrefix(Expr* leftExpr, Expr* rightExpr, int line)
-    : Node(line)
+SimdPrefix::SimdPrefix(Expr* leftExpr, Expr* rightExpr, location loc)
+    : Node(loc)
     , leftExpr_(leftExpr)
     , rightExpr_(rightExpr)
 {}
@@ -79,13 +79,13 @@ bool SimdPrefix::analyze()
 
     if ( leftExpr_ && !leftExpr_->getType()->isIndex() )
     {
-        errorf(line_, "type of the left expression must be of type 'index'");
+        errorf(loc_, "type of the left expression must be of type 'index'");
         return false;
     }
 
     if ( rightExpr_ && !rightExpr_->getType()->isIndex() )
     {
-        errorf(line_, "type of the right expression must be of type 'index'");
+        errorf(loc_, "type of the right expression must be of type 'index'");
         return false;
     }
 
