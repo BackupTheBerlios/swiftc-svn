@@ -44,7 +44,8 @@ namespace swift {
 using namespace swift;
 
 #define YY_DECL int swift_lex (Parser::semantic_type* val, Parser::location_type* loc)
-#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = g_lexer_line; loc->step();
+#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = g_lexer_line; loc->step()
+#define SET_VAL val->expr_ = l; l->box_.uint64_ = 0ull
 
 %}
 
@@ -65,7 +66,7 @@ INTEGER     {DIGIT}+
 %%
 
 [&|\^=()\[\]{},.;:@] { // single character tokens
-    SET_LOC return yytext[0];
+    SET_LOC; return yytext[0];
 }
 
 ::  { SET_LOC; return Token::DOUBLE_COLON; }
@@ -150,30 +151,30 @@ private     { SET_LOC; return Token::PRIVATE; }
 nil   { SET_LOC; return Token::NIL; }
 self  { SET_LOC; return Token::SELF; }
 
-{INTEGER}x      { SET_LOC; Literal* l = new Literal(Token::L_INDEX,  *loc); val->expr_ = l; l->box_.size_   = strtol  (yytext, 0, 10); return Token::L_INDEX; }
+{INTEGER}x      { SET_LOC; Literal* l = new Literal(Token::L_INDEX,  *loc); SET_VAL; l->box_.size_   = strtol  (yytext, 0, 10); return Token::L_INDEX; }
 
-{INTEGER}       { SET_LOC; Literal* l = new Literal(Token::L_INT,    *loc); val->expr_ = l; l->box_.int_    = strtol  (yytext, 0, 10); return Token::L_INT; }
-{INTEGER}b      { SET_LOC; Literal* l = new Literal(Token::L_INT8,   *loc); val->expr_ = l; l->box_.int8_   = strtol  (yytext, 0, 10); return Token::L_INT8; }
-{INTEGER}w      { SET_LOC; Literal* l = new Literal(Token::L_INT16,  *loc); val->expr_ = l; l->box_.int16_  = strtol  (yytext, 0, 10); return Token::L_INT16; }
-{INTEGER}d      { SET_LOC; Literal* l = new Literal(Token::L_INT32,  *loc); val->expr_ = l; l->box_.int32_  = strtol  (yytext, 0, 10); return Token::L_INT32; }
-{INTEGER}q      { SET_LOC; Literal* l = new Literal(Token::L_INT64,  *loc); val->expr_ = l; l->box_.int64_  = strtoll (yytext, 0, 10); return Token::L_INT64; }
-{INTEGER}sb     { SET_LOC; Literal* l = new Literal(Token::L_SAT8,   *loc); val->expr_ = l; l->box_.sat8_   = strtol  (yytext, 0, 10); return Token::L_SAT8; }
-{INTEGER}sw     { SET_LOC; Literal* l = new Literal(Token::L_SAT16,  *loc); val->expr_ = l; l->box_.sat16_  = strtol  (yytext, 0, 10); return Token::L_SAT16; }
+{INTEGER}       { SET_LOC; Literal* l = new Literal(Token::L_INT,    *loc); SET_VAL; l->box_.int_    = strtol  (yytext, 0, 10); return Token::L_INT; }
+{INTEGER}b      { SET_LOC; Literal* l = new Literal(Token::L_INT8,   *loc); SET_VAL; l->box_.int8_   = strtol  (yytext, 0, 10); return Token::L_INT8; }
+{INTEGER}w      { SET_LOC; Literal* l = new Literal(Token::L_INT16,  *loc); SET_VAL; l->box_.int16_  = strtol  (yytext, 0, 10); return Token::L_INT16; }
+{INTEGER}d      { SET_LOC; Literal* l = new Literal(Token::L_INT32,  *loc); SET_VAL; l->box_.int32_  = strtol  (yytext, 0, 10); return Token::L_INT32; }
+{INTEGER}q      { SET_LOC; Literal* l = new Literal(Token::L_INT64,  *loc); SET_VAL; l->box_.int64_  = strtoll (yytext, 0, 10); return Token::L_INT64; }
+{INTEGER}sb     { SET_LOC; Literal* l = new Literal(Token::L_SAT8,   *loc); SET_VAL; l->box_.sat8_   = strtol  (yytext, 0, 10); return Token::L_SAT8; }
+{INTEGER}sw     { SET_LOC; Literal* l = new Literal(Token::L_SAT16,  *loc); SET_VAL; l->box_.sat16_  = strtol  (yytext, 0, 10); return Token::L_SAT16; }
 
-{INTEGER}u      { SET_LOC; Literal* l = new Literal(Token::L_UINT,   *loc); val->expr_ = l; l->box_.uint_   = strtoul (yytext, 0, 10); return Token::L_UINT; }
-{INTEGER}ub     { SET_LOC; Literal* l = new Literal(Token::L_UINT8,  *loc); val->expr_ = l; l->box_.uint8_  = strtoul (yytext, 0, 10); return Token::L_UINT8; }
-{INTEGER}uw     { SET_LOC; Literal* l = new Literal(Token::L_UINT16, *loc); val->expr_ = l; l->box_.uint16_ = strtoul (yytext, 0, 10); return Token::L_UINT16; }
-{INTEGER}ud     { SET_LOC; Literal* l = new Literal(Token::L_UINT32, *loc); val->expr_ = l; l->box_.uint32_ = strtoul (yytext, 0, 10); return Token::L_UINT32; }
-{INTEGER}uq     { SET_LOC; Literal* l = new Literal(Token::L_UINT64, *loc); val->expr_ = l; l->box_.uint64_ = strtoull(yytext, 0, 10); return Token::L_UINT64; }
-{INTEGER}usb    { SET_LOC; Literal* l = new Literal(Token::L_USAT8,  *loc); val->expr_ = l; l->box_.usat8_  = strtoul (yytext, 0, 10); return Token::L_USAT8; }
-{INTEGER}usw    { SET_LOC; Literal* l = new Literal(Token::L_USAT16, *loc); val->expr_ = l; l->box_.usat16_ = strtoul (yytext, 0, 10); return Token::L_USAT16; }
+{INTEGER}u      { SET_LOC; Literal* l = new Literal(Token::L_UINT,   *loc); SET_VAL; l->box_.uint_   = strtoul (yytext, 0, 10); return Token::L_UINT; }
+{INTEGER}ub     { SET_LOC; Literal* l = new Literal(Token::L_UINT8,  *loc); SET_VAL; l->box_.uint8_  = strtoul (yytext, 0, 10); return Token::L_UINT8; }
+{INTEGER}uw     { SET_LOC; Literal* l = new Literal(Token::L_UINT16, *loc); SET_VAL; l->box_.uint16_ = strtoul (yytext, 0, 10); return Token::L_UINT16; }
+{INTEGER}ud     { SET_LOC; Literal* l = new Literal(Token::L_UINT32, *loc); SET_VAL; l->box_.uint32_ = strtoul (yytext, 0, 10); return Token::L_UINT32; }
+{INTEGER}uq     { SET_LOC; Literal* l = new Literal(Token::L_UINT64, *loc); SET_VAL; l->box_.uint64_ = strtoull(yytext, 0, 10); return Token::L_UINT64; }
+{INTEGER}usb    { SET_LOC; Literal* l = new Literal(Token::L_USAT8,  *loc); SET_VAL; l->box_.usat8_  = strtoul (yytext, 0, 10); return Token::L_USAT8; }
+{INTEGER}usw    { SET_LOC; Literal* l = new Literal(Token::L_USAT16, *loc); SET_VAL; l->box_.usat16_ = strtoul (yytext, 0, 10); return Token::L_USAT16; }
 
-{FLOAT}         { SET_LOC; Literal* l = new Literal(Token::L_REAL,   *loc); val->expr_ = l; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL; }
-{FLOAT}d        { SET_LOC; Literal* l = new Literal(Token::L_REAL32, *loc); val->expr_ = l; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL32; }
-{FLOAT}q        { SET_LOC; Literal* l = new Literal(Token::L_REAL64, *loc); val->expr_ = l; l->box_.double_ = strtod(yytext, 0);       return Token::L_REAL64; }
+{FLOAT}         { SET_LOC; Literal* l = new Literal(Token::L_REAL,   *loc); SET_VAL; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL; }
+{FLOAT}d        { SET_LOC; Literal* l = new Literal(Token::L_REAL32, *loc); SET_VAL; l->box_.float_  = strtod(yytext, 0);       return Token::L_REAL32; }
+{FLOAT}q        { SET_LOC; Literal* l = new Literal(Token::L_REAL64, *loc); SET_VAL; l->box_.double_ = strtod(yytext, 0);       return Token::L_REAL64; }
 
-true            { SET_LOC; Literal* l = new Literal(Token::L_TRUE,   *loc); val->expr_ = l; l->box_.bool_   = true;                    return Token::L_TRUE; }
-false           { SET_LOC; Literal* l = new Literal(Token::L_FALSE,  *loc); val->expr_ = l; l->box_.bool_   = false;                   return Token::L_TRUE; }
+true            { SET_LOC; Literal* l = new Literal(Token::L_TRUE,   *loc); SET_VAL; l->box_.bool_   = true;                    return Token::L_TRUE; }
+false           { SET_LOC; Literal* l = new Literal(Token::L_FALSE,  *loc); SET_VAL; l->box_.bool_   = false;                   return Token::L_TRUE; }
 
 {ID} { val->id_ = new std::string(yytext); return Token::ID; }
 
@@ -186,7 +187,7 @@ false           { SET_LOC; Literal* l = new Literal(Token::L_FALSE,  *loc); val-
 
 \n {
     BEGIN EOL_STATE;
-    SET_LOC
+    SET_LOC;
     ++g_lexer_line; // count line number
     return Token::EOL;
 }
@@ -224,3 +225,4 @@ namespace swift {
 }
 
 #undef SET_LOC
+#undef SET_VAL
