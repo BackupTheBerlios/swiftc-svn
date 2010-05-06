@@ -1,0 +1,60 @@
+SOURCE TREE
+
+utils/
+    -> all things not directly related to compilers like data structures go here
+fe/ -> front-end
+    all lexer, parser, syntaxtree related stuff goes here
+me/ -> middle-end
+    all ssa, front-end independent related stuff like optimizations goes here
+be/ -> back-end
+    -> register allocators, code generators go here
+
+//------------------------------------------------------------------------------
+
+CODING CONVENTIONS
+
+- configure your editor to replace 1 tab with 4 spaces
+- '{' and '}' in a new line
+- members end with '_'
+- members and functions with lower camel case (lowerCamelCaseLooksLikeThis)
+- classes / structs with upper camel case (UpperCamelCaseLooksLikeThis)
+- those few globals which are used usethisstyle
+- since the project is in a very early alpha stadium I don't want to bother with getters and setters
+    -> use public members or structs
+- surround operators with spaces except where it makes sense.
+- do init lists like in the example below.
+- divide several classes in one file with '//' and 78 times '-'
+- prefer ++i over i++ because ++i can be faster in some cases
+- use size_t to loop over std::vector or arrays
+
+Example:
+
+struct MyTestClass : public BaseClass
+{
+    int publicMember_;
+
+    MyTestClass(float f, int publicMember)
+        : BaseClass(f)
+        , publicMember_(publicMember)
+    {
+        std::cout << "hello" << std::endl;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+VARIABLE NAMES
+
+In order to provide consistent variable naming here a list of variable names
+which should be used:
+
+iterator        iter
+identifier      id
+ostringstream   oss
+expression      expr
+register        reg
+InstrNode*      instrNode
+InstrBase*      instr
+BBNode*         bbNode
+BasicBlock*     bb
+

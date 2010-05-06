@@ -1,0 +1,68 @@
+# Swift compiler framework
+# Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+#
+# This framework is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+#
+# This framework is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this framework; see the file LICENSE. If not, write to
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301, USA.
+
+simd class Vec3
+    TYPE x
+    TYPE y
+    TYPE z
+end
+
+simd class Mat3x3
+    TYPE e00
+    TYPE e01
+    TYPE e02
+    TYPE e10
+    TYPE e11
+    TYPE e12
+    TYPE e20
+    TYPE e21
+    TYPE e22
+
+    simd operator * (Mat3x3 m, Vec3 v) -> Vec3 result
+        TYPE m00 = m.e00
+        TYPE m01 = m.e01
+        TYPE m02 = m.e02
+        TYPE m10 = m.e10
+        TYPE m11 = m.e11
+        TYPE m12 = m.e12
+        TYPE m20 = m.e20
+        TYPE m21 = m.e21
+        TYPE m22 = m.e22
+
+        TYPE vx = v.x
+        TYPE vy = v.y
+        TYPE vz = v.z
+
+        TYPE resultx = m00 * vx + m01 * vy + m02 * vz
+        TYPE resulty = m10 * vx + m11 * vy + m12 * vz
+        TYPE resultz = m20 * vx + m21 * vy + m22 * vz
+
+        result.x = resultx
+        result.y = resulty
+        result.z = resultz
+    end
+
+    routine main() -> int result
+        simd{Vec3} vecs1 = 40000000x
+        simd{Vec3} vecs2 = 40000000x
+        simd{Mat3x3} mat = 40000000x
+
+        simd[0x, 40000000x]: vecs1 = mat * vecs2
+
+        result = 0
+    end
+end

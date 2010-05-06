@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "error: no input file given"
+    exit -1
+fi
+
+in=$1
+obj=$1.o
+asm=$1.asm
+
+#
+# check options and shift parameters accordingly
+#
+
+if [ $# -eq 1 ]; then
+    out=$1.out
+    shift 1
+elif [ $2 == "--" ]; then
+    out=$1.out
+    shift 2
+elif [ $3 == "--" ]; then
+    out=$2
+    shift 3
+else
+    echo "usage: swiftc IN [OUT] [-- route-through-options]"
+    exit -1
+fi
+
+# compile
+./swift $in 
+
+if [ $? -ne 0 ]; then 
+    exit -1 # something went wrong
+fi
+
+# assemble output
+as $asm -o $obj 
+
+if [ $? -ne 0 ]; then 
+    echo "error: internal compiler error"
+    exit -1 # something went wrong
+fi
+
+# compile lib.c if necessary
+if [ ! -e 'test/lib.o' ]; then
+    gcc -ggdb -c test/lib.c -o test/lib.o
+fi
+
+if [ $? -ne 0 ]; then 
+    echo "error: internal compiler error"
+    exit -1 # something went wrong
+fi
+
+# and link everything
+gcc -nostdlib -lc test/lib.o $obj -o $out $*
+
+if [ $? -ne 0 ]; then 
+    echo "error: internal compiler error"
+    exit -1 # something went wrong
+fi
