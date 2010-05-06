@@ -1,0 +1,20 @@
+#ifndef TEST_VECTOR_H
+#define TEST_VECTOR_H
+
+typedef float real;
+typedef double real64;
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef unsigned long long uint64;
+
+struct Vec3 
+{
+    TYPE x;
+    TYPE y;
+    TYPE z;
+
+    static Vec3 ifelse(const Vec3& v);
+};
+
+#endif // TEST_VECTOR_H
