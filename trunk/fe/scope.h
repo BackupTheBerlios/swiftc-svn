@@ -28,52 +28,39 @@
 
 namespace swift {
 
-/*
- * forward declaraions
- */
-
 class Local;
-class Signature;
+class Sig;
+class Stmnt;
+class StmntVisitor;
 
-/**
- * @brief This represents the Scope of a Proc. 
- *
- * It can have child scopes and knows of its \a locals_ which are defined there.
- */
+//------------------------------------------------------------------------------
+
 class Scope
 {
 public:
 
-    /*
-     * constructor and destructor
-     */
-
     Scope(Scope* parent);
     ~Scope();
 
-    /*
-     * further methods
-     */
-
-    /// Returns the local by the id, of this scope or parent scopes. 0 if nothing was found.
+    Local* lookupLocalOneLevelOnly(const std::string* id);
     Local* lookupLocal(const std::string* id);
 
-    bool insert(Local* local, const Signature* sig);
-
-    /*
-     * data
-     */
-
-    typedef std::vector<Scope*> Scopes;
-    Scopes childScopes_; ///< List of child scopes.
+    bool insert(Local* local);
+    void appendStmnt(Stmnt* stmnt);
+    void accept(StmntVisitor* s);
 
 private:
 
-    Scope* parent_;      ///< 0 if root.
+    Scope* parent_;
 
     typedef std::map<const std::string*, Local*, StringPtrCmp> LocalMap;
-    LocalMap locals_;    ///< Map of locals in this scope sorted by identifier.
+    LocalMap locals_;
+
+    typedef std::vector<Stmnt*> Stmnts;
+    Stmnts stmnts_;
 };
+
+//------------------------------------------------------------------------------
 
 } // namespace swift
 

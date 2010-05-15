@@ -86,65 +86,25 @@ ADD_EXECUTABLE (swift
     fe/lexer.cpp
     fe/parser.cpp
 
-    fe/access.cpp
-    fe/call.cpp
     fe/class.cpp
-    fe/decl.cpp
+    fe/classanalyzer.cpp
+    fe/context.cpp
     fe/error.cpp
-    fe/expr.cpp
-    fe/exprlist.cpp
-    fe/functioncall.cpp
-    fe/memberfunction.cpp
-    fe/module.cpp
+    fe/node.cpp
     fe/scope.cpp
-    fe/simdanalysis.cpp
-    fe/simdprefix.cpp
-    fe/signature.cpp
-    fe/statement.cpp
-    fe/symtab.cpp
-    fe/syntaxtree.cpp
-    fe/tuple.cpp
+    fe/sig.cpp
+    fe/stmnt.cpp
+    fe/stmntanalyzer.cpp
+    fe/token2str.cpp
     fe/type.cpp
     fe/typelist.cpp
+    fe/typenode.cpp
+    fe/typenodeanalyzer.cpp
     fe/var.cpp
+    fe/simdprefix.cpp
 
     fe/cmdlineparser.cpp
     fe/main.cpp
-
-    me/arch.cpp
-    me/basicblock.cpp
-    me/coalescing.cpp
-    me/codepass.cpp
-    me/cfg.cpp
-    me/coloring.cpp
-    me/constpool.cpp
-    me/copyinsertion.cpp
-    me/defuse.cpp
-    me/defusecalc.cpp
-    me/functab.cpp
-    me/instrcoalescing.cpp
-    me/livenessanalysis.cpp
-    me/liverangesplitting.cpp
-    me/op.cpp
-    me/offset.cpp
-    me/phiimpl.cpp
-    me/spiller.cpp
-    me/ssa.cpp
-    me/stackcoloring.cpp
-    me/stacklayout.cpp
-    me/struct.cpp
-    me/vectorizer.cpp
-
-    be/x64.cpp
-    be/x64cast.cpp
-    be/x64codegen.cpp
-    be/x64codegenhelpers.cpp
-    be/x64lexer.cpp
-    be/x64regalloc.cpp
-    be/x64parser.tab.cpp
-    be/x64parser.tab.hpp
-    be/x64phiimpl.cpp
-    be/x64typeconv.cpp
 )
 
 #-------------------------------------------------------------------------------

@@ -20,28 +20,30 @@
 #ifndef SWIFT_AUTO_H
 #define SWIFT_AUTO_H
 
+#include "fe/context.h"
+
 namespace swift {
+
+//------------------------------------------------------------------------------
 
 // it is important to declare all union members of YYSTYPE here
 class Class;
-class ClassMember;
 class Decl;
-class Definition;
+class Def;
 class Expr;
 class ExprList;
+class InOut;
 class Lexer;
+class MemberFct;
 class MemberVar;
-class MemberFunction;
 class Module;
-class Param;
+class Scope;
 class SimdPrefix;
-class Statement;
+class Stmnt;
 class Tuple;
 class Type;
 
 //------------------------------------------------------------------------------
-
-std::string* operatorToString(int _operator);
 
 }
 
@@ -49,7 +51,9 @@ std::string* operatorToString(int _operator);
 #include "parser.inner.h"
 
 namespace swift {
+
 typedef Parser::token Token;
+typedef Parser::token_type TokenType;
 
 extern int g_lexer_line;
 extern std::string* g_lexer_filename;

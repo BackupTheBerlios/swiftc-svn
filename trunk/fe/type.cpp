@@ -27,128 +27,29 @@
 
 #include "fe/class.h"
 #include "fe/error.h"
-#include "fe/expr.h"
-#include "fe/symtab.h"
-
-#include "me/arch.h"
-#include "me/functab.h"
-#include "me/ssa.h"
-#include "me/offset.h"
-#include "me/struct.h"
 
 namespace swift {
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor
- */
-
-Type::Type(int modifier, location loc)
+Type::Type(location loc, TokenType modifier)
     : Node(loc) 
     , modifier_(modifier)
 {}
 
-/*
- * virtual methods
- */
-
-bool Type::isBool() const
-{
-    return false;
-}
-
-bool Type::isIndex() const
-{
-    return false;
-}
-
-bool Type::isInt() const
-{
-    return false;
-}
-
-/*
- * further methods
- */
-
-Type* Type::constClone() const
-{
-    Type* type = this->clone();
-    type->modifier_ = Token::CONST;
-
-    return type;
-}
-
-Type* Type::varClone() const
-{
-    Type* type = this->clone();
-    type->modifier_ = Token::VAR;
-
-    return type;
-}
-
-const BaseType* Type::isInnerAtomic() const
-{
-    return isAtomic() ? isInner() : 0;
-}
-
-bool Type::isNonInnerBuiltin() const
-{
-    return !isInner() && isBuiltin();
-}
-
-int& Type::modifier()
-{
-    return modifier_;
-}
-
-const int& Type::modifier() const
-{
-    return modifier_;
-}
-
-bool Type::isReadOnly() const
-{
-    return modifier_ == Token::CONST || modifier_ == Token::CONST_REF;
-}
-
-me::Reg* Type::loadPtr(me::Var* var) const
-{
-#ifdef SWIFT_DEBUG
-    std::string str = "tmp";
-    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR, &str);
-#else // SWIFT_DEBUG
-    me::Reg* ptr = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-
-    me::LoadPtr* loadPtr = new me::LoadPtr(ptr, var, 0, 0);
-    me::functab->appendInstr(loadPtr);
-
-    return ptr;
-}
-
 //------------------------------------------------------------------------------
-
-/*
- * init statics
- */
 
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 
-/*
- * constructor and destructor
- */
-
-BaseType::BaseType(int modifier, std::string* id, location loc)
-    : Type(modifier, loc)
+BaseType::BaseType(location loc, TokenType modifier, std::string* id)
+    : Type(loc, modifier)
     , id_(id)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
 {}
 
-BaseType::BaseType(int modifier, const Class* _class)
-    : Type(modifier, location() ) // TODO location
-    , id_( new std::string(*_class->id_) )
+BaseType::BaseType(TokenType modifier, const Class* _class)
+    : Type(location() , modifier)
+    , id_( new std::string(*_class->id()) )
     , builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
 {}
 
@@ -157,84 +58,57 @@ BaseType::~BaseType()
     delete id_;
 }
 
-/*
- * virtual methods
- */
-
 BaseType* BaseType::clone() const
 {
-    return new BaseType( modifier_, new std::string(*id_), loc_);
+    return new BaseType( loc_, modifier_, new std::string(*id_) );
 }
 
-bool BaseType::validate() const
+bool BaseType::validate(Module* m) const
 {
-    if ( symtab->lookupClass(id_) == 0 )
+    if ( m->lookupClass(id_) == 0 )
     {
-        errorf( loc_, "class '%s' is not defined in this module", id_->c_str() );
+        errorf( loc_, "class '%s' is not defined in module '%s'", cid(), m->cid() );
         return false;
     }
 
     return true;
 }
 
-bool BaseType::check(const Type* type) const
+bool BaseType::check(const Type* type, Module* m) const
 {
-    const BaseType* bt = dynamic_cast<const BaseType*>(type);
-
-    if (!bt)
-        return false;
-
-    Class* class1 = symtab->lookupClass(id_);
-    Class* class2 = symtab->lookupClass(bt->id_);
-
-    // both classes must exist
-    swiftAssert(class1, "first class not found in the symbol table");
-    swiftAssert(class2, "second class not found in the symbol table");
-
-    if (class1 != class2) 
+    if (const BaseType* bt = dynamic_cast<const BaseType*>(type))
     {
-        // different pointers -> hence different types
-        return false;
-    }
 
-    return true;
-}
+        Class* class1 = m->lookupClass(id_);
+        Class* class2 = m->lookupClass(bt->id_);
 
-me::Op::Type BaseType::toMeType() const
-{
-    if (builtin_)
-        return typeMap_->find(*id_)->second;
-    else
-    {
-        if ( isActuallyPtr() )
-            return me::Op::R_PTR; // params are passed in pointers
+        // both classes must exist
+        swiftAssert(class1,  "first class not found");
+        swiftAssert(class2, "second class not found");
+
+        // different pointers mean different types
+        if (class1 != class2) 
+            return false;
         else
-        {
-            swiftAssert(modifier_ == Token::VAR || modifier_ == Token::CONST, 
-                    "impossible modifier_ value");
-            return me::Op::R_MEM;
-        }
+            return true;
     }
+
+    return false;
 }
 
-bool BaseType::isAtomic() const
+std::string BaseType::toString() const
 {
-    return builtin_;
-}
-
-bool BaseType::isInternalAtomic() const
-{
-    return builtin_ || isActuallyPtr();
-}
-
-bool BaseType::isBuiltin() const
-{
-    return builtin_;
+    return *id_;
 }
 
 const BaseType* BaseType::isInner() const
 {
     return this;
+}
+
+bool BaseType::isBuiltin() const
+{
+    return builtin_;
 }
 
 bool BaseType::isBool() const
@@ -252,103 +126,21 @@ bool BaseType::isInt() const
     return *id_ == "int";
 }
 
-size_t BaseType::sizeOf() const
+Class* BaseType::lookupClass(Module* m) const
 {
-    if (builtin_)
-        return me::Op::sizeOf( typeMap_->find(*id_)->second );
-    else
-        return lookupClass()->meStruct_->sizeOf();
+    Class* c = m->lookupClass(id_);
+    return c;
 }
 
-bool BaseType::isActuallyPtr() const
-{
-    return modifier_ == Token::CONST_REF || modifier_ == Token::REF;
-}
-
-me::Var* BaseType::createVar(const std::string* id /*= 0*/) const
-{
-    me::Op::Type meType = toMeType();
-
-    me::Var* var;
-    if (meType == me::Op::R_MEM)
-    {
-        Class* _class = lookupClass();
-#ifdef SWIFT_DEBUG
-        var = me::functab->newMemVar(_class->meStruct_, id);
-#else // SWIFT_DEBUG
-        var = me::functab->newMemVar(_class->meStruct_);
-#endif // SWIFT_DEBUG
-    }
-    else
-    {
-#ifdef SWIFT_DEBUG
-        var = me::functab->newReg(meType, id);
-#else // SWIFT_DEBUG
-        var = me::functab->newReg(meType);
-#endif // SWIFT_DEBUG
-    }
-
-    return var;
-}
-
-me::Reg* BaseType::derefToInnerstPtr(me::Var* var) const
-{
-    if ( isActuallyPtr() )
-    {
-        // reg is a hidden ptr
-        swiftAssert( typeid(*var) == typeid(me::Reg), "must be a Reg here" );
-        return (me::Reg*) var; 
-    }
-
-    // load adress into pointer reg
-    swiftAssert(!builtin_, "LoadPtr not allowed");
-    
-    return loadPtr(var);
-}
-
-const BaseType* BaseType::unnestPtr() const
-{
-    return this;
-}
-
-const Ptr* BaseType::unnestInnerstPtr() const
-{
-    swiftAssert(false, "unreachable code");
-    return 0;
-}
-
-bool BaseType::hasAssignCreate(const TypeList& /*in*/, 
-                               bool /*isCreate*/, 
-                               location loc) const
-{
-    swiftAssert(false, "unreachable code");
-    return false;
-}
-
-std::string BaseType::toString() const
-{
-    return *id_;
-}
-
-/*
- * further methods
- */
-
-Class* BaseType::lookupClass() const
-{
-    Class* _class = symtab->lookupClass(id_);
-    swiftAssert(_class, "must be found");
-    return _class;
-}
-
-const std::string* BaseType::getId() const
+const std::string* BaseType::id() const
 {
     return id_;
 }
 
-/*
- * static methods
- */
+const char* BaseType::cid() const
+{
+    return id_->c_str();
+}
 
 bool BaseType::isBuiltin(const std::string* id)
 {
@@ -359,31 +151,31 @@ void BaseType::initTypeMap()
 {
     typeMap_ = new TypeMap();
 
-    (*typeMap_)["bool"]   = me::Op::R_BOOL;
+    (*typeMap_)["bool"]   = 0;
 
-    (*typeMap_)["int8"]   = me::Op::R_INT8;
-    (*typeMap_)["int16"]  = me::Op::R_INT16;
-    (*typeMap_)["int32"]  = me::Op::R_INT32;
-    (*typeMap_)["int64"]  = me::Op::R_INT64;
+    (*typeMap_)["int8"]   = 0;
+    (*typeMap_)["int16"]  = 0;
+    (*typeMap_)["int32"]  = 0;
+    (*typeMap_)["int64"]  = 0;
 
-    (*typeMap_)["sat8"]   = me::Op::R_SAT8;
-    (*typeMap_)["sat16"]  = me::Op::R_SAT16;
+    (*typeMap_)["sat8"]   = 0;
+    (*typeMap_)["sat16"]  = 0;
 
-    (*typeMap_)["uint8"]  = me::Op::R_UINT8;
-    (*typeMap_)["uint16"] = me::Op::R_UINT16;
-    (*typeMap_)["uint32"] = me::Op::R_UINT32;
-    (*typeMap_)["uint64"] = me::Op::R_UINT64;
+    (*typeMap_)["uint8"]  = 0;
+    (*typeMap_)["uint16"] = 0;
+    (*typeMap_)["uint32"] = 0;
+    (*typeMap_)["uint64"] = 0;
 
-    (*typeMap_)["usat8"]   = me::Op::R_USAT8;
-    (*typeMap_)["usat16"]  = me::Op::R_USAT16;
+    (*typeMap_)["usat8"]  = 0;
+    (*typeMap_)["usat16"] = 0;
 
-    (*typeMap_)["real32"] = me::Op::R_REAL32;
-    (*typeMap_)["real64"] = me::Op::R_REAL64;
+    (*typeMap_)["real32"] = 0;
+    (*typeMap_)["real64"] = 0;
 
-    (*typeMap_)["int"]    = me::arch->getPreferedInt();
-    (*typeMap_)["uint"]   = me::arch->getPreferedUInt();
-    (*typeMap_)["index"]  = me::arch->getPreferedIndex();
-    (*typeMap_)["real"]   = me::arch->getPreferedReal();
+    (*typeMap_)["int"]    = 0;
+    (*typeMap_)["uint"]   = 0;
+    (*typeMap_)["index"]  = 0;
+    (*typeMap_)["real"]   = 0;
 }
 
 void BaseType::destroyTypeMap()
@@ -393,12 +185,8 @@ void BaseType::destroyTypeMap()
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor and destructor
- */
-
-NestedType::NestedType(int modifier, Type* innerType, location loc)
-    : Type(modifier, loc)
+NestedType::NestedType(location loc, TokenType modifier, Type* innerType)
+    : Type(loc, modifier)
     , innerType_(innerType)
 {}
 
@@ -407,26 +195,12 @@ NestedType::~NestedType()
     delete innerType_;
 }
 
-/*
- * virtual methods
- */
-
-bool NestedType::validate() const
+bool NestedType::validate(Module* m) const
 {
-    return innerType_->validate();
+    return innerType_->validate(m);
 }
 
-bool NestedType::isBuiltin() const
-{
-    return true;
-}
-
-const BaseType* NestedType::isInner() const
-{
-    return 0;
-}
-
-bool NestedType::check(const Type* type) const
+bool NestedType::check(const Type* type, Module* m) const
 {
     if ( typeid(*this) != typeid(*type) )
         return false;
@@ -436,12 +210,8 @@ bool NestedType::check(const Type* type) const
     
     const NestedType* nestedType = (const NestedType*) type;
 
-    return innerType_->check(nestedType->innerType_);
+    return innerType_->check(nestedType->innerType_, m);
 }
-
-/*
- * further methods
- */
 
 Type* NestedType::getInnerType()
 {
@@ -455,115 +225,13 @@ const Type* NestedType::getInnerType() const
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor
- */
-
-Ptr::Ptr(int modifier, Type* innerType, location loc)
-    : NestedType(modifier, innerType, loc)
+Ptr::Ptr(location loc, TokenType modifier, Type* innerType)
+    : NestedType(loc, modifier, innerType)
 {}
 
 Ptr* Ptr::clone() const
 {
-    return new Ptr(modifier_, innerType_->clone(), location() ); // TODO location
-}
-
-/*
- * virtual methods
- */
-
-me::Op::Type Ptr::toMeType() const
-{
-    return me::Op::R_PTR;
-}
-
-me::Var* Ptr::createVar(const std::string* id /*= 0*/) const
-{
-#ifdef SWIFT_DEBUG
-    return me::functab->newReg(me::Op::R_PTR, id);
-#else // SWIFT_DEBUG
-    return me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-}
-
-bool Ptr::isAtomic() const
-{
-    return true;
-}
-
-bool Ptr::isInternalAtomic() const
-{
-    return true;
-}
-
-bool Ptr::isActuallyPtr() const
-{
-    return true;
-}
-
-size_t Ptr::sizeOf() const
-{
-    return me::Op::sizeOf(me::Op::R_PTR);
-}
-
-const BaseType* Ptr::unnestPtr() const
-{
-    return innerType_->unnestPtr();
-}
-
-const Ptr* Ptr::unnestInnerstPtr() const
-{
-    const Ptr* ptr = dynamic_cast<const Ptr*>(innerType_);
-    if (ptr)
-        return ptr->unnestInnerstPtr();
-    else
-        return this;
-}
-
-
-me::Reg* Ptr::derefToInnerstPtr(me::Var* var) const
-{
-    swiftAssert( typeid(*var) == typeid(me::Reg), "TODO: must be a Reg here" );
-
-    if ( innerType_->isActuallyPtr() )
-    {
-        swiftAssert(var->type_ == me::Op::R_PTR, "must be a ptr");
-
-#ifdef SWIFT_DEBUG
-        std::string str = "tmp";
-        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR, &str);
-#else // SWIFT_DEBUG
-        me::Reg* derefed = me::functab->newReg(me::Op::R_PTR);
-#endif // SWIFT_DEBUG
-
-        me::AssignInstr* derefInstr = new me::AssignInstr('^', derefed, (me::Reg*) var);
-        me::functab->appendInstr(derefInstr);
-
-        return innerType_->derefToInnerstPtr(derefed);
-    }
-    // else
-
-    // this is already the innerst pointer
-    return (me::Reg*) var;
-}
-
-bool Ptr::hasAssignCreate(const TypeList& in, bool hasCreate, location loc) const
-{
-    std::string methodStr = hasCreate ? "constructer" : "assignment";
-
-    if ( in.size() != 1 )
-    {
-        errorf(loc, "a 'ptr' %s takes exactly one argument", methodStr.c_str() );
-        return false;
-    }
-
-    if ( !check(in[0]) )
-    {
-        errorf( loc_, "types do not match in 'ptr' %s", methodStr.c_str() );
-        return false;
-    }
-
-    return true;
+    return new Ptr(location() , modifier_, innerType_->clone());
 }
 
 std::string Ptr::toString() const
@@ -576,110 +244,9 @@ std::string Ptr::toString() const
 
 //------------------------------------------------------------------------------
 
-/*
- * init statics
- */
-
-me::Struct* Container::meContainer_ = 0;
-me::Member* Container::meContainerPtr_ = 0;
-me::Member* Container::meContainerSize_ = 0;
-
-/*
- * constructor
- */
-
-Container::Container(int modifier, Type* innerType, location loc)
-    : NestedType(modifier, innerType, loc)
+Container::Container(location loc, TokenType modifier, Type* innerType)
+    : NestedType(loc, modifier, innerType)
 {}
-
-/*
- * virtual methods
- */
-
-me::Op::Type Container::toMeType() const
-{
-    return me::Op::R_MEM;
-}
-
-me::Var* Container::createVar(const std::string* id /*= 0*/) const
-{
-#ifdef SWIFT_DEBUG
-    return me::functab->newMemVar(meContainer_, id);
-#else // SWIFT_DEBUG
-    return me::functab->newMemVar(meContainer_);
-#endif // SWIFT_DEBUG
-}
-
-bool Container::isAtomic() const
-{
-    return false;
-}
-
-bool Container::isInternalAtomic() const
-{
-    return modifier_ == Token::CONST_REF || modifier_ == Token::REF;
-}
-
-bool Container::isActuallyPtr() const
-{
-    return false;
-}
-
-size_t Container::sizeOf() const
-{
-    return meContainer_->sizeOf();
-}
-
-me::Reg* Container::derefToInnerstPtr(me::Var* var) const
-{
-    return loadPtr(var);
-}
-
-bool Container::hasAssignCreate(const TypeList& in, bool hasCreate, location loc) const
-{
-    std::string methodStr = hasCreate ? "constructer" : "assignment";
-
-    if ( in.size() != 1 )
-    {
-        errorf(loc, "a '%s' container %s takes exactly one argument", 
-                containerStr().c_str(),
-                methodStr.c_str() );
-        return false;
-    }
-
-    if (hasCreate)
-    {
-        if ( in[0]->isIndex() )
-            return true;
-
-        else
-        {
-            errorf( loc_, "'%s' container constructor expects one argument of class 'index'", 
-                    containerStr().c_str() );
-        }
-    }
-    else if ( !check(in[0]) )
-    {
-        errorf( loc_, "types do not match in '%s' container %s", 
-                containerStr().c_str(),
-                methodStr.c_str() );
-        return false;
-    }
-
-    return true;
-}
-
-const BaseType* Container::unnestPtr() const
-{
-    swiftAssert(false, "unreachable code");
-    return 0;
-}
-
-const Ptr* Container::unnestInnerstPtr() const
-{
-    swiftAssert(false, "unreachable code");
-    return 0;
-}
 
 std::string Container::toString() const
 {
@@ -689,73 +256,15 @@ std::string Container::toString() const
     return oss.str();
 }
 
-/*
- * static methods
- */
-
-void Container::initMeContainer()
-{
-    // TODO make the choice of R_UINT64 arch independent
-
-#ifdef SWIFT_DEBUG
-
-    meContainer_ = me::functab->newStruct("Container");
-    me::functab->enterStruct(meContainer_);
-
-    meContainerPtr_  = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_PTR), "ptr" );
-    meContainerSize_ = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_UINT64), "size");
-
-#else // SWIFT_DEBUG
-
-    meContainer_ = me::functab->newStruct();
-    me::functab->enterStruct(meContainer_);
-
-    meContainerPtr_  = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_PTR) );
-    meContainerSize_ = me::functab->appendMember( new me::AtomicAggregate(me::Op::R_UINT64) );
-
-#endif // SWIFT_DEBUG
-
-    me::functab->leaveStruct();
-    //meContainer_->analyze();
-}
-
-me::Struct* Container::getMeStruct()
-{
-    return meContainer_;
-}
-
-me::StructOffset* Container::createContainerPtrOffset()
-{
-    return new me::StructOffset(meContainer_, meContainerPtr_);
-}
-
-me::StructOffset* Container::createContainerSizeOffset()
-{
-    return new me::StructOffset(meContainer_, meContainerPtr_);
-}
-
-size_t Container::getContainerSize()
-{
-    return meContainer_->sizeOf();
-}
-
 //------------------------------------------------------------------------------
 
-/*
- * constructor
- */
-
-Array::Array(int modifier, Type* innerType, location loc)
-    : Container(modifier, innerType, loc)
+Array::Array(location loc, TokenType modifier, Type* innerType)
+    : Container(loc, modifier, innerType)
 {}
-
-/*
- * virtual methods
- */
 
 Array* Array::clone() const
 {
-    return new Array(modifier_, innerType_->clone(), location() ); // TODO location
+    return new Array(location() , modifier_, innerType_->clone());
 }
 
 std::string Array::containerStr() const
@@ -765,31 +274,19 @@ std::string Array::containerStr() const
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor
- */
-
-Simd::Simd(int modifier, Type* innerType, location loc)
-    : Container(modifier, innerType, loc)
+Simd::Simd(location loc, TokenType modifier, Type* innerType)
+    : Container(loc, modifier, innerType)
 {}
-
-/*
- * virtual methods
- */
 
 Simd* Simd::clone() const
 {
-    return new Simd(modifier_, innerType_->clone(), location() ); // TODO location
+    return new Simd(location() , modifier_, innerType_->clone());
 }
 
 std::string Simd::containerStr() const
 {
     return "simd";
 }
-
-/*
- * further methods
- */
 
 BaseType* Simd::getInnerType()
 {

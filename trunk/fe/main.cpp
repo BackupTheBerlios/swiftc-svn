@@ -28,29 +28,15 @@
 #include "fe/auto.h"
 #include "fe/cmdlineparser.h"
 #include "fe/error.h"
-#include "fe/expr.h"
-#include "fe/module.h"
-#include "fe/symtab.h"
-#include "fe/syntaxtree.h"
 #include "fe/type.h"
-
-#include "me/constpool.h"
-#include "me/functab.h"
-#include "me/defusecalc.h"
-#include "me/livenessanalysis.h"
-#include "me/stackcoloring.h"
-
-#include "be/x64.h"
-
-using namespace swift;
+#include "fe/typenode.h"
 
 //------------------------------------------------------------------------------
 
 // forward declarations
 
-void readBuiltinTypes();
+void readBuiltinTypes(swift::Context& ctxt);
 int start(int argc, char** argv);
-void cleanUpME();
 
 //------------------------------------------------------------------------------
 
@@ -77,7 +63,7 @@ int main(int argc, char** argv)
 int start(int argc, char** argv)
 {
     // parse the command line
-    CmdLineParser cmdLineParser(argc, argv);
+    swift::CmdLineParser cmdLineParser(argc, argv);
 
     if (cmdLineParser.error_)
         return EXIT_FAILURE;
@@ -85,160 +71,50 @@ int start(int argc, char** argv)
     /*
      * init globals
      */
-    me::arch = new be::X64();
-    BaseType::initTypeMap();
-    Literal::initTypeMap();
+    swift::BaseType::initTypeMap();
+    //swift::Literal::initTypeMap();
 
-    syntaxtree = new SyntaxTree();
-    syntaxtree->rootModule_ = new Module(new std::string("default"), location() ); // TODO location
+    swift::Context ctxt;
+    ctxt.module_ = new swift::Module( swift::location(), new std::string("default") ); // TODO location 
 
-    symtab = new SymTab();
-    symtab->insert(syntaxtree->rootModule_);
-
-    error = new ErrorHandler(cmdLineParser.filename_);
-    me::functab = new me::FuncTab(cmdLineParser.filename_); // the symbol table of the middle-end
-
-    Container::initMeContainer(); // needs inited functab
-
-    me::constpool = new me::ConstPool();
-
-    // populate symtab with builtin types
-    readBuiltinTypes();
+    // populate data structures with builtin types
+    readBuiltinTypes(ctxt);
 
     // try to open the input file and init the lexer
-    FILE* file = lexer_init(cmdLineParser.filename_);
+    FILE* file = swift::lexer_init(cmdLineParser.filename_);
     if (!file)
     {
         std::cerr << "error: failed to open input file" << std::endl;
         return EXIT_FAILURE;
     }
 
-    /*
-     * Parse the input file, build a syntax tree
-     * and start filling the SymbolTable
-     *
-     * Since not all symbols can be found in the first pass there will be gaps
-     * in the SymbolTable.
-     */
-    Parser parser;
-    parser.parse(); // call generated parser which on its part calls swift_lex
+    swift::Parser parser(ctxt);
+#if 0
+    parser.set_debug_level(1);
+    parser.set_debug_stream(std::cerr);
+#endif
+    parser.parse();
 
-    /*
-     * Check types of all expressions, fill all gaps in the symtab and
-     * build single static assignment form if everything is ok
-     * 
-     * Thus a complete SymbolTable and type consistency is ensured after this pass.
-     */
-
-    bool analyzeResult = syntaxtree->analyze();
+    ctxt.module_->analyze();
 
     /*
      * clean up front-end
      */
 
-    delete syntaxtree;
-    delete symtab;
-    delete error;
-    delete g_lexer_filename;
-    Literal::destroyTypeMap();
-    BaseType::destroyTypeMap();
+    delete ctxt.module_;
+    delete swift::g_lexer_filename;
+    //swift::Literal::destroyTypeMap();
+    swift::BaseType::destroyTypeMap();
 
     fclose(file);
 
-    if (!analyzeResult)
-    {
-        cleanUpME();
+    if (!ctxt.result_)
         return EXIT_FAILURE; // abort on error
-    }
-    
-    /*
-     * build up middle-end:
-     *
-     * find basic blocks,
-     * caculate control flow graph,
-     * find last assignment of vars in a basic block
-     * calculate the dominator tree,
-     * calculate the dominance frontier,
-     * place phi-functions in SSA form and update vars
-     */
-    me::functab->buildUpME();
-
-    /*
-     * build up back-end and generate assembly code
-     */
-    std::ostringstream oss;
-    oss << cmdLineParser.filename_ << ".asm";
-    std::ofstream ofs( oss.str().c_str() );// std::ofstream does not support std::string...
-
-    /*
-     * build up pipeline
-     */
-    for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
-    {
-        me::Function* function = iter->second;
-
-        if ( function->ignore() )
-            continue;
-
-        me::DefUseCalc(function).process();
-        me::LivenessAnalysis(function).process();
-        me::arch->regAlloc(function);
-        me::StackColoring(function).process();
-    }
-
-    // finally generate assembly code
-    for (me::FunctionTable::FunctionMap::iterator iter = me::functab->functions_.begin(); iter != me::functab->functions_.end(); ++iter)
-    {
-        me::Function* function = iter->second;
-
-        if ( function->ignore() )
-            continue;
-
-        me::arch->codeGen(function, ofs);
-    }
-
-    // emit program prologue
-    me::arch->emitStart(ofs);
-
-    // write constants to assembly language file
-    me::arch->dumpConstants(ofs);
-    
-    // clean up
-    me::arch->cleanUp();
-
-#ifdef SWIFT_DEBUG
-
-    /*
-     * debug output
-     */
-    me::functab->dumpSSA();
-    me::functab->dumpDot();
-
-#endif // SWIFT_DEBUG
-
-    // finish
-    ofs.close();
-
-    cleanUpME();
 
     return EXIT_SUCCESS;
 }
 
-void cleanUpME()
-{
-    /*
-     * clean up middle-end
-     */
-    delete me::functab;
-    delete me::constpool;
-
-    /*
-     * clean up back-end
-     */
-    delete me::arch;
-}
-
-void readBuiltinTypes()
+void readBuiltinTypes(swift::Context& ctxt)
 {
     std::vector<const char*> builtin;
 
@@ -272,9 +148,15 @@ void readBuiltinTypes()
 
     for (size_t i = 0; i < builtin.size(); ++i)
     {
-        file = lexer_init(builtin[i]);
-        Parser parser;
+        file = swift::lexer_init(builtin[i]);
+
+        swift::Parser parser(ctxt);
+#if 0
+        parser.set_debug_level(1);
+        parser.set_debug_stream(std::cerr);
+#endif
         parser.parse();
+
         fclose(file);
     }
 }

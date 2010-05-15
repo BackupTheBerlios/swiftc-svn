@@ -20,66 +20,28 @@
 #ifndef SWIFT_SIMD_PREFIX_H
 #define SWIFT_SIMD_PREFIX_H
 
-#include "fe/syntaxtree.h"
-
-#include "me/forward.h"
+#include "fe/node.h"
 
 namespace swift {
 
-/*
- * forward declarations
- */
-
 class Expr;
+
+//------------------------------------------------------------------------------
 
 class SimdPrefix : public Node
 {
 public:
 
-    /*
-     * constructor and destructor
-     */
-
-    SimdPrefix(Expr* leftExpr_, Expr* rightExpr, location loc);
+    SimdPrefix(location loc, Expr* leftExpr_, Expr* rightExpr);
     virtual ~SimdPrefix();
-
-    /*
-     * virtual methods
-     */
-
-    virtual std::string toString() const;
-
-    /*
-     * further methods
-     */
-
-    void genPreSSA();
-    void genPostSSA(SimdAnalysis& simdAnalysis);
-    bool analyze();
 
 private:
 
-    /*
-     * index expresions
-     */
-
     Expr* leftExpr_;
     Expr* rightExpr_;
-
-    /*
-     * regs
-     */
-
-    me::Reg* counter_;
-    me::Reg* check_;
-    
-    /*
-     * labels
-     */
-
-    me::InstrNode* simdLabelNode_;
-    me::InstrNode* nextLabelNode_;
 };
+
+//------------------------------------------------------------------------------
 
 } // namespace swift
 

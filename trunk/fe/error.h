@@ -30,25 +30,7 @@ namespace swift {
 void   errorf(const location& loc, const char* fs, ...);
 void warningf(const location& loc, const char* fs, ...);
 
-struct ErrorHandler
-{
-    char* filename_;
-
-    ErrorHandler(const char* filename)
-        : filename_(0)
-    {
-        setFilename(filename);
-    }
-    ~ErrorHandler()
-    {
-        if (filename_)
-            delete[] filename_;
-    }
-
-    void setFilename(const char* filename);
-};
-
-extern ErrorHandler* error;
+#define SWIFT_PREV_ERROR(loc) errorf((loc), "previous location here")
 
 } // namespace swift
 

@@ -25,30 +25,9 @@
 
 namespace swift {
 
-/*
- * global
- */
-
-ErrorHandler* error = 0;
-
-/*
- * further methods
- */
-
-void ErrorHandler::setFilename(const char* filename)
-{
-    if (filename_)
-        delete filename_;
-
-    filename_ = new char[strlen(filename) + 1]; // alloc one more for the NULL-terminator
-    strcpy(filename_, filename);
-}
-
 void errorf(const location& loc, const char* fs, ...)
 {
-    swiftAssert(error, "error is null");
-
-    fprintf(stderr, "%s:%i: error: ", error->filename_, loc.begin.line);
+    fprintf(stderr, "%s:%i: error: ", loc.begin.filename->c_str(), loc.begin.line);
 
     va_list argptr;
     va_start(argptr, fs);
@@ -60,9 +39,7 @@ void errorf(const location& loc, const char* fs, ...)
 
 void warningf(const location& loc, const char* fs, ...)
 {
-    swiftAssert(error, "error is null");
-
-    fprintf(stderr, "%s:%i: warning: ", error->filename_, loc.begin.line);
+    fprintf(stderr, "%s:%i: warning: ", loc.begin.filename->c_str(), loc.begin.line);
 
     va_list argptr;
     va_start(argptr, fs);

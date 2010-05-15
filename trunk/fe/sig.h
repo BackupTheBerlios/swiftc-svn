@@ -17,46 +17,48 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "fe/typelist.h"
+#ifndef SWIFT_PROC
+#define SWIFT_PROC
+
+#include <map>
+#include <string>
+#include <vector>
 
 #include "utils/stringhelper.h"
 
-#include "fe/type.h"
+#include "fe/context.h"
+#include "fe/typelist.h"
 
 namespace swift {
 
-std::string TypeList::toString() const
+class InOut;
+
+//------------------------------------------------------------------------------
+
+class Sig
 {
-    std::string result;
+public:
 
-    for (size_t i = 0; i < size(); ++i)
-    {
-        if ( (*this)[i] )
-            result += (*this)[i]->toString() + ", ";
-        else
-            result += "void, ";
-    }
+    ~Sig();
 
-    if ( !result.empty() )
-        result = result.substr(0, result.size() - 2);
+    void setInList(Context& ctxt);
+    void setOutList(Context& ctxt);
 
-    return result;
-}
+    bool checkIn(Module* module, const TypeList& inTypes) const;
+    bool check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const;
+    bool check(Module* module, const Sig& sig) const;
+    
+    InOut* lookupInOut(const std::string* id) const;
+    void buildTypeLists();
 
-bool TypeList::check(Module* m, const TypeList& t) const
-{
-    // if the sizes do not match the type lists are obviously different
-    if ( size() != t.size() )
-        return false;
+    IOs in_;
+    IOs out_;
+    TypeList inTypes_;
+    TypeList outTypes_;
+};
 
-    // assume a true result in the beginning
-    bool result = true;
-
-    // check each type
-    for (size_t i = 0; result && i < size(); ++i)
-        result &= (*this)[i]->check(t[i], m);
-
-    return result;
-}
+//------------------------------------------------------------------------------
 
 } // namespace swift
+
+#endif //SWIFT_PROC

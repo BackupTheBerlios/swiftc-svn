@@ -25,6 +25,7 @@
 
 namespace swift {
 
+class Module;
 class Type;
 
 //------------------------------------------------------------------------------
@@ -33,12 +34,12 @@ class TypeList : public std::vector<const Type*>
 {
 public:
 
-    /*
-     * further methods
-     */
-
     std::string toString() const;
+    bool check(Module* m, const TypeList& t) const;
 }; 
+
+
+//------------------------------------------------------------------------------
 
 } // namespace swift
 

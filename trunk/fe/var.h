@@ -22,133 +22,55 @@
 
 #include <string>
 
-#include "fe/syntaxtree.h"
-
-#include "me/functab.h"
-
-namespace me {
-    struct Var;
-}
+#include "fe/node.h"
 
 namespace swift {
 
-// forward declaration
-struct Type;
+class Type;
 
 //------------------------------------------------------------------------------
 
-/**
- * This class is the base for a Local or a Param. It is the return value
- * for symtab lookups.
- */
-class Var : public Symbol
+class Var : public Node
 {
 public:
 
-    /*
-     * constructor and destructor
-     */
-
-    Var(Type* type, me::Var* var, std::string* id, location loc);
+    Var(location loc, Type* type, std::string* id);
     virtual ~Var();
 
-    /*
-     * further methods
-     */
-
     const Type* getType() const;
-    me::Var* getMeVar();
+    const std::string* id() const;
+    const char* cid() const;
 
 protected:
 
-    /*
-     * data
-     */
-
     Type* type_;
-    me::Var* meVar_;
+    std::string* id_;
 };
 
 //------------------------------------------------------------------------------
 
-/**
- * This class represents either an ordinary local variable used by the
- * programmer or a compiler generated variable used to store a temporary value.
- */
 class Local : public Var
 {
 public:
 
-    /*
-     * constructor
-     */
-
-    Local(Type* type, me::Var* var, std::string* id, location loc);
+    Local(location loc, Type* type, std::string* id);
 };
 
 //------------------------------------------------------------------------------
 
 /**
- * This class abstracts an parameter of a method, routine etc. 
- *
- * It knows its Kind and Type. Optionally it may know its identifier. So when
- * the Parser sees a parameter a Param with \a id_ will be created. If just a
- * Param is needed to check whether a signature fits a Param without \a id_ can
- * be used.
+ * Either a parameter or a return value.
  */
-class Param : public Var
+class InOut : public Var
 {
-protected:
-
-    /*
-     * constructor
-     */
-
-    Param(Type* type, std::string* id, location loc);
-
 public:
 
-    /*
-     * further methods
-     */
+    InOut(location loc, Type* type, std::string* id);
 
-    /// Check whether this Param has a correct Type.
-    bool validateAndCreateVar(); 
+    bool validate(Module* module) const;
 };
 
 //------------------------------------------------------------------------------
-
-class InParam : public Param
-{
-public:
-
-    /*
-     * constructor
-     */
-
-    InParam(bool inout, Type* type, std::string* id, location loc);
-
-    /*
-     * private
-     */
-
-private:
-
-    bool inout_;
-};
-
-//------------------------------------------------------------------------------
-
-class OutParam : public Param
-{
-public:
-
-    /*
-     * constructor
-     */
-
-    OutParam(Type* type, std::string* id, location loc);
-};
 
 } // namespace swift
 

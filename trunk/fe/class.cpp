@@ -20,245 +20,345 @@
 #include "fe/class.h"
 
 #include <sstream>
-#include <typeinfo>
 
 #include "utils/assert.h"
 
 #include "fe/error.h"
-#include "fe/memberfunction.h"
-#include "fe/signature.h"
-#include "fe/statement.h"
-#include "fe/symtab.h"
+#include "fe/scope.h"
+#include "fe/sig.h"
+#include "fe/token2str.h"
+#include "fe/stmnt.h"
 #include "fe/type.h"
-
-#include "me/functab.h"
-#include "me/offset.h"
-#include "me/struct.h"
-#include "me/ssa.h"
 
 namespace swift {
 
-/*
- * constructor and destructor
- */
+//------------------------------------------------------------------------------
 
-Class::Class(bool simd, std::string* id, Symbol* parent, location loc)
-    : Definition(id, parent, loc)
+Class::Class(location loc, bool simd, std::string* id)
+    : Def(loc, id)
     , simd_(simd)
-    , defaultCreate_(DEFAULT_NONE)
-    , copyCreate_(COPY_USER)
-    , meSimdStruct_(0)
 {}
 
 Class::~Class()
 {
-    delete classMember_;
+    for (size_t i = 0; i < memberVars_.size(); ++i)
+        delete memberVars_[i];
+
+    for (size_t i = 0; i < memberFcts_.size(); ++i)
+        delete memberFcts_[i];
 }
 
-/*
- * further methods
- */
-
-void Class::autoGenMethods()
+void Class::accept(ClassVisitor* c)
 {
-    addDefaultCreate();
-    addCopyCreate();
-    addAssignOperators();
+    c->ctxt_.class_ = this;
+    c->visit(this);
+
+    for (size_t i = 0; i < memberVars_.size(); ++i)
+        memberVars_[i]->accept(c);
+
+    for (size_t i = 0; i < memberFcts_.size(); ++i)
+        memberFcts_[i]->accept(c);
 }
 
-void Class::addDefaultCreate()
+const std::string* Class::id() const
 {
-    // check whether there is already a default constructor
-    TypeList in;
-    Method* create = symtab->lookupCreate(this, in, location()); // TODO location
+    return id_;
+}
 
-    if (create)
-        defaultCreate_ = DEFAULT_USER;
-    else if (!hasCreate_)
+const char* Class::cid() const
+{
+    return id_->c_str();
+}
+
+void Class::insert(Context& ctxt, MemberVar* m)
+{
+    memberVars_.push_back(m);
+
+    MemberVarMap::iterator iter = memberVarMap_.find(m->id());
+
+    if (iter != memberVarMap_.end())
     {
-        /*
-        * -> construct a trivial default constructor 
-        * if there are no constructors defined at all
-        */
-        defaultCreate_ = DEFAULT_TRIVIAL;
+        errorf(m->loc(), "there is already a member variable '%s' defined in class '%s'", m->cid(), cid());
+        SWIFT_PREV_ERROR(iter->second->loc());
 
-        create = new Create(simd_, this, location()); // TODO location
-        symtab->insert(create);
-        create->statements_ = 0;
+        ctxt.result_ = false;
 
-        prependMember(create);
-    }
-}
-
-void Class::addCopyCreate()
-{
-    // check whether there is already a copy constructor
-    BaseType* newType = new BaseType(0, this);
-    TypeList in;
-    in.push_back(newType);
-    Method* create = symtab->lookupCreate(this, in, location()); // TODO location
-
-    if (!create)
-    {
-        copyCreate_ = COPY_AUTO;
-
-        create = new Create(simd_, this, location()); // TODO location
-        create->statements_ = 0;
-        symtab->insert(create);
-        symtab->insertInParam( new InParam(false, newType, new std::string("arg"), location()) ); // TODO location
-
-        prependMember(create);
-    }
-    else
-        delete newType;
-}
-
-void Class::addAssignOperators()
-{
-    // lookup first create method
-    std::string createStr = "create";
-    Class::MemberFunctionMap::const_iterator iter = memberFunctions_.find(&createStr);
-
-    // get iterator to the first method, which has not "create" as identifier
-    Class::MemberFunctionMap::const_iterator last = memberFunctions_.upper_bound(&createStr);
-
-    for (MemberFunction* create = 0; iter != last; ++iter)
-    {
-        create = iter->second;
-        TypeList in = create->sig_->getIn();
-
-        // is this the default constructor?
-        if ( in.empty() )
-            continue;
-
-        // check wether there is already an assign operator defined with this in-types
-        Assign* assign = symtab->lookupAssign(this, create->sig_->getIn(), location()); // TODO location
-
-        if (!assign)
-        {
-            assign = new Assign(simd_, this, location()); // TODO location
-            assign->statements_ = 0;
-            symtab->insert(assign);
-
-            for (size_t i = 0; i < in.size(); ++i)
-                symtab->insertInParam( new InParam(false, in[i]->clone(), new std::string("arg"), location()) ); // TODO location
-
-            prependMember(assign);
-        }
-    }
-}
-
-void Class::prependMember(ClassMember* newMember)
-{
-    // link with this class
-    if (classMember_ == 0)
-        classMember_ = newMember;
-    else
-    {
-        // prepend newMember
-        newMember->next_ = classMember_;
-        classMember_ = newMember;
-    }
-}
-
-bool Class::analyze()
-{
-    if ( BaseType::isBuiltin(id_) )
-    {
-        // skip builtin types.
-        return true;
+        return;
     }
 
-    // assume true as initial state
-    bool result = true;
+    memberVarMap_[m->id()] = m;
 
-    symtab->enterClass(this);
-
-    // for each class member
-    for (ClassMember* iter = classMember_; iter != 0; iter = iter->next_)
-    {
-        /*
-         * TODO since this is an O(n^2) algorithm it should be checked
-         * whether in real-world-programms an O(n log n) algorithm with sorting
-         * is faster
-         */
-        MemberFunction* memberFunction = dynamic_cast<MemberFunction*>(iter);
-        if (memberFunction)
-        {
-            /*
-             * check whether there is method with the same name and the same signature
-             */
-            typedef Class::MemberFunctionMap::iterator Iter;
-            Iter methodIter = memberFunctions_.find(memberFunction->id_);
-
-            // move iter to point to method
-            while (methodIter->second != memberFunction)
-                ++methodIter;
-
-            // and one further to the first item which is not itself
-            ++methodIter;
-
-            // find element behind the last one
-            Iter last = memberFunctions_.upper_bound(memberFunction->id_);
-
-            for (; methodIter != last; ++methodIter)
-            {
-                // check methodQualifier_
-                if ( typeid(*methodIter->second) != typeid(*memberFunction) )
-                    continue;
-
-                if ( methodIter->second->sig_->check(memberFunction->sig_) )
-                {
-                    // TODO better error message
-                    errorf( methodIter->second->loc_, 
-                            "there is already a member function '%s' defined in '%s' line %i",
-                            methodIter->second->toString().c_str(),
-                            memberFunction->getFullName().c_str(), memberFunction->loc_.begin.line );
-
-                    result = false;
-
-                    break;
-                }
-            }
-        }
-
-        result &= iter->analyze();
-    }
-
-    symtab->leaveClass();
-
-    return result;
+    return;
 }
 
-BaseType* Class::createType(int modifier) const
+void Class::insert(Context& ctxt, MemberFct* m)
 {
-    return new BaseType( modifier, this );
+    // TODO reader foo(int, int) <-> writer foo(int, int)
+    memberFcts_.push_back(m);
+
+    MemberFctMap::iterator iter = memberFctMap_.find(m->id());
+    memberFctMap_.insert( std::make_pair(m->id(), m) );
+
+    ctxt.memberFct_ = m;
+}
+
+MemberVar* Class::lookupMemberVar(const std::string* id) const
+{
+    MemberVarMap::const_iterator iter = memberVarMap_.find(id);
+
+    if ( iter == memberVarMap_.end() )
+        return 0;
+
+    return iter->second;
+}
+
+MemberFct* Class::lookupMemberFct(Module* module, const std::string* id, const TypeList& inTypes) const
+{
+    typedef MemberFctMap::const_iterator CIter;
+    std::pair<CIter, CIter> p = memberFctMap_.equal_range(id);
+
+    for (CIter iter = p.first; iter != p.second; ++iter)
+    {
+        MemberFct* m = iter->second;
+
+        if ( m->sig_.checkIn(module, inTypes) )
+            return m;
+    }
+
+    return 0;
 }
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor and destructor
- */
-
-ClassMember::ClassMember(std::string* id, Symbol* parent, location loc)
-    : Symbol(id, parent, loc)
-    , next_(0)
+ClassMember::ClassMember(location loc, std::string* id)
+    : Node(loc)
+    , id_(id)
 {}
 
 ClassMember::~ClassMember()
 {
-    delete next_;
+    delete id_;
+}
+
+const std::string* ClassMember::id() const
+{
+    return id_;
+}
+
+
+const char* ClassMember::cid() const
+{
+    return id_->c_str();
+}
+//------------------------------------------------------------------------------
+
+MemberFct::MemberFct(location loc, bool simd, std::string* id, Scope* scope)
+    : ClassMember(loc, id)
+    , simd_(simd)
+    , scope_(scope)
+{}
+
+MemberFct::~MemberFct()
+{
+    delete scope_;
 }
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor and destructor
- */
+Method::Method(location loc, bool simd, std::string* id, Scope* scope)
+    : MemberFct(loc, simd, id, scope)
+{}
 
-MemberVar::MemberVar(Type* type, std::string* id, Symbol* parent, location loc)
-    : ClassMember(id, parent, loc)
+//------------------------------------------------------------------------------
+
+Reader::Reader(location loc, bool simd, std::string* id, Scope* scope)
+    : Method(loc, simd, id, scope )
+{}
+
+void Reader::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+TokenType Reader::getModifier() const
+{
+    return Token::CONST;
+}
+
+const char* Reader::qualifierStr() const
+{
+    static const char* str = "reader";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+Writer::Writer(location loc, bool simd, std::string* id, Scope* scope)
+    : Method(loc, simd, id, scope )
+{}
+
+void Writer::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+TokenType Writer::getModifier() const
+{
+    return Token::VAR;
+}
+
+const char* Writer::qualifierStr() const
+{
+    static const char* str = "writer";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+Create::Create(location loc, bool simd, Scope* scope)
+    : Method( loc, simd, new std::string("create"), scope )
+{}
+
+void Create::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+TokenType Create::getModifier() const
+{
+    return Token::VAR;
+}
+
+const char* Create::qualifierStr() const
+{
+    static const char* str = "create";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+Assign::Assign(location loc, bool simd, Scope* scope)
+    : Method( loc, simd, new std::string("assign"), scope )
+{}
+
+void Assign::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+TokenType Assign::getModifier() const
+{
+    return Token::VAR;
+}
+
+const char* Assign::qualifierStr() const
+{
+    static const char* str = "assign";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+StaticMethod::StaticMethod(location loc, bool simd, std::string* id, Scope* scope)
+    : MemberFct(loc, simd, id, scope)
+{}
+
+//------------------------------------------------------------------------------
+
+Routine::Routine(location loc, bool simd, std::string* id, Scope* scope)
+    : StaticMethod(loc, simd, id, scope)
+{}
+
+void Routine::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+const char* Routine::qualifierStr() const
+{
+    static const char* str = "routine";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+Operator::Operator(location loc, bool simd, int token, Scope* scope)
+    : StaticMethod(loc, simd, token2str(token), scope)
+    , token_(token)
+    , numIns_( calcNumIns() )
+{}
+
+void Operator::accept(ClassVisitor* c)
+{
+    c->ctxt_.memberFct_ = this;
+    c->ctxt_.enterScope(scope_);
+
+    c->visit(this);
+
+    c->ctxt_.leaveScope();
+}
+
+int Operator::getToken() const
+{
+    return token_;
+}
+
+Operator::NumIns Operator::getNumIns() const
+{
+    return numIns_;
+}
+
+Operator::NumIns Operator::calcNumIns() const
+{
+    switch (token_)
+    {
+        case Token::SUB:
+            return ONE_OR_TWO;
+        case Token::INC:
+        case Token::DEC:
+        case Token::NOT:
+        case Token::L_NOT:
+            return ONE;
+        default:
+            return TWO;
+    }
+}
+
+const char* Operator::qualifierStr() const
+{
+    static const char* str = "operator";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
+MemberVar::MemberVar(location loc, Type* type, std::string* id)
+    : ClassMember(loc, id)
     , type_(type)
 {}
 
@@ -267,63 +367,15 @@ MemberVar::~MemberVar()
     delete type_;
 }
 
-/*
- * further methods
- */
-
-bool MemberVar::analyze()
+void MemberVar::accept(ClassVisitor* c)
 {
-    // registerMeMember is actually the analyze which has been invoked prior
-    return true;
+    c->visit(this);
 }
 
-bool MemberVar::registerMeMember()
-{
-    if (!type_->validate())
-        return false;
+//------------------------------------------------------------------------------
 
-    me::Op::Type meType = type_->toMeType();
-
-    if ( dynamic_cast<Container*>(type_) )
-    {
-#ifdef SWIFT_DEBUG
-        meMember_ = me::functab->appendMember( Container::getMeStruct(), *id_ );
-#else // SWIFT_DEBUG
-        meMember_ = me::functab->appendMember( Container::getMeStruct() );
-#endif // SWIFT_DEBUG
-    }
-    else if (meType == me::Op::R_MEM)
-    {
-        swiftAssert( typeid(*type_) == typeid(BaseType),
-                "must be a BaseType here" );
-        BaseType* bt = (BaseType*) type_;
-
-        Class* _class = bt->lookupClass();
-        swiftAssert(_class, "must be found here");
-
-#ifdef SWIFT_DEBUG
-        meMember_ = me::functab->appendMember(_class->meStruct_, *id_);
-#else // SWIFT_DEBUG
-        meMember_ = me::functab->appendMember(_class->meStruct_);
-#endif // SWIFT_DEBUG
-    }
-    else
-    {
-        // -> it is a builtin type or a pointer
-#ifdef SWIFT_DEBUG
-        meMember_ = me::functab->appendMember( new me::AtomicAggregate(meType), *id_ );
-#else // SWIFT_DEBUG
-        meMember_ = me::functab->appendMember( new me::AtomicAggregate(meType) );
-#endif // SWIFT_DEBUG
-    }
-
-    return true;
-}
-
-void Class::vectorize()
-{
-    if (simd_)
-        meSimdStruct_ = me::functab->vectorize(meStruct_);
-}
+ClassVisitor::ClassVisitor(Context& ctxt)
+    : ctxt_(ctxt)
+{}
 
 } // namespace swift

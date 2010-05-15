@@ -17,103 +17,58 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "var.h"
+#include "fe/var.h"
 
 #include "fe/type.h"
 
-#include "me/functab.h"
-
 namespace swift {
 
-/*
- * constructor and destructor
- */
+//------------------------------------------------------------------------------
 
-Var::Var(Type* type, me::Var* var, std::string* id, location loc)
-    : Symbol(id, 0, loc) // Vars (Params or Locals) never have parents
+Var::Var(location loc, Type* type, std::string* id)
+    : Node(loc) 
     , type_(type)
-    , meVar_(var)
+    , id_(id)
 {}
 
 Var::~Var()
 {
     delete type_;
+    delete id_;
 }
-
-/*
- * further methods
- */
 
 const Type* Var::getType() const
 {
     return type_;
 }
 
-me::Var* Var::getMeVar()
+const std::string* Var::id() const
 {
-    return meVar_;
+    return id_;
+}
+
+const char* Var::cid() const
+{
+    return id_->c_str();
 }
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor
- */
-
-Local::Local(Type* type, me::Var* var, std::string* id, location loc)
-    : Var(type, var, id, loc)
+Local::Local(location loc, Type* type, std::string* id)
+    : Var(loc, type, id)
 {}
 
 //------------------------------------------------------------------------------
 
-/*
- * constructor and destructor
- */
-
-Param::Param(Type* type, std::string* id, location loc)
-    : Var(type, 0, id, loc)
+InOut::InOut(location loc, Type* type, std::string* id)
+    : Var(loc, type, id)
 {}
 
-/*
- * further methods
- */
-
-bool Param::validateAndCreateVar()
+bool InOut::validate(Module* module) const
 {
-    meVar_ = type_->createVar(id_);
-
-    return type_->validate();
+    return type_->validate(module);
 }
 
 //------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-InParam::InParam(bool inout, Type* type, std::string* id, location loc)
-    : Param(type, id, loc)
-    , inout_(inout)
-{
-    if ( !type->isAtomic() )
-        type_->modifier() = inout ? Token::REF : Token::CONST_REF;
-    else
-        type_->modifier() = inout ? Token::VAR : Token::CONST;
-}
-
-//------------------------------------------------------------------------------
-
-/*
- * constructor and destructor
- */
-
-OutParam::OutParam(Type* type, std::string* id, location loc)
-    : Param(type, id, loc)
-{
-    if ( !type->isAtomic() )
-        type_->modifier() = Token::REF;
-    else
-        type_->modifier() = Token::VAR;
-}
 
 } // namespace swift

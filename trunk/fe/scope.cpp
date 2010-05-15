@@ -20,14 +20,11 @@
 #include "fe/scope.h"
 
 #include "fe/error.h"
-#include "fe/signature.h"
+#include "fe/sig.h"
+#include "fe/stmnt.h"
 #include "fe/var.h"
 
 namespace swift {
-
-/*
- * constructor and destructor
- */
 
 Scope::Scope(Scope* parent)
     : parent_(parent)
@@ -35,51 +32,55 @@ Scope::Scope(Scope* parent)
 
 Scope::~Scope()
 {
-    // delete each child scope
-    for (size_t i = 0; i < childScopes_.size(); ++i)
-        delete childScopes_[i];
+    for (size_t i = 0; i < stmnts_.size(); ++i)
+        delete stmnts_[i];
 }
 
-/*
- * further methods
- */
-
-Local* Scope::lookupLocal(const std::string* id)
+Local* Scope::lookupLocalOneLevelOnly(const std::string* id)
 {
     LocalMap::const_iterator iter = locals_.find(id);
     if ( iter != locals_.end() )
         return iter->second;
     else
-    {
-        // try to find in parent scope
-        if (parent_)
-            return parent_->lookupLocal(id);
-        else
-            return 0;
-    }
+        return 0;
 }
 
-bool Scope::insert(Local* local, const Signature* sig)
+Local* Scope::lookupLocal(const std::string* id)
+{
+    if ( Local* local = lookupLocalOneLevelOnly(id) )
+        return local;
+    else if (parent_) // try to find in parent scope
+        return parent_->lookupLocal(id);
+
+    // indicate "not found"
+    return 0;
+}
+
+bool Scope::insert(Local* local)
 {
     std::pair<LocalMap::iterator, bool> p 
-        = locals_.insert( std::make_pair(local->id_, local) );
+        = locals_.insert( std::make_pair(local->id(), local) );
 
     if ( !p.second )
     {
-        errorf(local->loc_, "there is already a local '%s' defined in this scope in line %i",
-            local->id_->c_str(), p.first->second->loc_.begin.line);
+        errorf(local->loc(), "there is already a local '%s' defined in this scope", local->cid());
+        SWIFT_PREV_ERROR( p.first->second->loc() );
 
-        return false;
-    }
-
-    const Param* found = sig->findParam(local->id_);
-    if (found)
-    {
-        errorf(local->loc_, "local '%s' shadows a parameter", local->id_->c_str());
         return false;
     }
 
     return true;
+}
+
+void Scope::appendStmnt(Stmnt* stmnt)
+{
+    stmnts_.push_back(stmnt);
+}
+
+void Scope::accept(StmntVisitor* s)
+{
+    for (size_t i = 0; i < stmnts_.size(); ++i)
+        stmnts_[i]->accept(s);
 }
 
 } // namespace swift
