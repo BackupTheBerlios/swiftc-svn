@@ -139,19 +139,6 @@ public:
 
 //------------------------------------------------------------------------------
 
-class Assign : public Method
-{
-public:
-
-    Assign(location loc, bool simd, Scope* scope);
-
-    virtual void accept(ClassVisitor* c);
-    virtual TokenType getModifier() const;
-    virtual const char* qualifierStr() const;
-};
-
-//------------------------------------------------------------------------------
-
 class Create : public Method
 {
 public:
@@ -196,6 +183,22 @@ class StaticMethod : public MemberFct
 public:
 
     StaticMethod(location loc, bool simd, std::string* id, Scope* scope);
+};
+
+//------------------------------------------------------------------------------
+
+class Assign : public StaticMethod
+{
+public:
+
+    Assign(location loc, bool simd, int token, Scope* scope);
+
+    virtual void accept(ClassVisitor* c);
+    virtual TokenType getModifier() const;
+    virtual const char* qualifierStr() const;
+    int getToken() const;
+
+    int token_;
 };
 
 //------------------------------------------------------------------------------
@@ -264,12 +267,12 @@ public:
     virtual void visit(Class* c) = 0;
 
     // ClassMember -> MemberFct -> Method
-    virtual void visit(Assign* a) = 0;
     virtual void visit(Create* c) = 0;
     virtual void visit(Reader* r) = 0;
     virtual void visit(Writer* w) = 0;
 
     // ClassMember -> MemberFct -> StaticMethod
+    virtual void visit(Assign* a) = 0;
     virtual void visit(Operator* o) = 0;
     virtual void visit(Routine* r) = 0;
 
@@ -277,10 +280,10 @@ public:
     virtual void visit(MemberVar* m) = 0;
 
     friend void Class::accept(ClassVisitor* c);
-    friend void Assign::accept(ClassVisitor* c);
     friend void Create::accept(ClassVisitor* c);
     friend void Reader::accept(ClassVisitor* c);
     friend void Writer::accept(ClassVisitor* c);
+    friend void Assign::accept(ClassVisitor* c);
     friend void Operator::accept(ClassVisitor* c);
     friend void Routine::accept(ClassVisitor* c);
 

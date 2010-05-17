@@ -219,7 +219,7 @@ void Class::addAssignCreate(Context& ctxt)
     {
         // add copy assign
         Scope* scope = ctxt.enterScope();
-        Assign* assign = new Assign(loc_, false, scope);
+        Assign* assign = new Assign(loc_, false, Token::ASGN, scope);
         ctxt.memberFct_ = assign;
         assign->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
         assign->sig_.buildTypeLists();
@@ -371,8 +371,9 @@ const char* Create::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-Assign::Assign(location loc, bool simd, Scope* scope)
-    : Method( loc, simd, new std::string("assign"), scope )
+Assign::Assign(location loc, bool simd, int token, Scope* scope)
+    : StaticMethod( loc, simd, token2str(token), scope )
+    , token_(token)
 {}
 
 void Assign::accept(ClassVisitor* c)
@@ -394,6 +395,11 @@ const char* Assign::qualifierStr() const
 {
     static const char* str = "assign";
     return str;
+}
+
+int Assign::getToken() const
+{
+    return token_;
 }
 
 //------------------------------------------------------------------------------

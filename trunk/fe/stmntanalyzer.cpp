@@ -128,8 +128,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     }
     else
     {
-        str = "assign";
-        name = "assignment";
+        str = "=";
+        name = "operator";
     }
 
     const BaseType* bt = lhs->type_->isInner();

@@ -30,6 +30,8 @@ std::string* token2str(int token)
         case Token:: GT: return new std::string(">");
         case Token:: GE: return new std::string(">=");
 
+        case Token::ASGN: return new std::string("=");
+
         default: swiftAssert(false, "unhandled case");
     }
 

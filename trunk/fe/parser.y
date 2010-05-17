@@ -86,7 +86,7 @@ using namespace swift;
 %token SELF
 
 // method qualifier
-%token READER WRITER ROUTINE ASSIGN OPERATOR
+%token READER WRITER ROUTINE OPERATOR ASSIGN
 
 %token ARROW
 %token DOUBLE_COLON
@@ -133,7 +133,7 @@ using namespace swift;
 %type <decl_> decl
 %type <exprList_> expr_list expr_list_not_empty
 %type <expr_> expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
-%type <int_> method_qualifier operator
+%type <int_> method_qualifier operator assign
 %type <memberFct_> member_function
 %type <memberVar_> member_var
 %type <scope_> if_head
@@ -257,16 +257,16 @@ member_function
             $$->sig_.buildTypeLists();
             ctxt_.leaveScope();
         }
-    | simd_modifier ASSIGN 
+    | simd_modifier ASSIGN assign
         {
             Scope* scope = ctxt_.enterScope();
-            $<memberFct_>$ = new Assign(@$, $1, scope);
+            $<memberFct_>$ = new Assign(@$,  $1, $3, scope);
             ctxt_.class_->insert(ctxt_, $<memberFct_>$);
             ctxt_.memberFct_->sig_.setInList(ctxt_);
         }
         '(' io_list ')' EOL stmnt_list END EOL
         {
-            $$ = $<memberFct_>3;
+            $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
             ctxt_.leaveScope();
         }
@@ -277,8 +277,7 @@ member_function
             ctxt_.class_->insert(ctxt_, $<memberFct_>$);
             ctxt_.memberFct_->sig_.setInList(ctxt_);
         }
-        '(' io_list')'
-        EOL stmnt_list END EOL
+        '(' io_list')' EOL stmnt_list END EOL
         {
             $$ = $<memberFct_>3;
             $$->sig_.buildTypeLists();
@@ -306,7 +305,10 @@ operator
     |   L_OR   { $$ = Token::L_OR;  }
     |   L_XOR  { $$ = Token::L_XOR; }
     |   L_NOT  { $$ = Token::L_NOT; }
-    |   ASSIGN { $$ = Token::ASSIGN; }
+    ;
+
+assign
+    : ASGN  { $$ = Token::ASGN; }
     ;
 
 io_list_not_empty
@@ -548,7 +550,7 @@ expr_list
 
 expr_list_not_empty
     : expr                         { $$ = new ExprList(@$, $1,  0); }
-    | expr_list_not_empty ',' expr { $$ = new ExprList(@$, $3, $1); }
+    | expr ',' expr_list_not_empty { $$ = new ExprList(@$, $1, $3); }
     ;
 
 decl

@@ -14,12 +14,12 @@ public:
     virtual void visit(Class* c);
 
     // ClassMember -> MemberFct -> Method
-    virtual void visit(Assign* a);
     virtual void visit(Create* c);
     virtual void visit(Reader* r);
     virtual void visit(Writer* w);
 
     // ClassMember -> MemberFct -> StaticMethod
+    virtual void visit(Assign* a);
     virtual void visit(Operator* o);
     virtual void visit(Routine* r);
 

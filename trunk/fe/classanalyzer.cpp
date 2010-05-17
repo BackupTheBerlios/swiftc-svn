@@ -12,15 +12,7 @@ ClassAnalyzer::ClassAnalyzer(Context& ctxt)
     : ClassVisitor(ctxt)
 {}
 
-void ClassAnalyzer::visit(Class* c)
-{
-}
-
-void ClassAnalyzer::visit(Assign* a)
-{
-    checkSig(a);
-    checkStmnts(a);
-}
+void ClassAnalyzer::visit(Class* c) {}
 
 void ClassAnalyzer::visit(Create* c)
 {
@@ -40,11 +32,34 @@ void ClassAnalyzer::visit(Writer* w)
     checkStmnts(w);
 }
 
+void ClassAnalyzer::visit(Assign* a)
+{
+    checkSig(a);
+    TypeList& in = a->sig_.inTypes_;
+
+    if ( in.empty() )
+    {
+        errorf( a->loc(), "an assignment must at least have one parameter" );
+        ctxt_.result_ = false;
+    }
+    else
+    {
+        const BaseType* bt = in[0]->isInner();
+        if (bt && bt->lookupClass(ctxt_.module_) != ctxt_.class_ )
+        {
+            errorf(a->loc(), "first parameter of an assignment must be of class '%s'", 
+                    ctxt_.class_->cid());
+            ctxt_.result_ = false;
+        }
+    }
+
+    checkStmnts(a);
+}
+
 void ClassAnalyzer::visit(Operator* o)
 {
     checkSig(o);
     TypeList& in = o->sig_.inTypes_;
-    //TypeList& out = o->sig_.inTypes_;
 
     Operator::NumIns numIns = o->getNumIns();
 

@@ -127,8 +127,8 @@ end      { SET_LOC; return Token::END; }
 create   { SET_LOC; return Token::CREATE; }
 destroy  { SET_LOC; return Token::DESTROY; }
 reader   { SET_LOC; return Token::READER; }
-writer   { SET_LOC; return Token::WRITER; }
 assign   { SET_LOC; return Token::ASSIGN; }
+writer   { SET_LOC; return Token::WRITER; }
 routine  { SET_LOC; return Token::ROUTINE; }
 operator { SET_LOC; return Token::OPERATOR; }
 
