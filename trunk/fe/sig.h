@@ -45,8 +45,9 @@ public:
     void setOutList(Context& ctxt);
 
     bool checkIn(Module* module, const TypeList& inTypes) const;
-    bool check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const;
-    bool check(Module* module, const Sig& sig) const;
+    bool checkOut(Module* module, const TypeList& outTypes) const;
+    //bool check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const;
+    //bool check(Module* module, const Sig& sig) const;
     
     InOut* lookupInOut(const std::string* id) const;
     void buildTypeLists();

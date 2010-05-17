@@ -215,13 +215,10 @@ void TypeNodeAnalyzer::postVisit(UnExpr* u)
 
 void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 {
-    TypeList inTypes;
-
     if ( !m->exprList_->isValid() )
         return;
 
-    for (ExprList* iter = m->exprList_; iter != 0; iter = iter->next_)
-        inTypes.push_back(iter->expr_->type_);
+    TypeList inTypes = m->exprList_->buildTypeList();
 
     if (m->class_)
     {

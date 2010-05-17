@@ -133,7 +133,6 @@ protected:
 public:
 
     ExprList* exprList_;
-    TypeList inTypes_;
 };
 
 //------------------------------------------------------------------------------
@@ -339,9 +338,10 @@ public:
 
     virtual void accept(TypeNodeVisitor* t);
     bool isValid() const;
+    TypeList buildTypeList();
 
-    Expr* expr_;     ///< the Expr owned by this instance.
-    ExprList* next_; ///< next element in the list, 0 if this is the last one.
+    Expr* expr_;
+    ExprList* next_;
 };
 
 //------------------------------------------------------------------------------
@@ -355,11 +355,13 @@ public:
 
     virtual void accept(TypeNodeVisitor* t);
     bool isValid() const;
+    TypeList buildTypeList();
+
+    TypeNode* typeNode_;
 
 private:
 
-    TypeNode* typeNode_; ///< Actual data.
-    Tuple* next_;        ///< Next element in the list, 0 if this is the last one.
+    Tuple* next_;
 };
 
 //------------------------------------------------------------------------------

@@ -425,6 +425,16 @@ bool ExprList::isValid() const
     return result;
 }
 
+TypeList ExprList::buildTypeList()
+{
+    TypeList types;
+
+    for (ExprList* iter = this; iter != 0; iter = iter->next_)
+        types.push_back(iter->expr_->type_);
+
+    return types;
+}
+
 //------------------------------------------------------------------------------
 
 Tuple::Tuple(location loc, TypeNode* typeNode, Tuple* next)
@@ -458,6 +468,17 @@ bool Tuple::isValid() const
 
     return result;
 }
+
+TypeList Tuple::buildTypeList()
+{
+    TypeList types;
+
+    for (Tuple* iter = this; iter != 0; iter = iter->next_)
+        types.push_back(iter->typeNode_->type_);
+
+    return types;
+}
+
 
 //------------------------------------------------------------------------------
 

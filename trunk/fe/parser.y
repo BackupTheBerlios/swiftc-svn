@@ -183,10 +183,13 @@ simd_modifier
 class
     : simd_modifier CLASS ID EOL
         {
-            Class* c = new Class(@$, $1, $3);
-            ctxt_.module_->insert(ctxt_, c);
+            $<class_>$ = new Class(@$, $1, $3);
+            ctxt_.module_->insert(ctxt_, $<class_>$);
         }
-        class_body END EOL
+        class_body END EOL 
+        {
+            $<class_>5->addAssignCreate(ctxt_);
+        }
     ;
 
 class_body

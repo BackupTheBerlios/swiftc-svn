@@ -115,4 +115,5 @@ ADD_CUSTOM_COMMAND (
     POST_BUILD
     COMMAND ./gentypes.sh
     WORKING_DIRECTORY fe/builtin
+    DEPENDS fe/builtin/int_template.swift fe/builtin/real_template.swift fe/builtin/bool.swift
 )

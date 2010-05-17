@@ -37,6 +37,9 @@ namespace swift {
 Class::Class(location loc, bool simd, std::string* id)
     : Def(loc, id)
     , simd_(simd)
+    , copyCreate_(NOT_ANALYZED)
+    , defaultCreate_(NOT_ANALYZED)
+    , copyAssign_(NOT_ANALYZED)
 {}
 
 Class::~Class()
@@ -126,6 +129,122 @@ MemberFct* Class::lookupMemberFct(Module* module, const std::string* id, const T
     }
 
     return 0;
+}
+
+void Class::addAssignCreate(Context& ctxt)
+{
+    typedef MemberFctMap::const_iterator CIter;
+
+    // create base type of this class
+    BaseType bt( loc(), Token::CONST, new std::string(*id_) );
+
+    // needed for signature check
+    TypeList empty;
+    TypeList in;
+    in.push_back(&bt);
+
+    {
+        // is there any user defined copy or default constructor?
+        std::string str = "create";
+        std::pair<CIter, CIter> p = memberFctMap_.equal_range(&str);
+
+        for (CIter iter = p.first; iter != p.second; ++iter)
+        {
+            MemberFct* m = iter->second;
+
+            if ( m->sig_.checkIn(ctxt.module_, in) )
+            {
+                copyCreate_ = USER;
+
+                if (defaultCreate_ != NOT_ANALYZED)
+                    break;
+            }
+            else if ( m->sig_.checkIn(ctxt.module_, empty) )
+            {
+                defaultCreate_ = USER;
+
+                if (copyCreate_ != NOT_ANALYZED)
+                    break;
+            }
+        }
+    }
+
+    {
+        // is there any user defined copy assignment?
+        std::string str = "assign";
+        std::pair<CIter, CIter> p = memberFctMap_.equal_range(&str);
+
+        for (CIter iter = p.first; iter != p.second; ++iter)
+        {
+            MemberFct* m = iter->second;
+
+            if ( m->sig_.checkIn(ctxt.module_, in) )
+            {
+                copyAssign_ = USER;
+                break;
+            }
+        }
+    }
+
+    if (defaultCreate_ == NOT_ANALYZED)
+    {
+        // add default create
+        Scope* scope = ctxt.enterScope();
+        Create* create = new Create(loc_, false, scope);
+        ctxt.leaveScope();
+
+        memberFcts_.push_back(create);
+        memberFctMap_.insert( std::make_pair(create->id(), create) );
+
+        defaultCreate_ = DEFAULT;
+    }
+
+    if (copyCreate_ == NOT_ANALYZED)
+    {
+        // add copy create
+        Scope* scope = ctxt.enterScope();
+        Create* create = new Create(loc_, false, scope);
+        ctxt.memberFct_ = create;
+        create->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
+        create->sig_.buildTypeLists();
+        ctxt.leaveScope();
+
+        memberFcts_.push_back(create);
+        memberFctMap_.insert( std::make_pair(create->id(), create) );
+
+        copyCreate_ = DEFAULT;
+    }
+
+    if (copyAssign_ == NOT_ANALYZED)
+    {
+        // add copy assign
+        Scope* scope = ctxt.enterScope();
+        Assign* assign = new Assign(loc_, false, scope);
+        ctxt.memberFct_ = assign;
+        assign->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
+        assign->sig_.buildTypeLists();
+        ctxt.leaveScope();
+
+        memberFcts_.push_back(assign);
+        memberFctMap_.insert( std::make_pair(assign->id(), assign) );
+
+        copyAssign_ = DEFAULT;
+    }
+}
+
+Class::Impl Class::getCopyCreate() const
+{
+    return copyCreate_;
+}
+
+Class::Impl Class::getDefaultCreate() const
+{
+    return defaultCreate_;
+}
+
+Class::Impl Class::getAssign() const
+{
+    return copyAssign_;
 }
 
 //------------------------------------------------------------------------------

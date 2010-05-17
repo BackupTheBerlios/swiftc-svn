@@ -59,15 +59,20 @@ bool Sig::checkIn(Module* module, const TypeList& inTypes) const
     return inTypes_.check(module, inTypes);
 }
 
-bool Sig::check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const
+bool Sig::checkOut(Module* module, const TypeList& outTypes) const
 {
-    return inTypes_.check(module, inTypes) && outTypes_.check(module, outTypes);
+    return outTypes_.check(module, outTypes);
 }
 
-bool Sig::check(Module* module, const Sig& sig) const
-{
-    return check(module, sig.inTypes_, sig.outTypes_);
-}
+//bool Sig::check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const
+//{
+    //return inTypes_.check(module, inTypes) && outTypes_.check(module, outTypes);
+//}
+
+//bool Sig::check(Module* module, const Sig& sig) const
+//{
+    //return check(module, sig.inTypes_, sig.outTypes_);
+//}
 
 InOut* Sig::lookupInOut(const std::string* id) const
 {

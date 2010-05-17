@@ -53,6 +53,20 @@ public:
     void insert(Context& ctxt, MemberFct* m);
     MemberFct* lookupMemberFct(Module* module, const std::string* id, const TypeList&) const;
     MemberVar* lookupMemberVar(const std::string* id) const;
+    void addAssignCreate(Context& ctxt);
+
+    enum Impl
+    {
+        NONE,
+        USER,
+        DEFAULT,
+        NOT_ANALYZED
+    };
+
+    Impl getCopyCreate() const;
+    Impl getDefaultCreate() const;
+    Impl getAssign() const;
+
 
 private:
 
@@ -67,6 +81,10 @@ private:
     MemberFcts memberFcts_;
     MemberFctMap memberFctMap_;
     MemberVarMap memberVarMap_;         
+
+    Impl copyCreate_;
+    Impl defaultCreate_;
+    Impl copyAssign_;
 };
 
 //------------------------------------------------------------------------------
