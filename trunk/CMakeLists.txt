@@ -96,6 +96,7 @@ ADD_EXECUTABLE (swift
     fe/sig.cpp
     fe/stmnt.cpp
     fe/stmntanalyzer.cpp
+    fe/stmntcodegen.cpp
     fe/token2str.cpp
     fe/type.cpp
     fe/typelist.cpp
