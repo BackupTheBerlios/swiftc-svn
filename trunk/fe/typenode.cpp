@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "fe/context.h"
 #include "fe/token2str.h"
 #include "fe/type.h"
 #include "fe/var.h"
@@ -487,7 +488,7 @@ TypeList Tuple::buildTypeList()
 
 //------------------------------------------------------------------------------
 
-TypeNodeVisitorBase::TypeNodeVisitorBase(Context& ctxt)
+TypeNodeVisitorBase::TypeNodeVisitorBase(Context* ctxt)
     : ctxt_(ctxt)
 {}
 

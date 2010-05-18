@@ -9,7 +9,7 @@ template <>
 class StmntVisitor<class Analyzer> : public StmntVisitorBase
 {
 public:
-    StmntVisitor(Context& ctxt);
+    StmntVisitor(Context* ctxt);
 
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);

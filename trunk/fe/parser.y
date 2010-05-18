@@ -21,7 +21,7 @@
 %debug
 %define namespace "swift"
 %define parser_class_name "Parser"
-%parse-param {Context& ctxt_}
+%parse-param {Context* ctxt_}
 
 %{
 
@@ -29,6 +29,7 @@
 
 #include "fe/auto.h"
 #include "fe/class.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/sig.h"
@@ -184,7 +185,7 @@ class
     : simd_modifier CLASS ID EOL
         {
             $<class_>$ = new Class(@$, $1, $3);
-            ctxt_.module_->insert(ctxt_, $<class_>$);
+            ctxt_->module_->insert(ctxt_, $<class_>$);
         }
         class_body END EOL 
         {
@@ -217,7 +218,7 @@ method_qualifier
 member_function
     : simd_modifier method_qualifier ID
         {
-            Scope* scope = ctxt_.enterScope();
+            Scope* scope = ctxt_->enterScope();
 
             switch ($2)
             {
@@ -227,61 +228,61 @@ member_function
                 default: swiftAssert(false, "unreachable code");
             }
 
-            ctxt_.class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_.memberFct_->sig_.setInList(ctxt_);
+            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
+            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
         '(' io_list ')' 
         {
-            ctxt_.memberFct_->sig_.setOutList(ctxt_);
+            ctxt_->memberFct_->sig_.setOutList(ctxt_);
         }
         ret_list stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
         }
     | simd_modifier OPERATOR operator
         {
-            Scope* scope = ctxt_.enterScope();
+            Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Operator(@$,  $1, $3, scope);
-            ctxt_.class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_.memberFct_->sig_.setInList(ctxt_);
+            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
+            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
         '(' io_list ')' 
         {
-            ctxt_.memberFct_->sig_.setOutList(ctxt_);
+            ctxt_->memberFct_->sig_.setOutList(ctxt_);
         }
         ret_list stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
         }
     | simd_modifier ASSIGN assign
         {
-            Scope* scope = ctxt_.enterScope();
+            Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Assign(@$,  $1, $3, scope);
-            ctxt_.class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_.memberFct_->sig_.setInList(ctxt_);
+            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
+            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
         '(' io_list ')' EOL stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
         }
     | simd_modifier CREATE
         {
-            Scope* scope = ctxt_.enterScope();
+            Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Create(@$, $1, scope);
-            ctxt_.class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_.memberFct_->sig_.setInList(ctxt_);
+            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
+            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
         '(' io_list')' EOL stmnt_list END EOL
         {
             $$ = $<memberFct_>3;
             $$->sig_.buildTypeLists();
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
         }
     ;
 
@@ -327,7 +328,7 @@ ret_list
     ;
 
 io
-    : bare_type ID { ctxt_.ios_->push_back( new InOut(@$, $1, $2) ); }
+    : bare_type ID { ctxt_->ios_->push_back( new InOut(@$, $1, $2) ); }
     ;
 
 /*
@@ -340,7 +341,7 @@ member_var
     : type ID EOL
         {
             $$ = new MemberVar(@$, $1, $2);
-            ctxt_.class_->insert(ctxt_, $$);
+            ctxt_->class_->insert(ctxt_, $$);
         }
     ;
 
@@ -352,7 +353,7 @@ member_var
 
 stmnt_list
     : /* empty */
-    | stmnt_list stmnt { ctxt_.scope()->appendStmnt($2); }
+    | stmnt_list stmnt { ctxt_->scope()->appendStmnt($2); }
     | stmnt_list error EOL
     ;
 
@@ -373,45 +374,45 @@ stmnt
     */
     | WHILE 
         { 
-            $<scope_>$ = ctxt_.enterScope(); 
+            $<scope_>$ = ctxt_->enterScope(); 
         } 
         expr EOL stmnt_list END EOL 
         { 
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
             $$ = new WhileStmnt(@$, $3, $<scope_>2);
         }
     | REPEAT EOL 
         { 
-            $<scope_>$ = ctxt_.enterScope(); 
+            $<scope_>$ = ctxt_->enterScope(); 
         } 
         stmnt_list UNTIL expr EOL 
         { 
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
             $$ = new RepeatUntilStmnt(@$, $6, $<scope_>3);
         }
     | SCOPE EOL 
         { 
-            $<scope_>$ = ctxt_.enterScope(); 
+            $<scope_>$ = ctxt_->enterScope(); 
         } 
         stmnt_list END EOL 
         { 
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
             $$ = new ScopeStmnt(@$, $<scope_>3);
         }
 
     | if_head expr EOL stmnt_list END EOL 
         { 
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
             $$ = new IfElStmnt(@$, $2, $1, 0); 
         }
     | if_head expr EOL stmnt_list ELSE EOL 
         { 
-            ctxt_.leaveScope(); 
-            $<scope_>$ = ctxt_.enterScope(); 
+            ctxt_->leaveScope(); 
+            $<scope_>$ = ctxt_->enterScope(); 
         } 
         stmnt_list END EOL 
         { 
-            ctxt_.leaveScope();
+            ctxt_->leaveScope();
             $$ = new IfElStmnt(@$, $2, $1, $<scope_>7); 
         }
 
@@ -425,7 +426,7 @@ stmnt
 
 
 if_head
-    : IF { $$ = ctxt_.enterScope(); }
+    : IF { $$ = ctxt_->enterScope(); }
     ;
 
 /*
@@ -565,10 +566,10 @@ tuple
     ;
 
 bare_type
-    : ID                 { $$ = new BaseType(@$, ctxt_.var_ ? Token::VAR : Token::CONST, $1); }
-    | PTR   '{' type '}' { $$ = new      Ptr(@$, ctxt_.var_ ? Token::VAR : Token::CONST, $3); }
-    | ARRAY '{' type '}' { $$ = new    Array(@$, ctxt_.var_ ? Token::VAR : Token::CONST, $3); }
-    | SIMD  '{' type '}' { $$ = new     Simd(@$, ctxt_.var_ ? Token::VAR : Token::CONST, $3); }
+    : ID                 { $$ = new BaseType(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $1); }
+    | PTR   '{' type '}' { $$ = new      Ptr(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
+    | ARRAY '{' type '}' { $$ = new    Array(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
+    | SIMD  '{' type '}' { $$ = new     Simd(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
     ;
 
 type
@@ -590,6 +591,6 @@ type
 
 void Parser::error(const location_type& loc, const std::string& str)
 {
-    ctxt_.result_ = false;
+    ctxt_->result_ = false;
     errorf(loc, "parse error");
 }

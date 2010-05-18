@@ -10,7 +10,7 @@ class ClassVisitor<class Analyzer> : public ClassVisitorBase
 {
 public:
 
-    ClassVisitor(Context& ctxt);
+    ClassVisitor(Context* ctxt);
 
     virtual void visit(Class* c);
 

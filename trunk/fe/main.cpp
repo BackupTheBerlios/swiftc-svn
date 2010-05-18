@@ -27,6 +27,7 @@
 
 #include "fe/auto.h"
 #include "fe/cmdlineparser.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/type.h"
 #include "fe/typenode.h"
@@ -35,7 +36,7 @@
 
 // forward declarations
 
-void readBuiltinTypes(swift::Context& ctxt);
+void readBuiltinTypes(swift::Context* ctxt);
 int start(int argc, char** argv);
 
 //------------------------------------------------------------------------------
@@ -78,7 +79,7 @@ int start(int argc, char** argv)
     ctxt.module_ = new swift::Module( swift::location(), new std::string("default") ); // TODO location 
 
     // populate data structures with builtin types
-    readBuiltinTypes(ctxt);
+    readBuiltinTypes(&ctxt);
 
     // try to open the input file and init the lexer
     FILE* file = swift::lexer_init(cmdLineParser.filename_);
@@ -88,17 +89,17 @@ int start(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    swift::Parser parser(ctxt);
+    swift::Parser parser(&ctxt);
 #if 0
     parser.set_debug_level(1);
     parser.set_debug_stream(std::cerr);
 #endif
     parser.parse();
 
-    ctxt.module_->analyze(ctxt);
+    ctxt.module_->analyze(&ctxt);
 
     if (ctxt.result_)
-        ctxt.module_->codeGen(ctxt);
+        ctxt.module_->codeGen(&ctxt);
 
     /*
      * clean up front-end
@@ -117,7 +118,7 @@ int start(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
-void readBuiltinTypes(swift::Context& ctxt)
+void readBuiltinTypes(swift::Context* ctxt)
 {
     std::vector<const char*> builtin;
 

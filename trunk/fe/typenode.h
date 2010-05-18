@@ -413,7 +413,7 @@ class TypeNodeVisitorBase
 {
 public:
     
-    TypeNodeVisitorBase(Context& ctxt);
+    TypeNodeVisitorBase(Context* ctxt);
 
     virtual void visit(Decl* d) = 0;
 
@@ -449,7 +449,7 @@ public:
 
 protected:
 
-    Context& ctxt_;
+    Context* ctxt_;
 };
 
 //------------------------------------------------------------------------------

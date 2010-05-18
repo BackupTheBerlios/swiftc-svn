@@ -3,6 +3,7 @@
 #include <typeinfo>
 
 #include "fe/class.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/type.h"
@@ -10,7 +11,7 @@
 
 namespace swift {
 
-StmntAnalyzer::StmntVisitor(Context& ctxt)
+StmntAnalyzer::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
 {}
 
@@ -31,7 +32,7 @@ void StmntAnalyzer::visit(IfElStmnt* s)
     {
         errorf(s->expr_->loc(), 
                 "the check condition of an if-clause must return a 'bool'");
-        ctxt_.result_ = false;
+        ctxt_->result_ = false;
     }
 }
 
@@ -44,7 +45,7 @@ void StmntAnalyzer::visit(RepeatUntilStmnt* s)
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
-        ctxt_.result_ = false;
+        ctxt_->result_ = false;
     }
 }
 
@@ -59,7 +60,7 @@ void StmntAnalyzer::visit(WhileStmnt* s)
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a while statement must return a 'bool'");
-        ctxt_.result_ = false;
+        ctxt_->result_ = false;
     }
 }
 
@@ -92,7 +93,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     {
         errorf( s->loc(), "either the left-hand side or the right-hand side of an " 
                 "assignment statement must have exactly one element");
-        ctxt_.result_ = false;
+        ctxt_->result_ = false;
         return;
     }
 
@@ -105,15 +106,15 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             errorf( s->loc(), "the right-hand side of an assignment statement with "
                     "more than one item on the left-hand side " 
                     "must be a member function call");
-            ctxt_.result_ = false;
+            ctxt_->result_ = false;
             return;
         }
 
         MemberFct* fct = call->memberFct_;
-        if ( fct && !fct->sig_.checkOut(ctxt_.module_, out) )
+        if ( fct && !fct->sig_.checkOut(ctxt_->module_, out) )
         {
             errorf( s->loc(), "bier" );
-            ctxt_.result_ = false;
+            ctxt_->result_ = false;
             return;
         }
     }
@@ -132,8 +133,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     }
 
     const BaseType* bt = lhs->getType()->isInner();
-    Class* _class = bt->lookupClass(ctxt_.module_);
-    MemberFct* fct = _class->lookupMemberFct(ctxt_.module_, &str, in);
+    Class* _class = bt->lookupClass(ctxt_->module_);
+    MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
 
     if (!fct)
     {

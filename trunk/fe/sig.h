@@ -26,11 +26,12 @@
 
 #include "utils/stringhelper.h"
 
-#include "fe/context.h"
 #include "fe/typelist.h"
+#include "fe/var.h"
 
 namespace swift {
 
+class Context;
 class InOut;
 
 //------------------------------------------------------------------------------
@@ -41,13 +42,11 @@ public:
 
     ~Sig();
 
-    void setInList(Context& ctxt);
-    void setOutList(Context& ctxt);
+    void setInList(Context* ctxt);
+    void setOutList(Context* ctxt);
 
     bool checkIn(Module* module, const TypeList& inTypes) const;
     bool checkOut(Module* module, const TypeList& outTypes) const;
-    //bool check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const;
-    //bool check(Module* module, const Sig& sig) const;
     
     InOut* lookupInOut(const std::string* id) const;
     void buildTypeLists();

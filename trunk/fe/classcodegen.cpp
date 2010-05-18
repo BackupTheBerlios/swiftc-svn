@@ -1,10 +1,12 @@
 #include "fe/classcodegen.h"
 
+#include <llvm/LLVMContext.h>
+
 #include "fe/type.h"
 
 namespace swift {
 
-ClassCodeGen::ClassVisitor(Context& ctxt, llvm::LLVMContext& llvmCtxt)
+ClassCodeGen::ClassVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt)
     : ClassVisitorBase(ctxt)
     , llvmCtxt_(llvmCtxt)
 {}

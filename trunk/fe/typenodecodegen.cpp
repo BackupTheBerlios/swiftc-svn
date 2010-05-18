@@ -1,9 +1,12 @@
 #include "fe/typenodecodegen.h"
 
+#include <llvm/LLVMContext.h>
+
 namespace swift {
 
-TypeNodeCodeGen::TypeNodeVisitor(Context& ctxt)
+TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt)
     : TypeNodeVisitorBase(ctxt)
+    , llvmCtxt_(llvmCtxt)
 {}
 
 void TypeNodeCodeGen::visit(Decl* d)

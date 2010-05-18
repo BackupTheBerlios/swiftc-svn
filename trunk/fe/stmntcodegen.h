@@ -1,9 +1,11 @@
 #ifndef SWIFt_STMNT_CODE_GEN_H
 #define SWIFt_STMNT_CODE_GEN_H
 
-#include <llvm/LLVMContext.h>
-
 #include "fe/stmnt.h"
+
+namespace llvm {
+    class LLVMContext;
+}
 
 namespace swift {
 
@@ -11,7 +13,7 @@ template <>
 class StmntVisitor<class CodeGen> : public StmntVisitorBase
 {
 public:
-    StmntVisitor(Context& ctxt, llvm::LLVMContext& llvmCtxt);
+    StmntVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt);
 
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);
@@ -26,7 +28,7 @@ public:
 
 protected:
 
-    llvm::LLVMContext& llvmCtxt_;
+    llvm::LLVMContext* llvmCtxt_;
 };
 
 typedef StmntVisitor<class CodeGen> StmntCodeGen;

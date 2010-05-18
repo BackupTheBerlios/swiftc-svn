@@ -26,7 +26,6 @@
 #include "utils/list.h"
 
 #include "fe/auto.h"
-#include "fe/context.h"
 #include "fe/location.hh"
 #include "fe/var.h"
 #include "fe/sig.h"
@@ -34,6 +33,7 @@
 namespace swift {
 
 class ClassVisitorBase;
+class Context;
 class Scope;
 class Type;
 
@@ -49,11 +49,11 @@ public:
     virtual void accept(ClassVisitorBase* c);
     const std::string* id() const;
     const char* cid() const;
-    void insert(Context& ctxt, MemberVar* m);
-    void insert(Context& ctxt, MemberFct* m);
+    void insert(Context* ctxt, MemberVar* m);
+    void insert(Context* ctxt, MemberFct* m);
     MemberFct* lookupMemberFct(Module* module, const std::string* id, const TypeList&) const;
     MemberVar* lookupMemberVar(const std::string* id) const;
-    void addAssignCreate(Context& ctxt);
+    void addAssignCreate(Context* ctxt);
 
     enum Impl
     {
@@ -276,7 +276,7 @@ class ClassVisitorBase
 {
 public:
 
-    ClassVisitorBase(Context& ctxt);
+    ClassVisitorBase(Context* ctxt);
 
     virtual void visit(Class* c) = 0;
 
@@ -303,7 +303,7 @@ public:
 
 protected:
 
-    Context& ctxt_;
+    Context* ctxt_;
 };
 
 //------------------------------------------------------------------------------

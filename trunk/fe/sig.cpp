@@ -24,6 +24,7 @@
 #include "utils/assert.h"
 
 #include "fe/auto.h"
+#include "fe/context.h"
 #include "fe/class.h"
 #include "fe/stmnt.h"
 #include "fe/type.h"
@@ -42,16 +43,16 @@ Sig::~Sig()
         delete out_[i];
 }
 
-void Sig::setInList(Context& ctxt)
+void Sig::setInList(Context* ctxt)
 {
-    ctxt.ios_ = &in_;
-    ctxt.var_ = false;
+    ctxt->ios_ = &in_;
+    ctxt->var_ = false;
 }
 
-void Sig::setOutList(Context& ctxt)
+void Sig::setOutList(Context* ctxt)
 {
-    ctxt.ios_ = &out_;
-    ctxt.var_ = true;
+    ctxt->ios_ = &out_;
+    ctxt->var_ = true;
 }
 
 bool Sig::checkIn(Module* module, const TypeList& inTypes) const
@@ -63,16 +64,6 @@ bool Sig::checkOut(Module* module, const TypeList& outTypes) const
 {
     return outTypes_.check(module, outTypes);
 }
-
-//bool Sig::check(Module* module, const TypeList& inTypes, const TypeList& outTypes) const
-//{
-    //return inTypes_.check(module, inTypes) && outTypes_.check(module, outTypes);
-//}
-
-//bool Sig::check(Module* module, const Sig& sig) const
-//{
-    //return check(module, sig.inTypes_, sig.outTypes_);
-//}
 
 InOut* Sig::lookupInOut(const std::string* id) const
 {

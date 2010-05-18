@@ -20,11 +20,11 @@
 #ifndef SWIFT_AUTO_H
 #define SWIFT_AUTO_H
 
-#include "fe/context.h"
-
 namespace swift {
 
 //------------------------------------------------------------------------------
+
+class Context;
 
 // it is important to declare all union members of YYSTYPE here
 class Class;

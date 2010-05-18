@@ -21,6 +21,7 @@
 #define SWIFT_VAR_H
 
 #include <string>
+#include <vector>
 
 #include "fe/node.h"
 
@@ -69,6 +70,10 @@ public:
 
     bool validate(Module* module) const;
 };
+
+//------------------------------------------------------------------------------
+
+typedef std::vector<InOut*> IOs;
 
 //------------------------------------------------------------------------------
 

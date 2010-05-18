@@ -23,6 +23,7 @@
 #include <typeinfo>
 
 #include "fe/class.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/simdprefix.h"
@@ -128,9 +129,9 @@ void WhileStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
-    s->ctxt_.enterScope(scope_);
+    s->ctxt_->enterScope(scope_);
     scope_->accept(s);
-    s->ctxt_.leaveScope();
+    s->ctxt_->leaveScope();
 }
 
 //------------------------------------------------------------------------------
@@ -151,9 +152,9 @@ void RepeatUntilStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
-    s->ctxt_.enterScope(scope_);
+    s->ctxt_->enterScope(scope_);
     scope_->accept(s);
-    s->ctxt_.leaveScope();
+    s->ctxt_->leaveScope();
 }
 
 //------------------------------------------------------------------------------
@@ -170,11 +171,11 @@ ScopeStmnt::~ScopeStmnt()
 
 void ScopeStmnt::accept(StmntVisitorBase* s)
 {
-    s->ctxt_.enterScope(scope_);
+    s->ctxt_->enterScope(scope_);
     
     s->visit(this);
     scope_->accept(s);
-    s->ctxt_.leaveScope();
+    s->ctxt_->leaveScope();
 }
 
 //------------------------------------------------------------------------------
@@ -197,15 +198,15 @@ void IfElStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
-    s->ctxt_.enterScope(ifScope_);
+    s->ctxt_->enterScope(ifScope_);
     ifScope_->accept(s);
-    s->ctxt_.leaveScope();
+    s->ctxt_->leaveScope();
 
     if (elScope_)
     {
-        s->ctxt_.enterScope(elScope_);
+        s->ctxt_->enterScope(elScope_);
         elScope_->accept(s);
-        s->ctxt_.leaveScope();
+        s->ctxt_->leaveScope();
     }
 }
 
@@ -223,7 +224,7 @@ void CFStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-StmntVisitorBase::StmntVisitorBase(Context& ctxt)
+StmntVisitorBase::StmntVisitorBase(Context* ctxt)
     : ctxt_(ctxt)
 {}
 

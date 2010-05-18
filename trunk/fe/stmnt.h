@@ -217,7 +217,7 @@ class StmntVisitorBase
 {
 public:
     
-    StmntVisitorBase(Context& ctxt);
+    StmntVisitorBase(Context* ctxt);
 
     virtual void visit(CFStmnt* s) = 0;
     virtual void visit(DeclStmnt* s) = 0;
@@ -238,7 +238,7 @@ public:
 
 protected:
     
-    Context& ctxt_;
+    Context* ctxt_;
 };
 
 //------------------------------------------------------------------------------

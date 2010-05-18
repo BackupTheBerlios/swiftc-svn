@@ -5,6 +5,7 @@
 #include "fe/class.h"
 #include "fe/classanalyzer.h"
 #include "fe/classcodegen.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/typenode.h"
 
@@ -48,7 +49,7 @@ Module::~Module()
         delete iter->second;
 }
 
-void Module::insert(Context& ctxt, Class* c)
+void Module::insert(Context* ctxt, Class* c)
 {
     ClassMap::iterator iter = classes_.find( c->id() );
 
@@ -58,12 +59,12 @@ void Module::insert(Context& ctxt, Class* c)
         errorf(c->loc(), "there is already a class '%s' defined in module '%s'", c->cid(), cid());
         SWIFT_PREV_ERROR(iter->second->loc());
 
-        ctxt.result_ = false;
+        ctxt->result_ = false;
         return;
     }
 
     classes_[c->id()] = c;
-    ctxt.class_ = c;
+    ctxt->class_ = c;
 
     return;
 }
@@ -88,9 +89,9 @@ const char* Module::cid() const
     return id_->c_str();
 }
 
-bool Module::analyze(Context& ctxt)
+bool Module::analyze(Context* ctxt)
 {
-    ctxt.module_ = this;
+    ctxt->module_ = this;
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
     {
@@ -98,17 +99,17 @@ bool Module::analyze(Context& ctxt)
         iter->second->accept(&classAnalyzer);
     }
 
-    return ctxt.result_;
+    return ctxt->result_;
 }
 
-void Module::codeGen(Context& ctxt)
+void Module::codeGen(Context* ctxt)
 {
-    ctxt.module_ = this;
+    ctxt->module_ = this;
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
     {
         llvm::LLVMContext llvmCtxt;
-        ClassCodeGen classCodeGen(ctxt, llvmCtxt);
+        ClassCodeGen classCodeGen(ctxt, &llvmCtxt);
         iter->second->accept(&classCodeGen);
     }
 }

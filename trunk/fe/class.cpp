@@ -23,6 +23,7 @@
 
 #include "utils/assert.h"
 
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/sig.h"
@@ -55,7 +56,7 @@ void Class::accept(ClassVisitorBase* c)
 {
     // TODO omit visiting of builtin classes?
 
-    c->ctxt_.class_ = this;
+    c->ctxt_->class_ = this;
     c->visit(this);
 
     for (size_t i = 0; i < memberVars_.size(); ++i)
@@ -75,7 +76,7 @@ const char* Class::cid() const
     return id_->c_str();
 }
 
-void Class::insert(Context& ctxt, MemberVar* m)
+void Class::insert(Context* ctxt, MemberVar* m)
 {
     memberVars_.push_back(m);
 
@@ -86,7 +87,7 @@ void Class::insert(Context& ctxt, MemberVar* m)
         errorf(m->loc(), "there is already a member variable '%s' defined in class '%s'", m->cid(), cid());
         SWIFT_PREV_ERROR(iter->second->loc());
 
-        ctxt.result_ = false;
+        ctxt->result_ = false;
 
         return;
     }
@@ -96,7 +97,7 @@ void Class::insert(Context& ctxt, MemberVar* m)
     return;
 }
 
-void Class::insert(Context& ctxt, MemberFct* m)
+void Class::insert(Context* ctxt, MemberFct* m)
 {
     // TODO reader foo(int, int) <-> writer foo(int, int)
     memberFcts_.push_back(m);
@@ -104,7 +105,7 @@ void Class::insert(Context& ctxt, MemberFct* m)
     MemberFctMap::iterator iter = memberFctMap_.find(m->id());
     memberFctMap_.insert( std::make_pair(m->id(), m) );
 
-    ctxt.memberFct_ = m;
+    ctxt->memberFct_ = m;
 }
 
 MemberVar* Class::lookupMemberVar(const std::string* id) const
@@ -133,7 +134,7 @@ MemberFct* Class::lookupMemberFct(Module* module, const std::string* id, const T
     return 0;
 }
 
-void Class::addAssignCreate(Context& ctxt)
+void Class::addAssignCreate(Context* ctxt)
 {
     typedef MemberFctMap::const_iterator CIter;
 
@@ -154,14 +155,14 @@ void Class::addAssignCreate(Context& ctxt)
         {
             MemberFct* m = iter->second;
 
-            if ( m->sig_.checkIn(ctxt.module_, in) )
+            if ( m->sig_.checkIn(ctxt->module_, in) )
             {
                 copyCreate_ = USER;
 
                 if (defaultCreate_ != NOT_ANALYZED)
                     break;
             }
-            else if ( m->sig_.checkIn(ctxt.module_, empty) )
+            else if ( m->sig_.checkIn(ctxt->module_, empty) )
             {
                 defaultCreate_ = USER;
 
@@ -180,7 +181,7 @@ void Class::addAssignCreate(Context& ctxt)
         {
             MemberFct* m = iter->second;
 
-            if ( m->sig_.checkIn(ctxt.module_, in) )
+            if ( m->sig_.checkIn(ctxt->module_, in) )
             {
                 copyAssign_ = USER;
                 break;
@@ -191,9 +192,9 @@ void Class::addAssignCreate(Context& ctxt)
     if (defaultCreate_ == NOT_ANALYZED)
     {
         // add default create
-        Scope* scope = ctxt.enterScope();
+        Scope* scope = ctxt->enterScope();
         Create* create = new Create(loc_, false, scope);
-        ctxt.leaveScope();
+        ctxt->leaveScope();
 
         memberFcts_.push_back(create);
         memberFctMap_.insert( std::make_pair(create->id(), create) );
@@ -204,12 +205,12 @@ void Class::addAssignCreate(Context& ctxt)
     if (copyCreate_ == NOT_ANALYZED)
     {
         // add copy create
-        Scope* scope = ctxt.enterScope();
+        Scope* scope = ctxt->enterScope();
         Create* create = new Create(loc_, false, scope);
-        ctxt.memberFct_ = create;
+        ctxt->memberFct_ = create;
         create->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
         create->sig_.buildTypeLists();
-        ctxt.leaveScope();
+        ctxt->leaveScope();
 
         memberFcts_.push_back(create);
         memberFctMap_.insert( std::make_pair(create->id(), create) );
@@ -220,12 +221,12 @@ void Class::addAssignCreate(Context& ctxt)
     if (copyAssign_ == NOT_ANALYZED)
     {
         // add copy assign
-        Scope* scope = ctxt.enterScope();
+        Scope* scope = ctxt->enterScope();
         Assign* assign = new Assign(loc_, false, Token::ASGN, scope);
-        ctxt.memberFct_ = assign;
+        ctxt->memberFct_ = assign;
         assign->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
         assign->sig_.buildTypeLists();
-        ctxt.leaveScope();
+        ctxt->leaveScope();
 
         memberFcts_.push_back(assign);
         memberFctMap_.insert( std::make_pair(assign->id(), assign) );
@@ -298,12 +299,12 @@ Reader::Reader(location loc, bool simd, std::string* id, Scope* scope)
 
 void Reader::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 TokenType Reader::getModifier() const
@@ -325,12 +326,12 @@ Writer::Writer(location loc, bool simd, std::string* id, Scope* scope)
 
 void Writer::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 TokenType Writer::getModifier() const
@@ -352,12 +353,12 @@ Create::Create(location loc, bool simd, Scope* scope)
 
 void Create::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 TokenType Create::getModifier() const
@@ -380,12 +381,12 @@ Assign::Assign(location loc, bool simd, int token, Scope* scope)
 
 void Assign::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 TokenType Assign::getModifier() const
@@ -418,12 +419,12 @@ Routine::Routine(location loc, bool simd, std::string* id, Scope* scope)
 
 void Routine::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 const char* Routine::qualifierStr() const
@@ -442,12 +443,12 @@ Operator::Operator(location loc, bool simd, int token, Scope* scope)
 
 void Operator::accept(ClassVisitorBase* c)
 {
-    c->ctxt_.memberFct_ = this;
-    c->ctxt_.enterScope(scope_);
+    c->ctxt_->memberFct_ = this;
+    c->ctxt_->enterScope(scope_);
 
     c->visit(this);
 
-    c->ctxt_.leaveScope();
+    c->ctxt_->leaveScope();
 }
 
 int Operator::getToken() const
@@ -506,7 +507,7 @@ const Type* MemberVar::getType() const
 
 //------------------------------------------------------------------------------
 
-ClassVisitorBase::ClassVisitorBase(Context& ctxt)
+ClassVisitorBase::ClassVisitorBase(Context* ctxt)
     : ctxt_(ctxt)
 {}
 

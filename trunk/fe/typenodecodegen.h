@@ -3,6 +3,10 @@
 
 #include "fe/typenode.h"
 
+namespace llvm {
+    class LLVMContext;
+}
+
 namespace swift {
 
 template <>
@@ -10,7 +14,7 @@ class TypeNodeVisitor<class CodeGen> : public TypeNodeVisitorBase
 {
 public:
 
-    TypeNodeVisitor(Context& ctxt);
+    TypeNodeVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt);
 
     virtual void visit(Decl* d);
 
@@ -43,6 +47,10 @@ public:
     virtual void postVisit(RoutineCall* r);
     virtual void  preVisit(UnExpr* u);
     virtual void postVisit(UnExpr* u);
+
+protected:
+
+    llvm::LLVMContext* llvmCtxt_;
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

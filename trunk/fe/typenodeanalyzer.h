@@ -10,7 +10,7 @@ class TypeNodeVisitor<class Analyzer> : public TypeNodeVisitorBase
 {
 public:
 
-    TypeNodeVisitor(Context& ctxt);
+    TypeNodeVisitor(Context* ctxt);
 
     virtual void visit(Decl* d);
 

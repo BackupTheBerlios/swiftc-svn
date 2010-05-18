@@ -5,13 +5,13 @@
 #include "utils/map.h"
 #include "utils/stringhelper.h"
 
-#include "fe/context.h"
 #include "fe/location.hh"
 
 namespace swift {
 
 class Class;
 class ClassMember;
+class Context;
 class Expr;
 class ExprList;
 class MemberFct;
@@ -56,13 +56,13 @@ public:
     Module(location loc, std::string* id);
     virtual ~Module();
 
-    void insert(Context& ctxt, Class* c); 
+    void insert(Context* ctxt, Class* c); 
     Class* lookupClass(const std::string* id);
     const std::string* id() const;
     const char* cid() const;
 
-    bool analyze(Context& ctxt);
-    void codeGen(Context& ctxt);
+    bool analyze(Context* ctxt);
+    void codeGen(Context* ctxt);
 
 private:
 

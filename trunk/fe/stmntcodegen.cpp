@@ -1,8 +1,12 @@
 #include "fe/stmntcodegen.h"
 
+#include <llvm/LLVMContext.h>
+
+#include "fe/context.h"
+
 namespace swift {
 
-StmntCodeGen::StmntVisitor(Context& ctxt, llvm::LLVMContext& llvmCtxt)
+StmntCodeGen::StmntVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt)
     : StmntVisitorBase(ctxt)
     , llvmCtxt_(llvmCtxt)
 {}
