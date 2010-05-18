@@ -22,9 +22,9 @@ PROJECT (SWIFT)
 OPTION (BUILD_RELEASE "Should I build the release (on) or debug version (off)?" off)
 
 IF (BUILD_RELEASE)
-    ADD_DEFINITIONS (-DNDEBUG -O3 -fomit-frame-pointer -pipe)
+    ADD_DEFINITIONS (-DNDEBUG -O3 -fomit-frame-pointer -pipe `llvm-config --cxxflags`)
 ELSE (BUILD_RELEASE)
-    ADD_DEFINITIONS (-ggdb -Wall -DSWIFT_DEBUG)
+    ADD_DEFINITIONS (-ggdb -Wall -DSWIFT_DEBUG `llvm-config --cxxflags`)
 ENDIF (BUILD_RELEASE)
 
 # add . as include path
@@ -119,3 +119,21 @@ ADD_CUSTOM_COMMAND (
     WORKING_DIRECTORY fe/builtin
     DEPENDS fe/builtin/int_template.swift fe/builtin/real_template.swift fe/builtin/bool.swift
 )
+
+#-------------------------------------------------------------------------------
+
+EXECUTE_PROCESS(
+    COMMAND sh -c "llvm-config --libs all"
+    RESULT_VARIABLE res_llvm_libs
+    OUTPUT_VARIABLE llvm_libs
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+EXECUTE_PROCESS(
+    COMMAND sh -c "llvm-config --ldflags"
+    RESULT_VARIABLE res_llvm_flags
+    OUTPUT_VARIABLE llvm_flags
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+TARGET_LINK_LIBRARIES(swift ${llvm_libs} ${llvm_flags})

@@ -1,6 +1,8 @@
 #ifndef SWIFT_CLASS_CODE_GEN_H
 #define SWIFT_CLASS_CODE_GEN_H
 
+#include <llvm/LLVMContext.h>
+
 #include "fe/class.h"
 
 namespace swift {
@@ -10,7 +12,7 @@ class ClassVisitor<class CodeGen> : public ClassVisitorBase
 {
 public:
 
-    ClassVisitor(Context& ctxt);
+    ClassVisitor(Context& ctxt, llvm::LLVMContext& llvmCtxt);
 
     virtual void visit(Class* c);
 
@@ -26,6 +28,10 @@ public:
 
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m);
+
+protected:
+
+    llvm::LLVMContext& llvmCtxt_;
 };
 
 typedef ClassVisitor<class CodeGen> ClassCodeGen;

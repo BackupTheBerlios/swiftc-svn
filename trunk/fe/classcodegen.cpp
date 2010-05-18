@@ -4,8 +4,9 @@
 
 namespace swift {
 
-ClassCodeGen::ClassVisitor(Context& ctxt)
+ClassCodeGen::ClassVisitor(Context& ctxt, llvm::LLVMContext& llvmCtxt)
     : ClassVisitorBase(ctxt)
+    , llvmCtxt_(llvmCtxt)
 {}
 
 void ClassCodeGen::visit(Class* c)

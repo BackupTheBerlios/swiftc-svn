@@ -1,5 +1,7 @@
 #include "fe/node.h"
 
+#include <llvm/LLVMContext.h>
+
 #include "fe/class.h"
 #include "fe/classanalyzer.h"
 #include "fe/classcodegen.h"
@@ -105,7 +107,8 @@ void Module::codeGen(Context& ctxt)
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
     {
-        ClassCodeGen classCodeGen(ctxt);
+        llvm::LLVMContext llvmCtxt;
+        ClassCodeGen classCodeGen(ctxt, llvmCtxt);
         iter->second->accept(&classCodeGen);
     }
 }
