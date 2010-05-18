@@ -20,6 +20,11 @@ TypeNode::~TypeNode()
     delete type_;
 }
 
+const Type* TypeNode::getType() const
+{
+    return type_;
+}
+
 //------------------------------------------------------------------------------
 
 Decl::Decl(location loc, Type* type, std::string* id)
@@ -34,7 +39,7 @@ Decl::~Decl()
     delete id_;
 }
 
-void Decl::accept(TypeNodeVisitor* t)
+void Decl::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -68,7 +73,7 @@ Id::~Id()
     delete id_;
 }
 
-void Id::accept(TypeNodeVisitor* t)
+void Id::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -108,7 +113,7 @@ IndexExpr::~IndexExpr()
     delete indexExpr_;
 }
 
-void IndexExpr::accept(TypeNodeVisitor* t)
+void IndexExpr::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     postfixExpr_->accept(t);
@@ -128,7 +133,7 @@ MemberAccess::~MemberAccess()
     delete id_;
 }
 
-void MemberAccess::accept(TypeNodeVisitor* t)
+void MemberAccess::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     if (postfixExpr_)
@@ -183,7 +188,7 @@ CCall::~CCall()
     delete retType_;
 }
 
-void CCall::accept(TypeNodeVisitor* t)
+void CCall::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     if (exprList_)
@@ -224,7 +229,7 @@ RoutineCall::~RoutineCall()
     delete classId_;
 }
 
-void RoutineCall::accept(TypeNodeVisitor* t)
+void RoutineCall::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     if (exprList_)
@@ -253,7 +258,7 @@ BinExpr::BinExpr(location loc, TokenType token, Expr* op1, Expr* op2)
     , op2_(op2)
 {}
 
-void BinExpr::accept(TypeNodeVisitor* t)
+void BinExpr::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     exprList_->accept(t);
@@ -272,7 +277,7 @@ UnExpr::UnExpr(location loc, TokenType token, Expr* op)
     : OperatorCall( loc, token, op, new ExprList(loc, op, 0) )
 {}
 
-void UnExpr::accept(TypeNodeVisitor* t)
+void UnExpr::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
     exprList_->accept(t);
@@ -303,7 +308,7 @@ ReaderCall::ReaderCall(location loc, Expr* expr, std::string* id, ExprList* expr
     : MethodCall(loc, expr, id, exprList)
 {}
 
-void ReaderCall::accept(TypeNodeVisitor* t)
+void ReaderCall::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
 
@@ -327,7 +332,7 @@ WriterCall::WriterCall(location loc, Expr* expr, std::string* id, ExprList* expr
     : MethodCall(loc, expr, id, exprList)
 {}
 
-void WriterCall::accept(TypeNodeVisitor* t)
+void WriterCall::accept(TypeNodeVisitorBase* t)
 {
     t->preVisit(this);
 
@@ -353,7 +358,7 @@ Literal::Literal(location loc, Box box, TokenType token)
     , token_(token)
 {}
 
-void Literal::accept(TypeNodeVisitor* t)
+void Literal::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -375,7 +380,7 @@ Nil::~Nil()
     delete innerType_;
 }
 
-void Nil::accept(TypeNodeVisitor* t)
+void Nil::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -386,7 +391,7 @@ Self::Self(location loc)
     : Expr(loc)
 {}
 
-void Self::accept(TypeNodeVisitor* t)
+void Self::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -405,7 +410,7 @@ ExprList::~ExprList()
     delete next_;
 }
 
-void ExprList::accept(TypeNodeVisitor* t)
+void ExprList::accept(TypeNodeVisitorBase* t)
 {
 
     for (ExprList* iter = this; iter != 0; iter = iter->next_)
@@ -417,7 +422,7 @@ void ExprList::accept(TypeNodeVisitor* t)
 
 bool ExprList::isValid() const
 {
-    bool result = expr_ && expr_->type_;
+    bool result = expr_ && expr_->getType();
 
     if (next_ && result)
         return result &= next_->isValid();
@@ -430,7 +435,7 @@ TypeList ExprList::buildTypeList()
     TypeList types;
 
     for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        types.push_back(iter->expr_->type_);
+        types.push_back( iter->expr_->getType() );
 
     return types;
 }
@@ -449,7 +454,7 @@ Tuple::~Tuple()
     delete next_;
 }
 
-void Tuple::accept(TypeNodeVisitor* t)
+void Tuple::accept(TypeNodeVisitorBase* t)
 {
 
     for (Tuple* iter = this; iter != 0; iter = iter->next_)
@@ -461,7 +466,7 @@ void Tuple::accept(TypeNodeVisitor* t)
 
 bool Tuple::isValid() const
 {
-    bool result = typeNode_ && typeNode_->type_;
+    bool result = typeNode_ && typeNode_->getType();
 
     if (next_ && result)
         return result &= next_->isValid();
@@ -474,7 +479,7 @@ TypeList Tuple::buildTypeList()
     TypeList types;
 
     for (Tuple* iter = this; iter != 0; iter = iter->next_)
-        types.push_back(iter->typeNode_->type_);
+        types.push_back( iter->typeNode_->getType() );
 
     return types;
 }
@@ -482,7 +487,7 @@ TypeList Tuple::buildTypeList()
 
 //------------------------------------------------------------------------------
 
-TypeNodeVisitor::TypeNodeVisitor(Context& ctxt)
+TypeNodeVisitorBase::TypeNodeVisitorBase(Context& ctxt)
     : ctxt_(ctxt)
 {}
 

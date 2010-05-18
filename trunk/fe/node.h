@@ -61,7 +61,8 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
-    bool analyze();
+    bool analyze(Context& ctxt);
+    void codeGen(Context& ctxt);
 
 private:
 

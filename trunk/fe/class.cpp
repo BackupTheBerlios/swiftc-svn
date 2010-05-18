@@ -51,8 +51,10 @@ Class::~Class()
         delete memberFcts_[i];
 }
 
-void Class::accept(ClassVisitor* c)
+void Class::accept(ClassVisitorBase* c)
 {
+    // TODO omit visiting of builtin classes?
+
     c->ctxt_.class_ = this;
     c->visit(this);
 
@@ -294,7 +296,7 @@ Reader::Reader(location loc, bool simd, std::string* id, Scope* scope)
     : Method(loc, simd, id, scope )
 {}
 
-void Reader::accept(ClassVisitor* c)
+void Reader::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -321,7 +323,7 @@ Writer::Writer(location loc, bool simd, std::string* id, Scope* scope)
     : Method(loc, simd, id, scope )
 {}
 
-void Writer::accept(ClassVisitor* c)
+void Writer::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -348,7 +350,7 @@ Create::Create(location loc, bool simd, Scope* scope)
     : Method( loc, simd, new std::string("create"), scope )
 {}
 
-void Create::accept(ClassVisitor* c)
+void Create::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -376,7 +378,7 @@ Assign::Assign(location loc, bool simd, int token, Scope* scope)
     , token_(token)
 {}
 
-void Assign::accept(ClassVisitor* c)
+void Assign::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -414,7 +416,7 @@ Routine::Routine(location loc, bool simd, std::string* id, Scope* scope)
     : StaticMethod(loc, simd, id, scope)
 {}
 
-void Routine::accept(ClassVisitor* c)
+void Routine::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -438,7 +440,7 @@ Operator::Operator(location loc, bool simd, int token, Scope* scope)
     , numIns_( calcNumIns() )
 {}
 
-void Operator::accept(ClassVisitor* c)
+void Operator::accept(ClassVisitorBase* c)
 {
     c->ctxt_.memberFct_ = this;
     c->ctxt_.enterScope(scope_);
@@ -492,14 +494,19 @@ MemberVar::~MemberVar()
     delete type_;
 }
 
-void MemberVar::accept(ClassVisitor* c)
+void MemberVar::accept(ClassVisitorBase* c)
 {
     c->visit(this);
 }
 
+const Type* MemberVar::getType() const
+{
+    return type_;
+}
+
 //------------------------------------------------------------------------------
 
-ClassVisitor::ClassVisitor(Context& ctxt)
+ClassVisitorBase::ClassVisitorBase(Context& ctxt)
     : ctxt_(ctxt)
 {}
 

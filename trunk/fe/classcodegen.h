@@ -1,12 +1,12 @@
-#ifndef SWIFT_CLASSANALYZER_H
-#define SWIFT_CLASSANALYZER_H
+#ifndef SWIFT_CLASS_CODE_GEN_H
+#define SWIFT_CLASS_CODE_GEN_H
 
 #include "fe/class.h"
 
 namespace swift {
 
 template<>
-class ClassVisitor<class Analyzer> : public ClassVisitorBase
+class ClassVisitor<class CodeGen> : public ClassVisitorBase
 {
 public:
 
@@ -26,13 +26,10 @@ public:
 
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m);
-
-    void checkSig(MemberFct* m);
-    void checkStmnts(MemberFct* m);
 };
 
-typedef ClassVisitor<class Analyzer> ClassAnalyzer;
+typedef ClassVisitor<class CodeGen> ClassCodeGen;
 
 } // namespace swift
 
-#endif // SWIFT_CLASSANALYZER_H
+#endif // SWIFT_CLASS_CODE_GEN_H

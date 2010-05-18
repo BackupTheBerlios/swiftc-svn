@@ -7,8 +7,8 @@
 
 namespace swift {
 
-TypeNodeAnalyzer::TypeNodeAnalyzer(Context& ctxt)
-    : TypeNodeVisitor(ctxt)
+TypeNodeAnalyzer::TypeNodeVisitor(Context& ctxt)
+    : TypeNodeVisitorBase(ctxt)
 {}
 
 void TypeNodeAnalyzer::visit(Decl* d)
@@ -159,7 +159,7 @@ void TypeNodeAnalyzer::postVisit(MemberAccess* m)
                 m->cid(), m->class_->cid() );
         }
         else
-            m->type_ = memberVar->type_->clone();
+            m->type_ = memberVar->getType()->clone();
     }
 }
 

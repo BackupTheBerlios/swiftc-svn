@@ -8,8 +8,8 @@
 
 namespace swift {
 
-ClassAnalyzer::ClassAnalyzer(Context& ctxt)
-    : ClassVisitor(ctxt)
+ClassAnalyzer::ClassVisitor(Context& ctxt)
+    : ClassVisitorBase(ctxt)
 {}
 
 void ClassAnalyzer::visit(Class* c) {}

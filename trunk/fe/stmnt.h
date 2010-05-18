@@ -35,7 +35,7 @@ class Expr;
 class ExprList;
 class SimdPrefix;
 class Tuple;
-class StmntVisitor;
+class StmntVisitorBase;
 
 //------------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ public:
 
     Stmnt(location loc);
 
-    virtual void accept(StmntVisitor* s) = 0;
+    virtual void accept(StmntVisitorBase* s) = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -57,9 +57,9 @@ public:
 
     CFStmnt(location loc, TokenType token);
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
 
-private:
+protected:
 
     TokenType token_;
 };
@@ -73,9 +73,13 @@ public:
     DeclStmnt(location loc, Decl* decl);
     virtual ~DeclStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Decl* decl_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -87,11 +91,15 @@ public:
     IfElStmnt(location loc, Expr* expr, Scope* ifScope, Scope* elScope);
     virtual ~IfElStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Expr* expr_;
     Scope* ifScope_;
     Scope* elScope_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -103,10 +111,14 @@ public:
     RepeatUntilStmnt(location loc, Expr* expr, Scope* scope);
     virtual ~RepeatUntilStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Expr* expr_;
     Scope* scope_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -118,9 +130,13 @@ public:
     ScopeStmnt(location loc, Scope* scope);
     virtual ~ScopeStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Scope* scope_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -132,10 +148,14 @@ public:
     WhileStmnt(location loc, Expr* expr, Scope* scope);
     virtual ~WhileStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Expr* expr_;
     Scope* scope_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -161,9 +181,13 @@ public:
     ExprStmnt(location loc, SimdPrefix* simd, Expr* expr);
     virtual ~ExprStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     Expr* expr_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -175,21 +199,25 @@ public:
     AssignStmnt(location loc, SimdPrefix* simdPrefix, TokenType token, Tuple* tuple, ExprList* exprList);
     virtual ~AssignStmnt();
 
-    virtual void accept(StmntVisitor* s);
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
 
     TokenType token_;
 
     Tuple* tuple_;       ///< The lvalue.
     ExprList* exprList_; ///< The rvalue.
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
 
-class StmntVisitor
+class StmntVisitorBase
 {
 public:
     
-    StmntVisitor(Context& ctxt);
+    StmntVisitorBase(Context& ctxt);
 
     virtual void visit(CFStmnt* s) = 0;
     virtual void visit(DeclStmnt* s) = 0;
@@ -202,16 +230,20 @@ public:
     virtual void visit(AssignStmnt* s) = 0;
     virtual void visit(ExprStmnt* s) = 0;
 
-    friend void AssignStmnt::accept(StmntVisitor* s);
-    friend void IfElStmnt::accept(StmntVisitor* s);
-    friend void RepeatUntilStmnt::accept(StmntVisitor* s);
-    friend void ScopeStmnt::accept(StmntVisitor* s);
-    friend void WhileStmnt::accept(StmntVisitor* s);
+    friend void AssignStmnt::accept(StmntVisitorBase* s);
+    friend void IfElStmnt::accept(StmntVisitorBase* s);
+    friend void RepeatUntilStmnt::accept(StmntVisitorBase* s);
+    friend void ScopeStmnt::accept(StmntVisitorBase* s);
+    friend void WhileStmnt::accept(StmntVisitorBase* s);
 
 protected:
     
     Context& ctxt_;
 };
+
+//------------------------------------------------------------------------------
+
+template<class T> class StmntVisitor; 
 
 //------------------------------------------------------------------------------
 

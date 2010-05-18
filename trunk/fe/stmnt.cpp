@@ -51,7 +51,7 @@ DeclStmnt::~DeclStmnt()
     delete decl_;
 }
 
-void DeclStmnt::accept(StmntVisitor* s)
+void DeclStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }
@@ -80,7 +80,7 @@ ExprStmnt::~ExprStmnt()
     delete expr_;
 }
 
-void ExprStmnt::accept(StmntVisitor* s)
+void ExprStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }
@@ -105,7 +105,7 @@ AssignStmnt::~AssignStmnt()
     delete exprList_;
 }
 
-void AssignStmnt::accept(StmntVisitor* s)
+void AssignStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }
@@ -124,7 +124,7 @@ WhileStmnt::~WhileStmnt()
     delete scope_;
 }
 
-void WhileStmnt::accept(StmntVisitor* s)
+void WhileStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
@@ -147,7 +147,7 @@ RepeatUntilStmnt::~RepeatUntilStmnt()
     delete scope_;
 }
 
-void RepeatUntilStmnt::accept(StmntVisitor* s)
+void RepeatUntilStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
@@ -168,7 +168,7 @@ ScopeStmnt::~ScopeStmnt()
     delete scope_;
 }
 
-void ScopeStmnt::accept(StmntVisitor* s)
+void ScopeStmnt::accept(StmntVisitorBase* s)
 {
     s->ctxt_.enterScope(scope_);
     
@@ -193,7 +193,7 @@ IfElStmnt::~IfElStmnt()
     delete elScope_;
 }
 
-void IfElStmnt::accept(StmntVisitor* s)
+void IfElStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 
@@ -216,14 +216,14 @@ CFStmnt::CFStmnt(location loc, TokenType token)
     , token_(token)
 {}
 
-void CFStmnt::accept(StmntVisitor* s)
+void CFStmnt::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }
 
 //------------------------------------------------------------------------------
 
-StmntVisitor::StmntVisitor(Context& ctxt)
+StmntVisitorBase::StmntVisitorBase(Context& ctxt)
     : ctxt_(ctxt)
 {}
 

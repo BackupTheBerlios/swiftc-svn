@@ -33,7 +33,7 @@
 
 namespace swift {
 
-class ClassVisitor;
+class ClassVisitorBase;
 class Scope;
 class Type;
 
@@ -46,7 +46,7 @@ public:
     Class(location loc, bool simd, std::string* id);
     virtual ~Class();
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     const std::string* id() const;
     const char* cid() const;
     void insert(Context& ctxt, MemberVar* m);
@@ -67,8 +67,7 @@ public:
     Impl getDefaultCreate() const;
     Impl getAssign() const;
 
-
-private:
+protected:
 
     bool simd_;
 
@@ -81,6 +80,8 @@ private:
     MemberFcts memberFcts_;
     MemberFctMap memberFctMap_;
     MemberVarMap memberVarMap_;         
+
+private:
 
     Impl copyCreate_;
     Impl defaultCreate_;
@@ -96,7 +97,7 @@ public:
     ClassMember(location loc, std::string* id);
     virtual ~ClassMember();
 
-    virtual void accept(ClassVisitor* c) = 0;
+    virtual void accept(ClassVisitorBase* c) = 0;
     const std::string* id() const;
     const char* cid() const;
 
@@ -119,11 +120,13 @@ public:
 protected:
 
     bool simd_;
+    Scope* scope_;
 
 public:
 
-    Scope* scope_;
     Sig sig_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -145,7 +148,7 @@ public:
 
     Create(location loc, bool simd, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
 };
@@ -158,7 +161,7 @@ public:
 
     Reader(location loc, bool simd, std::string* id, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
 };
@@ -171,7 +174,7 @@ public:
 
     Writer(location loc, bool simd, std::string* id, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
 };
@@ -193,12 +196,16 @@ public:
 
     Assign(location loc, bool simd, int token, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
     int getToken() const;
 
+protected:
+
     int token_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -209,7 +216,7 @@ public:
 
     Operator(location loc, bool simd, int token, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual const char* qualifierStr() const;
     int getToken() const;
 
@@ -222,12 +229,14 @@ public:
 
     NumIns getNumIns() const;
 
-private:
+protected:
 
     NumIns calcNumIns() const;
 
     int token_;
     NumIns numIns_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -238,7 +247,7 @@ public:
 
     Routine(location loc, bool simd, std::string *id, Scope* scope);
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
     virtual const char* qualifierStr() const;
 };
 
@@ -251,18 +260,23 @@ public:
     MemberVar(location loc, Type* type, std::string* id);
     virtual ~MemberVar();
 
-    virtual void accept(ClassVisitor* c);
+    virtual void accept(ClassVisitorBase* c);
+    const Type* getType() const;
+
+protected:
 
     Type* type_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------
 
-class ClassVisitor
+class ClassVisitorBase
 {
 public:
 
-    ClassVisitor(Context& ctxt);
+    ClassVisitorBase(Context& ctxt);
 
     virtual void visit(Class* c) = 0;
 
@@ -279,18 +293,22 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m) = 0;
 
-    friend void Class::accept(ClassVisitor* c);
-    friend void Create::accept(ClassVisitor* c);
-    friend void Reader::accept(ClassVisitor* c);
-    friend void Writer::accept(ClassVisitor* c);
-    friend void Assign::accept(ClassVisitor* c);
-    friend void Operator::accept(ClassVisitor* c);
-    friend void Routine::accept(ClassVisitor* c);
+    friend void Class::accept(ClassVisitorBase* c);
+    friend void Create::accept(ClassVisitorBase* c);
+    friend void Reader::accept(ClassVisitorBase* c);
+    friend void Writer::accept(ClassVisitorBase* c);
+    friend void Assign::accept(ClassVisitorBase* c);
+    friend void Operator::accept(ClassVisitorBase* c);
+    friend void Routine::accept(ClassVisitorBase* c);
 
 protected:
 
     Context& ctxt_;
 };
+
+//------------------------------------------------------------------------------
+
+template<class T> class ClassVisitor; 
 
 //------------------------------------------------------------------------------
 

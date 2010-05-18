@@ -5,11 +5,11 @@
 
 namespace swift {
 
-class StmntAnalyzer : public StmntVisitor
+template <>
+class StmntVisitor<class Analyzer> : public StmntVisitorBase
 {
 public:
-
-    StmntAnalyzer(Context& ctxt);
+    StmntVisitor(Context& ctxt);
 
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);
@@ -22,6 +22,8 @@ public:
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
 };
+
+typedef StmntVisitor<class Analyzer> StmntAnalyzer;
 
 } // namespace swift
 

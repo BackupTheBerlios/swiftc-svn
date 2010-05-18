@@ -1,12 +1,12 @@
-#ifndef SWIFT_TYPENODEANALYZER_H
-#define SWIFT_TYPENODEANALYZER_H
+#ifndef SWIFT_TYPENODE_CODE_GEN_H
+#define SWIFT_TYPENODE_CODE_GEN_H
 
 #include "fe/typenode.h"
 
 namespace swift {
 
-template<>
-class TypeNodeVisitor<class Analyzer> : public TypeNodeVisitorBase
+template <>
+class TypeNodeVisitor<class CodeGen> : public TypeNodeVisitorBase
 {
 public:
 
@@ -43,15 +43,10 @@ public:
     virtual void postVisit(RoutineCall* r);
     virtual void  preVisit(UnExpr* u);
     virtual void postVisit(UnExpr* u);
-
-    void analyzeMemberFctCall(MemberFctCall* m);
-    void setClass(MethodCall* m);
-    void setClass(OperatorCall* r);
-    void setClass(RoutineCall* r);
 };
 
-typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;
+typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;
 
 } // namespace swift
 
-#endif // SWIFT_TYPENODEANALYZER_H
+#endif // SWIFT_TYPENODE_CODE_GEN_H

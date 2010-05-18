@@ -88,6 +88,7 @@ ADD_EXECUTABLE (swift
 
     fe/class.cpp
     fe/classanalyzer.cpp
+    fe/classcodegen.cpp
     fe/context.cpp
     fe/error.cpp
     fe/node.cpp
@@ -100,6 +101,7 @@ ADD_EXECUTABLE (swift
     fe/typelist.cpp
     fe/typenode.cpp
     fe/typenodeanalyzer.cpp
+    fe/typenodecodegen.cpp
     fe/var.cpp
     fe/simdprefix.cpp
 

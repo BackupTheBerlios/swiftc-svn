@@ -95,7 +95,10 @@ int start(int argc, char** argv)
 #endif
     parser.parse();
 
-    ctxt.module_->analyze();
+    ctxt.module_->analyze(ctxt);
+
+    if (ctxt.result_)
+        ctxt.module_->codeGen(ctxt);
 
     /*
      * clean up front-end

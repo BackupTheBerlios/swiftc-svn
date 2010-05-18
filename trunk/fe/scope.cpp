@@ -77,7 +77,7 @@ void Scope::appendStmnt(Stmnt* stmnt)
     stmnts_.push_back(stmnt);
 }
 
-void Scope::accept(StmntVisitor* s)
+void Scope::accept(StmntVisitorBase* s)
 {
     for (size_t i = 0; i < stmnts_.size(); ++i)
         stmnts_[i]->accept(s);

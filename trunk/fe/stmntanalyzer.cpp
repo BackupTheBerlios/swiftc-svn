@@ -10,8 +10,8 @@
 
 namespace swift {
 
-StmntAnalyzer::StmntAnalyzer(Context& ctxt)
-    : StmntVisitor(ctxt)
+StmntAnalyzer::StmntVisitor(Context& ctxt)
+    : StmntVisitorBase(ctxt)
 {}
 
 void StmntAnalyzer::visit(CFStmnt* s) {}
@@ -27,13 +27,12 @@ void StmntAnalyzer::visit(IfElStmnt* s)
     TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
     s->expr_->accept(&typeNodeAnalyzer);
 
-    if ( !s->expr_->type_->isBool() )
+    if ( !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the check condition of an if-clause must return a 'bool'");
         ctxt_.result_ = false;
     }
-
 }
 
 void StmntAnalyzer::visit(RepeatUntilStmnt* s)
@@ -41,7 +40,7 @@ void StmntAnalyzer::visit(RepeatUntilStmnt* s)
     TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
     s->expr_->accept(&typeNodeAnalyzer);
 
-    if ( !s->expr_->type_->isBool() )
+    if ( !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
@@ -56,7 +55,7 @@ void StmntAnalyzer::visit(WhileStmnt* s)
     TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
     s->expr_->accept(&typeNodeAnalyzer);
 
-    if ( !s->expr_->type_->isBool() )
+    if ( !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a while statement must return a 'bool'");
@@ -132,7 +131,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         name = "operator";
     }
 
-    const BaseType* bt = lhs->type_->isInner();
+    const BaseType* bt = lhs->getType()->isInner();
     Class* _class = bt->lookupClass(ctxt_.module_);
     MemberFct* fct = _class->lookupMemberFct(ctxt_.module_, &str, in);
 

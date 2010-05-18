@@ -2,6 +2,7 @@
 
 #include "fe/class.h"
 #include "fe/classanalyzer.h"
+#include "fe/classcodegen.h"
 #include "fe/error.h"
 #include "fe/typenode.h"
 
@@ -85,9 +86,8 @@ const char* Module::cid() const
     return id_->c_str();
 }
 
-bool Module::analyze()
+bool Module::analyze(Context& ctxt)
 {
-    Context ctxt;
     ctxt.module_ = this;
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
@@ -97,6 +97,17 @@ bool Module::analyze()
     }
 
     return ctxt.result_;
+}
+
+void Module::codeGen(Context& ctxt)
+{
+    ctxt.module_ = this;
+
+    for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
+    {
+        ClassCodeGen classCodeGen(ctxt);
+        iter->second->accept(&classCodeGen);
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -31,7 +31,7 @@ namespace swift {
 class Local;
 class Sig;
 class Stmnt;
-class StmntVisitor;
+class StmntVisitorBase;
 
 //------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ public:
 
     bool insert(Local* local);
     void appendStmnt(Stmnt* stmnt);
-    void accept(StmntVisitor* s);
+    void accept(StmntVisitorBase* s);
 
 private:
 
