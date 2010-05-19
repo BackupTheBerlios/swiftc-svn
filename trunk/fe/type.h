@@ -25,6 +25,11 @@
 #include "fe/node.h"
 #include "fe/typelist.h"
 
+namespace llvm {
+    class Type;
+    class LLVMContext;
+}
+
 namespace swift {
 
 class BaseType;
@@ -46,9 +51,22 @@ public:
     virtual std::string toString() const = 0;
     virtual const BaseType* isInner() const { return 0; }
     virtual bool isBool() const { return false; }
-    virtual bool isBuiltin() const { return true; }
     virtual bool isIndex() const { return false; }
     virtual bool isInt() const { return false; }
+
+    /// All types which are not user defined types are builtin types.
+    virtual bool isBuiltin() const { return true; }
+
+    /**
+     * All int, uint, sat, usat, real types and bools, 
+     * i.e. all BaseTypes which are builtin.
+     */
+    virtual bool isSimple() const { return false; }
+
+    /// All simple types and pointers.
+    virtual bool isAtomic() const = 0;
+
+    virtual const llvm::Type* getLLVMType(Module* module) const = 0;
 
 protected:
 
@@ -71,16 +89,21 @@ public:
     virtual std::string toString() const;
     virtual const BaseType* isInner() const;
     virtual bool isBool() const;
-    virtual bool isBuiltin() const;
     virtual bool isIndex() const;
     virtual bool isInt() const;
+
+    virtual bool isBuiltin() const;
+    virtual bool isSimple() const;
+    virtual bool isAtomic() const;
+
+    virtual const llvm::Type* getLLVMType(Module* module) const;
 
     Class* lookupClass(Module* m) const;
     const std::string* id() const;
     const char* cid() const;
 
     static bool isBuiltin(const std::string* id);
-    static void initTypeMap();
+    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
     static void destroyTypeMap();
 
 private:
@@ -88,7 +111,7 @@ private:
     std::string* id_;
     bool builtin_;
 
-    typedef std::map<std::string, int> TypeMap;
+    typedef std::map<std::string, const llvm::Type*> TypeMap;
     static TypeMap* typeMap_; 
 };
 
@@ -103,6 +126,8 @@ public:
 
     virtual bool validate(Module* m) const;
     virtual bool check(const Type* type, Module* m) const;
+
+    virtual const llvm::Type* getLLVMType(Module* module) const;
 
     Type* getInnerType();
     const Type* getInnerType() const;
@@ -122,6 +147,7 @@ public:
 
     virtual Ptr* clone() const;
     virtual std::string toString() const;
+    virtual bool isAtomic() const;
 };
 
 //------------------------------------------------------------------------------
@@ -134,6 +160,7 @@ public:
 
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
+    virtual bool isAtomic() const;
 
     static void initMeContainer();
     static size_t getContainerSize();

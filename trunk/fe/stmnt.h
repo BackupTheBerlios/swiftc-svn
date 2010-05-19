@@ -59,7 +59,7 @@ public:
 
     virtual void accept(StmntVisitorBase* s);
 
-protected:
+private:
 
     TokenType token_;
 };

@@ -23,6 +23,8 @@
 #include <sstream>
 #include <typeinfo>
 
+#include <llvm/Support/TypeBuilder.h>
+
 #include "utils/assert.h"
 
 #include "fe/class.h"
@@ -111,6 +113,16 @@ bool BaseType::isBuiltin() const
     return builtin_;
 }
 
+bool BaseType::isSimple() const
+{
+    return builtin_;
+}
+
+bool BaseType::isAtomic() const
+{
+    return builtin_;
+}
+
 bool BaseType::isBool() const
 {
     return *id_ == "bool";
@@ -124,6 +136,14 @@ bool BaseType::isIndex() const
 bool BaseType::isInt() const
 {
     return *id_ == "int";
+}
+
+const llvm::Type* BaseType::getLLVMType(Module* module) const
+{
+    if (builtin_)
+        return (*typeMap_)[*id_];
+    else
+        return lookupClass(module)->llvmType();
 }
 
 Class* BaseType::lookupClass(Module* m) const
@@ -147,35 +167,35 @@ bool BaseType::isBuiltin(const std::string* id)
     return typeMap_->find(*id) != typeMap_->end();
 }
 
-void BaseType::initTypeMap()
+void BaseType::initTypeMap(llvm::LLVMContext* llvmCtxt)
 {
     typeMap_ = new TypeMap();
 
-    (*typeMap_)["bool"]   = 0;
+    (*typeMap_)["bool"]   = llvm::TypeBuilder<llvm::types::i<1>, true>::get(*llvmCtxt);
 
-    (*typeMap_)["int8"]   = 0;
-    (*typeMap_)["int16"]  = 0;
-    (*typeMap_)["int32"]  = 0;
-    (*typeMap_)["int64"]  = 0;
+    (*typeMap_)["int8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["sat8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["uint8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["usat8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
 
-    (*typeMap_)["sat8"]   = 0;
-    (*typeMap_)["sat16"]  = 0;
+    (*typeMap_)["int16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
+    (*typeMap_)["uint16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
+    (*typeMap_)["sat16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
+    (*typeMap_)["usat16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
 
-    (*typeMap_)["uint8"]  = 0;
-    (*typeMap_)["uint16"] = 0;
-    (*typeMap_)["uint32"] = 0;
-    (*typeMap_)["uint64"] = 0;
+    (*typeMap_)["int32"]  = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
+    (*typeMap_)["uint32"] = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
 
-    (*typeMap_)["usat8"]  = 0;
-    (*typeMap_)["usat16"] = 0;
+    (*typeMap_)["int64"]  = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
+    (*typeMap_)["uint64"] = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
 
-    (*typeMap_)["real32"] = 0;
-    (*typeMap_)["real64"] = 0;
+    (*typeMap_)["real"]   = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
+    (*typeMap_)["real32"] = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
+    (*typeMap_)["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*llvmCtxt);
 
-    (*typeMap_)["int"]    = 0;
-    (*typeMap_)["uint"]   = 0;
-    (*typeMap_)["index"]  = 0;
-    (*typeMap_)["real"]   = 0;
+    (*typeMap_)["int"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["uint"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["index"] = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
 }
 
 void BaseType::destroyTypeMap()
@@ -223,6 +243,12 @@ const Type* NestedType::getInnerType() const
     return innerType_;
 }
 
+const llvm::Type* NestedType::getLLVMType(Module* module) const
+{
+    swiftAssert(false, "TODO");
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 Ptr::Ptr(location loc, TokenType modifier, Type* innerType)
@@ -242,6 +268,11 @@ std::string Ptr::toString() const
     return oss.str();
 }
 
+bool Ptr::isAtomic() const
+{
+    return true;
+}
+
 //------------------------------------------------------------------------------
 
 Container::Container(location loc, TokenType modifier, Type* innerType)
@@ -254,6 +285,11 @@ std::string Container::toString() const
     oss << containerStr() << '{' << innerType_->toString() << '}';
 
     return oss.str();
+}
+
+bool Container::isAtomic() const
+{
+    return false;
 }
 
 //------------------------------------------------------------------------------

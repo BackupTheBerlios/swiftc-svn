@@ -91,9 +91,11 @@ ADD_EXECUTABLE (swift
     fe/classcodegen.cpp
     fe/context.cpp
     fe/error.cpp
+    fe/llvmtypebuilder.cpp
     fe/node.cpp
     fe/scope.cpp
     fe/sig.cpp
+    fe/simdprefix.cpp
     fe/stmnt.cpp
     fe/stmntanalyzer.cpp
     fe/stmntcodegen.cpp
@@ -104,7 +106,6 @@ ADD_EXECUTABLE (swift
     fe/typenodeanalyzer.cpp
     fe/typenodecodegen.cpp
     fe/var.cpp
-    fe/simdprefix.cpp
 
     fe/cmdlineparser.cpp
     fe/main.cpp

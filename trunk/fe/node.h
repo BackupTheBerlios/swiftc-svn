@@ -7,6 +7,10 @@
 
 #include "fe/location.hh"
 
+namespace llvm {
+    class LLVMContext;
+}
+
 namespace swift {
 
 class Class;
@@ -60,9 +64,13 @@ public:
     Class* lookupClass(const std::string* id);
     const std::string* id() const;
     const char* cid() const;
-
     bool analyze(Context* ctxt);
+    bool buildLLVMTypes();
     void codeGen(Context* ctxt);
+    llvm::LLVMContext* getLLVMContext() const;
+
+    typedef std::map<const std::string*, Class*, StringPtrCmp> ClassMap;
+    const ClassMap& classes() const;
 
 private:
 
@@ -70,8 +78,8 @@ private:
 
 private:
 
-    typedef std::map<const std::string*, Class*, StringPtrCmp> ClassMap;
     ClassMap classes_;
+    llvm::LLVMContext* llvmCtxt_;
 };
 
 //------------------------------------------------------------------------------

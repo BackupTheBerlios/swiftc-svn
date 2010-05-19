@@ -41,6 +41,7 @@ Class::Class(location loc, bool simd, std::string* id)
     , copyCreate_(NOT_ANALYZED)
     , defaultCreate_(NOT_ANALYZED)
     , copyAssign_(NOT_ANALYZED)
+    , llvmType_(0)
 {}
 
 Class::~Class()
@@ -235,6 +236,11 @@ void Class::addAssignCreate(Context* ctxt)
     }
 }
 
+const Class::MemberVars& Class::memberVars() const
+{
+    return memberVars_;
+}
+
 Class::Impl Class::getCopyCreate() const
 {
     return copyCreate_;
@@ -248,6 +254,16 @@ Class::Impl Class::getDefaultCreate() const
 Class::Impl Class::getAssign() const
 {
     return copyAssign_;
+}
+
+llvm::StructType*& Class::llvmType()
+{
+    return llvmType_;
+}
+
+const Class::LLVMStructTypePtr& Class::llvmType() const
+{
+    return llvmType_;
 }
 
 //------------------------------------------------------------------------------

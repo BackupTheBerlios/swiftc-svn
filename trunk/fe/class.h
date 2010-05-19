@@ -30,6 +30,10 @@
 #include "fe/var.h"
 #include "fe/sig.h"
 
+namespace llvm {
+    class StructType;
+}
+
 namespace swift {
 
 class ClassVisitorBase;
@@ -55,6 +59,10 @@ public:
     MemberVar* lookupMemberVar(const std::string* id) const;
     void addAssignCreate(Context* ctxt);
 
+    typedef std::vector<MemberVar*> MemberVars;
+
+    const MemberVars& memberVars() const;
+
     enum Impl
     {
         NONE,
@@ -67,11 +75,14 @@ public:
     Impl getDefaultCreate() const;
     Impl getAssign() const;
 
+    llvm::StructType*& llvmType();
+    typedef llvm::StructType* LLVMStructTypePtr;
+    const LLVMStructTypePtr& llvmType() const;
+
 protected:
 
     bool simd_;
 
-    typedef std::vector<MemberVar*> MemberVars;
     typedef std::vector<MemberFct*> MemberFcts;
     typedef std::     map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
     typedef std::multimap<const std::string*, MemberFct*, StringPtrCmp> MemberFctMap;
@@ -86,6 +97,8 @@ private:
     Impl copyCreate_;
     Impl defaultCreate_;
     Impl copyAssign_;
+
+    llvm::StructType* llvmType_;
 };
 
 //------------------------------------------------------------------------------

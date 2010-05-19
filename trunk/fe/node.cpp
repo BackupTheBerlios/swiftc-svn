@@ -7,6 +7,7 @@
 #include "fe/classcodegen.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/llvmtypebuilder.h"
 #include "fe/typenode.h"
 
 namespace swift {
@@ -39,6 +40,7 @@ Def::~Def()
 Module::Module(location loc, std::string* id)
     : Node(loc)
     , id_(id)
+    , llvmCtxt_( new llvm::LLVMContext() )
 {}
 
 Module::~Module()
@@ -47,6 +49,8 @@ Module::~Module()
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
         delete iter->second;
+
+    delete llvmCtxt_;
 }
 
 void Module::insert(Context* ctxt, Class* c)
@@ -102,16 +106,31 @@ bool Module::analyze(Context* ctxt)
     return ctxt->result_;
 }
 
+bool Module::buildLLVMTypes()
+{
+    LLVMTypebuilder llvmTypeBuilder(this, llvmCtxt_);
+    return llvmTypeBuilder.getResult();
+}
+
 void Module::codeGen(Context* ctxt)
 {
     ctxt->module_ = this;
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
     {
-        llvm::LLVMContext llvmCtxt;
-        ClassCodeGen classCodeGen(ctxt, &llvmCtxt);
+        ClassCodeGen classCodeGen(ctxt, llvmCtxt_);
         iter->second->accept(&classCodeGen);
     }
+}
+
+llvm::LLVMContext* Module::getLLVMContext() const
+{
+    return llvmCtxt_;
+}
+
+const Module::ClassMap& Module::classes() const
+{
+    return classes_;
 }
 
 //------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 #include "fe/classcodegen.h"
 
 #include <llvm/LLVMContext.h>
+#include <llvm/Support/TypeBuilder.h>
 
 #include "fe/type.h"
 
@@ -15,6 +16,8 @@ void ClassCodeGen::visit(Class* c)
 {
     if ( BaseType::isBuiltin(c->id()) )
         return;
+
+    //std::cout << c->cid() << std::endl;
 }
 
 void ClassCodeGen::visit(Create* c)

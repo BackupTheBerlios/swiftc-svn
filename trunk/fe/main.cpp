@@ -72,11 +72,11 @@ int start(int argc, char** argv)
     /*
      * init globals
      */
-    swift::BaseType::initTypeMap();
     //swift::Literal::initTypeMap();
 
     swift::Context ctxt;
     ctxt.module_ = new swift::Module( swift::location(), new std::string("default") ); // TODO location 
+    swift::BaseType::initTypeMap( ctxt.module_->getLLVMContext() );
 
     // populate data structures with builtin types
     readBuiltinTypes(&ctxt);
@@ -99,7 +99,12 @@ int start(int argc, char** argv)
     ctxt.module_->analyze(&ctxt);
 
     if (ctxt.result_)
-        ctxt.module_->codeGen(&ctxt);
+    {
+        ctxt.result_ = ctxt.module_->buildLLVMTypes();
+
+        if (ctxt.result_)
+            ctxt.module_->codeGen(&ctxt);
+    }
 
     /*
      * clean up front-end
