@@ -32,6 +32,7 @@
 
 namespace llvm {
     class StructType;
+    class Function;
 }
 
 namespace swift {
@@ -114,9 +115,12 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
-protected:
+private:
 
     std::string* id_;
+    std::string llvmName_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -138,6 +142,7 @@ protected:
 public:
 
     Sig sig_;
+    llvm::Function* llvmFct_;
 
     template<class T> friend class ClassVisitor;
 };
@@ -214,7 +219,7 @@ public:
     virtual const char* qualifierStr() const;
     int getToken() const;
 
-protected:
+private:
 
     int token_;
 
@@ -242,7 +247,7 @@ public:
 
     NumIns getNumIns() const;
 
-protected:
+private:
 
     NumIns calcNumIns() const;
 
@@ -276,7 +281,7 @@ public:
     virtual void accept(ClassVisitorBase* c);
     const Type* getType() const;
 
-protected:
+private:
 
     Type* type_;
 

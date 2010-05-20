@@ -3,10 +3,6 @@
 
 #include "fe/typenode.h"
 
-namespace llvm {
-    class LLVMContext;
-}
-
 namespace swift {
 
 template <>
@@ -14,7 +10,7 @@ class TypeNodeVisitor<class CodeGen> : public TypeNodeVisitorBase
 {
 public:
 
-    TypeNodeVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt);
+    TypeNodeVisitor(Context* ctxt);
 
     virtual void visit(Decl* d);
 
@@ -25,32 +21,20 @@ public:
     virtual void visit(Self* n);
 
     // TypeNode -> Expr -> Access
-    virtual void  preVisit(IndexExpr* i);
-    virtual void postVisit(IndexExpr* i);
-    virtual void  preVisit(MemberAccess* m);
-    virtual void postVisit(MemberAccess* m);
+    virtual void visit(IndexExpr* i);
+    virtual void visit(MemberAccess* m);
 
     // TypeNode -> Expr -> FctCall -> CCall
-    virtual void  preVisit(CCall* c);
-    virtual void postVisit(CCall* c);
+    virtual void visit(CCall* c);
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> MethodCall
-    virtual void  preVisit(ReaderCall* r);
-    virtual void postVisit(ReaderCall* r);
-    virtual void  preVisit(WriterCall* w);
-    virtual void postVisit(WriterCall* w);
+    virtual void visit(ReaderCall* r);
+    virtual void visit(WriterCall* w);
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
-    virtual void  preVisit(BinExpr* b);
-    virtual void postVisit(BinExpr* b);
-    virtual void  preVisit(RoutineCall* r);
-    virtual void postVisit(RoutineCall* r);
-    virtual void  preVisit(UnExpr* u);
-    virtual void postVisit(UnExpr* u);
-
-protected:
-
-    llvm::LLVMContext* llvmCtxt_;
+    virtual void visit(BinExpr* b);
+    virtual void visit(RoutineCall* r);
+    virtual void visit(UnExpr* u);
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

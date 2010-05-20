@@ -116,10 +116,7 @@ IndexExpr::~IndexExpr()
 
 void IndexExpr::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    postfixExpr_->accept(t);
-    indexExpr_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 //------------------------------------------------------------------------------
@@ -136,10 +133,7 @@ MemberAccess::~MemberAccess()
 
 void MemberAccess::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    if (postfixExpr_)
-        postfixExpr_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const std::string* MemberAccess::id() const
@@ -191,10 +185,7 @@ CCall::~CCall()
 
 void CCall::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    if (exprList_)
-        exprList_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* CCall::qualifierStr() const
@@ -232,10 +223,7 @@ RoutineCall::~RoutineCall()
 
 void RoutineCall::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    if (exprList_)
-        exprList_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* RoutineCall::qualifierStr() const
@@ -261,9 +249,7 @@ BinExpr::BinExpr(location loc, TokenType token, Expr* op1, Expr* op2)
 
 void BinExpr::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    exprList_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* BinExpr::qualifierStr() const
@@ -280,9 +266,7 @@ UnExpr::UnExpr(location loc, TokenType token, Expr* op)
 
 void UnExpr::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-    exprList_->accept(t);
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* UnExpr::qualifierStr() const
@@ -311,14 +295,7 @@ ReaderCall::ReaderCall(location loc, Expr* expr, std::string* id, ExprList* expr
 
 void ReaderCall::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-
-    if (expr_)
-        expr_->accept(t);
-    if (exprList_)
-        exprList_->accept(t);
-
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* ReaderCall::qualifierStr() const
@@ -335,14 +312,7 @@ WriterCall::WriterCall(location loc, Expr* expr, std::string* id, ExprList* expr
 
 void WriterCall::accept(TypeNodeVisitorBase* t)
 {
-    t->preVisit(this);
-
-    if (expr_)
-        expr_->accept(t);
-    if (exprList_)
-        exprList_->accept(t);
-
-    t->postVisit(this);
+    t->visit(this);
 }
 
 const char* WriterCall::qualifierStr() const

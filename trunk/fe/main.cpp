@@ -22,6 +22,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <llvm/Module.h>
+
 #include "utils/memmgr.h"
 #include "utils/stringhelper.h"
 
@@ -44,18 +46,18 @@ int start(int argc, char** argv);
 // inits the memory manager
 int main(int argc, char** argv)
 {
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_MEM_MGR
     // find memory leaks
     MemMgr::init();
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_MEM_MGR
 
     //MemMgr::setBreakpoint(34079);
 
     int result = start(argc, argv);
 
-#ifdef SWIFT_DEBUG
+#ifdef SWIFT_USE_MEM_MGR
     MemMgr::deinit();
-#endif // SWIFT_DEBUG
+#endif // SWIFT_USE_MEM_MGR
 
     return result;
 }
@@ -76,7 +78,7 @@ int start(int argc, char** argv)
 
     swift::Context ctxt;
     ctxt.module_ = new swift::Module( swift::location(), new std::string("default") ); // TODO location 
-    swift::BaseType::initTypeMap( ctxt.module_->getLLVMContext() );
+    swift::BaseType::initTypeMap( ctxt.module_->getLLVMModule()->getContext() );
 
     // populate data structures with builtin types
     readBuiltinTypes(&ctxt);
@@ -100,10 +102,10 @@ int start(int argc, char** argv)
 
     if (ctxt.result_)
     {
-        ctxt.result_ = ctxt.module_->buildLLVMTypes();
+        //ctxt.result_ = ctxt.module_->buildLLVMTypes();
 
-        if (ctxt.result_)
-            ctxt.module_->codeGen(&ctxt);
+        //if (ctxt.result_)
+            //ctxt.module_->codeGen(&ctxt);
     }
 
     /*

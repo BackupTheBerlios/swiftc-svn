@@ -103,7 +103,7 @@ public:
     const char* cid() const;
 
     static bool isBuiltin(const std::string* id);
-    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
+    static void initTypeMap(llvm::LLVMContext& llvmCtxt);
     static void destroyTypeMap();
 
 private:

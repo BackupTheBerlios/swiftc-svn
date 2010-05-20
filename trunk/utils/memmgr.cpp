@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#if defined(SWIFT_DEBUG) && defined(__GNUC__)
+#if defined(SWIFT_DEBUG) && defined(__GNUC__) && defined(SWIFT_USE_MEM_MGR)
 
 #include "memmgr.h"
 

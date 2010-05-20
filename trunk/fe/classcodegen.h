@@ -4,7 +4,7 @@
 #include "fe/class.h"
 
 namespace llvm {
-    class LLVMContext;
+    class Module;
 }
 
 namespace swift {
@@ -14,7 +14,7 @@ class ClassVisitor<class CodeGen> : public ClassVisitorBase
 {
 public:
 
-    ClassVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt);
+    ClassVisitor(Context* ctxt);
 
     virtual void visit(Class* c);
 
@@ -31,9 +31,10 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m);
 
-protected:
+private:
 
-    llvm::LLVMContext* llvmCtxt_;
+    void codeGen(MemberFct* m);
+    void codeGenStmnts(MemberFct* m);
 };
 
 typedef ClassVisitor<class CodeGen> ClassCodeGen;

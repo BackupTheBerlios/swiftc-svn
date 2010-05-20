@@ -2,6 +2,8 @@
 
 #include "fe/scope.h"
 
+#include <llvm/BasicBlock.h>
+
 namespace swift {
 
 Context::Context()

@@ -3,17 +3,13 @@
 
 #include "fe/stmnt.h"
 
-namespace llvm {
-    class LLVMContext;
-}
-
 namespace swift {
 
 template <>
 class StmntVisitor<class CodeGen> : public StmntVisitorBase
 {
 public:
-    StmntVisitor(Context* ctxt, llvm::LLVMContext* llvmCtxt);
+    StmntVisitor(Context* ctxt);
 
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);
@@ -25,10 +21,6 @@ public:
     // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
-
-protected:
-
-    llvm::LLVMContext* llvmCtxt_;
 };
 
 typedef StmntVisitor<class CodeGen> StmntCodeGen;

@@ -3,10 +3,6 @@
 
 #include "utils/set.h"
 
-namespace llvm {
-    class LLVMContext;
-}
-
 namespace swift {
 
 class Class;
@@ -16,7 +12,7 @@ class LLVMTypebuilder
 {
 public:
 
-    LLVMTypebuilder(Module* m, llvm::LLVMContext* llvmCtxt);
+    LLVMTypebuilder(Module* m);
 
     bool getResult() const;
 
@@ -27,7 +23,6 @@ private:
     typedef Set<Class*> ClassSet;
 
     Module* module_;
-    llvm::LLVMContext* llvmCtxt_;
     bool result_;
 
     ClassSet cycle_;

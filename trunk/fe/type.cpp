@@ -167,35 +167,35 @@ bool BaseType::isBuiltin(const std::string* id)
     return typeMap_->find(*id) != typeMap_->end();
 }
 
-void BaseType::initTypeMap(llvm::LLVMContext* llvmCtxt)
+void BaseType::initTypeMap(llvm::LLVMContext& llvmCtxt)
 {
     typeMap_ = new TypeMap();
 
-    (*typeMap_)["bool"]   = llvm::TypeBuilder<llvm::types::i<1>, true>::get(*llvmCtxt);
+    (*typeMap_)["bool"]   = llvm::TypeBuilder<llvm::types::i<1>, true>::get(llvmCtxt);
 
-    (*typeMap_)["int8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    (*typeMap_)["sat8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    (*typeMap_)["uint8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    (*typeMap_)["usat8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["int8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
+    (*typeMap_)["sat8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
+    (*typeMap_)["uint8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
+    (*typeMap_)["usat8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
 
-    (*typeMap_)["int16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    (*typeMap_)["uint16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    (*typeMap_)["sat16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    (*typeMap_)["usat16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
+    (*typeMap_)["int16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(llvmCtxt);
+    (*typeMap_)["uint16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(llvmCtxt);
+    (*typeMap_)["sat16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(llvmCtxt);
+    (*typeMap_)["usat16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(llvmCtxt);
 
-    (*typeMap_)["int32"]  = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
-    (*typeMap_)["uint32"] = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
+    (*typeMap_)["int32"]  = llvm::TypeBuilder<llvm::types::i<32>, true>::get(llvmCtxt);
+    (*typeMap_)["uint32"] = llvm::TypeBuilder<llvm::types::i<32>, true>::get(llvmCtxt);
 
-    (*typeMap_)["int64"]  = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
-    (*typeMap_)["uint64"] = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
+    (*typeMap_)["int64"]  = llvm::TypeBuilder<llvm::types::i<64>, true>::get(llvmCtxt);
+    (*typeMap_)["uint64"] = llvm::TypeBuilder<llvm::types::i<64>, true>::get(llvmCtxt);
 
-    (*typeMap_)["real"]   = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
-    (*typeMap_)["real32"] = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
-    (*typeMap_)["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*llvmCtxt);
+    (*typeMap_)["real"]   = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(llvmCtxt);
+    (*typeMap_)["real32"] = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(llvmCtxt);
+    (*typeMap_)["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(llvmCtxt);
 
-    (*typeMap_)["int"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    (*typeMap_)["uint"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    (*typeMap_)["index"] = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    (*typeMap_)["int"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
+    (*typeMap_)["uint"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
+    (*typeMap_)["index"] = llvm::TypeBuilder<llvm::types::i<8>, true>::get(llvmCtxt);
 }
 
 void BaseType::destroyTypeMap()

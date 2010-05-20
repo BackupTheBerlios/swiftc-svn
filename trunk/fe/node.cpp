@@ -1,6 +1,7 @@
 #include "fe/node.h"
 
 #include <llvm/LLVMContext.h>
+#include <llvm/Module.h>
 
 #include "fe/class.h"
 #include "fe/classanalyzer.h"
@@ -41,6 +42,7 @@ Module::Module(location loc, std::string* id)
     : Node(loc)
     , id_(id)
     , llvmCtxt_( new llvm::LLVMContext() )
+    , llvmModule_( new llvm::Module( llvm::StringRef("default"), *llvmCtxt_) )
 {}
 
 Module::~Module()
@@ -50,6 +52,7 @@ Module::~Module()
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
         delete iter->second;
 
+    delete llvmModule_;
     delete llvmCtxt_;
 }
 
@@ -108,7 +111,7 @@ bool Module::analyze(Context* ctxt)
 
 bool Module::buildLLVMTypes()
 {
-    LLVMTypebuilder llvmTypeBuilder(this, llvmCtxt_);
+    LLVMTypebuilder llvmTypeBuilder(this);
     return llvmTypeBuilder.getResult();
 }
 
@@ -118,14 +121,14 @@ void Module::codeGen(Context* ctxt)
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
     {
-        ClassCodeGen classCodeGen(ctxt, llvmCtxt_);
+        ClassCodeGen classCodeGen(ctxt);
         iter->second->accept(&classCodeGen);
     }
 }
 
-llvm::LLVMContext* Module::getLLVMContext() const
+llvm::Module* Module::getLLVMModule() const
 {
-    return llvmCtxt_;
+    return llvmModule_;
 }
 
 const Module::ClassMap& Module::classes() const

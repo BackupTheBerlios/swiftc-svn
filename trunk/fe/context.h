@@ -4,6 +4,11 @@
 #include <stack>
 #include <vector>
 
+namespace llvm {
+    class BasicBlock;
+    class Function;
+}
+
 namespace swift {
 
 class Class;
@@ -35,6 +40,9 @@ public:
 
     IOs* ios_;
     bool var_;
+
+    llvm::Function* llvmFct_; ///< Current llvm function.
+    llvm::BasicBlock* bb_;    ///< Current llvm basic block.
 
 private:
 

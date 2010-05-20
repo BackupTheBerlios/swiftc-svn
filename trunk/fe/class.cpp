@@ -55,7 +55,9 @@ Class::~Class()
 
 void Class::accept(ClassVisitorBase* c)
 {
-    // TODO omit visiting of builtin classes?
+    // omit builtin types here
+    if ( BaseType::isBuiltin(id_) )
+        return;
 
     c->ctxt_->class_ = this;
     c->visit(this);

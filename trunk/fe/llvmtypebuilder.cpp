@@ -1,6 +1,6 @@
 #include "fe/llvmtypebuilder.h"
 
-#include <llvm/LLVMContext.h>
+#include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
 
 #include "fe/class.h"
@@ -9,9 +9,8 @@
 
 namespace swift {
 
-LLVMTypebuilder::LLVMTypebuilder(Module* module, llvm::LLVMContext* llvmCtxt)
+LLVMTypebuilder::LLVMTypebuilder(Module* module)
     : module_(module)
-    , llvmCtxt_(llvmCtxt)
     , result_(true)
 {
     typedef Module::ClassMap::const_iterator CIter;
@@ -84,7 +83,8 @@ bool LLVMTypebuilder::process(Class* c)
         llvmTypes.push_back( type->getLLVMType(module_) );
     }
 
-    c->llvmType() = llvm::StructType::get(*llvmCtxt_, llvmTypes);
+    c->llvmType() = llvm::StructType::get(
+            module_->getLLVMModule()->getContext(), llvmTypes );
 
     // mark this class as done
     cycle_.erase(c);

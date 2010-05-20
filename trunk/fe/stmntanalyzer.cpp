@@ -15,18 +15,19 @@ StmntAnalyzer::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
 {}
 
-void StmntAnalyzer::visit(CFStmnt* s) {}
+void StmntAnalyzer::visit(CFStmnt* s) 
+{
+    // todo
+}
 
 void StmntAnalyzer::visit(DeclStmnt* s)
 {
-    TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-    s->decl_->accept(&typeNodeAnalyzer);
+    s->decl_->accept( &TypeNodeAnalyzer(ctxt_) );
 }
 
 void StmntAnalyzer::visit(IfElStmnt* s)
 {
-    TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-    s->expr_->accept(&typeNodeAnalyzer);
+    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -34,12 +35,24 @@ void StmntAnalyzer::visit(IfElStmnt* s)
                 "the check condition of an if-clause must return a 'bool'");
         ctxt_->result_ = false;
     }
+
+    {
+        ctxt_->enterScope(s->ifScope_);
+        s->ifScope_->accept(this);
+        ctxt_->leaveScope();
+    }
+
+    if (s->elScope_)
+    {
+        ctxt_->enterScope(s->elScope_);
+        s->elScope_->accept(this);
+        ctxt_->leaveScope();
+    }
 }
 
 void StmntAnalyzer::visit(RepeatUntilStmnt* s)
 {
-    TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-    s->expr_->accept(&typeNodeAnalyzer);
+    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -47,14 +60,22 @@ void StmntAnalyzer::visit(RepeatUntilStmnt* s)
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
         ctxt_->result_ = false;
     }
+
+    ctxt_->enterScope(s->scope_);
+    s->scope_->accept(this);
+    ctxt_->leaveScope();
 }
 
-void StmntAnalyzer::visit(ScopeStmnt* s) {}
+void StmntAnalyzer::visit(ScopeStmnt* s) 
+{
+    ctxt_->enterScope(s->scope_);
+    s->scope_->accept(this);
+    ctxt_->leaveScope();
+}
 
 void StmntAnalyzer::visit(WhileStmnt* s)
 {
-    TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-    s->expr_->accept(&typeNodeAnalyzer);
+    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -62,6 +83,10 @@ void StmntAnalyzer::visit(WhileStmnt* s)
                 "the exit condition of a while statement must return a 'bool'");
         ctxt_->result_ = false;
     }
+
+    ctxt_->enterScope(s->scope_);
+    s->scope_->accept(this);
+    ctxt_->leaveScope();
 }
 
 void StmntAnalyzer::visit(AssignStmnt* s)
@@ -146,10 +171,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 void StmntAnalyzer::visit(ExprStmnt* s)
 {
     if (s->expr_)
-    {
-        TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-        s->expr_->accept(&typeNodeAnalyzer);
-    }
+        s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
 }
 
 } // namespace swift

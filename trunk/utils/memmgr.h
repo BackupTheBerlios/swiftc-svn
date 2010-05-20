@@ -20,7 +20,7 @@
 #ifndef SWIFT_MEMMGR_H
 #define SWIFT_MEMMGR_H
 
-#if defined(SWIFT_DEBUG) && defined(__GNUC__)
+#if defined(SWIFT_DEBUG) && defined(__GNUC__) && defined(SWIFT_USE_MEM_MGR)
 
 #include <iostream>
 #include <map>

@@ -123,13 +123,11 @@ void TypeNodeAnalyzer::visit(Self* s)
     }
 }
 
-void TypeNodeAnalyzer::preVisit(IndexExpr* i) {}
-void TypeNodeAnalyzer::postVisit(IndexExpr* i)
+void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
 }
 
-void TypeNodeAnalyzer::preVisit(MemberAccess* m) {}
-void TypeNodeAnalyzer::postVisit(MemberAccess* m)
+void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
     if (m->postfixExpr_)
     {
@@ -164,7 +162,7 @@ void TypeNodeAnalyzer::postVisit(MemberAccess* m)
     }
 }
 
-void TypeNodeAnalyzer::preVisit(CCall* c)
+void TypeNodeAnalyzer::visit(CCall* c)
 {
     if (c->retType_)
     {
@@ -175,40 +173,31 @@ void TypeNodeAnalyzer::preVisit(CCall* c)
     }
 }
 
-void TypeNodeAnalyzer::postVisit(CCall* c)
-{
-}
-
-void TypeNodeAnalyzer::preVisit(ReaderCall* r) {} 
-void TypeNodeAnalyzer::postVisit(ReaderCall* r)
+void TypeNodeAnalyzer::visit(ReaderCall* r)
 {
     setClass(r);
     analyzeMemberFctCall(r);
 }
 
-void TypeNodeAnalyzer::preVisit(WriterCall* w) {}
-void TypeNodeAnalyzer::postVisit(WriterCall* w)
+void TypeNodeAnalyzer::visit(WriterCall* w)
 {
     setClass(w);
     analyzeMemberFctCall(w);
 }
 
-void TypeNodeAnalyzer:: preVisit(RoutineCall* r) {}
-void TypeNodeAnalyzer::postVisit(RoutineCall* r)
+void TypeNodeAnalyzer::visit(RoutineCall* r)
 {
     setClass(r);
     analyzeMemberFctCall(r);
 }
 
-void TypeNodeAnalyzer::preVisit(BinExpr* b) {}
-void TypeNodeAnalyzer::postVisit(BinExpr* b)
+void TypeNodeAnalyzer::visit(BinExpr* b)
 {
     setClass(b);
     analyzeMemberFctCall(b);
 }
 
-void TypeNodeAnalyzer::preVisit(UnExpr* u) {}
-void TypeNodeAnalyzer::postVisit(UnExpr* u)
+void TypeNodeAnalyzer::visit(UnExpr* u)
 {
     setClass(u);
     analyzeMemberFctCall(u);

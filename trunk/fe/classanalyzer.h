@@ -27,6 +27,8 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m);
 
+private:
+
     void checkSig(MemberFct* m);
     void checkStmnts(MemberFct* m);
 };

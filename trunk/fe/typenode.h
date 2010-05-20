@@ -424,28 +424,20 @@ public:
     virtual void visit(Self* n) = 0;
 
     // TypeNode -> Expr -> Access
-    virtual void  preVisit(IndexExpr* i) = 0;
-    virtual void postVisit(IndexExpr* i) = 0;
-    virtual void  preVisit(MemberAccess* m) = 0;
-    virtual void postVisit(MemberAccess* m) = 0;
+    virtual void visit(IndexExpr* i) = 0;
+    virtual void visit(MemberAccess* m) = 0;
 
     // TypeNode -> Expr -> FctCall -> CCall
-    virtual void  preVisit(CCall* c) = 0;
-    virtual void postVisit(CCall* c) = 0;
+    virtual void visit(CCall* c) = 0;
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> MethodCall
-    virtual void  preVisit(ReaderCall* r) = 0;
-    virtual void postVisit(ReaderCall* r) = 0;
-    virtual void  preVisit(WriterCall* w) = 0;
-    virtual void postVisit(WriterCall* w) = 0;
+    virtual void visit(ReaderCall* r) = 0;
+    virtual void visit(WriterCall* w) = 0;
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
-    virtual void  preVisit(BinExpr* b) = 0;
-    virtual void postVisit(BinExpr* b) = 0;
-    virtual void  preVisit(RoutineCall* r) = 0;
-    virtual void postVisit(RoutineCall* r) = 0;
-    virtual void  preVisit(UnExpr* u) = 0;
-    virtual void postVisit(UnExpr* u) = 0;
+    virtual void visit(BinExpr* b) = 0;
+    virtual void visit(RoutineCall* r) = 0;
+    virtual void visit(UnExpr* u) = 0;
 
 protected:
 

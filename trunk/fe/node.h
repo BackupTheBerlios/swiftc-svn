@@ -9,6 +9,7 @@
 
 namespace llvm {
     class LLVMContext;
+    class Module;
 }
 
 namespace swift {
@@ -67,7 +68,7 @@ public:
     bool analyze(Context* ctxt);
     bool buildLLVMTypes();
     void codeGen(Context* ctxt);
-    llvm::LLVMContext* getLLVMContext() const;
+    llvm::Module* getLLVMModule() const;
 
     typedef std::map<const std::string*, Class*, StringPtrCmp> ClassMap;
     const ClassMap& classes() const;
@@ -80,6 +81,7 @@ private:
 
     ClassMap classes_;
     llvm::LLVMContext* llvmCtxt_;
+    llvm::Module* llvmModule_;
 };
 
 //------------------------------------------------------------------------------
