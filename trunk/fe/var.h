@@ -25,6 +25,10 @@
 
 #include "fe/node.h"
 
+namespace llvm {
+    class AllocaInst;
+}
+
 namespace swift {
 
 class Type;
@@ -41,11 +45,15 @@ public:
     const Type* getType() const;
     const std::string* id() const;
     const char* cid() const;
+    llvm::AllocaInst* getAlloca();
+    const llvm::AllocaInst* getAlloca() const;
+    void createEntryAlloca(Context* ctxt);
 
 protected:
 
     Type* type_;
     std::string* id_;
+    llvm::AllocaInst* alloca_;
 };
 
 //------------------------------------------------------------------------------

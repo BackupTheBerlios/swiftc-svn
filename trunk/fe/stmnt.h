@@ -218,6 +218,7 @@ class StmntVisitorBase
 public:
     
     StmntVisitorBase(Context* ctxt);
+    virtual ~StmntVisitorBase() {}
 
     virtual void visit(CFStmnt* s) = 0;
     virtual void visit(DeclStmnt* s) = 0;

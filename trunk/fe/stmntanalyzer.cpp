@@ -13,6 +13,7 @@ namespace swift {
 
 StmntAnalyzer::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
+    , tna_( new TypeNodeAnalyzer(ctxt) )
 {}
 
 void StmntAnalyzer::visit(CFStmnt* s) 
@@ -22,12 +23,12 @@ void StmntAnalyzer::visit(CFStmnt* s)
 
 void StmntAnalyzer::visit(DeclStmnt* s)
 {
-    s->decl_->accept( &TypeNodeAnalyzer(ctxt_) );
+    s->decl_->accept( tna_.get() );
 }
 
 void StmntAnalyzer::visit(IfElStmnt* s)
 {
-    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
+    s->expr_->accept( tna_.get() );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -36,23 +37,15 @@ void StmntAnalyzer::visit(IfElStmnt* s)
         ctxt_->result_ = false;
     }
 
-    {
-        ctxt_->enterScope(s->ifScope_);
-        s->ifScope_->accept(this);
-        ctxt_->leaveScope();
-    }
+    s->ifScope_->accept(this, ctxt_);
 
     if (s->elScope_)
-    {
-        ctxt_->enterScope(s->elScope_);
-        s->elScope_->accept(this);
-        ctxt_->leaveScope();
-    }
+        s->elScope_->accept(this, ctxt_);
 }
 
 void StmntAnalyzer::visit(RepeatUntilStmnt* s)
 {
-    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
+    s->expr_->accept( tna_.get() );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -61,21 +54,17 @@ void StmntAnalyzer::visit(RepeatUntilStmnt* s)
         ctxt_->result_ = false;
     }
 
-    ctxt_->enterScope(s->scope_);
-    s->scope_->accept(this);
-    ctxt_->leaveScope();
+    s->scope_->accept(this, ctxt_);
 }
 
 void StmntAnalyzer::visit(ScopeStmnt* s) 
 {
-    ctxt_->enterScope(s->scope_);
-    s->scope_->accept(this);
-    ctxt_->leaveScope();
+    s->scope_->accept(this, ctxt_);
 }
 
 void StmntAnalyzer::visit(WhileStmnt* s)
 {
-    s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
+    s->expr_->accept( tna_.get() );
 
     if ( !s->expr_->getType()->isBool() )
     {
@@ -84,9 +73,7 @@ void StmntAnalyzer::visit(WhileStmnt* s)
         ctxt_->result_ = false;
     }
 
-    ctxt_->enterScope(s->scope_);
-    s->scope_->accept(this);
-    ctxt_->leaveScope();
+    s->scope_->accept(this, ctxt_);
 }
 
 void StmntAnalyzer::visit(AssignStmnt* s)
@@ -104,9 +91,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
      *      a, b, ... = f()
      */
 
-    TypeNodeAnalyzer typeNodeAnalyzer(ctxt_);
-    s->tuple_->accept(&typeNodeAnalyzer);
-    s->exprList_->accept(&typeNodeAnalyzer);
+    s->exprList_->accept( tna_.get() );
+    s->tuple_->accept( tna_.get() );
 
     if ( !s->tuple_->isValid() || !s->exprList_->isValid() )
         return;
@@ -171,7 +157,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 void StmntAnalyzer::visit(ExprStmnt* s)
 {
     if (s->expr_)
-        s->expr_->accept( &TypeNodeAnalyzer(ctxt_) );
+        s->expr_->accept( tna_.get() );
 }
 
 } // namespace swift

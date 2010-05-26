@@ -1,9 +1,18 @@
 #ifndef SWIFT_CLASSANALYZER_H
 #define SWIFT_CLASSANALYZER_H
 
+#include <memory>
+
 #include "fe/class.h"
 
 namespace swift {
+
+//------------------------------------------------------------------------------
+
+template <class T> class StmntVisitor;
+typedef StmntVisitor<class Analyzer> StmntAnalyzer;
+
+//------------------------------------------------------------------------------
 
 template<>
 class ClassVisitor<class Analyzer> : public ClassVisitorBase
@@ -11,6 +20,7 @@ class ClassVisitor<class Analyzer> : public ClassVisitorBase
 public:
 
     ClassVisitor(Context* ctxt);
+    virtual ~ClassVisitor();
 
     virtual void visit(Class* c);
 
@@ -31,6 +41,8 @@ private:
 
     void checkSig(MemberFct* m);
     void checkStmnts(MemberFct* m);
+
+    std::auto_ptr<StmntAnalyzer> sa_;
 };
 
 typedef ClassVisitor<class Analyzer> ClassAnalyzer;

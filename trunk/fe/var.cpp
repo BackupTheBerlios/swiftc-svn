@@ -19,7 +19,11 @@
 
 #include "fe/var.h"
 
+#include <llvm/BasicBlock.h>
+#include <llvm/Function.h>
+
 #include "fe/type.h"
+#include "fe/context.h"
 
 namespace swift {
 
@@ -29,6 +33,7 @@ Var::Var(location loc, Type* type, std::string* id)
     : Node(loc) 
     , type_(type)
     , id_(id)
+    , alloca_(0)
 {}
 
 Var::~Var()
@@ -51,6 +56,26 @@ const char* Var::cid() const
 {
     return id_->c_str();
 }
+
+llvm::AllocaInst* Var::getAlloca()
+{
+    return alloca_;
+}
+
+const llvm::AllocaInst* Var::getAlloca() const
+{
+    return alloca_;
+}
+
+void Var::createEntryAlloca(Context* ctxt)
+{
+    llvm::BasicBlock* entry = &ctxt->llvmFct_->getEntryBlock();
+    llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
+
+    const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
+    alloca_ = tmpBuilder.CreateAlloca(llvmType, 0, cid());
+}
+
 
 //------------------------------------------------------------------------------
 

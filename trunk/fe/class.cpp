@@ -60,7 +60,6 @@ void Class::accept(ClassVisitorBase* c)
         return;
 
     c->ctxt_->class_ = this;
-    c->visit(this);
 
     for (size_t i = 0; i < memberVars_.size(); ++i)
         memberVars_[i]->accept(c);
@@ -318,11 +317,7 @@ Reader::Reader(location loc, bool simd, std::string* id, Scope* scope)
 void Reader::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 TokenType Reader::getModifier() const
@@ -345,11 +340,7 @@ Writer::Writer(location loc, bool simd, std::string* id, Scope* scope)
 void Writer::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 TokenType Writer::getModifier() const
@@ -372,11 +363,7 @@ Create::Create(location loc, bool simd, Scope* scope)
 void Create::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 TokenType Create::getModifier() const
@@ -400,11 +387,7 @@ Assign::Assign(location loc, bool simd, int token, Scope* scope)
 void Assign::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 TokenType Assign::getModifier() const
@@ -438,11 +421,7 @@ Routine::Routine(location loc, bool simd, std::string* id, Scope* scope)
 void Routine::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 const char* Routine::qualifierStr() const
@@ -462,11 +441,7 @@ Operator::Operator(location loc, bool simd, int token, Scope* scope)
 void Operator::accept(ClassVisitorBase* c)
 {
     c->ctxt_->memberFct_ = this;
-    c->ctxt_->enterScope(scope_);
-
     c->visit(this);
-
-    c->ctxt_->leaveScope();
 }
 
 int Operator::getToken() const

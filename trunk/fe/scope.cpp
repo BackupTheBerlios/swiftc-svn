@@ -19,6 +19,7 @@
 
 #include "fe/scope.h"
 
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/sig.h"
 #include "fe/stmnt.h"
@@ -36,40 +37,32 @@ Scope::~Scope()
         delete stmnts_[i];
 }
 
-Local* Scope::lookupLocalOneLevelOnly(const std::string* id)
+Var* Scope::lookupVarOneLevelOnly(const std::string* id)
 {
-    LocalMap::const_iterator iter = locals_.find(id);
-    if ( iter != locals_.end() )
+    VarMap::const_iterator iter = vars_.find(id);
+    if ( iter != vars_.end() )
         return iter->second;
     else
         return 0;
 }
 
-Local* Scope::lookupLocal(const std::string* id)
+Var* Scope::lookupVar(const std::string* id)
 {
-    if ( Local* local = lookupLocalOneLevelOnly(id) )
-        return local;
+    if ( Var* var = lookupVarOneLevelOnly(id) )
+        return var;
     else if (parent_) // try to find in parent scope
-        return parent_->lookupLocal(id);
+        return parent_->lookupVar(id);
 
     // indicate "not found"
     return 0;
 }
 
-bool Scope::insert(Local* local)
+void Scope::insert(Var* var)
 {
-    std::pair<LocalMap::iterator, bool> p 
-        = locals_.insert( std::make_pair(local->id(), local) );
+    std::pair<VarMap::iterator, bool> p 
+        = vars_.insert( std::make_pair(var->id(), var) );
 
-    if ( !p.second )
-    {
-        errorf(local->loc(), "there is already a local '%s' defined in this scope", local->cid());
-        SWIFT_PREV_ERROR( p.first->second->loc() );
-
-        return false;
-    }
-
-    return true;
+    swiftAssert(p.second, "already inserted");
 }
 
 void Scope::appendStmnt(Stmnt* stmnt)
@@ -77,10 +70,14 @@ void Scope::appendStmnt(Stmnt* stmnt)
     stmnts_.push_back(stmnt);
 }
 
-void Scope::accept(StmntVisitorBase* s)
+void Scope::accept(StmntVisitorBase* s, Context* ctxt)
 {
+    ctxt->enterScope(this);
+
     for (size_t i = 0; i < stmnts_.size(); ++i)
         stmnts_[i]->accept(s);
+
+    ctxt->leaveScope();
 }
 
 } // namespace swift

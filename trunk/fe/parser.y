@@ -185,7 +185,7 @@ class
     : simd_modifier CLASS ID EOL
         {
             $<class_>$ = new Class(@$, $1, $3);
-            ctxt_->module_->insert(ctxt_, $<class_>$);
+            ctxt_->module_->insert($<class_>$);
         }
         class_body END EOL 
         {

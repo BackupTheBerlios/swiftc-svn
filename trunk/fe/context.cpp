@@ -1,13 +1,16 @@
 #include "fe/context.h"
 
+#include "fe/node.h"
 #include "fe/scope.h"
 
 #include <llvm/BasicBlock.h>
 
 namespace swift {
 
-Context::Context()
+Context::Context(Module* module)
     : result_(true)
+    , module_(module)
+    , builder_( llvm::IRBuilder<>(*module->llvmCtxt_) )
 {}
 
 Scope* Context::enterScope()

@@ -83,6 +83,7 @@ xor { SET_LOC; return Token::L_XOR; }
 not { SET_LOC; return Token::L_NOT; }
 ==  { SET_LOC; return Token::EQ; }
 \<> { SET_LOC; return Token::NE; }
+!=  { SET_LOC; return Token::NE; /* TODO which variant should be final? */ }
 \<  { SET_LOC; return Token::LT; }
 \<= { SET_LOC; return Token::LE; }
 >   { SET_LOC; return Token::GT; }

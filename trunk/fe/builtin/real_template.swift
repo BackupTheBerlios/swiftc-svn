@@ -43,13 +43,9 @@ class REAL
     operator >= (REAL r1, REAL r2) -> bool result
     end
 
-    # reinterpret casts
-
-    # reader reinterpret_as_int() -> int result
-    # end
-
-    # reader reinterpret_as_uint() -> uint result
-    # end
+    # unary minus
+    operator - (REAL i) -> REAL res
+    end
 
     # normal casts
 

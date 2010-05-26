@@ -91,6 +91,10 @@ public:
     virtual bool isBool() const;
     virtual bool isIndex() const;
     virtual bool isInt() const;
+    bool isSigned() const;
+    bool isUnsigned() const;
+    bool isInteger() const;
+    bool isFloat() const;
 
     virtual bool isBuiltin() const;
     virtual bool isSimple() const;
@@ -103,7 +107,7 @@ public:
     const char* cid() const;
 
     static bool isBuiltin(const std::string* id);
-    static void initTypeMap(llvm::LLVMContext& llvmCtxt);
+    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
     static void destroyTypeMap();
 
 private:

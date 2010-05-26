@@ -28,7 +28,8 @@
 
 namespace swift {
 
-class Local;
+class Context;
+class Var;
 class Sig;
 class Stmnt;
 class StmntVisitorBase;
@@ -42,19 +43,19 @@ public:
     Scope(Scope* parent);
     ~Scope();
 
-    Local* lookupLocalOneLevelOnly(const std::string* id);
-    Local* lookupLocal(const std::string* id);
+    Var* lookupVarOneLevelOnly(const std::string* id);
+    Var* lookupVar(const std::string* id);
 
-    bool insert(Local* local);
+    void insert(Var* var);
     void appendStmnt(Stmnt* stmnt);
-    void accept(StmntVisitorBase* s);
+    void accept(StmntVisitorBase* s, Context* ctxt);
 
 private:
 
     Scope* parent_;
 
-    typedef std::map<const std::string*, Local*, StringPtrCmp> LocalMap;
-    LocalMap locals_;
+    typedef std::map<const std::string*, Var*, StringPtrCmp> VarMap;
+    VarMap vars_;
 
     typedef std::vector<Stmnt*> Stmnts;
     Stmnts stmnts_;

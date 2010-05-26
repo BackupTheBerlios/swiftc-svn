@@ -23,30 +23,80 @@
 
 namespace swift {
 
+std::string CmdLineParser::usage_ = std::string("Usage: swiftc [options] file");
+CmdLineParser::Cmds CmdLineParser::cmds_ = CmdLineParser::Cmds();
+
 CmdLineParser::CmdLineParser(int argc, char** argv)
     : argc_(argc)
     , argv_(argv)
-    , error_(false)
-    , optimize_(false)
+    , filename_(0)
+    , result_(true)
+    , dump_(false)
 {
-    switch (argc)
+    // create command data structure
+    cmds_["--dump"] = new DumpCmd(*this);
+
+    // for each argument except the first one which is the program name
+    for (int i = 1; i < argc_; ++i)
     {
-        case 0:
-        case 1:
-            std::cerr << "error: no input file specified" << std::endl;
-            error_ = true;
-            return;
-
-        case 2:
-            filename_ = argv[1];
-            break;
-
-        default:
-            std::cerr << "error: too many arguments" << std::endl;
-            error_ = true;
-            return;
+        Cmds::iterator iter = cmds_.find(argv_[i]);
+        if ( iter != cmds_.end() )
+            iter->second->execute();
+        else
+        {
+            if (!filename_)
+                filename_ = argv_[i];
+            else
+            {
+                std::cerr << "error: multiple filenames given" << std::endl;
+                result_ = false;
+                return;
+            }
+        }
     }
 
+    if (filename_ == 0)
+        result_ = false;
 }
+
+CmdLineParser::~CmdLineParser()
+{
+    for (Cmds::iterator iter = cmds_.begin(); iter != cmds_.end(); ++iter)
+        delete iter->second;
+}
+
+const char* CmdLineParser::getFilename() const
+{
+    return filename_;
+}
+
+bool CmdLineParser::result() const
+{
+    return result_;
+}
+
+bool CmdLineParser::dump() const
+{
+    return dump_;
+}
+
+//------------------------------------------------------------------------------
+
+CmdBase::CmdBase(CmdLineParser& clp)
+    : clp_(clp)
+{}
+
+//------------------------------------------------------------------------------
+
+DumpCmd::Cmd(CmdLineParser& clp)
+    : CmdBase(clp)
+{}
+
+void DumpCmd::execute()
+{
+    clp_.dump_ = true;
+}
+
+//------------------------------------------------------------------------------
 
 } // namespace swift

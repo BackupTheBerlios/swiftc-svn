@@ -16,19 +16,22 @@ void TypeNodeAnalyzer::visit(Decl* d)
 {
     // check whether this type exists
     ctxt_->result_ &= d->type_->validate(ctxt_->module_);
-        
-    // is this the root scope and do we shadow a paramenter?
-    if (ctxt_->scopeDepth() == 1 && ctxt_->memberFct_->sig_.lookupInOut( d->id() ) )
-    {
-        errorf(d->loc(), "local '%s' shadows a parameter", d->cid());
-        ctxt_->result_ = false;
-    }
+
     // is here a name clash in this scope?
-    else if ( Local* local = ctxt_->scope()->lookupLocalOneLevelOnly(d->id()) )
+    if ( Var* var = ctxt_->scope()->lookupVarOneLevelOnly(d->id()) )
     {
-        errorf(d->loc(), 
-                "there is already a local '%s' defined in this scope", d->cid());
-        SWIFT_PREV_ERROR( local->loc() );
+        if ( dynamic_cast<InOut*>(var) )
+            errorf( d->loc(), "local '%s' shadows a parameter", d->cid());
+        else
+        {
+            errorf( d->loc(), 
+                    "there is already a local '%s' defined in this scope", 
+                    d->cid() );
+        }
+
+        SWIFT_PREV_ERROR( var->loc() );
+
+        ctxt_->result_ = false;
     }
     else
     {
@@ -41,10 +44,7 @@ void TypeNodeAnalyzer::visit(Decl* d)
 void TypeNodeAnalyzer::visit(Id* id)
 {
     // is it a local?
-    Var* var = ctxt_->scope()->lookupLocal( id->id() );
-
-    if (!var) // no - is it a paramenter/return value?
-        var = ctxt_->memberFct_->sig_.lookupInOut( id->id() );
+    Var* var = ctxt_->scope()->lookupVar( id->id() );
 
     if (!var)
     {
@@ -125,19 +125,22 @@ void TypeNodeAnalyzer::visit(Self* s)
 
 void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
+    // todo
 }
 
 void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
-    if (m->postfixExpr_)
+    if (m->postfixExpr_) // is a postfix expr given?
     {
+        m->postfixExpr_->accept(this);
+
         if (m->postfixExpr_->type_)
         {
             if ( const BaseType* bt = m->postfixExpr_->type_->isInner() )
                 m->class_ = bt->lookupClass(ctxt_->module_);
         }
     }
-    else
+    else // no -> this is an access via 'self'
     {
         if ( dynamic_cast<Method*>(ctxt_->memberFct_) )
             m->class_ = ctxt_->class_;
@@ -228,6 +231,8 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 
 void TypeNodeAnalyzer::setClass(MethodCall* m)
 {
+    m->exprList_->accept(this);
+
     if (m->expr_)
     {
         if (m->expr_->type_)
@@ -242,6 +247,8 @@ void TypeNodeAnalyzer::setClass(MethodCall* m)
 
 void TypeNodeAnalyzer::setClass(OperatorCall* o)
 {
+    o->exprList_->accept(this);
+
     if (o->op1_ && o->op1_->type_)
     {
         if ( const BaseType* bt = o->op1_->type_->isInner() )
@@ -251,6 +258,8 @@ void TypeNodeAnalyzer::setClass(OperatorCall* o)
 
 void TypeNodeAnalyzer::setClass(RoutineCall* r)
 {
+    r->exprList_->accept(this);
+
     if (r->classId_)
     {
         r->class_ = ctxt_->module_->lookupClass(r->classId_);

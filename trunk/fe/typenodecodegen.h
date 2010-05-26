@@ -1,7 +1,13 @@
 #ifndef SWIFT_TYPENODE_CODE_GEN_H
 #define SWIFT_TYPENODE_CODE_GEN_H
 
+#include <memory>
+
 #include "fe/typenode.h"
+
+namespace llvm {
+    class Value;
+}
 
 namespace swift {
 
@@ -35,6 +41,16 @@ public:
     virtual void visit(BinExpr* b);
     virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
+
+    llvm::Value* getLLVMValue() const;
+
+    void setLeft();
+    void setRight();
+
+private:
+
+    llvm::Value* llvmValue_;
+    bool left_;
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

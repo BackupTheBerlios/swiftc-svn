@@ -15,12 +15,8 @@ namespace swift {
 
 ClassCodeGen::ClassVisitor(Context* ctxt)
     : ClassVisitorBase(ctxt)
+    , scg_( new StmntCodeGen(ctxt) )
 {}
-
-void ClassCodeGen::visit(Class* c)
-{
-    //std::cout << c->cid() << std::endl;
-}
 
 void ClassCodeGen::visit(Create* c)
 {
@@ -92,23 +88,38 @@ void ClassCodeGen::codeGen(MemberFct* m)
     m->llvmName_ = oss.str();
 
     // create llvm function
-    const llvm::FunctionType* ft = llvm::FunctionType::get(retType, params, false);
-    m->llvmFct_ = llvm::cast<llvm::Function>(
-        llvmModule->getOrInsertFunction(llvm::StringRef(m->llvmName_), ft) );
-    ctxt_->llvmFct_ = m->llvmFct_;
-}
+    const llvm::FunctionType* fctType = llvm::FunctionType::get(retType, params, false);
+    llvm::Function* fct = llvm::cast<llvm::Function>(
+        llvmModule->getOrInsertFunction(llvm::StringRef(m->llvmName_), fctType) );
+    ctxt_->llvmFct_ = fct;
+    m->llvmFct_ = fct;
 
-void ClassCodeGen::codeGenStmnts(MemberFct* m)
-{
     // create root BB
-    //llvm::BasicBlock* bb  = llvm::BasicBlock::Create(
-            //ctxt_->module_->getLLVMModule()->getContext(),
-            //m->llvmName_,
-            //m->llvmFct_);
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(
+            ctxt_->module_->getLLVMModule()->getContext(),
+            m->llvmName_,
+            m->llvmFct_);
+    ctxt_->builder_.SetInsertPoint(bb);
+
+    // set names for all args
+    size_t i = 0; 
+    typedef llvm::Function::arg_iterator ArgIter;
+    for (ArgIter iter = fct->arg_begin(); i < m->sig_.in_.size(); ++iter, ++i)
+    {
+        InOut* io = m->sig_.in_[i];
+
+        io->createEntryAlloca(ctxt_);
+        iter->setName( io->cid() );
+
+        // Store the initial value into the alloca.
+        ctxt_->builder_.CreateStore( iter, io->getAlloca() );
+    }
 
     // enter scope and gen code
-    StmntCodeGen stmntCodeGen(ctxt_);
-    m->scope_->accept(&stmntCodeGen);
+    m->scope_->accept( scg_.get(), ctxt_ );
+
+    // TODO void
+    ctxt_->builder_.CreateRetVoid();
 }
 
 } // namespace swift

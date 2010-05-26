@@ -17,6 +17,8 @@
 
 class INT
 
+    # operators for calculating
+
     operator + (INT i1, INT i2) -> INT res
     end
     operator - (INT i1, INT i2) -> INT res
@@ -26,11 +28,7 @@ class INT
     operator / (INT i1, INT i2) -> INT res
     end
 
-#  operator += -= *= /= (INT i1)
-#  end
-
-#    operator inc dec
-#    end
+    # operators for comparisons
 
     operator == (INT i1, INT i2) -> bool res
     end

@@ -66,9 +66,9 @@ int main(int argc, char** argv)
 int start(int argc, char** argv)
 {
     // parse the command line
-    swift::CmdLineParser cmdLineParser(argc, argv);
+    swift::CmdLineParser clp(argc, argv);
 
-    if (cmdLineParser.error_)
+    if ( !clp.result() )
         return EXIT_FAILURE;
 
     /*
@@ -76,50 +76,56 @@ int start(int argc, char** argv)
      */
     //swift::Literal::initTypeMap();
 
-    swift::Context ctxt;
-    ctxt.module_ = new swift::Module( swift::location(), new std::string("default") ); // TODO location 
-    swift::BaseType::initTypeMap( ctxt.module_->getLLVMModule()->getContext() );
+    swift::Module* module = new swift::Module( swift::location(), new std::string("default") );
+    swift::BaseType::initTypeMap(module->llvmCtxt_);
 
     // populate data structures with builtin types
-    readBuiltinTypes(&ctxt);
+    readBuiltinTypes(module->ctxt_);
 
     // try to open the input file and init the lexer
-    FILE* file = swift::lexer_init(cmdLineParser.filename_);
+    FILE* file = swift::lexer_init( clp.getFilename() );
     if (!file)
     {
         std::cerr << "error: failed to open input file" << std::endl;
         return EXIT_FAILURE;
     }
 
-    swift::Parser parser(&ctxt);
+    swift::Parser parser(module->ctxt_);
 #if 0
     parser.set_debug_level(1);
     parser.set_debug_stream(std::cerr);
 #endif
     parser.parse();
 
-    ctxt.module_->analyze(&ctxt);
+    fclose(file);
 
-    if (ctxt.result_)
+    module->analyze();
+
+    if (module->ctxt_->result_)
+        module->buildLLVMTypes();
+
+    if (module->ctxt_->result_)
+        module->codeGen();
+
+    if (module->ctxt_->result_)
     {
-        //ctxt.result_ = ctxt.module_->buildLLVMTypes();
-
-        //if (ctxt.result_)
-            //ctxt.module_->codeGen(&ctxt);
+        if ( clp.dump() )
+            module->llvmDump();
     }
 
     /*
-     * clean up front-end
+     * clean up
      */
 
-    delete ctxt.module_;
-    delete swift::g_lexer_filename;
-    //swift::Literal::destroyTypeMap();
+    bool result = module->ctxt_->result_;
+
+
     swift::BaseType::destroyTypeMap();
+    delete swift::g_lexer_filename;
+    delete module;
+    //swift::Literal::destroyTypeMap();
 
-    fclose(file);
-
-    if (!ctxt.result_)
+    if (!result)
         return EXIT_FAILURE; // abort on error
 
     return EXIT_SUCCESS;

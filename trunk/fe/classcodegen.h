@@ -1,13 +1,18 @@
 #ifndef SWIFT_CLASS_CODE_GEN_H
 #define SWIFT_CLASS_CODE_GEN_H
 
+#include <memory>
+
 #include "fe/class.h"
 
-namespace llvm {
-    class Module;
-}
-
 namespace swift {
+
+//------------------------------------------------------------------------------
+
+template <class T> class StmntVisitor;
+typedef StmntVisitor<class CodeGen> StmntCodeGen;
+
+//------------------------------------------------------------------------------
 
 template<>
 class ClassVisitor<class CodeGen> : public ClassVisitorBase
@@ -15,8 +20,6 @@ class ClassVisitor<class CodeGen> : public ClassVisitorBase
 public:
 
     ClassVisitor(Context* ctxt);
-
-    virtual void visit(Class* c);
 
     // ClassMember -> MemberFct -> Method
     virtual void visit(Create* c);
@@ -34,7 +37,8 @@ public:
 private:
 
     void codeGen(MemberFct* m);
-    void codeGenStmnts(MemberFct* m);
+
+    std::auto_ptr<StmntCodeGen> scg_;
 };
 
 typedef ClassVisitor<class CodeGen> ClassCodeGen;

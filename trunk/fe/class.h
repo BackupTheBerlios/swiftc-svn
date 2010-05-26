@@ -51,7 +51,7 @@ public:
     Class(location loc, bool simd, std::string* id);
     virtual ~Class();
 
-    virtual void accept(ClassVisitorBase* c);
+    virtual void accept(ClassVisitorBase* m);
     const std::string* id() const;
     const char* cid() const;
     void insert(Context* ctxt, MemberVar* m);
@@ -295,8 +295,7 @@ class ClassVisitorBase
 public:
 
     ClassVisitorBase(Context* ctxt);
-
-    virtual void visit(Class* c) = 0;
+    virtual ~ClassVisitorBase() {}
 
     // ClassMember -> MemberFct -> Method
     virtual void visit(Create* c) = 0;
@@ -311,13 +310,13 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m) = 0;
 
-    friend void Class::accept(ClassVisitorBase* c);
-    friend void Create::accept(ClassVisitorBase* c);
-    friend void Reader::accept(ClassVisitorBase* c);
-    friend void Writer::accept(ClassVisitorBase* c);
-    friend void Assign::accept(ClassVisitorBase* c);
-    friend void Operator::accept(ClassVisitorBase* c);
-    friend void Routine::accept(ClassVisitorBase* c);
+    friend void Class   ::accept(ClassVisitorBase* m);
+    friend void Create  ::accept(ClassVisitorBase* m);
+    friend void Reader  ::accept(ClassVisitorBase* m);
+    friend void Writer  ::accept(ClassVisitorBase* m);
+    friend void Assign  ::accept(ClassVisitorBase* m);
+    friend void Operator::accept(ClassVisitorBase* m);
+    friend void Routine ::accept(ClassVisitorBase* m);
 
 protected:
 

@@ -11,7 +11,12 @@ namespace swift {
 
 ClassAnalyzer::ClassVisitor(Context* ctxt)
     : ClassVisitorBase(ctxt)
+    , sa_( new StmntAnalyzer(ctxt) )
 {}
+
+ClassAnalyzer::~ClassVisitor()
+{
+}
 
 void ClassAnalyzer::visit(Class* c) {}
 
@@ -123,19 +128,26 @@ void ClassAnalyzer::visit(MemberVar* m)
 
 void ClassAnalyzer::checkSig(MemberFct* m)
 {
-    // check each ingoing param
+    // check each ingoing params and register in the root scope
     for (size_t i = 0; i < m->sig_.in_.size(); ++i)
-        ctxt_->result_ &= m->sig_.in_[i]->validate(ctxt_->module_);
+    {
+        InOut* io = m->sig_.in_[i];
+        ctxt_->result_ &= io->validate(ctxt_->module_);
+        m->scope_->insert(io);
+    }
 
-    // check each outgoing param/result
+    // check each return value and register in the root scope
     for (size_t i = 0; i < m->sig_.out_.size(); ++i)
-        ctxt_->result_ &= m->sig_.out_[i]->validate(ctxt_->module_);
+    {
+        InOut* io = m->sig_.out_[i];
+        ctxt_->result_ &= io->validate(ctxt_->module_);
+        m->scope_->insert(io);
+    }
 }
 
 void ClassAnalyzer::checkStmnts(MemberFct* m)
 {
-    StmntAnalyzer stmntAnalyzer(ctxt_);
-    m->scope_->accept(&stmntAnalyzer);
+    m->scope_->accept( sa_.get() , ctxt_ );
 }
 
 } // namespace swift

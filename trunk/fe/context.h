@@ -4,6 +4,8 @@
 #include <stack>
 #include <vector>
 
+#include <llvm/Support/IRBuilder.h>
+
 namespace llvm {
     class BasicBlock;
     class Function;
@@ -24,7 +26,7 @@ class Context
 {
 public:
 
-    Context();
+    Context(Module* module);
 
     Scope* enterScope();
     void enterScope(Scope* scope);
@@ -42,7 +44,7 @@ public:
     bool var_;
 
     llvm::Function* llvmFct_; ///< Current llvm function.
-    llvm::BasicBlock* bb_;    ///< Current llvm basic block.
+    llvm::IRBuilder<> builder_;
 
 private:
 

@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include <llvm/Support/TypeBuilder.h>
+
 #include "fe/context.h"
 #include "fe/token2str.h"
 #include "fe/type.h"

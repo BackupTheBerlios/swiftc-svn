@@ -2,6 +2,7 @@
 
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
+#include <llvm/Analysis/Verifier.h>
 
 #include "fe/class.h"
 #include "fe/classanalyzer.h"
@@ -43,20 +44,23 @@ Module::Module(location loc, std::string* id)
     , id_(id)
     , llvmCtxt_( new llvm::LLVMContext() )
     , llvmModule_( new llvm::Module( llvm::StringRef("default"), *llvmCtxt_) )
-{}
+    , ctxt_( new Context(this) )
+{
+    ctxt_->module_ = this;
+}
 
 Module::~Module()
 {
     delete id_;
+    delete ctxt_;
 
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
         delete iter->second;
 
-    delete llvmModule_;
-    delete llvmCtxt_;
+    delete llvmModule_; // frees llvmCtxt_, too
 }
 
-void Module::insert(Context* ctxt, Class* c)
+void Module::insert(Class* c)
 {
     ClassMap::iterator iter = classes_.find( c->id() );
 
@@ -66,12 +70,12 @@ void Module::insert(Context* ctxt, Class* c)
         errorf(c->loc(), "there is already a class '%s' defined in module '%s'", c->cid(), cid());
         SWIFT_PREV_ERROR(iter->second->loc());
 
-        ctxt->result_ = false;
+        ctxt_->result_ = false;
         return;
     }
 
     classes_[c->id()] = c;
-    ctxt->class_ = c;
+    ctxt_->class_ = c;
 
     return;
 }
@@ -96,34 +100,39 @@ const char* Module::cid() const
     return id_->c_str();
 }
 
-bool Module::analyze(Context* ctxt)
+void Module::accept(ClassVisitorBase* c)
 {
-    ctxt->module_ = this;
-
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
-    {
-        ClassAnalyzer classAnalyzer(ctxt);
-        iter->second->accept(&classAnalyzer);
-    }
-
-    return ctxt->result_;
+        iter->second->accept(c);
 }
 
-bool Module::buildLLVMTypes()
+void Module::analyze()
+{
+    ClassAnalyzer classAnalyzer(ctxt_);
+    accept(&classAnalyzer);
+}
+
+void Module::buildLLVMTypes()
 {
     LLVMTypebuilder llvmTypeBuilder(this);
-    return llvmTypeBuilder.getResult();
+    ctxt_->result_ = llvmTypeBuilder.getResult();
 }
 
-void Module::codeGen(Context* ctxt)
+void Module::codeGen()
 {
-    ctxt->module_ = this;
+    // perform code generation for each class
+    ClassCodeGen classCodeGen(ctxt_);
+    accept(&classCodeGen);
 
-    for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
-    {
-        ClassCodeGen classCodeGen(ctxt);
-        iter->second->accept(&classCodeGen);
-    }
+    // verify llvm module
+    std::string errorStr;
+    llvm::verifyModule(*llvmModule_, llvm::AbortProcessAction, &errorStr);
+    std::cerr << errorStr << std::endl;
+}
+
+void Module::llvmDump()
+{
+    llvmModule_->dump();
 }
 
 llvm::Module* Module::getLLVMModule() const

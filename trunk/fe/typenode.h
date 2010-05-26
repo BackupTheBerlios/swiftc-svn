@@ -1,11 +1,17 @@
 #ifndef SWIFT_TYPENODE_H
 #define SWIFT_TYPENODE_H
 
+#include <map>
+
 #include "utils/box.h"
 
 #include "fe/auto.h"
 #include "fe/node.h"
 #include "fe/typelist.h"
+
+namespace llvm {
+    class Type;
+}
 
 namespace swift {
 
@@ -259,10 +265,12 @@ public:
 
     OperatorCall(location loc, TokenType token, Expr* op1, ExprList* exprList);
 
-public:
+protected:
 
     TokenType token_;
     Expr* op1_;
+
+    template<class T> friend class TypeNodeVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -306,10 +314,15 @@ public:
     virtual void accept(TypeNodeVisitorBase* t);
     TokenType getToken() const;
 
+    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
+    static void destroyTypeMap();
+
 protected:
 
     Box box_;
     TokenType token_;
+
+    template<class T> friend class TypeNodeVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -414,6 +427,7 @@ class TypeNodeVisitorBase
 public:
     
     TypeNodeVisitorBase(Context* ctxt);
+    virtual ~TypeNodeVisitorBase() {}
 
     virtual void visit(Decl* d) = 0;
 
