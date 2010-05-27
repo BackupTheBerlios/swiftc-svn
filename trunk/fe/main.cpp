@@ -111,7 +111,10 @@ int start(int argc, char** argv)
     {
         if ( clp.dump() )
             module->llvmDump();
+
+        module->verify();
     }
+
 
     /*
      * clean up

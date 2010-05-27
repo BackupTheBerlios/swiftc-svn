@@ -62,9 +62,10 @@ bool LLVMTypebuilder::process(Class* c)
         cycle_.insert(c);
 
     std::vector<const llvm::Type*> llvmTypes;
-    for (MVIter iter = c->memberVars().begin(); iter != c->memberVars().end(); ++iter)
+    for (size_t i = 0; i < c->memberVars().size(); ++i)
     {
-        const Type* type = (*iter)->getType();
+        c->memberVars()[i]->index_ = i;
+        const Type* type = c->memberVars()[i]->getType();
 
         if ( !type->isSimple() )
         {

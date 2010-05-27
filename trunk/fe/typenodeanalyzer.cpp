@@ -130,20 +130,26 @@ void TypeNodeAnalyzer::visit(IndexExpr* i)
 
 void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
-    if (m->postfixExpr_) // is a postfix expr given?
+    if (m->prefixExpr_) // is a prefix expr given?
     {
-        m->postfixExpr_->accept(this);
+        m->prefixExpr_->accept(this);
 
-        if (m->postfixExpr_->type_)
+        if (m->prefixExpr_->type_)
         {
-            if ( const BaseType* bt = m->postfixExpr_->type_->isInner() )
+            if ( const BaseType* bt = m->prefixExpr_->type_->isInner() )
                 m->class_ = bt->lookupClass(ctxt_->module_);
         }
     }
     else // no -> this is an access via 'self'
     {
         if ( dynamic_cast<Method*>(ctxt_->memberFct_) )
+        {
             m->class_ = ctxt_->class_;
+
+            // artificially create a prefix expr
+            m->prefixExpr_ = new Self( m->loc() );
+            m->prefixExpr_->accept(this);
+        }
         else
         {
             errorf(m->loc(), "a %s does not provide a hidden 'self' parameter",
@@ -153,15 +159,15 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
     if (m->class_)
     {
-        MemberVar* memberVar = m->class_->lookupMemberVar( m->id() );
+        m->memberVar_ = m->class_->lookupMemberVar( m->id() );
 
-        if (!memberVar)
+        if (!m->memberVar_)
         {
             errorf( m->loc(), "there is no member variable '%s' defined in class '%s'",
                 m->cid(), m->class_->cid() );
         }
         else
-            m->type_ = memberVar->getType()->clone();
+            m->type_ = m->memberVar_->getType()->clone();
     }
 }
 

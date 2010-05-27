@@ -17,6 +17,7 @@ StmntCodeGen::StmntVisitor(Context* ctxt)
 
 void StmntCodeGen::visit(CFStmnt* s)
 {
+    // TODO
 }
 
 void StmntCodeGen::visit(DeclStmnt* s)
@@ -60,6 +61,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvmFct->getBasicBlockList().push_back(thenBB);
     builder.SetInsertPoint(thenBB);
     s->ifScope_->accept(this, ctxt_);
+    // TODO what if builder's current BB already terminates?
     builder.CreateBr(mergeBB);
 
     /*

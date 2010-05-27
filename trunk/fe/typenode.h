@@ -82,14 +82,14 @@ class Access : public Expr
 {
 public:
 
-    Access(location loc, Expr* postfixExpr);
+    Access(location loc, Expr* prefixExpr);
     virtual ~Access();
 
 protected:
 
-    Expr* postfixExpr_;
-    Access* nextAccess_;
+    Expr* prefixExpr_;
     Class* class_;
+    Access* next_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -100,7 +100,7 @@ class IndexExpr : public Access
 {
 public:
 
-    IndexExpr(location loc, Expr* postfixExpr, Expr* indexExpr);
+    IndexExpr(location loc, Expr* prefixExpr, Expr* indexExpr);
     virtual ~IndexExpr();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -129,6 +129,7 @@ public:
 protected:
 
     std::string* id_;
+    MemberVar* memberVar_;
 
     template<class T> friend class TypeNodeVisitor;
 };

@@ -93,21 +93,22 @@ const char* Id::cid() const
 
 //------------------------------------------------------------------------------
 
-Access::Access(location loc, Expr* postfixExpr)
+Access::Access(location loc, Expr* prefixExpr)
     : Expr(loc)
-    , postfixExpr_(postfixExpr)
+    , prefixExpr_(prefixExpr)
     , class_(0)
+    , next_(0)
 {}
 
 Access::~Access()
 {
-    delete postfixExpr_;
+    delete prefixExpr_;
 }
 
 //------------------------------------------------------------------------------
 
-IndexExpr::IndexExpr(location loc, Expr* postfixExpr, Expr* indexExpr)
-    : Access(loc, postfixExpr)
+IndexExpr::IndexExpr(location loc, Expr* prefixExpr, Expr* indexExpr)
+    : Access(loc, prefixExpr)
     , indexExpr_(indexExpr)
 {}
 
@@ -123,8 +124,8 @@ void IndexExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-MemberAccess::MemberAccess(location loc, Expr* postfixExpr, std::string* id)
-    : Access(loc, postfixExpr)
+MemberAccess::MemberAccess(location loc, Expr* prefixExpr, std::string* id)
+    : Access(loc, prefixExpr)
     , id_(id)
 {}
 

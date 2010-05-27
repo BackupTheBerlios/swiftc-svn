@@ -80,4 +80,9 @@ void Scope::accept(StmntVisitorBase* s, Context* ctxt)
     ctxt->leaveScope();
 }
 
+bool Scope::isEmpty() const
+{
+    return stmnts_.empty();
+}
+
 } // namespace swift

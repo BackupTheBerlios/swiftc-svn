@@ -133,6 +133,7 @@ public:
     virtual ~MemberFct();
 
     virtual const char* qualifierStr() const = 0;
+    bool isTrivial() const;
 
 protected:
 
@@ -280,12 +281,15 @@ public:
 
     virtual void accept(ClassVisitorBase* c);
     const Type* getType() const;
+    int getIndex() const;
 
 private:
 
     Type* type_;
+    int index_;
 
     template<class T> friend class ClassVisitor;
+    friend class LLVMTypebuilder;
 };
 
 //------------------------------------------------------------------------------

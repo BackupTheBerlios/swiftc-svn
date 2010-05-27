@@ -123,7 +123,10 @@ void Module::codeGen()
     // perform code generation for each class
     ClassCodeGen classCodeGen(ctxt_);
     accept(&classCodeGen);
+}
 
+void Module::verify()
+{
     // verify llvm module
     std::string errorStr;
     llvm::verifyModule(*llvmModule_, llvm::AbortProcessAction, &errorStr);

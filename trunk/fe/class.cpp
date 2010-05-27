@@ -302,7 +302,10 @@ MemberFct::~MemberFct()
     delete scope_;
 }
 
-//------------------------------------------------------------------------------
+bool MemberFct::isTrivial() const
+{
+    return scope_->isEmpty();
+}
 
 Method::Method(location loc, bool simd, std::string* id, Scope* scope)
     : MemberFct(loc, simd, id, scope)
@@ -496,6 +499,11 @@ void MemberVar::accept(ClassVisitorBase* c)
 const Type* MemberVar::getType() const
 {
     return type_;
+}
+
+int MemberVar::getIndex() const
+{
+    return index_;
 }
 
 //------------------------------------------------------------------------------

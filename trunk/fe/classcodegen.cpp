@@ -54,6 +54,9 @@ void ClassCodeGen::visit(MemberVar* m)
 
 void ClassCodeGen::codeGen(MemberFct* m)
 {
+    if ( m->isTrivial() )
+        return; // do nothing
+
     // get some stuff for easy access
     TypeList&  in = m->sig_. inTypes_;
     TypeList& out = m->sig_.outTypes_;
@@ -84,7 +87,7 @@ void ClassCodeGen::codeGen(MemberFct* m)
     // build llvm name
     static int counter = 0;
     std::ostringstream oss;
-    oss << *m->id_ << counter++;
+    oss << ctxt_->class_->cid() << '.' << *m->id_ << counter++;
     m->llvmName_ = oss.str();
 
     // create llvm function
@@ -101,7 +104,7 @@ void ClassCodeGen::codeGen(MemberFct* m)
             m->llvmFct_);
     ctxt_->builder_.SetInsertPoint(bb);
 
-    // set names for all args
+    // for each arg
     size_t i = 0; 
     typedef llvm::Function::arg_iterator ArgIter;
     for (ArgIter iter = fct->arg_begin(); i < m->sig_.in_.size(); ++iter, ++i)

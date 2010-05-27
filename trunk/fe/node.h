@@ -69,6 +69,7 @@ public:
     void analyze();
     void buildLLVMTypes();
     void codeGen();
+    void verify();
     llvm::Module* getLLVMModule() const;
     void accept(ClassVisitorBase* c);
     void llvmDump();

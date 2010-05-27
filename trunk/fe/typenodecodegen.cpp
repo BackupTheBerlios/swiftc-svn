@@ -7,6 +7,7 @@
 #include <llvm/ADT/APSInt.h>
 
 #include "fe/context.h"
+#include "fe/class.h"
 #include "fe/scope.h"
 #include "fe/type.h"
 #include "fe/var.h"
@@ -30,10 +31,10 @@ void TypeNodeCodeGen::visit(Id* id)
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
 
-    if (left_)
-        llvmValue_ = var->getAlloca();
-    else
+    if ( var->getType()->isAtomic() && !left_ )
         llvmValue_ = ctxt_->builder_.CreateLoad( var->getAlloca(), var->cid() );
+    else
+        llvmValue_ = var->getAlloca();
 }
 
 void TypeNodeCodeGen::visit(Literal* l)
@@ -104,10 +105,35 @@ void TypeNodeCodeGen::visit(Self* n)
 
 void TypeNodeCodeGen::visit(IndexExpr* i)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
+    // get ptr of the prefix expr
+    i->prefixExpr_->accept(this);
+    llvm::Value* ptr = llvmValue_;
+
+    // get index
+    i->indexExpr_->accept(this);
+    llvm::Value* idx = llvmValue_;
+
+    // build get and get value
+    llvmValue_ = builder.CreateGEP(ptr, idx);
 }
 
 void TypeNodeCodeGen::visit(MemberAccess* m)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
+    // get ptr of the prefix expr
+    m->prefixExpr_->accept(this);
+    llvm::Value* ptr = llvmValue_;
+
+    // build input
+    llvm::Value* input[2];
+    input[0] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, 0) );
+    input[1] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, m->memberVar_->getIndex()) );
+
+    // build get and get value
+    llvmValue_ = builder.CreateGEP(ptr, input, input+2);
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
@@ -207,11 +233,11 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 
     if (left_)
     {
-        // TODO
+        swiftAssert(false, "TODO");
     }
     else
     {
-        // TODO
+        swiftAssert(false, "TODO");
     }
 }
 
