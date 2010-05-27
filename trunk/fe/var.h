@@ -27,27 +27,30 @@
 
 namespace llvm {
     class AllocaInst;
+    class Value;
 }
 
 namespace swift {
 
+class Context;
 class Type;
 
 //------------------------------------------------------------------------------
 
 class Var : public Node
 {
-public:
+protected:
 
     Var(location loc, Type* type, std::string* id);
     virtual ~Var();
 
+public:
+
     const Type* getType() const;
     const std::string* id() const;
     const char* cid() const;
-    llvm::AllocaInst* getAlloca();
-    const llvm::AllocaInst* getAlloca() const;
     void createEntryAlloca(Context* ctxt);
+    virtual llvm::Value* getAddr(Context* ctxt) const;
 
 protected:
 
@@ -67,14 +70,13 @@ public:
 
 //------------------------------------------------------------------------------
 
-/**
- * Either a parameter or a return value.
- */
 class InOut : public Var
 {
-public:
+protected:
 
     InOut(location loc, Type* type, std::string* id);
+
+public:
 
     bool validate(Module* module) const;
 };
@@ -82,6 +84,32 @@ public:
 //------------------------------------------------------------------------------
 
 typedef std::vector<InOut*> IOs;
+
+//------------------------------------------------------------------------------
+
+class Param : public InOut
+{
+public:
+
+    Param(location loc, Type* type, std::string* id);
+};
+
+//------------------------------------------------------------------------------
+
+class RetVal : public InOut
+{
+public:
+
+    RetVal(location loc, Type* type, std::string* id);
+
+    void setAlloca(llvm::AllocaInst* alloca, int retIndex);
+    virtual llvm::Value* getAddr(Context* ctxt) const;
+
+private:
+
+    void createEntryAlloca(Context* ctxt) {}
+    int retIndex_;
+};
 
 //------------------------------------------------------------------------------
 

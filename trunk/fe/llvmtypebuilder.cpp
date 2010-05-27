@@ -84,8 +84,7 @@ bool LLVMTypebuilder::process(Class* c)
         llvmTypes.push_back( type->getLLVMType(module_) );
     }
 
-    c->llvmType() = llvm::StructType::get(
-            module_->getLLVMModule()->getContext(), llvmTypes );
+    c->llvmType() = llvm::StructType::get(*module_->llvmCtxt_, llvmTypes);
 
     // mark this class as done
     cycle_.erase(c);

@@ -31,8 +31,9 @@
 #include "fe/sig.h"
 
 namespace llvm {
-    class StructType;
     class Function;
+    class Type;
+    class StructType;
 }
 
 namespace swift {
@@ -144,6 +145,8 @@ public:
 
     Sig sig_;
     llvm::Function* llvmFct_;
+    const llvm::Type* retType_; 
+    llvm::AllocaInst* retAlloca_;
 
     template<class T> friend class ClassVisitor;
 };

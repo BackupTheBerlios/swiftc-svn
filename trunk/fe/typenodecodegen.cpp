@@ -16,33 +16,33 @@ namespace swift {
 
 TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
     : TypeNodeVisitorBase(ctxt)
-    , left_(false)
 {}
 
 void TypeNodeCodeGen::visit(Decl* d)
 {
-    swiftAssert(left_, "must be an lvalue");
     d->local_->createEntryAlloca(ctxt_);
-    llvmValue_ = d->local_->getAlloca();
+    llvmValue_ = d->local_->getAddr(ctxt_);
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
-
-    if ( var->getType()->isAtomic() && !left_ )
-        llvmValue_ = ctxt_->builder_.CreateLoad( var->getAlloca(), var->cid() );
-    else
-        llvmValue_ = var->getAlloca();
+    llvmValue_ = var->getAddr(ctxt_);
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(Literal* l)
 {
-    swiftAssert(!left_, "must not be an lvalue");
+    using llvm::ConstantInt;
+    using llvm::ConstantFP;
+    using llvm::APInt;
+    using llvm::APFloat;
+
     llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
 
-    
+    isAddr_ = false;
 
     switch ( l->getToken() )
     {
@@ -51,51 +51,62 @@ void TypeNodeCodeGen::visit(Literal* l)
          */
 
         case Token::L_SAT8:
-        case Token::L_INT8: llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt( 8, l->box_.int64_, true) ); return;   
+        case Token::L_INT8: 
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt( 8, l->box_.int64_, true)); return;
 
         case Token::L_SAT16:
-        case Token::L_INT16:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(16, l->box_.int64_, true) ); return;   
+        case Token::L_INT16:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(16, l->box_.int64_, true)); return;
 
         case Token::L_INT:  
-        case Token::L_INT32:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(32, l->box_.int64_, true) ); return;   
+        case Token::L_INT32:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(32, l->box_.int64_, true)); return;   
 
-        case Token::L_INT64:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(64, l->box_.int64_, true) ); return;   
+        case Token::L_INT64:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(64, l->box_.int64_, true)); return;   
 
         /*
          * unsigned ints
          */
 
         case Token::L_USAT8:
-        case Token::L_UINT8: llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt( 8, l->box_.uint64_,  false) ); return;   
+        case Token::L_UINT8: 
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt( 8, l->box_.uint64_)); return;   
 
         case Token::L_USAT16:
-        case Token::L_UINT16:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(16, l->box_.uint64_, false) ); return;   
+        case Token::L_UINT16:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(16, l->box_.uint64_)); return;   
 
         case Token::L_UINT:  
-        case Token::L_UINT32:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(32, l->box_.uint64_, false) ); return;   
+        case Token::L_UINT32:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(32, l->box_.uint64_)); return;   
 
         case Token::L_INDEX:
-        case Token::L_UINT64:llvmValue_ = llvm::ConstantInt::get(llvmCtxt, llvm::APInt(64, l->box_.uint64_, false) ); return;   
+        case Token::L_UINT64:
+            llvmValue_ = ConstantInt::get(llvmCtxt, APInt(64, l->box_.uint64_)); return;   
 
         /*
          * floats
          */
 
         case Token::L_REAL:
-        case Token::L_REAL32: llvmValue_ = llvm::ConstantFP::get(llvmCtxt, llvm::APFloat(l->box_.float_) ); return;
-        case Token::L_REAL64: llvmValue_ = llvm::ConstantFP::get(llvmCtxt, llvm::APFloat(l->box_.double_) ); return;
+        case Token::L_REAL32: 
+            llvmValue_ = ConstantFP::get(llvmCtxt, APFloat(l->box_.float_) ); return;
+        case Token::L_REAL64: 
+            llvmValue_ = ConstantFP::get(llvmCtxt, APFloat(l->box_.double_) ); return;
 
-        //case Token::L_TRUE:
-        //case Token::L_FALSE:  llvmValue_ = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); break;
+        case Token::L_TRUE:
+        case Token::L_FALSE:
+            //llvmValue_ = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); return;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
+
 }
 
 void TypeNodeCodeGen::visit(Nil* n)
 {
-    swiftAssert(!left_, "must not be an lvalue");
     // TODO
 }
 
@@ -117,6 +128,7 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
 
     // build get and get value
     llvmValue_ = builder.CreateGEP(ptr, idx);
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(MemberAccess* m)
@@ -134,6 +146,7 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
 
     // build get and get value
     llvmValue_ = builder.CreateGEP(ptr, input, input+2);
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
@@ -150,16 +163,26 @@ void TypeNodeCodeGen::visit(WriterCall* w)
 
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
     b->op1_->accept(this);
     llvm::Value* v1 = llvmValue_;
+    bool isAddr1 = isAddr_;
 
     b->op2_->accept(this);
     llvm::Value* v2 = llvmValue_;
+    bool isAddr2 = isAddr_;
 
     if ( b->op1_->getType()->isBuiltin() )
     {
-        swiftAssert(!left_, "must not be an lvalue");
         const BaseType* bt = (BaseType*) b->op1_->getType();
+
+        if (isAddr1)
+            v1 = builder.CreateLoad(v1);
+        if (isAddr2)
+            v2 = builder.CreateLoad(v2);
+
+        isAddr_ = false;
 
         switch (b->token_)
         {
@@ -167,24 +190,18 @@ void TypeNodeCodeGen::visit(BinExpr* b)
              * arithmetic operators
              */
 
-            case Token::ADD:
-                llvmValue_ = ctxt_->builder_.CreateAdd(v1, v2);
-                return;
-            case Token::SUB:
-                llvmValue_ = ctxt_->builder_.CreateSub(v1, v2);
-                return;
-            case Token::MUL:
-                llvmValue_ = ctxt_->builder_.CreateMul(v1, v2);
-                return;
+            case Token::ADD: llvmValue_ = builder.CreateAdd(v1, v2); return;
+            case Token::SUB: llvmValue_ = builder.CreateSub(v1, v2); return;
+            case Token::MUL: llvmValue_ = builder.CreateMul(v1, v2); return;
             case Token::DIV:
                 if ( bt->isFloat() )
-                    llvmValue_ = ctxt_->builder_.CreateFDiv(v1, v2);
+                    llvmValue_ = builder.CreateFDiv(v1, v2);
                 else
                 {
                     if ( bt->isSigned() )
-                        llvmValue_ = ctxt_->builder_.CreateSDiv(v1, v2);
+                        llvmValue_ = builder.CreateSDiv(v1, v2);
                     else // -> unsigned
-                        llvmValue_ = ctxt_->builder_.CreateUDiv(v1, v2);
+                        llvmValue_ = builder.CreateUDiv(v1, v2);
                 }
                 return;
 
@@ -194,27 +211,27 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 
             case Token::EQ:
                 if ( bt->isFloat() )
-                    llvmValue_ = ctxt_->builder_.CreateFCmpOEQ(v1, v2);
+                    llvmValue_ = builder.CreateFCmpOEQ(v1, v2);
                 else
-                    llvmValue_ = ctxt_->builder_.CreateICmpEQ(v1, v2);
+                    llvmValue_ = builder.CreateICmpEQ(v1, v2);
                 return;
             case Token::NE:
                 if ( bt->isFloat() )
-                    llvmValue_ = ctxt_->builder_.CreateFCmpONE(v1, v2);
+                    llvmValue_ = builder.CreateFCmpONE(v1, v2);
                 else
-                    llvmValue_ = ctxt_->builder_.CreateICmpNE(v1, v2);
+                    llvmValue_ = builder.CreateICmpNE(v1, v2);
                 return;
 
 #define SWIFT_EMIT_CMP(token, fcmp, scmp, ucmp) \
     case Token:: token : \
         if ( bt->isFloat() ) \
-            llvmValue_ = ctxt_->builder_. fcmp (v1, v2); \
+            llvmValue_ = builder. fcmp (v1, v2); \
         else \
         { \
             if ( bt->isSigned() ) \
-                llvmValue_ = ctxt_->builder_. scmp (v1, v2); \
+                llvmValue_ = builder. scmp (v1, v2); \
             else \
-                llvmValue_ = ctxt_->builder_. ucmp (v1, v2); \
+                llvmValue_ = builder. ucmp (v1, v2); \
         } \
         return;
 
@@ -231,14 +248,8 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     }
     // -> is not builtin
 
-    if (left_)
-    {
-        swiftAssert(false, "TODO");
-    }
-    else
-    {
-        swiftAssert(false, "TODO");
-    }
+    swiftAssert(false, "TODO");
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(RoutineCall* r)
@@ -247,13 +258,20 @@ void TypeNodeCodeGen::visit(RoutineCall* r)
 
 void TypeNodeCodeGen::visit(UnExpr* u)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
     u->op1_->accept(this);
     llvm::Value* v1 = llvmValue_;
+    bool isAddr1 = isAddr_;
 
     if ( u->op1_->getType()->isBuiltin() )
     {
         const BaseType* bt = (BaseType*) u->op1_->getType();
-        swiftAssert(!left_, "must not be an lvalue");
+
+        if (isAddr1)
+            v1 = builder.CreateLoad(v1);
+
+        isAddr_ = false;
 
         switch (u->token_)
         {
@@ -261,7 +279,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
                 // nothing to do
                 return;
             case Token::SUB:
-                llvmValue_ = ctxt_->builder_.CreateSub(
+                llvmValue_ = builder.CreateSub(
                         llvm::Constant::getNullValue(bt->getLLVMType(ctxt_->module_)), 
                         v1);
                 return;
@@ -271,14 +289,8 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     }
     // -> is not builtin
 
-    if (left_)
-    {
-        // TODO
-    }
-    else
-    {
-        // TODO
-    }
+    swiftAssert(false, "TODO");
+    isAddr_ = true;
 }
 
 llvm::Value* TypeNodeCodeGen::getLLVMValue() const
@@ -286,15 +298,17 @@ llvm::Value* TypeNodeCodeGen::getLLVMValue() const
     return llvmValue_;
 }
 
-void TypeNodeCodeGen::setLeft()
+bool TypeNodeCodeGen::isAddr() const
 {
-    left_ = true;
+    return isAddr_;
 }
 
-
-void TypeNodeCodeGen::setRight()
+llvm::Value* TypeNodeCodeGen::getScalar()
 {
-    left_ = false;
+    if (isAddr_)
+        return ctxt_->builder_.CreateLoad(llvmValue_);
+    else
+        return llvmValue_;
 }
 
 } // namespace swift

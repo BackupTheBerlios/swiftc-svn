@@ -57,12 +57,7 @@ const char* Var::cid() const
     return id_->c_str();
 }
 
-llvm::AllocaInst* Var::getAlloca()
-{
-    return alloca_;
-}
-
-const llvm::AllocaInst* Var::getAlloca() const
+llvm::Value* Var::getAddr(Context* /*ctxt*/) const
 {
     return alloca_;
 }
@@ -73,9 +68,8 @@ void Var::createEntryAlloca(Context* ctxt)
     llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
 
     const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
-    alloca_ = tmpBuilder.CreateAlloca(llvmType, 0, cid());
+    alloca_ = tmpBuilder.CreateAlloca( llvmType, 0, cid() );
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -95,5 +89,28 @@ bool InOut::validate(Module* module) const
 }
 
 //------------------------------------------------------------------------------
+
+Param::Param(location loc, Type* type, std::string* id)
+    : InOut(loc, type, id)
+{}
+
+//------------------------------------------------------------------------------
+
+RetVal::RetVal(location loc, Type* type, std::string* id)
+    : InOut(loc, type, id)
+{}
+
+void RetVal::setAlloca(llvm::AllocaInst* alloca, int retIndex)
+{
+    alloca_ = alloca;
+    retIndex_ = retIndex;
+}
+
+llvm::Value* RetVal::getAddr(Context* ctxt) const
+{
+    return ctxt->builder_.CreateGEP(alloca_, llvm::ConstantInt::get(
+                *ctxt->module_->llvmCtxt_, 
+                llvm::APInt(32, 0)) );
+}
 
 } // namespace swift

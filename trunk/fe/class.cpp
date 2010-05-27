@@ -210,7 +210,7 @@ void Class::addAssignCreate(Context* ctxt)
         Scope* scope = ctxt->enterScope();
         Create* create = new Create(loc_, false, scope);
         ctxt->memberFct_ = create;
-        create->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
+        create->sig_.in_.push_back( new Param(loc_, bt.clone(), new std::string("arg")) );
         create->sig_.buildTypeLists();
         ctxt->leaveScope();
 
@@ -226,7 +226,7 @@ void Class::addAssignCreate(Context* ctxt)
         Scope* scope = ctxt->enterScope();
         Assign* assign = new Assign(loc_, false, Token::ASGN, scope);
         ctxt->memberFct_ = assign;
-        assign->sig_.in_.push_back( new InOut(loc_, bt.clone(), new std::string("arg")) );
+        assign->sig_.in_.push_back( new Param(loc_, bt.clone(), new std::string("arg")) );
         assign->sig_.buildTypeLists();
         ctxt->leaveScope();
 

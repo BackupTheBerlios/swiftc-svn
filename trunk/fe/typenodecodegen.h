@@ -43,14 +43,13 @@ public:
     virtual void visit(UnExpr* u);
 
     llvm::Value* getLLVMValue() const;
-
-    void setLeft();
-    void setRight();
+    bool isAddr() const;
+    llvm::Value* getScalar();
 
 private:
 
     llvm::Value* llvmValue_;
-    bool left_;
+    bool isAddr_;
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

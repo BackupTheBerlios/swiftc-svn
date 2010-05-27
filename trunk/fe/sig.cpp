@@ -43,18 +43,6 @@ Sig::~Sig()
         delete out_[i];
 }
 
-void Sig::setInList(Context* ctxt)
-{
-    ctxt->ios_ = &in_;
-    ctxt->var_ = false;
-}
-
-void Sig::setOutList(Context* ctxt)
-{
-    ctxt->ios_ = &out_;
-    ctxt->var_ = true;
-}
-
 bool Sig::checkIn(Module* module, const TypeList& inTypes) const
 {
     return inTypes_.check(module, inTypes);

@@ -22,7 +22,6 @@ void StmntCodeGen::visit(CFStmnt* s)
 
 void StmntCodeGen::visit(DeclStmnt* s)
 {
-    tncg_->setLeft();
     s->decl_->accept( tncg_.get() );
 }
 
@@ -32,9 +31,8 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvm::Function* llvmFct = ctxt_->llvmFct_;
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    tncg_->setRight();
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getLLVMValue();
+    llvm::Value* cond = tncg_->getScalar();
 
     /*
      * create new basic blocks
@@ -107,9 +105,8 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder.SetInsertPoint(loopBB);
     s->scope_->accept(this, ctxt_);
-    tncg_->setRight();
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getLLVMValue();
+    llvm::Value* cond = tncg_->getScalar();
     builder.CreateCondBr(cond, outBB, loopBB);
 
     /*
@@ -152,9 +149,8 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder.SetInsertPoint(headerBB);
-    tncg_->setRight();
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getLLVMValue();
+    llvm::Value* cond = tncg_->getScalar();
     builder.CreateCondBr(cond, loopBB, outBB);
 
     /*
@@ -176,20 +172,17 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
-    tncg_->setRight();
     s->exprList_->accept( tncg_.get() );
+    llvm::Value* rvalue = tncg_->getScalar();
+
+    s->tuple_->accept( tncg_.get() );
     llvm::Value* lvalue = tncg_->getLLVMValue();
 
-    tncg_->setLeft();
-    s->tuple_->accept( tncg_.get() );
-    llvm::Value* rvalue = tncg_->getLLVMValue();
-
-    ctxt_->builder_.CreateStore(lvalue, rvalue);
+    ctxt_->builder_.CreateStore(rvalue, lvalue);
 }
 
 void StmntCodeGen::visit(ExprStmnt* s)
 {
-    tncg_->setRight();
     s->expr_->accept( tncg_.get() );
 }
 

@@ -57,7 +57,6 @@ using namespace swift;
     MemberVar*   memberVar_;
     MemberFct*   memberFct_;
     Module*      module_;
-    InOut*       io_;
     Scope*       scope_;
     SimdPrefix*  simdPrefix_;
     Stmnt*       stmnt_;
@@ -229,13 +228,8 @@ member_function
             }
 
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
-        '(' io_list ')' 
-        {
-            ctxt_->memberFct_->sig_.setOutList(ctxt_);
-        }
-        ret_list stmnt_list END EOL
+        '(' param_list ')' ret_list stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
@@ -246,13 +240,8 @@ member_function
             Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Operator(@$,  $1, $3, scope);
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
-        '(' io_list ')' 
-        {
-            ctxt_->memberFct_->sig_.setOutList(ctxt_);
-        }
-        ret_list stmnt_list END EOL
+        '(' param_list ')' ret_list stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
@@ -263,9 +252,8 @@ member_function
             Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Assign(@$,  $1, $3, scope);
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
-        '(' io_list ')' EOL stmnt_list END EOL
+        '(' param_list ')' EOL stmnt_list END EOL
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
@@ -276,9 +264,8 @@ member_function
             Scope* scope = ctxt_->enterScope();
             $<memberFct_>$ = new Create(@$, $1, scope);
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-            ctxt_->memberFct_->sig_.setInList(ctxt_);
         }
-        '(' io_list')' EOL stmnt_list END EOL
+        '(' param_list')' EOL stmnt_list END EOL
         {
             $$ = $<memberFct_>3;
             $$->sig_.buildTypeLists();
@@ -312,23 +299,32 @@ assign
     : ASGN  { $$ = Token::ASGN; }
     ;
 
-io_list_not_empty
-    : io
-    | io_list_not_empty ',' io
+param_list
+    : /* emtpy */
+    | param_list_not_empty
     ;
 
-io_list
-    : /* emtpy */
-    | io_list_not_empty
+param_list_not_empty
+    : param
+    | param ',' param_list_not_empty
+    ;
+
+param
+    : bare_type ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
     ;
 
 ret_list
     : EOL
-    | ARROW io_list_not_empty EOL 
+    | ARROW retval_list_not_empty EOL 
     ;
 
-io
-    : bare_type ID { ctxt_->ios_->push_back( new InOut(@$, $1, $2) ); }
+retval_list_not_empty
+    : retval
+    | retval ',' retval_list_not_empty
+    ;
+
+retval
+    : bare_type ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
     ;
 
 /*

@@ -61,18 +61,28 @@ void ClassCodeGen::codeGen(MemberFct* m)
     TypeList&  in = m->sig_. inTypes_;
     TypeList& out = m->sig_.outTypes_;
     Module* module = ctxt_->module_;
-
     llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
     llvm::LLVMContext& llvmCtxt = llvmModule->getContext();
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    swiftAssert(out.size() <= 1, "TODO");
+    /*
+     * build return type
+     */
 
-    // set return type
-    const llvm::Type* retType;
-    if ( out.size() == 0 )
-        retType = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+    if ( out.empty() )
+        m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
     else
-        retType = out[0]->getLLVMType(ctxt_->module_);
+    {
+        std::vector<const llvm::Type*> types;
+        for (size_t i = 0; i < out.size(); ++i)
+            types.push_back( out[i]->getLLVMType(module) );
+
+        m->retType_ = llvm::StructType::get(llvmCtxt, types);
+    }
+
+    /*
+     * build parameter
+     */
 
     std::vector<const llvm::Type*> params;
 
@@ -84,45 +94,75 @@ void ClassCodeGen::codeGen(MemberFct* m)
     for (size_t i = 0; i < in.size(); ++i)
         params.push_back( in[i]->getLLVMType(module) );
 
-    // build llvm name
+    /*
+     * build llvm name
+     */
+
     static int counter = 0;
     std::ostringstream oss;
     oss << ctxt_->class_->cid() << '.' << *m->id_ << counter++;
     m->llvmName_ = oss.str();
 
-    // create llvm function
-    const llvm::FunctionType* fctType = llvm::FunctionType::get(retType, params, false);
+    /*
+     * create function
+     */
+
+    const llvm::FunctionType* fctType = llvm::FunctionType::get(
+            m->retType_, params, false);
+
     llvm::Function* fct = llvm::cast<llvm::Function>(
         llvmModule->getOrInsertFunction(llvm::StringRef(m->llvmName_), fctType) );
+
     ctxt_->llvmFct_ = fct;
-    m->llvmFct_ = fct;
+    m->llvmFct_     = fct;
 
-    // create root BB
+    /*
+     * create root BB and connect to fct and to the builder
+     */
+
     llvm::BasicBlock* bb = llvm::BasicBlock::Create(
-            ctxt_->module_->getLLVMModule()->getContext(),
-            m->llvmName_,
-            m->llvmFct_);
-    ctxt_->builder_.SetInsertPoint(bb);
+            ctxt_->module_->getLLVMModule()->getContext(), m->llvmName_, fct);
 
-    // for each arg
+    builder.SetInsertPoint(bb);
+
+    /*
+     * initialize return value
+     */
+
+    if ( !out.empty() )
+    {
+        m->retAlloca_ = builder.CreateAlloca(m->retType_, 0, "retval" );
+        for (size_t i = 0; i < out.size(); ++i)
+        {
+            RetVal* retval = m->sig_.out_[i];
+            retval->setAlloca(m->retAlloca_, i);
+        }
+    }
+
+    /*
+     * initialize params
+     */
+
     size_t i = 0; 
     typedef llvm::Function::arg_iterator ArgIter;
     for (ArgIter iter = fct->arg_begin(); i < m->sig_.in_.size(); ++iter, ++i)
     {
-        InOut* io = m->sig_.in_[i];
+        Param* param = m->sig_.in_[i];
 
-        io->createEntryAlloca(ctxt_);
-        iter->setName( io->cid() );
+        param->createEntryAlloca(ctxt_);
+        iter->setName( param->cid() );
 
         // Store the initial value into the alloca.
-        ctxt_->builder_.CreateStore( iter, io->getAlloca() );
+        builder.CreateStore( iter, param->getAddr(ctxt_) );
     }
 
     // enter scope and gen code
     m->scope_->accept( scg_.get(), ctxt_ );
 
-    // TODO void
-    ctxt_->builder_.CreateRetVoid();
+    if ( out.empty() )
+        builder.CreateRetVoid();
+    else
+        builder.CreateRet( builder.CreateLoad(m->retAlloca_) );
 }
 
 } // namespace swift

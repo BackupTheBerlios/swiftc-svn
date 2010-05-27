@@ -20,8 +20,6 @@ class InOut;
 class Scope;
 class Stmnt;
 
-typedef std::vector<InOut*> IOs;
-
 class Context
 {
 public:
@@ -40,7 +38,6 @@ public:
     Class* class_;
     MemberFct* memberFct_;
 
-    IOs* ios_;
     bool var_;
 
     llvm::Function* llvmFct_; ///< Current llvm function.

@@ -36,6 +36,9 @@ class InOut;
 
 //------------------------------------------------------------------------------
 
+typedef std::vector<Param*> Params;
+typedef std::vector<RetVal*> RetVals;
+
 class Sig
 {
 public:
@@ -51,8 +54,8 @@ public:
     InOut* lookupInOut(const std::string* id) const;
     void buildTypeLists();
 
-    IOs in_;
-    IOs out_;
+    Params in_;
+    RetVals out_;
     TypeList inTypes_;
     TypeList outTypes_;
 };
