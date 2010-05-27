@@ -67,10 +67,43 @@ public:
     virtual bool isAtomic() const = 0;
 
     virtual const llvm::Type* getLLVMType(Module* module) const = 0;
+    TokenType getModifier() const;
 
 protected:
 
     TokenType modifier_;
+};
+
+//------------------------------------------------------------------------------
+
+class ErrorType : public Type
+{
+public:
+
+    ErrorType(location, TokenType modifier);
+
+    virtual Type* clone() const;
+    virtual bool validate(Module* m) const;
+    virtual bool check(const Type* type, Module* m) const;
+    virtual std::string toString() const;
+    virtual bool isAtomic() const;
+    virtual const llvm::Type* getLLVMType(Module* module) const;
+};
+
+//------------------------------------------------------------------------------
+
+class VoidType : public Type
+{
+public:
+
+    VoidType(location);
+
+    virtual Type* clone() const;
+    virtual bool validate(Module* m) const;
+    virtual bool check(const Type* type, Module* m) const;
+    virtual std::string toString() const;
+    virtual bool isAtomic() const;
+    virtual const llvm::Type* getLLVMType(Module* module) const;
 };
 
 //------------------------------------------------------------------------------

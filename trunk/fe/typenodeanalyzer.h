@@ -15,6 +15,7 @@ public:
     virtual void visit(Decl* d);
 
     // TypeNode -> Expr 
+    virtual void visit(ErrorExpr* e);
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
@@ -39,9 +40,9 @@ public:
 private:
 
     void analyzeMemberFctCall(MemberFctCall* m);
-    void setClass(MethodCall* m);
-    void setClass(OperatorCall* r);
-    void setClass(RoutineCall* r);
+    bool setClass(MethodCall* m);
+    bool setClass(OperatorCall* r);
+    bool setClass(RoutineCall* r);
 };
 
 typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;

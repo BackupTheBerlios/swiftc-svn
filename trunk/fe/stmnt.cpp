@@ -71,6 +71,17 @@ ActionStmnt::~ActionStmnt()
 
 //------------------------------------------------------------------------------
 
+ErrorStmnt::ErrorStmnt(location loc)
+    : Stmnt(loc)
+{}
+
+void ErrorStmnt::accept(StmntVisitorBase* s)
+{
+    s->visit(this);
+}
+
+//------------------------------------------------------------------------------
+
 ExprStmnt::ExprStmnt(location loc, SimdPrefix* simdPrefix, Expr* expr)
     : ActionStmnt(loc, simdPrefix)
     , expr_(expr)

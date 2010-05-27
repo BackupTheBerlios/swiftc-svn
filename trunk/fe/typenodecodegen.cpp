@@ -25,6 +25,11 @@ void TypeNodeCodeGen::visit(Decl* d)
     isAddr_ = true;
 }
 
+void TypeNodeCodeGen::visit(ErrorExpr* d)
+{
+    swiftAssert(false, "unreachable");
+}
+
 void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );

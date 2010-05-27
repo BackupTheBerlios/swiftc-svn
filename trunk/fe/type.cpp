@@ -37,7 +37,90 @@ namespace swift {
 Type::Type(location loc, TokenType modifier)
     : Node(loc) 
     , modifier_(modifier)
+{
+    swiftAssert(modifier == Token::VAR || modifier == Token::CONST,
+            "illegal modifier value");
+}
+
+TokenType Type::getModifier() const
+{
+    return modifier_;
+}
+
+//------------------------------------------------------------------------------
+
+ErrorType::ErrorType(location loc, TokenType modifier)
+    : Type(loc, modifier)
 {}
+
+Type* ErrorType::clone() const
+{
+    return new ErrorType(loc_, modifier_);
+}
+
+bool ErrorType::validate(Module* m) const
+{
+    return true;
+}
+
+bool ErrorType::check(const Type* type, Module* m) const
+{
+    return true;
+}
+
+std::string ErrorType::toString() const
+{
+    return "error";
+}
+
+bool ErrorType::isAtomic() const
+{
+    return false;
+}
+
+const llvm::Type* ErrorType::getLLVMType(Module* module) const
+{
+    swiftAssert(false, "unreachable");
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+VoidType::VoidType(location loc)
+    : Type(loc, Token::CONST)
+{}
+
+Type* VoidType::clone() const
+{
+    return new VoidType(loc_);
+}
+
+bool VoidType::validate(Module* m) const
+{
+    return true;
+}
+
+bool VoidType::check(const Type* type, Module* m) const
+{
+    errorf(loc_, "void value not ignored as it ought to be");
+    return false;
+}
+
+std::string VoidType::toString() const
+{
+    return "void";
+}
+
+bool VoidType::isAtomic() const
+{
+    return false;
+}
+
+const llvm::Type* VoidType::getLLVMType(Module* module) const
+{
+    swiftAssert(false, "unreachable");
+    return 0;
+}
 
 //------------------------------------------------------------------------------
 

@@ -21,6 +21,7 @@ public:
 
     StmntVisitor(Context* ctxt);
 
+    virtual void visit(ErrorStmnt* s);
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);
     virtual void visit(IfElStmnt* s);

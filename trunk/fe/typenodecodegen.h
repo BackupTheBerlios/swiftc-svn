@@ -21,6 +21,7 @@ public:
     virtual void visit(Decl* d);
 
     // TypeNode -> Expr 
+    virtual void visit(ErrorExpr* e);
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);

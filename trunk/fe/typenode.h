@@ -71,7 +71,20 @@ public:
 
 protected:
 
-    bool lvalue_;
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
+class ErrorExpr : public Expr
+{
+public:
+
+    ErrorExpr(location loc);
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -431,6 +444,7 @@ public:
     virtual ~TypeNodeVisitorBase() {}
 
     virtual void visit(Decl* d) = 0;
+    virtual void visit(ErrorExpr* e) = 0;
 
     // TypeNode -> Expr 
     virtual void visit(Id* id) = 0;

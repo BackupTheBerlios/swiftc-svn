@@ -5,6 +5,7 @@
 #include <llvm/Module.h>
 
 #include "fe/context.h"
+#include "fe/class.h"
 #include "fe/scope.h"
 #include "fe/typenodecodegen.h"
 
@@ -15,9 +16,31 @@ StmntCodeGen::StmntVisitor(Context* ctxt)
     , tncg_( new TypeNodeCodeGen(ctxt) )
 {}
 
+void StmntCodeGen::visit(ErrorStmnt* s) 
+{
+    swiftAssert(false, "unreachable");
+}
+
 void StmntCodeGen::visit(CFStmnt* s)
 {
-    // TODO
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+    MemberFct* memberFct = ctxt_->memberFct_;
+
+    if (s->token_ == Token::RETURN)
+    {
+        if ( memberFct->sig_.out_.empty() )
+            builder.CreateRetVoid();
+        else
+            builder.CreateRet( builder.CreateLoad(memberFct->retAlloca_) );
+
+        llvm::BasicBlock* bb = llvm::BasicBlock::Create(*ctxt_->module_->llvmCtxt_, "unreachable");
+        ctxt_->llvmFct_->getBasicBlockList().push_back(bb);
+        builder.SetInsertPoint(bb);
+
+        return;
+    }
+
+    swiftAssert(false, "TODO");
 }
 
 void StmntCodeGen::visit(DeclStmnt* s)
@@ -59,7 +82,6 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvmFct->getBasicBlockList().push_back(thenBB);
     builder.SetInsertPoint(thenBB);
     s->ifScope_->accept(this, ctxt_);
-    // TODO what if builder's current BB already terminates?
     builder.CreateBr(mergeBB);
 
     /*

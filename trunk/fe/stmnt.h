@@ -50,10 +50,20 @@ public:
 
 //------------------------------------------------------------------------------
 
-class CFStmnt : public Stmnt
+class ErrorStmnt : public Stmnt
 {
 public:
 
+    ErrorStmnt(location loc);
+
+    virtual void accept(StmntVisitorBase* s);
+};
+
+//------------------------------------------------------------------------------
+
+class CFStmnt : public Stmnt
+{
+public:
 
     CFStmnt(location loc, TokenType token);
 
@@ -62,6 +72,8 @@ public:
 private:
 
     TokenType token_;
+
+    template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -220,6 +232,7 @@ public:
     StmntVisitorBase(Context* ctxt);
     virtual ~StmntVisitorBase() {}
 
+    virtual void visit(ErrorStmnt* s) = 0;
     virtual void visit(CFStmnt* s) = 0;
     virtual void visit(DeclStmnt* s) = 0;
     virtual void visit(IfElStmnt* s) = 0;

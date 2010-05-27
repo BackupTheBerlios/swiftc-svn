@@ -16,6 +16,8 @@ StmntAnalyzer::StmntVisitor(Context* ctxt)
     , tna_( new TypeNodeAnalyzer(ctxt) )
 {}
 
+void StmntAnalyzer::visit(ErrorStmnt* s) {}
+
 void StmntAnalyzer::visit(CFStmnt* s) 
 {
     // todo

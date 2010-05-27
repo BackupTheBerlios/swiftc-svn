@@ -32,6 +32,11 @@ void TypeNodeAnalyzer::visit(Decl* d)
         SWIFT_PREV_ERROR( var->loc() );
 
         ctxt_->result_ = false;
+
+        // substiture decl's type with an error type
+        TokenType modifier = d->type_->getModifier();
+        delete d->type_;
+        d->type_ = new ErrorType( d->loc(), modifier );
     }
     else
     {
@@ -39,6 +44,11 @@ void TypeNodeAnalyzer::visit(Decl* d)
         d->local_ = new Local( d->loc(), d->type_->clone(), new std::string(*d->id()) );
         ctxt_->scope()->insert(d->local_);
     }
+}
+
+void TypeNodeAnalyzer::visit(ErrorExpr* e)
+{
+    e->type_ = new ErrorType( e->loc(), Token::VAR );
 }
 
 void TypeNodeAnalyzer::visit(Id* id)
@@ -52,6 +62,7 @@ void TypeNodeAnalyzer::visit(Id* id)
                 "nor a return value '%s' defined in this scope",
                 id->cid() );
 
+        id->type_ = new ErrorType( id->loc(), Token::VAR );
         ctxt_->result_ = false;
     }
     else // this expresion is valid
@@ -63,7 +74,8 @@ void TypeNodeAnalyzer::visit(Literal* l)
     //if ( neededAsLValue_ )
     //{
         //errorf(loc_, "lvalue required as left operand of assignment");
-        //return false;
+        //ctxt_->result_ = false;
+        //l->type_ = new ErrorType( l->loc(), Token::CONST );
     //}
 
     switch ( l->getToken() )
@@ -96,12 +108,15 @@ void TypeNodeAnalyzer::visit(Literal* l)
         default:
             swiftAssert(false, "illegal switch-case-value");
     }
+
 }
 
 void TypeNodeAnalyzer::visit(Nil* n)
 {
     if ( !n->innerType_->validate(ctxt_->module_) )
-        ctxt_->result_ = false;
+    {
+        n->type_ = new ErrorType( n->loc(), Token::CONST );
+    }
     else
         n->type_ = new Ptr(n->loc(), Token::CONST, n->innerType_->clone() );
 }
@@ -118,8 +133,10 @@ void TypeNodeAnalyzer::visit(Self* s)
     }
     else
     {
-        errorf( s->loc(), "the 'self' keyword may only be used within methods" );
+        errorf( s->loc(), 
+                "the 'self' keyword may only be used within non-static methods" );
         ctxt_->result_ = false;
+        s->type_ = new ErrorType( s->loc(), Token::CONST );
     }
 }
 
@@ -130,41 +147,22 @@ void TypeNodeAnalyzer::visit(IndexExpr* i)
 
 void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
-    if (m->prefixExpr_) // is a prefix expr given?
-    {
-        m->prefixExpr_->accept(this);
+    // examine prefix expr
+    m->prefixExpr_->accept(this);
 
-        if (m->prefixExpr_->type_)
-        {
-            if ( const BaseType* bt = m->prefixExpr_->type_->isInner() )
-                m->class_ = bt->lookupClass(ctxt_->module_);
-        }
-    }
-    else // no -> this is an access via 'self'
+    if ( const BaseType* bt = m->prefixExpr_->type_->isInner() )
     {
-        if ( dynamic_cast<Method*>(ctxt_->memberFct_) )
-        {
-            m->class_ = ctxt_->class_;
+        m->class_ = bt->lookupClass(ctxt_->module_);
+        swiftAssert(m->class_, "must be found");
 
-            // artificially create a prefix expr
-            m->prefixExpr_ = new Self( m->loc() );
-            m->prefixExpr_->accept(this);
-        }
-        else
-        {
-            errorf(m->loc(), "a %s does not provide a hidden 'self' parameter",
-                    ctxt_->memberFct_->qualifierStr() );
-        }
-    }
-
-    if (m->class_)
-    {
         m->memberVar_ = m->class_->lookupMemberVar( m->id() );
 
         if (!m->memberVar_)
         {
             errorf( m->loc(), "there is no member variable '%s' defined in class '%s'",
                 m->cid(), m->class_->cid() );
+            ctxt_->result_ = false;
+            m->type_ = new ErrorType( m->loc(), Token::CONST );
         }
         else
             m->type_ = m->memberVar_->getType()->clone();
@@ -173,111 +171,107 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
 void TypeNodeAnalyzer::visit(CCall* c)
 {
-    if (c->retType_)
+    if ( !c->retType_->validate(ctxt_->module_) )
     {
-        if ( !c->retType_->validate(ctxt_->module_) )
-            ctxt_->result_ = false;
-        else
-            c->type_ = c->retType_->clone();
+        ctxt_->result_ = false;
+        c->type_ = new ErrorType( c->loc(), Token::CONST );
     }
+    else
+        c->type_ = c->retType_->clone();
 }
 
 void TypeNodeAnalyzer::visit(ReaderCall* r)
 {
-    setClass(r);
-    analyzeMemberFctCall(r);
+    if ( setClass(r) )
+        analyzeMemberFctCall(r);
 }
 
 void TypeNodeAnalyzer::visit(WriterCall* w)
 {
-    setClass(w);
-    analyzeMemberFctCall(w);
+    if ( setClass(w) )
+        analyzeMemberFctCall(w);
 }
 
 void TypeNodeAnalyzer::visit(RoutineCall* r)
 {
-    setClass(r);
-    analyzeMemberFctCall(r);
+    if ( setClass(r) )
+        analyzeMemberFctCall(r);
 }
 
 void TypeNodeAnalyzer::visit(BinExpr* b)
 {
-    setClass(b);
-    analyzeMemberFctCall(b);
+    if ( setClass(b) )
+        analyzeMemberFctCall(b);
 }
 
 void TypeNodeAnalyzer::visit(UnExpr* u)
 {
-    setClass(u);
-    analyzeMemberFctCall(u);
+    if ( setClass(u) )
+        analyzeMemberFctCall(u);
 }
 
 void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 {
-    if ( !m->exprList_->isValid() )
-        return;
-
     TypeList inTypes = m->exprList_->buildTypeList();
+    m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), inTypes);
 
-    if (m->class_)
+    if (!m->memberFct_)
     {
-        m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), inTypes);
+        errorf( m->loc(), "there is no %s '%s(%s)' defined in class '%s'",
+            m->qualifierStr(), m->cid(), inTypes.toString().c_str(), m->class_->cid() );
 
-        if (!m->memberFct_)
-        {
-            errorf( m->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                m->qualifierStr(), m->cid(), inTypes.toString().c_str(), m->class_->cid() );
-
-            ctxt_->result_ = false;
-        }
-        else if ( !m->memberFct_->sig_.outTypes_.empty() )
-                m->type_ = m->memberFct_->sig_.outTypes_[0]->clone();
+        ctxt_->result_ = false;
+        m->type_ = new ErrorType( m->loc(), Token::CONST );
     }
+    else if ( !m->memberFct_->sig_.outTypes_.empty() )
+        m->type_ = m->memberFct_->sig_.outTypes_[0]->clone();
+    else
+        m->type_ = new VoidType( m->loc() );
 }
 
-void TypeNodeAnalyzer::setClass(MethodCall* m)
+bool TypeNodeAnalyzer::setClass(MethodCall* m)
 {
     m->exprList_->accept(this);
 
-    if (m->expr_)
+    if ( const BaseType* bt = m->expr_->type_->isInner() )
     {
-        if (m->expr_->type_)
-        {
-            if ( const BaseType* bt = m->expr_->type_->isInner() )
-                m->class_ = bt->lookupClass(ctxt_->module_);
-        }
+        m->class_ = bt->lookupClass(ctxt_->module_);
+        return true;
     }
-    else
-        m->class_ = ctxt_->class_;
+
+    return false;
 }
 
-void TypeNodeAnalyzer::setClass(OperatorCall* o)
+bool TypeNodeAnalyzer::setClass(OperatorCall* o)
 {
     o->exprList_->accept(this);
 
-    if (o->op1_ && o->op1_->type_)
+    if ( const BaseType* bt = o->op1_->type_->isInner() )
     {
-        if ( const BaseType* bt = o->op1_->type_->isInner() )
-            o->class_ = bt->lookupClass(ctxt_->module_);
+        o->class_ = bt->lookupClass(ctxt_->module_);
+        return true;
     }
+
+    return false;
 }
 
-void TypeNodeAnalyzer::setClass(RoutineCall* r)
+bool TypeNodeAnalyzer::setClass(RoutineCall* r)
 {
     r->exprList_->accept(this);
+    r->class_ = ctxt_->module_->lookupClass(r->classId_);
 
-    if (r->classId_)
+    if (!r->class_)
     {
-        r->class_ = ctxt_->module_->lookupClass(r->classId_);
+        errorf( r->loc(), "class '%s' is not defined in module '%s'", 
+                r->classId_->c_str(), ctxt_->module_->cid() );
 
-        if (!r->class_)
-        {
-            errorf( r->loc(), "class '%s' is not defined in module '%s'", 
-                    r->classId_->c_str(), ctxt_->module_->cid() );
-        }
+        ctxt_->result_ = false;
+        r->type_ = new ErrorType( r->loc(), Token::CONST );
+
+        return false;
     }
-    else
-        r->class_ = ctxt_->class_;
+
+    return true;
 }
 
 } // namespace swift

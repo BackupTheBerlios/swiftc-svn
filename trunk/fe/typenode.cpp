@@ -61,8 +61,18 @@ const char* Decl::cid() const
 
 Expr::Expr(location loc)
     : TypeNode(loc, 0)
-    , lvalue_(false)
 {}
+
+//------------------------------------------------------------------------------
+
+ErrorExpr::ErrorExpr(location loc)
+    : Expr(loc)
+{}
+
+void ErrorExpr::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
 
 //------------------------------------------------------------------------------
 
