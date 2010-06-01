@@ -119,7 +119,6 @@ class BaseType : public Type
 public:
 
     BaseType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
-    //BaseType(TokenType modifier, const Class* _class);
     virtual ~BaseType();
 
     virtual BaseType* clone() const;

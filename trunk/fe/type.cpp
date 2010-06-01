@@ -157,15 +157,6 @@ BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInO
         isRef_ = true;
 }
 
-//BaseType::BaseType(TokenType modifier, const Class* _class)
-    //: Type( _class->loc(), modifier, false )
-    //, id_( new std::string(*_class->id()) )
-    //, builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
-//{
-    //if (isInOut && !builtin_)
-        //isRef_ = true;
-//}
-
 BaseType::~BaseType()
 {
     delete id_;

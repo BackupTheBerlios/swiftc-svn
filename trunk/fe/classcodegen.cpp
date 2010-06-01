@@ -85,24 +85,7 @@ void ClassCodeGen::codeGen(MemberFct* m)
 
 
     /*
-     * build return type
-     */
-
-    if ( out.empty() )
-        m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
-    else if (main)
-        m->retType_ = llvm::IntegerType::getInt32Ty(llvmCtxt);
-    else
-    {
-        std::vector<const llvm::Type*> types;
-        for (size_t i = 0; i < out.size(); ++i)
-            types.push_back( out[i]->getLLVMType(module) );
-
-        m->retType_ = llvm::StructType::get(llvmCtxt, types);
-    }
-
-    /*
-     * build parameter
+     * create llvm function type
      */
 
     std::vector<const llvm::Type*> params;
@@ -114,14 +97,39 @@ void ClassCodeGen::codeGen(MemberFct* m)
                     ctxt_->class_->llvmType()) );
     }
 
+    // build return type
+    if ( out.empty() )
+        m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+    else if (main)
+        m->retType_ = llvm::IntegerType::getInt32Ty(llvmCtxt);
+    else
+    {
+        std::vector<const llvm::Type*> types;
+        for (size_t i = 0; i < out.size(); ++i)
+        {
+            RetVal* retval = m->sig_.out_[i];
+
+            if ( retval->getType()->isRef() )
+                params.push_back( out[i]->getLLVMType(module) );
+            else
+                types .push_back( out[i]->getLLVMType(module) );
+        }
+
+        m->retType_ = llvm::StructType::get(llvmCtxt, types);
+    }
+
     // now push the rest
     for (size_t i = 0; i < in.size(); ++i)
         params.push_back( in[i]->getLLVMType(module) );
 
+    const llvm::FunctionType* fctType = llvm::FunctionType::get(
+            m->retType_, params, false);
+
     /*
-     * build llvm name
+     * create function
      */
 
+    // create llvm name
     if (main)
         m->llvmName_ = "main";
     else
@@ -132,55 +140,43 @@ void ClassCodeGen::codeGen(MemberFct* m)
         m->llvmName_ = oss.str();
     }
 
-    /*
-     * create function
-     */
-
-    const llvm::FunctionType* fctType = llvm::FunctionType::get(
-            m->retType_, params, false);
-
     llvm::Function* fct = llvm::cast<llvm::Function>(
         llvmModule->getOrInsertFunction(m->llvmName_.c_str(), fctType) );
 
     ctxt_->llvmFct_ = fct;
     m->llvmFct_     = fct;
 
+    // set calling convention
     if (!main)
-    {
         fct->setCallingConv(llvm::CallingConv::Fast);
-    }
     else
         fct->addFnAttr(llvm::Attribute::NoUnwind);
 
     /*
-     * create root BB and connect to fct and to the builder
+     * emit code for the function
      */
 
+
+    // create root BB and connect to fct and to the builder    
     llvm::BasicBlock* bb = llvm::BasicBlock::Create(llvmCtxt, m->llvmName_, fct);
     builder.SetInsertPoint(bb);
 
     // create return basic block
     m->returnBB_ = llvm::BasicBlock::Create(llvmCtxt, "return");
 
-    /*
-     * initialize return values
-     */
-
+    // initialize return values
     for (size_t i = 0; i < out.size(); ++i)
     {
         RetVal* retval = m->sig_.out_[i];
         retval->createEntryAlloca(ctxt_);
     }
 
-    /*
-     * initialize params
-     */
-
     llvm::Function::arg_iterator iter = fct->arg_begin();
 
-    // build 'self' alloca
+    // initialize 'self' alloca
     if ( Method* method = dynamic_cast<Method*>(m) )
     {
+        // create alloca and store the initial
         method->selfValue_ = builder.CreateAlloca( params[0], 0, "self" );
         builder.CreateStore(iter,  method->selfValue_);
 
@@ -189,15 +185,16 @@ void ClassCodeGen::codeGen(MemberFct* m)
         ++iter;
     }
 
+    // initialize params
     for (size_t i = 0; i < m->sig_.in_.size(); ++iter, ++i)
     {
         Param* param = m->sig_.in_[i];
 
+        // create alloca and store the initial
         llvm::AllocaInst* alloca = param->createEntryAlloca(ctxt_);
-        iter->setName( param->cid() );
-
-        // Store the initial value into the alloca.
         builder.CreateStore(iter, alloca);
+
+        iter->setName( param->cid() );
     }
 
     // enter scope and gen code
