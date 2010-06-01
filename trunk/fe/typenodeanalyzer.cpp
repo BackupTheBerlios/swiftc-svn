@@ -2,6 +2,7 @@
 
 #include "fe/class.h"
 #include "fe/context.h"
+#include "fe/tnlist.h"
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/type.h"
@@ -14,6 +15,8 @@ TypeNodeAnalyzer::TypeNodeVisitor(Context* ctxt)
 
 void TypeNodeAnalyzer::visit(Decl* d)
 {
+    lvalue_ = true;
+
     // check whether this type exists
     ctxt_->result_ &= d->type_->validate(ctxt_->module_);
 
@@ -48,12 +51,14 @@ void TypeNodeAnalyzer::visit(Decl* d)
 
 void TypeNodeAnalyzer::visit(ErrorExpr* e)
 {
+    lvalue_ = false;
     e->type_ = new ErrorType( e->loc(), Token::VAR );
 }
 
 void TypeNodeAnalyzer::visit(Id* id)
 {
-    // is it a local?
+    lvalue_ = true;
+
     Var* var = ctxt_->scope()->lookupVar( id->id() );
 
     if (!var)
@@ -64,19 +69,17 @@ void TypeNodeAnalyzer::visit(Id* id)
 
         id->type_ = new ErrorType( id->loc(), Token::VAR );
         ctxt_->result_ = false;
+
+        return;
     }
-    else // this expresion is valid
-        id->type_ = var->getType()->clone();
+
+    // this expresion is valid
+    id->type_ = var->getType()->clone();
 }
 
 void TypeNodeAnalyzer::visit(Literal* l)
 {
-    //if ( neededAsLValue_ )
-    //{
-        //errorf(loc_, "lvalue required as left operand of assignment");
-        //ctxt_->result_ = false;
-        //l->type_ = new ErrorType( l->loc(), Token::CONST );
-    //}
+    lvalue_ = false;
 
     switch ( l->getToken() )
     {
@@ -113,6 +116,8 @@ void TypeNodeAnalyzer::visit(Literal* l)
 
 void TypeNodeAnalyzer::visit(Nil* n)
 {
+    lvalue_ = false;
+
     if ( !n->innerType_->validate(ctxt_->module_) )
     {
         n->type_ = new ErrorType( n->loc(), Token::CONST );
@@ -123,12 +128,15 @@ void TypeNodeAnalyzer::visit(Nil* n)
 
 void TypeNodeAnalyzer::visit(Self* s)
 {
+    lvalue_ = false;
+
     if ( Method* m = dynamic_cast<Method*>(ctxt_->memberFct_) )
     {
         s->type_ = new BaseType( 
-                s->loc(), 
-                m->getModifier(), 
-                new std::string(*ctxt_->class_->id()) );
+                s->loc(),                              // location 
+                m->getModifier(),                      // VAR or CONST?
+                new std::string(*ctxt_->class_->id()), // identifier
+                true);                                 // is always a reference
 
     }
     else
@@ -142,6 +150,7 @@ void TypeNodeAnalyzer::visit(Self* s)
 
 void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
+    lvalue_ = true;
     // todo
 }
 
@@ -149,6 +158,7 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
     // examine prefix expr
     m->prefixExpr_->accept(this);
+    lvalue_ = true;
 
     if ( const BaseType* bt = m->prefixExpr_->type_->isInner() )
     {
@@ -171,6 +181,9 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
 void TypeNodeAnalyzer::visit(CCall* c)
 {
+    c->exprList_->accept(this);
+    lvalue_ = true;
+
     if ( !c->retType_->validate(ctxt_->module_) )
     {
         ctxt_->result_ = false;
@@ -208,25 +221,6 @@ void TypeNodeAnalyzer::visit(UnExpr* u)
 {
     if ( setClass(u) )
         analyzeMemberFctCall(u);
-}
-
-void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
-{
-    TypeList inTypes = m->exprList_->buildTypeList();
-    m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), inTypes);
-
-    if (!m->memberFct_)
-    {
-        errorf( m->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-            m->qualifierStr(), m->cid(), inTypes.toString().c_str(), m->class_->cid() );
-
-        ctxt_->result_ = false;
-        m->type_ = new ErrorType( m->loc(), Token::CONST );
-    }
-    else if ( !m->memberFct_->sig_.outTypes_.empty() )
-        m->type_ = m->memberFct_->sig_.outTypes_[0]->clone();
-    else
-        m->type_ = new VoidType( m->loc() );
 }
 
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
@@ -272,6 +266,32 @@ bool TypeNodeAnalyzer::setClass(RoutineCall* r)
     }
 
     return true;
+}
+
+void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
+{
+    lvalue_ = false;
+
+    TypeList inTypes = m->exprList_->typeList();
+    m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), inTypes);
+
+    if (!m->memberFct_)
+    {
+        errorf( m->loc(), "there is no %s '%s(%s)' defined in class '%s'",
+            m->qualifierStr(), m->cid(), inTypes.toString().c_str(), m->class_->cid() );
+
+        ctxt_->result_ = false;
+        m->type_ = new ErrorType( m->loc(), Token::CONST );
+    }
+    else if ( !m->memberFct_->sig_.outTypes_.empty() )
+        m->type_ = m->memberFct_->sig_.outTypes_[0]->clone();
+    else
+        m->type_ = new VoidType( m->loc() );
+}
+
+bool TypeNodeAnalyzer::isLValue() const
+{
+    return lvalue_;
 }
 
 } // namespace swift

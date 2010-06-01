@@ -6,7 +6,7 @@ if [ $# -eq 0 ]; then
 fi
 
 in=$1
-obj=$1.o
+bc=$1.bc
 asm=$1.asm
 
 #

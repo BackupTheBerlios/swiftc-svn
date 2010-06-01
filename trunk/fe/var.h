@@ -49,8 +49,8 @@ public:
     const Type* getType() const;
     const std::string* id() const;
     const char* cid() const;
-    void createEntryAlloca(Context* ctxt);
-    virtual llvm::Value* getAddr(Context* ctxt) const;
+    llvm::AllocaInst* createEntryAlloca(Context* ctxt);
+    virtual llvm::Value* getAddr(Context* ctxt) const = 0;
 
 protected:
 
@@ -66,6 +66,7 @@ class Local : public Var
 public:
 
     Local(location loc, Type* type, std::string* id);
+    virtual llvm::Value* getAddr(Context* ctxt) const;
 };
 
 //------------------------------------------------------------------------------
@@ -92,6 +93,7 @@ class Param : public InOut
 public:
 
     Param(location loc, Type* type, std::string* id);
+    virtual llvm::Value* getAddr(Context* ctxt) const;
 };
 
 //------------------------------------------------------------------------------
@@ -107,7 +109,6 @@ public:
 
 private:
 
-    void createEntryAlloca(Context* ctxt) {}
     int retIndex_;
 };
 

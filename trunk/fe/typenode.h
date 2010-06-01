@@ -16,6 +16,7 @@ namespace llvm {
 namespace swift {
 
 class Local;
+class TNList;
 class Type;
 class TypeNodeVisitorBase;
 class Var;
@@ -153,12 +154,14 @@ class FctCall : public Expr
 {
 public:
 
-    FctCall(location loc, std::string* id, ExprList* exprList);
+    FctCall(location loc, std::string* id, TNList* exprList);
     virtual ~FctCall();
 
     virtual const char* qualifierStr() const = 0;
     const std::string* id() const;
     const char* cid() const;
+
+    void setTuple(TNList* tuple);
 
 protected:
 
@@ -166,7 +169,8 @@ protected:
 
 public:
 
-    ExprList* exprList_;
+    TNList* exprList_;
+    TNList* tuple_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -177,7 +181,7 @@ class CCall : public FctCall
 {
 public:
 
-    CCall(location loc, Type* retType, TokenType token, std::string* id, ExprList* exprList);
+    CCall(location loc, Type* retType, TokenType token, std::string* id, TNList* exprList);
     virtual ~CCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -187,7 +191,6 @@ protected:
 
     Type* retType_;
     TokenType token_;
-
     template<class T> friend class TypeNodeVisitor;
 };
 
@@ -197,7 +200,7 @@ class MemberFctCall : public FctCall
 {
 public:
 
-    MemberFctCall(location loc, std::string* id, ExprList* exprList);
+    MemberFctCall(location loc, std::string* id, TNList* exprList);
 
     Class* class_;
     MemberFct* memberFct_;
@@ -209,7 +212,7 @@ class MethodCall : public MemberFctCall
 {
 public:
 
-    MethodCall(location loc, Expr* expr, std::string* id, ExprList* exprList);
+    MethodCall(location loc, Expr* expr, std::string* id, TNList* exprList);
     virtual ~MethodCall();
 
 protected:
@@ -225,7 +228,7 @@ class ReaderCall : public MethodCall
 {
 public:
 
-    ReaderCall(location loc, Expr* expr, std::string* id, ExprList* exprList);
+    ReaderCall(location loc, Expr* expr, std::string* id, TNList* exprList);
 
     virtual void accept(TypeNodeVisitorBase* t);
     virtual const char* qualifierStr() const;
@@ -237,7 +240,7 @@ class WriterCall : public MethodCall
 {
 public:
 
-    WriterCall(location loc, Expr* expr, std::string* id, ExprList* exprList);
+    WriterCall(location loc, Expr* expr, std::string* id, TNList* exprList);
 
     virtual void accept(TypeNodeVisitorBase* t);
     virtual const char* qualifierStr() const;
@@ -249,7 +252,7 @@ class StaticMethodCall : public MemberFctCall
 {
 public:
 
-    StaticMethodCall(location loc, std::string* id, ExprList* exprList);
+    StaticMethodCall(location loc, std::string* id, TNList* exprList);
 };
 
 //------------------------------------------------------------------------------
@@ -258,7 +261,7 @@ class RoutineCall : public StaticMethodCall
 {
 public:
 
-    RoutineCall(location loc, std::string* classId, std::string* id, ExprList* exprList);
+    RoutineCall(location loc, std::string* classId, std::string* id, TNList* exprList);
     virtual ~RoutineCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -277,7 +280,7 @@ class OperatorCall : public StaticMethodCall
 {
 public:
 
-    OperatorCall(location loc, TokenType token, Expr* op1, ExprList* exprList);
+    OperatorCall(location loc, TokenType token, Expr* op1);
 
 protected:
 
@@ -388,50 +391,6 @@ public:
     Self(location loc);
 
     virtual void accept(TypeNodeVisitorBase* t);
-};
-
-//------------------------------------------------------------------------------
-
-class ExprList : public Node
-{
-public:
-
-    ExprList(location loc, Expr* expr, ExprList* next);
-    virtual ~ExprList();
-
-    virtual void accept(TypeNodeVisitorBase* t);
-    bool isValid() const;
-    TypeList buildTypeList();
-
-protected:
-
-    Expr* expr_;
-    ExprList* next_;
-
-    template<class T> friend class TypeNodeVisitor;
-    template<class T> friend class StmntVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class Tuple : public Node
-{
-public:
-
-    Tuple(location loc, TypeNode* typeNode, Tuple* next);
-    virtual ~Tuple();
-
-    virtual void accept(TypeNodeVisitorBase* t);
-    bool isValid() const;
-    TypeList buildTypeList();
-
-protected:
-
-    TypeNode* typeNode_;
-    Tuple* next_;
-
-    template<class T> friend class StmntVisitor;
-    template<class T> friend class TypeNodeVisitor;
 };
 
 //------------------------------------------------------------------------------

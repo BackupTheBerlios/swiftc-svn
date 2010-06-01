@@ -23,6 +23,10 @@
 #include <map>
 #include <string>
 
+namespace llvm {
+    class Pass;
+}
+
 namespace swift {
 
 class CmdBase;
@@ -39,6 +43,13 @@ public:
     const char* getFilename() const;
     bool result() const;
     bool dump() const;
+    bool cleanDump() const;
+    bool optSize() const;
+    bool unroolLoops() const;
+    bool unitAtATime() const;
+    bool simplifyLibCalls() const;
+    unsigned optLevel() const;
+    llvm::Pass* inlinePass() const;
 
 private:
 
@@ -46,7 +57,15 @@ private:
     char** argv_;
     const char* filename_;
     bool result_;
+
     bool dump_;
+    bool cleanDump_;
+    bool optSize_;
+    bool unroolLoops_;
+    bool unitAtATime_;
+    bool simplifyLibCalls_;
+    unsigned optLevel_;
+    llvm::Pass* inlinePass_;
 
     typedef std::map<std::string, CmdBase*> Cmds;
     static Cmds cmds_;
@@ -54,39 +73,6 @@ private:
 
     template <class T> friend class Cmd;
 };
-
-//------------------------------------------------------------------------------
-
-class CmdBase
-{
-public:
-
-    CmdBase(CmdLineParser& clp);
-
-    virtual void execute() = 0;
-
-protected:
-
-    CmdLineParser& clp_;
-};
-
-//------------------------------------------------------------------------------
-
-template <class T> class Cmd;
-
-//------------------------------------------------------------------------------
-
-template<>
-class Cmd <class Dump> : public CmdBase
-{
-public:
-
-    Cmd(CmdLineParser& clp);
-
-    virtual void execute();
-};
-
-typedef Cmd<class Dump> DumpCmd;
 
 //------------------------------------------------------------------------------
 

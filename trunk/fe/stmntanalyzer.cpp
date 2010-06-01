@@ -5,6 +5,7 @@
 #include "fe/class.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/type.h"
 #include "fe/typenodeanalyzer.h"
@@ -96,11 +97,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     s->exprList_->accept( tna_.get() );
     s->tuple_->accept( tna_.get() );
 
-    if ( !s->tuple_->isValid() || !s->exprList_->isValid() )
-        return;
-
-    TypeList in = s->exprList_->buildTypeList();
-    TypeList out = s->tuple_->buildTypeList();
+    TypeList in = s->exprList_->typeList();
+    TypeList out = s->tuple_->typeList();
 
     if ( in.size() != 1 && out.size() != 1 )
     {
@@ -112,7 +110,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 
     if (out.size() != 1)
     {
-        MemberFctCall* call = dynamic_cast<MemberFctCall*>(s->exprList_->expr_);
+        MemberFctCall* call = dynamic_cast<MemberFctCall*>(s->exprList_->getTypeNode(0));
 
         if (!call)
         {
@@ -132,7 +130,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         }
     }
 
-    TypeNode* lhs = s->tuple_->typeNode_;
+    TypeNode* lhs = s->tuple_->getTypeNode(0);
     std::string str, name;
     if ( typeid(*lhs) == typeid(Decl) )
     {
@@ -145,14 +143,16 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         name = "operator";
     }
 
-    const BaseType* bt = lhs->getType()->isInner();
-    Class* _class = bt->lookupClass(ctxt_->module_);
-    MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
-
-    if (!fct)
+    if ( const BaseType* bt = lhs->getType()->isInner() )
     {
-        errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+        Class* _class = bt->lookupClass(ctxt_->module_);
+        MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
+
+        if (!fct)
+        {
+            errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
+                    name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+        }
     }
 }
 

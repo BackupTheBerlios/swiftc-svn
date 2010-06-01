@@ -1,5 +1,7 @@
 #include "fe/typenodecodegen.h"
 
+#include <sstream>
+
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
 #include <llvm/ADT/APFloat.h>
@@ -9,6 +11,7 @@
 #include "fe/context.h"
 #include "fe/class.h"
 #include "fe/scope.h"
+#include "fe/tnlist.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -117,6 +120,9 @@ void TypeNodeCodeGen::visit(Nil* n)
 
 void TypeNodeCodeGen::visit(Self* n)
 {
+    Method* m = llvm::cast<Method>(ctxt_->memberFct_);
+    llvmValue_ = ctxt_->builder_.CreateLoad( m->getSelfValue(), "self" );
+    isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(IndexExpr* i)
@@ -131,8 +137,8 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
     i->indexExpr_->accept(this);
     llvm::Value* idx = llvmValue_;
 
-    // build get and get value
-    llvmValue_ = builder.CreateGEP(ptr, idx);
+    // build and get value
+    llvmValue_ = builder.CreateInBoundsGEP(idx, ptr);
     isAddr_ = true;
 }
 
@@ -146,16 +152,57 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
 
     // build input
     llvm::Value* input[2];
-    input[0] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, 0) );
+    input[0] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(64, 0) );
     input[1] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, m->memberVar_->getIndex()) );
 
     // build get and get value
-    llvmValue_ = builder.CreateGEP(ptr, input, input+2);
+    std::ostringstream oss;
+    oss << m->prefixExpr_->getType()->toString() << '.' << m->cid();
+    llvmValue_ = builder.CreateInBoundsGEP( ptr, input, input+2, oss.str() );
     isAddr_ = true;
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+    llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
+
+    c->exprList_->accept(this);
+    const TypeList& inTypes = c->exprList_->typeList();
+
+    /*
+     * build function type
+     */
+
+    const llvm::Type* retType = c->retType_->getLLVMType(ctxt_->module_);
+    std::vector<const llvm::Type*> params( inTypes.size() );
+
+    for (size_t i = 0; i < inTypes.size(); ++i)
+        params[i] = inTypes[i]->getLLVMType(ctxt_->module_);
+
+    const llvm::FunctionType* fctType = llvm::FunctionType::get(
+            retType, params, false);
+
+    // declare function
+    llvm::Function* fct = llvm::cast<llvm::Function>(
+        llvmModule->getOrInsertFunction( c->cid(), fctType) );
+
+    // copy over values
+    std::vector<llvm::Value*> args( c->exprList_->size() );
+    for (size_t i = 0; i < args.size(); ++i)
+        args[i] = c->exprList_->getScalar(i, builder);
+
+    fct->setCallingConv(llvm::CallingConv::C);
+    fct->setLinkage(llvm::Function::ExternalLinkage);
+    //fct->addFnAttr(llvm::Attribute::NoUnwind);
+    swiftAssert( fct->isDeclaration(), "may only be a declaration" );
+
+    llvm::CallInst* call = llvm::CallInst::Create( fct, args.begin(), args.end() );
+    call->setTailCall();
+    call->addAttribute(~0, llvm::Attribute::NoUnwind);
+
+    llvmValue_ = builder.Insert(call);
+    isAddr_ = false;
 }
 
 void TypeNodeCodeGen::visit(ReaderCall* r)
@@ -183,9 +230,9 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         const BaseType* bt = (BaseType*) b->op1_->getType();
 
         if (isAddr1)
-            v1 = builder.CreateLoad(v1);
+            v1 = builder.CreateLoad(v1, v1->getName() );
         if (isAddr2)
-            v2 = builder.CreateLoad(v2);
+            v2 = builder.CreateLoad(v2, v2->getName() );
 
         isAddr_ = false;
 
@@ -257,10 +304,6 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     isAddr_ = true;
 }
 
-void TypeNodeCodeGen::visit(RoutineCall* r)
-{
-}
-
 void TypeNodeCodeGen::visit(UnExpr* u)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
@@ -274,7 +317,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
         const BaseType* bt = (BaseType*) u->op1_->getType();
 
         if (isAddr1)
-            v1 = builder.CreateLoad(v1);
+            v1 = builder.CreateLoad( v1, v1->getName() );
 
         isAddr_ = false;
 
@@ -298,9 +341,49 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     isAddr_ = true;
 }
 
+void TypeNodeCodeGen::visit(RoutineCall* r)
+{
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+    std::vector<llvm::Value*> args;
+
+    r->exprList_->accept(this);
+
+    for (size_t i = 0; i < r->exprList_->size(); ++i)
+    {
+        const Type* type = r->exprList_->typeList()[i];
+
+        llvm::Value* arg = type->perRef() 
+            ? r->exprList_->getLLVMValue(i)
+            : r->exprList_->getScalar(i, builder);
+
+        args.push_back(arg);
+    }
+
+    //llvm::Value* result = builder.CreateCall( 
+            //r->memberFct_->llvmFct_, args.begin(), args.end() );
+    llvm::CallInst* call = llvm::CallInst::Create( r->memberFct_->llvmFct_, args.begin(), args.end() );
+    call->setCallingConv(llvm::CallingConv::Fast);
+    llvm::Value* result = builder.Insert(call);
+
+    llvmValue_ = builder.CreateExtractValue(result, 0);
+    isAddr_ = false;
+}
+
+void TypeNodeCodeGen::setArgs(FctCall* fct)
+{
+}
+
 llvm::Value* TypeNodeCodeGen::getLLVMValue() const
 {
     return llvmValue_;
+}
+
+llvm::Value* TypeNodeCodeGen::getScalar()
+{
+    if (isAddr_)
+        return ctxt_->builder_.CreateLoad( llvmValue_, llvmValue_->getName() );
+    else
+        return llvmValue_;
 }
 
 bool TypeNodeCodeGen::isAddr() const
@@ -308,12 +391,16 @@ bool TypeNodeCodeGen::isAddr() const
     return isAddr_;
 }
 
-llvm::Value* TypeNodeCodeGen::getScalar()
-{
-    if (isAddr_)
-        return ctxt_->builder_.CreateLoad(llvmValue_);
-    else
-        return llvmValue_;
-}
+
+//llvm::Value* TypeNodeCodeGen::createEntryAllocaAndStore(llvm::Value* value);
+//{
+    //llvm::BasicBlock* entry = &ctxt_->llvmFct_->getEntryBlock();
+    //llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
+
+    //const llvm::Type* llvmType = value->getType();
+    //llvm::AllocaInst* alloca = tmpBuilder.CreateAlloca( llvmType, 0, "tmp" );
+
+    //return ctxt_->builder_.CreateStore(value, alloca);
+//}
 
 } // namespace swift

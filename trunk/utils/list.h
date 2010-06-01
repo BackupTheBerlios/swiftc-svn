@@ -17,8 +17,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef SWIFT_LIST_H
-#define SWIFT_LIST_H
+#ifndef UTILS_LIST_H
+#define UTILS_LIST_H
 
 #include <cstddef>
 
@@ -436,4 +436,4 @@ public:
     for (const listType::Node* (iter) = (list).first(); (iter) != (list).sentinel(); (iter) = (iter)->next())
 
 
-#endif // SWIFT_LIST_H
+#endif // UTILS_LIST_H

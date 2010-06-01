@@ -20,9 +20,14 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #include <llvm/Module.h>
+#include <llvm/PassManager.h>
+#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/StandardPasses.h>
 
 #include "utils/memmgr.h"
 #include "utils/stringhelper.h"
@@ -38,8 +43,9 @@
 
 // forward declarations
 
-void readBuiltinTypes(swift::Context* ctxt);
-int start(int argc, char** argv);
+static void readBuiltinTypes(swift::Context* ctxt);
+static int start(int argc, char** argv);
+static void writeBCFile(const llvm::Module* m, const char* filename);
 
 //------------------------------------------------------------------------------
 
@@ -63,7 +69,7 @@ int main(int argc, char** argv)
 }
 
 // inits all compiler globals and controls all compiler passes
-int start(int argc, char** argv)
+static int start(int argc, char** argv)
 {
     // parse the command line
     swift::CmdLineParser clp(argc, argv);
@@ -107,21 +113,36 @@ int start(int argc, char** argv)
     if (module->ctxt_->result_)
         module->codeGen();
 
+    if ( clp.cleanDump() )
+        module->llvmDump();
+
     if (module->ctxt_->result_)
     {
+        module->verify();
+
+        llvm::PassManager pm;
+        llvm::createStandardModulePasses(
+                &pm,                    // PassManager
+                clp.optLevel(),         // optimization level
+                clp.optSize(),          // optimize size
+                clp.unitAtATime(),      // unit at a time
+                clp.unroolLoops(),      // unrool loops
+                clp.simplifyLibCalls(), // simplify lib calls
+                false,                  // have exceptions
+                clp.inlinePass() );     // inline pass
+        pm.run( *module->getLLVMModule() );
+
         if ( clp.dump() )
             module->llvmDump();
 
-        module->verify();
+        writeBCFile( module->getLLVMModule(), clp.getFilename() );
     }
-
 
     /*
      * clean up
      */
 
     bool result = module->ctxt_->result_;
-
 
     swift::BaseType::destroyTypeMap();
     delete swift::g_lexer_filename;
@@ -134,7 +155,7 @@ int start(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
-void readBuiltinTypes(swift::Context* ctxt)
+static void readBuiltinTypes(swift::Context* ctxt)
 {
     std::vector<const char*> builtin;
 
@@ -179,4 +200,31 @@ void readBuiltinTypes(swift::Context* ctxt)
 
         fclose(file);
     }
+}
+
+static void writeBCFile(const llvm::Module* m, const char* filename) 
+{
+    /*
+     * build out file name
+     */
+
+    std::string outfile = filename;
+
+    // "x.swift" <- min filename length = 7
+    //if ( outfile.size() >= 7 && (outfile.substr(outfile.size()-6) == std::string(".swift")) )
+        //outfile.replace( outfile.size()-5, 5, "bc" );
+    //else
+    outfile.append(".bc");
+
+    std::string errorInfo;
+    std::auto_ptr<llvm::raw_ostream> outStream(
+            new llvm::raw_fd_ostream( outfile.c_str(), errorInfo, llvm::raw_fd_ostream::F_Binary ) );
+
+    if ( !errorInfo.empty() ) 
+    {
+        std::cerr << errorInfo << std::endl;
+        exit(1);
+    }
+
+    llvm::WriteBitcodeToFile(m, *outStream);
 }

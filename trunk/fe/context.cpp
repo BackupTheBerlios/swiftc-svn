@@ -1,5 +1,6 @@
 #include "fe/context.h"
 
+#include "fe/tnlist.h"
 #include "fe/node.h"
 #include "fe/scope.h"
 
@@ -10,8 +11,16 @@ namespace swift {
 Context::Context(Module* module)
     : result_(true)
     , module_(module)
+    , tuple_( new TNList() )
+    , exprList_( new TNList() )
     , builder_( llvm::IRBuilder<>(*module->llvmCtxt_) )
 {}
+
+Context::~Context()
+{
+    delete tuple_;
+    delete exprList_;
+}
 
 Scope* Context::enterScope()
 {
@@ -40,6 +49,22 @@ size_t Context::scopeDepth() const
 Scope* Context::scope()
 {
     return scopes_.top();
+}
+
+void Context::newLists()
+{
+    tuple_ = new TNList();
+    exprList_ = new TNList();
+}
+
+void Context::newExprList()
+{
+    exprList_ = new TNList();
+}
+
+void Context::newTuple()
+{
+    tuple_ = new TNList();
 }
 
 } // namespace swift

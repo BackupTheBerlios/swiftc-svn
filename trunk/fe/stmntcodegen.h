@@ -19,6 +19,7 @@ class StmntVisitor<class CodeGen> : public StmntVisitorBase
 {
 public:
     StmntVisitor(Context* ctxt);
+    virtual ~StmntVisitor();
 
     virtual void visit(ErrorStmnt* s);
     virtual void visit(CFStmnt* s);

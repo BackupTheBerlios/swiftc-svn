@@ -5,6 +5,7 @@
 #include <llvm/Support/TypeBuilder.h>
 
 #include "fe/context.h"
+#include "fe/tnlist.h"
 #include "fe/token2str.h"
 #include "fe/type.h"
 #include "fe/var.h"
@@ -161,10 +162,11 @@ const char* MemberAccess::cid() const
 
 //------------------------------------------------------------------------------
 
-FctCall::FctCall(location loc, std::string* id, ExprList* exprList)
+FctCall::FctCall(location loc, std::string* id, TNList* exprList)
     : Expr(loc)
     , id_(id)
     , exprList_(exprList)
+    , tuple_(0)
 {}
 
 FctCall::~FctCall()
@@ -183,9 +185,14 @@ const char* FctCall::cid() const
     return id_->c_str();
 }
 
+void FctCall::setTuple(TNList* tuple)
+{
+    tuple_ = tuple;
+}
+
 //------------------------------------------------------------------------------
 
-CCall::CCall(location loc, Type* retType, TokenType token, std::string* id, ExprList* exprList)
+CCall::CCall(location loc, Type* retType, TokenType token, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , retType_(retType)
     , token_(token)
@@ -210,7 +217,7 @@ const char* CCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-MemberFctCall::MemberFctCall(location loc, std::string* id, ExprList* exprList)
+MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , class_(0)
     , memberFct_(0)
@@ -218,13 +225,13 @@ MemberFctCall::MemberFctCall(location loc, std::string* id, ExprList* exprList)
 
 //------------------------------------------------------------------------------
 
-StaticMethodCall::StaticMethodCall(location loc, std::string* id, ExprList* exprList)
+StaticMethodCall::StaticMethodCall(location loc, std::string* id, TNList* exprList)
     : MemberFctCall(loc, id, exprList)
 {}
 
 //------------------------------------------------------------------------------
 
-RoutineCall::RoutineCall(location loc, std::string* classId, std::string* id, ExprList* exprList)
+RoutineCall::RoutineCall(location loc, std::string* classId, std::string* id, TNList* exprList)
     : StaticMethodCall(loc, id, exprList)
     , classId_(classId)
 {}
@@ -247,18 +254,22 @@ const char* RoutineCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-OperatorCall::OperatorCall(location loc, TokenType token, Expr* op1, ExprList* exprList)
-    : StaticMethodCall(loc, token2str(token), exprList) 
+OperatorCall::OperatorCall(location loc, TokenType token, Expr* op1)
+    : StaticMethodCall(loc, token2str(token), new TNList() ) 
     , token_(token)
     , op1_(op1)
-{}
+{
+    exprList_->append(op1);
+}
 
 //------------------------------------------------------------------------------
 
 BinExpr::BinExpr(location loc, TokenType token, Expr* op1, Expr* op2)
-    : OperatorCall( loc, token, op1, new ExprList(loc, op1, new ExprList(loc, op2, 0)) )
+    : OperatorCall(loc, token, op1)
     , op2_(op2)
-{}
+{
+    exprList_->append(op2);
+}
 
 void BinExpr::accept(TypeNodeVisitorBase* t)
 {
@@ -274,7 +285,7 @@ const char* BinExpr::qualifierStr() const
 //------------------------------------------------------------------------------
 
 UnExpr::UnExpr(location loc, TokenType token, Expr* op)
-    : OperatorCall( loc, token, op, new ExprList(loc, op, 0) )
+    : OperatorCall(loc, token, op)
 {}
 
 void UnExpr::accept(TypeNodeVisitorBase* t)
@@ -290,7 +301,7 @@ const char* UnExpr::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-MethodCall::MethodCall(location loc, Expr* expr, std::string* id, ExprList* exprList)
+MethodCall::MethodCall(location loc, Expr* expr, std::string* id, TNList* exprList)
     : MemberFctCall(loc, id, exprList)
     , expr_(expr)
 {}
@@ -302,7 +313,7 @@ MethodCall::~MethodCall()
 
 //------------------------------------------------------------------------------
 
-ReaderCall::ReaderCall(location loc, Expr* expr, std::string* id, ExprList* exprList)
+ReaderCall::ReaderCall(location loc, Expr* expr, std::string* id, TNList* exprList)
     : MethodCall(loc, expr, id, exprList)
 {}
 
@@ -319,7 +330,7 @@ const char* ReaderCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-WriterCall::WriterCall(location loc, Expr* expr, std::string* id, ExprList* exprList)
+WriterCall::WriterCall(location loc, Expr* expr, std::string* id, TNList* exprList)
     : MethodCall(loc, expr, id, exprList)
 {}
 
@@ -379,95 +390,6 @@ void Self::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
-
-//------------------------------------------------------------------------------
-
-ExprList::ExprList(location loc, Expr* expr, ExprList* next)
-    : Node(loc)
-    , expr_(expr)
-    , next_(next)
-{}
-
-ExprList::~ExprList()
-{
-    delete expr_;
-    delete next_;
-}
-
-void ExprList::accept(TypeNodeVisitorBase* t)
-{
-
-    for (ExprList* iter = this; iter != 0; iter = iter->next_)
-    {
-        if (iter->expr_)
-            iter->expr_->accept(t);
-    }
-}
-
-bool ExprList::isValid() const
-{
-    bool result = expr_ && expr_->getType();
-
-    if (next_ && result)
-        return result &= next_->isValid();
-
-    return result;
-}
-
-TypeList ExprList::buildTypeList()
-{
-    TypeList types;
-
-    for (ExprList* iter = this; iter != 0; iter = iter->next_)
-        types.push_back( iter->expr_->getType() );
-
-    return types;
-}
-
-//------------------------------------------------------------------------------
-
-Tuple::Tuple(location loc, TypeNode* typeNode, Tuple* next)
-    : Node(loc)
-    , typeNode_(typeNode)
-    , next_(next)
-{}
-
-Tuple::~Tuple()
-{
-    delete typeNode_;
-    delete next_;
-}
-
-void Tuple::accept(TypeNodeVisitorBase* t)
-{
-
-    for (Tuple* iter = this; iter != 0; iter = iter->next_)
-    {
-        if (iter->typeNode_)
-            iter->typeNode_->accept(t);
-    }
-}
-
-bool Tuple::isValid() const
-{
-    bool result = typeNode_ && typeNode_->getType();
-
-    if (next_ && result)
-        return result &= next_->isValid();
-
-    return result;
-}
-
-TypeList Tuple::buildTypeList()
-{
-    TypeList types;
-
-    for (Tuple* iter = this; iter != 0; iter = iter->next_)
-        types.push_back( iter->typeNode_->getType() );
-
-    return types;
-}
-
 
 //------------------------------------------------------------------------------
 

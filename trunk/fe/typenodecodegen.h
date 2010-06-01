@@ -40,12 +40,15 @@ public:
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
     virtual void visit(BinExpr* b);
-    virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
+    virtual void visit(RoutineCall* r);
 
     llvm::Value* getLLVMValue() const;
     bool isAddr() const;
     llvm::Value* getScalar();
+    //llvm::Value* createEntryAllocaAndStore(llvm::Value* value);
+
+    void setArgs(FctCall* fct);
 
 private:
 

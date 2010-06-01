@@ -23,14 +23,13 @@
 #include <map>
 #include <set>
 
-#include "utils/list.h"
-
 #include "fe/auto.h"
 #include "fe/location.hh"
 #include "fe/var.h"
 #include "fe/sig.h"
 
 namespace llvm {
+    class BasicBlock;
     class Function;
     class Type;
     class StructType;
@@ -147,6 +146,7 @@ public:
     llvm::Function* llvmFct_;
     const llvm::Type* retType_; 
     llvm::AllocaInst* retAlloca_;
+    llvm::BasicBlock* returnBB_;
 
     template<class T> friend class ClassVisitor;
 };
@@ -160,6 +160,13 @@ public:
     Method(location loc, bool simd, std::string* id, Scope* scope);
 
     virtual TokenType getModifier() const = 0;
+    llvm::Value* getSelfValue() const;
+
+private:
+
+    llvm::Value* selfValue_;
+
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------

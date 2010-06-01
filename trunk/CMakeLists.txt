@@ -91,6 +91,7 @@ ADD_EXECUTABLE (swift
     fe/classcodegen.cpp
     fe/context.cpp
     fe/error.cpp
+    fe/tnlist.cpp
     fe/llvmtypebuilder.cpp
     fe/node.cpp
     fe/scope.cpp

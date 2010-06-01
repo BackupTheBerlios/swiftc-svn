@@ -3,6 +3,8 @@
 #include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/list.h"
+
 #include "fe/class.h"
 #include "fe/error.h"
 #include "fe/type.h"

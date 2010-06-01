@@ -31,6 +31,7 @@
 #include "fe/class.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/sig.h"
 #include "fe/simdprefix.h"
@@ -53,14 +54,12 @@ using namespace swift;
     Decl*        decl_;
     Def*         def_;
     Expr*        expr_;
-    ExprList*    exprList_;
     MemberVar*   memberVar_;
     MemberFct*   memberFct_;
     Module*      module_;
     Scope*       scope_;
     SimdPrefix*  simdPrefix_;
     Stmnt*       stmnt_;
-    Tuple*       tuple_;
     Type*        type_;
 };
 
@@ -131,16 +130,14 @@ using namespace swift;
 
 %type <bool_> simd_modifier
 %type <decl_> decl
-%type <exprList_> expr_list expr_list_not_empty
 %type <expr_> expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
 %type <int_> method_qualifier operator assign
 %type <memberFct_> member_function
 %type <memberVar_> member_var
 %type <scope_> if_head
 %type <simdPrefix_> simd_prefix
-%type <stmnt_>  stmnt
-%type <tuple_> tuple
-%type <type_> type bare_type
+%type <stmnt_> stmnt
+%type <type_> type var_type const_type
 
 %destructor { } <int_>
 %destructor { } <bool_>
@@ -310,7 +307,7 @@ param_list_not_empty
     ;
 
 param
-    : bare_type ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
+    : const_type ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
     ;
 
 ret_list
@@ -324,7 +321,7 @@ retval_list_not_empty
     ;
 
 retval
-    : bare_type ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
+    : var_type ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
     ;
 
 /*
@@ -362,8 +359,8 @@ stmnt
     |             expr EOL { $$ = new ExprStmnt(@$,  0, $1); }
     | simd_prefix expr EOL { $$ = new ExprStmnt(@$, $1, $2); }
 
-    |             tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$,  0, Token::ASGN, $1, $3); }
-    | simd_prefix tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $1, Token::ASGN, $2, $4); }
+    |             tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$,  0, Token::ASGN, ctxt_->tuple_, ctxt_->exprList_); ctxt_->newLists(); }
+    | simd_prefix tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $1, Token::ASGN, ctxt_->tuple_, ctxt_->exprList_); ctxt_->newLists(); }
 
     /*
         control flow stmnts
@@ -475,8 +472,9 @@ un_expr
     : postfix_expr  { $$ = $1; }
     | SUB   un_expr { $$ = new UnExpr(@$, Token::SUB, $2); }
     | ADD   un_expr { $$ = new UnExpr(@$, Token::ADD, $2); }
+    | XOR   un_expr { $$ = new UnExpr(@$, Token::XOR, $2); }
     | NOT   un_expr { $$ = new UnExpr(@$, Token::NOT, $2); }
-    | L_NOT un_expr { $$ = new UnExpr(@$, Token::NOT, $2); }
+    | L_NOT un_expr { $$ = new UnExpr(@$, Token::L_NOT, $2); }
     ;
 
 postfix_expr
@@ -492,24 +490,24 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token:: C_CALL, $3, $5); }
-    | VC_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token::VC_CALL, $3, $5); }
-    |  C_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token:: C_CALL, $2, $4); }
-    | VC_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token::VC_CALL, $2, $4); }
+    |  C_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token:: C_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    | VC_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token::VC_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    |  C_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token:: C_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    | VC_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token::VC_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
 
     /* 
         routines 
     */
-    |    DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, $4); }
-    | ID DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, $5); }
+    |    DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    | ID DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
 
     /* 
         methods 
     */
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new ReaderCall(@$,           $1, $3, $5); }
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, $5); }
-    | ':' ID '(' expr_list ')'              { $$ = new ReaderCall(@$, new Self(@$), $2, $4); }
-    | '.' ID '(' expr_list ')'              { $$ = new WriterCall(@$, new Self(@$), $2, $4); }
+    | postfix_expr ':' ID '(' expr_list ')' { $$ = new ReaderCall(@$,           $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    | ':' ID '(' expr_list ')'              { $$ = new ReaderCall(@$, new Self(@$), $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    | '.' ID '(' expr_list ')'              { $$ = new WriterCall(@$, new Self(@$), $2, ctxt_->exprList_); ctxt_->newExprList(); }
     ;
 
 primary_expr
@@ -541,13 +539,13 @@ primary_expr
     ;
 
 expr_list
-    : /* empty */           { $$ =  0; }
-    | expr_list_not_empty   { $$ = $1; }
+    : /* empty */
+    | expr_list_not_empty
     ;
 
 expr_list_not_empty
-    : expr                         { $$ = new ExprList(@$, $1,  0); }
-    | expr ',' expr_list_not_empty { $$ = new ExprList(@$, $1, $3); }
+    : expr                         { ctxt_->exprList_->append($1); }
+    | expr ',' expr_list_not_empty { ctxt_->exprList_->append($1); }
     ;
 
 decl
@@ -555,17 +553,24 @@ decl
     ;
 
 tuple
-    : expr           { $$ = new Tuple(@$, $1,  0); }
-    | decl           { $$ = new Tuple(@$, $1,  0); }
-    | expr ',' tuple { $$ = new Tuple(@$, $1, $3); }
-    | decl ',' tuple { $$ = new Tuple(@$, $1, $3); }
+    : expr           { ctxt_->tuple_->append($1); }
+    | decl           { ctxt_->tuple_->append($1); }
+    | expr ',' tuple { ctxt_->tuple_->append($1); }
+    | decl ',' tuple { ctxt_->tuple_->append($1); }
     ;
 
-bare_type
-    : ID                 { $$ = new BaseType(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $1); }
-    | PTR   '{' type '}' { $$ = new      Ptr(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
-    | ARRAY '{' type '}' { $$ = new    Array(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
-    | SIMD  '{' type '}' { $$ = new     Simd(@$, ctxt_->var_ ? Token::VAR : Token::CONST, $3); }
+var_type
+    : ID                 { $$ = new BaseType(@$, Token::VAR, $1, true); }
+    | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::VAR, $3); }
+    | ARRAY '{' type '}' { $$ = new    Array(@$, Token::VAR, $3); }
+    | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::VAR, $3); }
+    ;
+
+const_type
+    : ID                 { $$ = new BaseType(@$, Token::CONST, $1, true); }
+    | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $3); }
+    | ARRAY '{' type '}' { $$ = new    Array(@$, Token::CONST, $3); }
+    | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::CONST, $3); }
     ;
 
 type

@@ -1,7 +1,6 @@
 #ifndef SWIFT_NODE_H
 #define SWIFT_NODE_H
 
-#include "utils/list.h"
 #include "utils/map.h"
 #include "utils/stringhelper.h"
 

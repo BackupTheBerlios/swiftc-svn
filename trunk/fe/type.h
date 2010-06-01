@@ -42,7 +42,7 @@ class Type : public Node
 {
 public:
 
-    Type(location loc, TokenType modifier);
+    Type(location loc, TokenType modifier, bool isRef);
     virtual ~Type() {}
 
     virtual Type* clone() const = 0;
@@ -65,13 +65,17 @@ public:
 
     /// All simple types and pointers.
     virtual bool isAtomic() const = 0;
+    virtual bool perRef() const = 0;
 
     virtual const llvm::Type* getLLVMType(Module* module) const = 0;
     TokenType getModifier() const;
+    bool isVar() const;
+    bool isRef() const;
 
 protected:
 
     TokenType modifier_;
+    bool isRef_;
 };
 
 //------------------------------------------------------------------------------
@@ -87,6 +91,7 @@ public:
     virtual bool check(const Type* type, Module* m) const;
     virtual std::string toString() const;
     virtual bool isAtomic() const;
+    virtual bool perRef() const;
     virtual const llvm::Type* getLLVMType(Module* module) const;
 };
 
@@ -103,6 +108,7 @@ public:
     virtual bool check(const Type* type, Module* m) const;
     virtual std::string toString() const;
     virtual bool isAtomic() const;
+    virtual bool perRef() const;
     virtual const llvm::Type* getLLVMType(Module* module) const;
 };
 
@@ -112,8 +118,8 @@ class BaseType : public Type
 {
 public:
 
-    BaseType(location loc, TokenType modifier, std::string* id);
-    BaseType(TokenType modifier, const Class* _class);
+    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
+    //BaseType(TokenType modifier, const Class* _class);
     virtual ~BaseType();
 
     virtual BaseType* clone() const;
@@ -132,6 +138,7 @@ public:
     virtual bool isBuiltin() const;
     virtual bool isSimple() const;
     virtual bool isAtomic() const;
+    virtual bool perRef() const;
 
     virtual const llvm::Type* getLLVMType(Module* module) const;
 
@@ -158,13 +165,12 @@ class NestedType : public Type
 {
 public:
 
-    NestedType(location loc, TokenType modifier, Type* innerType);
+    NestedType(location loc, TokenType modifier, bool isRef, Type* innerType);
     virtual ~NestedType();
 
     virtual bool validate(Module* m) const;
     virtual bool check(const Type* type, Module* m) const;
-
-    virtual const llvm::Type* getLLVMType(Module* module) const;
+    virtual bool perRef() const;
 
     Type* getInnerType();
     const Type* getInnerType() const;
@@ -185,6 +191,7 @@ public:
     virtual Ptr* clone() const;
     virtual std::string toString() const;
     virtual bool isAtomic() const;
+    virtual const llvm::Type* getLLVMType(Module* module) const;
 };
 
 //------------------------------------------------------------------------------
@@ -201,6 +208,7 @@ public:
 
     static void initMeContainer();
     static size_t getContainerSize();
+    virtual const llvm::Type* getLLVMType(Module* module) const;
 };
 
 //------------------------------------------------------------------------------

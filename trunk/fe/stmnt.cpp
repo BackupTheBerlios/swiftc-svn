@@ -25,6 +25,7 @@
 #include "fe/class.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/simdprefix.h"
 #include "fe/sig.h"
@@ -103,8 +104,8 @@ AssignStmnt::AssignStmnt(
         location loc,
         SimdPrefix* simdPrefix, 
         TokenType token,
-        Tuple* tuple, 
-        ExprList* exprList)
+        TNList* tuple, 
+        TNList* exprList)
     : ActionStmnt(loc, simdPrefix)
     , token_(token)
     , tuple_(tuple)

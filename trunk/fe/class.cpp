@@ -311,6 +311,11 @@ Method::Method(location loc, bool simd, std::string* id, Scope* scope)
     : MemberFct(loc, simd, id, scope)
 {}
 
+llvm::Value* Method::getSelfValue() const
+{
+    return selfValue_;
+}
+
 //------------------------------------------------------------------------------
 
 Reader::Reader(location loc, bool simd, std::string* id, Scope* scope)

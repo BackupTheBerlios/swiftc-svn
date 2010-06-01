@@ -6,6 +6,7 @@
 
 #include "fe/context.h"
 #include "fe/class.h"
+#include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/typenodecodegen.h"
 
@@ -15,6 +16,10 @@ StmntCodeGen::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
     , tncg_( new TypeNodeCodeGen(ctxt) )
 {}
+
+StmntCodeGen::~StmntVisitor() 
+{
+}
 
 void StmntCodeGen::visit(ErrorStmnt* s) 
 {
@@ -31,7 +36,7 @@ void StmntCodeGen::visit(CFStmnt* s)
         if ( memberFct->sig_.out_.empty() )
             builder.CreateRetVoid();
         else
-            builder.CreateRet( builder.CreateLoad(memberFct->retAlloca_) );
+            builder.CreateBr(ctxt_->memberFct_->returnBB_);
 
         llvm::BasicBlock* bb = llvm::BasicBlock::Create(*ctxt_->module_->llvmCtxt_, "unreachable");
         ctxt_->llvmFct_->getBasicBlockList().push_back(bb);

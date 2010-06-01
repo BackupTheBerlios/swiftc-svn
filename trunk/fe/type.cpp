@@ -34,11 +34,12 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Type::Type(location loc, TokenType modifier)
+Type::Type(location loc, TokenType modifier, bool isRef)
     : Node(loc) 
     , modifier_(modifier)
+    , isRef_(isRef)
 {
-    swiftAssert(modifier == Token::VAR || modifier == Token::CONST,
+    swiftAssert(modifier != Token::VAR || modifier != Token::CONST,
             "illegal modifier value");
 }
 
@@ -47,10 +48,20 @@ TokenType Type::getModifier() const
     return modifier_;
 }
 
+bool Type::isVar() const
+{
+    return modifier_ == Token::VAR;
+}
+
+bool Type::isRef() const
+{
+    return isRef_;
+}
+
 //------------------------------------------------------------------------------
 
 ErrorType::ErrorType(location loc, TokenType modifier)
-    : Type(loc, modifier)
+    : Type(loc, modifier, false)
 {}
 
 Type* ErrorType::clone() const
@@ -78,6 +89,12 @@ bool ErrorType::isAtomic() const
     return false;
 }
 
+bool ErrorType::perRef() const
+{
+    swiftAssert(false, "unreachable");
+    return false;
+}
+
 const llvm::Type* ErrorType::getLLVMType(Module* module) const
 {
     swiftAssert(false, "unreachable");
@@ -87,7 +104,7 @@ const llvm::Type* ErrorType::getLLVMType(Module* module) const
 //------------------------------------------------------------------------------
 
 VoidType::VoidType(location loc)
-    : Type(loc, Token::CONST)
+    : Type(loc, Token::CONST, false)
 {}
 
 Type* VoidType::clone() const
@@ -116,27 +133,38 @@ bool VoidType::isAtomic() const
     return false;
 }
 
-const llvm::Type* VoidType::getLLVMType(Module* module) const
+bool VoidType::perRef() const
 {
     swiftAssert(false, "unreachable");
-    return 0;
+    return false;
+}
+
+const llvm::Type* VoidType::getLLVMType(Module* module) const
+{
+    return llvm::TypeBuilder<void, true>::get(*module->llvmCtxt_);
 }
 
 //------------------------------------------------------------------------------
 
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 
-BaseType::BaseType(location loc, TokenType modifier, std::string* id)
-    : Type(loc, modifier)
+BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInOut)
+    : Type(loc, modifier, false)
     , id_(id)
     , builtin_( typeMap_->find(*id) != typeMap_->end() ) // is it a builtin type?
-{}
+{
+    if (isInOut && !builtin_)
+        isRef_ = true;
+}
 
-BaseType::BaseType(TokenType modifier, const Class* _class)
-    : Type(location() , modifier)
-    , id_( new std::string(*_class->id()) )
-    , builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
-{}
+//BaseType::BaseType(TokenType modifier, const Class* _class)
+    //: Type( _class->loc(), modifier, false )
+    //, id_( new std::string(*_class->id()) )
+    //, builtin_( typeMap_->find(*id_) != typeMap_->end() ) // is it a builtin type?
+//{
+    //if (isInOut && !builtin_)
+        //isRef_ = true;
+//}
 
 BaseType::~BaseType()
 {
@@ -241,12 +269,27 @@ bool BaseType::isFloat() const
     return *id_ == "real" || *id_ == "real32" || *id_ == "real64";
 }
 
+bool BaseType::perRef() const
+{
+    return !builtin_;
+}
+
 const llvm::Type* BaseType::getLLVMType(Module* module) const
 {
     if (builtin_)
+    {
+        swiftAssert(!isRef_, "must be false");
         return (*typeMap_)[*id_];
+    }
     else
-        return lookupClass(module)->llvmType();
+    {
+        const llvm::Type* llvmType = lookupClass(module)->llvmType();
+        
+        if (isRef_)
+            return llvm::PointerType::getUnqual(llvmType);
+        else
+            return llvmType;
+    }
 }
 
 Class* BaseType::lookupClass(Module* m) const
@@ -275,31 +318,30 @@ void BaseType::initTypeMap(llvm::LLVMContext* llvmCtxt)
     typeMap_ = new TypeMap();
     TypeMap& typeMap = *typeMap_;
 
-    typeMap["bool"]   = llvm::TypeBuilder<llvm::types::i<1>, true>::get(*llvmCtxt);
+    typeMap["bool"]   = llvm::IntegerType::getInt1Ty(*llvmCtxt);
 
-    typeMap["int8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    typeMap["sat8"]   = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    typeMap["uint8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
-    typeMap["usat8"]  = llvm::TypeBuilder<llvm::types::i<8>, true>::get(*llvmCtxt);
+    typeMap["int8"]   = llvm::IntegerType::getInt8Ty(*llvmCtxt);
+    typeMap["uint8"]  = llvm::IntegerType::getInt8Ty(*llvmCtxt);
+    typeMap["sat8"]   = llvm::IntegerType::getInt8Ty(*llvmCtxt);
+    typeMap["usat8"]  = llvm::IntegerType::getInt8Ty(*llvmCtxt);
 
-    typeMap["int16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    typeMap["uint16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    typeMap["sat16"]  = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
-    typeMap["usat16"] = llvm::TypeBuilder<llvm::types::i<16>, true>::get(*llvmCtxt);
+    typeMap["int16"]  = llvm::IntegerType::getInt16Ty(*llvmCtxt);
+    typeMap["uint16"] = llvm::IntegerType::getInt16Ty(*llvmCtxt);
+    typeMap["sat16"]  = llvm::IntegerType::getInt16Ty(*llvmCtxt);
+    typeMap["usat16"] = llvm::IntegerType::getInt16Ty(*llvmCtxt);
 
-    typeMap["int32"]  = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
-    typeMap["uint32"] = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
+    typeMap["int32"]  = llvm::IntegerType::getInt32Ty(*llvmCtxt);
+    typeMap["uint32"] = llvm::IntegerType::getInt32Ty(*llvmCtxt);
+    typeMap["int"]    = llvm::IntegerType::getInt32Ty(*llvmCtxt);
+    typeMap["uint"]   = llvm::IntegerType::getInt32Ty(*llvmCtxt);
 
-    typeMap["int64"]  = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
-    typeMap["uint64"] = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
+    typeMap["int64"]  = llvm::IntegerType::getInt64Ty(*llvmCtxt);
+    typeMap["uint64"] = llvm::IntegerType::getInt64Ty(*llvmCtxt);
+    typeMap["index"]  = llvm::IntegerType::getInt64Ty(*llvmCtxt);
 
-    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
-    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float, true>::get(*llvmCtxt);
+    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*llvmCtxt);
+    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*llvmCtxt);
     typeMap["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*llvmCtxt);
-
-    typeMap["int"]   = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
-    typeMap["uint"]  = llvm::TypeBuilder<llvm::types::i<32>, true>::get(*llvmCtxt);
-    typeMap["index"] = llvm::TypeBuilder<llvm::types::i<64>, true>::get(*llvmCtxt);
 }
 
 void BaseType::destroyTypeMap()
@@ -309,8 +351,8 @@ void BaseType::destroyTypeMap()
 
 //------------------------------------------------------------------------------
 
-NestedType::NestedType(location loc, TokenType modifier, Type* innerType)
-    : Type(loc, modifier)
+NestedType::NestedType(location loc, TokenType modifier, bool isRef, Type* innerType)
+    : Type(loc, modifier, isRef)
     , innerType_(innerType)
 {}
 
@@ -337,6 +379,11 @@ bool NestedType::check(const Type* type, Module* m) const
     return innerType_->check(nestedType->innerType_, m);
 }
 
+bool NestedType::perRef() const
+{
+    return false;
+}
+
 Type* NestedType::getInnerType()
 {
     return innerType_;
@@ -347,16 +394,10 @@ const Type* NestedType::getInnerType() const
     return innerType_;
 }
 
-const llvm::Type* NestedType::getLLVMType(Module* module) const
-{
-    swiftAssert(false, "TODO");
-    return 0;
-}
-
 //------------------------------------------------------------------------------
 
 Ptr::Ptr(location loc, TokenType modifier, Type* innerType)
-    : NestedType(loc, modifier, innerType)
+    : NestedType(loc, modifier, false, innerType)
 {}
 
 Ptr* Ptr::clone() const
@@ -377,10 +418,15 @@ bool Ptr::isAtomic() const
     return true;
 }
 
+const llvm::Type* Ptr::getLLVMType(Module* module) const
+{
+    return llvm::PointerType::getUnqual( innerType_->getLLVMType(module) );
+}
+
 //------------------------------------------------------------------------------
 
 Container::Container(location loc, TokenType modifier, Type* innerType)
-    : NestedType(loc, modifier, innerType)
+    : NestedType(loc, modifier, false, innerType)
 {}
 
 std::string Container::toString() const
@@ -394,6 +440,17 @@ std::string Container::toString() const
 bool Container::isAtomic() const
 {
     return false;
+}
+
+const llvm::Type* Container::getLLVMType(Module* module) const
+{
+    llvm::LLVMContext& llvmCtxt = *module->llvmCtxt_;
+
+    std::vector<const llvm::Type*> llvmTypes(2);
+    llvmTypes[0] = llvm::PointerType::getUnqual( innerType_->getLLVMType(module) );
+    llvmTypes[1] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+
+    return llvm::StructType::get(llvmCtxt, llvmTypes);
 }
 
 //------------------------------------------------------------------------------

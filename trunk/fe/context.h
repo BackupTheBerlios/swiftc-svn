@@ -14,31 +14,36 @@ namespace llvm {
 namespace swift {
 
 class Class;
+class InOut;
 class MemberFct;
 class Module;
-class InOut;
 class Scope;
 class Stmnt;
+class TNList;
 
 class Context
 {
 public:
 
     Context(Module* module);
+    ~Context();
 
     Scope* enterScope();
     void enterScope(Scope* scope);
     void leaveScope();
     size_t scopeDepth() const;
     Scope* scope();
+    void newLists();
+    void newTuple();
+    void newExprList();
 
     bool result_;
 
     Module* module_;
     Class* class_;
     MemberFct* memberFct_;
-
-    bool var_;
+    TNList* tuple_;
+    TNList* exprList_;
 
     llvm::Function* llvmFct_; ///< Current llvm function.
     llvm::IRBuilder<> builder_;

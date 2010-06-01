@@ -57,7 +57,8 @@ Module::~Module()
     for (ClassMap::iterator iter = classes_.begin(); iter != classes_.end(); ++iter)
         delete iter->second;
 
-    delete llvmModule_; // frees llvmCtxt_, too
+    delete llvmModule_;
+    delete llvmCtxt_;
 }
 
 void Module::insert(Class* c)
@@ -130,7 +131,8 @@ void Module::verify()
     // verify llvm module
     std::string errorStr;
     llvm::verifyModule(*llvmModule_, llvm::AbortProcessAction, &errorStr);
-    std::cerr << errorStr << std::endl;
+    if ( !errorStr.empty() )
+        std::cerr << errorStr << std::endl;
 }
 
 void Module::llvmDump()

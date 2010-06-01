@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "utils/assert.h"
-#include "utils/list.h"
 
 template<class T>
 class Graph

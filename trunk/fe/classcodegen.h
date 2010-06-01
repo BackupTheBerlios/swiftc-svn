@@ -20,6 +20,7 @@ class ClassVisitor<class CodeGen> : public ClassVisitorBase
 public:
 
     ClassVisitor(Context* ctxt);
+    ~ClassVisitor();
 
     // ClassMember -> MemberFct -> Method
     virtual void visit(Create* c);

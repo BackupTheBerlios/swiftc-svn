@@ -18,6 +18,9 @@ ClassCodeGen::ClassVisitor(Context* ctxt)
     , scg_( new StmntCodeGen(ctxt) )
 {}
 
+ClassCodeGen::~ClassVisitor()
+{}
+
 void ClassCodeGen::visit(Create* c)
 {
     codeGen(c);
@@ -57,7 +60,9 @@ void ClassCodeGen::codeGen(MemberFct* m)
     if ( m->isTrivial() )
         return; // do nothing
 
-    // get some stuff for easy access
+    /*
+     * get some stuff for easy access
+     */
     TypeList&  in = m->sig_. inTypes_;
     TypeList& out = m->sig_.outTypes_;
     Module* module = ctxt_->module_;
@@ -66,11 +71,27 @@ void ClassCodeGen::codeGen(MemberFct* m)
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     /*
+     * is this the entry point?
+     */
+    bool main = false;
+    if ( *m->id_ == "main" 
+            && m->sig_.in_.empty() 
+            && !m->sig_.out_.empty() 
+            && m->sig_.out_[0]->getType()->isInt()
+            && dynamic_cast<Routine*>(m) )
+    {
+        main = true;
+    }
+
+
+    /*
      * build return type
      */
 
     if ( out.empty() )
         m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+    else if (main)
+        m->retType_ = llvm::IntegerType::getInt32Ty(llvmCtxt);
     else
     {
         std::vector<const llvm::Type*> types;
@@ -88,7 +109,10 @@ void ClassCodeGen::codeGen(MemberFct* m)
 
     // push hidden 'self' param first if necessary
     if ( dynamic_cast<Method*>(m) )
-        params.push_back( ctxt_->class_->llvmType() );
+    {
+        params.push_back( llvm::PointerType::getUnqual(
+                    ctxt_->class_->llvmType()) );
+    }
 
     // now push the rest
     for (size_t i = 0; i < in.size(); ++i)
@@ -98,10 +122,15 @@ void ClassCodeGen::codeGen(MemberFct* m)
      * build llvm name
      */
 
-    static int counter = 0;
-    std::ostringstream oss;
-    oss << ctxt_->class_->cid() << '.' << *m->id_ << counter++;
-    m->llvmName_ = oss.str();
+    if (main)
+        m->llvmName_ = "main";
+    else
+    {
+        static int counter = 0;
+        std::ostringstream oss;
+        oss << ctxt_->class_->cid() << '.' << *m->id_ << counter++;
+        m->llvmName_ = oss.str();
+    }
 
     /*
      * create function
@@ -111,58 +140,101 @@ void ClassCodeGen::codeGen(MemberFct* m)
             m->retType_, params, false);
 
     llvm::Function* fct = llvm::cast<llvm::Function>(
-        llvmModule->getOrInsertFunction(llvm::StringRef(m->llvmName_), fctType) );
+        llvmModule->getOrInsertFunction(m->llvmName_.c_str(), fctType) );
 
     ctxt_->llvmFct_ = fct;
     m->llvmFct_     = fct;
+
+    if (!main)
+    {
+        fct->setCallingConv(llvm::CallingConv::Fast);
+    }
+    else
+        fct->addFnAttr(llvm::Attribute::NoUnwind);
 
     /*
      * create root BB and connect to fct and to the builder
      */
 
-    llvm::BasicBlock* bb = llvm::BasicBlock::Create(
-            ctxt_->module_->getLLVMModule()->getContext(), m->llvmName_, fct);
-
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(llvmCtxt, m->llvmName_, fct);
     builder.SetInsertPoint(bb);
 
+    // create return basic block
+    m->returnBB_ = llvm::BasicBlock::Create(llvmCtxt, "return");
+
     /*
-     * initialize return value
+     * initialize return values
      */
 
-    if ( !out.empty() )
+    for (size_t i = 0; i < out.size(); ++i)
     {
-        m->retAlloca_ = builder.CreateAlloca(m->retType_, 0, "retval" );
-        for (size_t i = 0; i < out.size(); ++i)
-        {
-            RetVal* retval = m->sig_.out_[i];
-            retval->setAlloca(m->retAlloca_, i);
-        }
+        RetVal* retval = m->sig_.out_[i];
+        retval->createEntryAlloca(ctxt_);
     }
 
     /*
      * initialize params
      */
 
-    size_t i = 0; 
-    typedef llvm::Function::arg_iterator ArgIter;
-    for (ArgIter iter = fct->arg_begin(); i < m->sig_.in_.size(); ++iter, ++i)
+    llvm::Function::arg_iterator iter = fct->arg_begin();
+
+    // build 'self' alloca
+    if ( Method* method = dynamic_cast<Method*>(m) )
+    {
+        method->selfValue_ = builder.CreateAlloca( params[0], 0, "self" );
+        builder.CreateStore(iter,  method->selfValue_);
+
+        iter->setName("self");
+        //iter->addAttr(llvm::Attribute::InReg);
+        ++iter;
+    }
+
+    for (size_t i = 0; i < m->sig_.in_.size(); ++iter, ++i)
     {
         Param* param = m->sig_.in_[i];
 
-        param->createEntryAlloca(ctxt_);
+        llvm::AllocaInst* alloca = param->createEntryAlloca(ctxt_);
         iter->setName( param->cid() );
 
         // Store the initial value into the alloca.
-        builder.CreateStore( iter, param->getAddr(ctxt_) );
+        builder.CreateStore(iter, alloca);
     }
 
     // enter scope and gen code
     m->scope_->accept( scg_.get(), ctxt_ );
 
+    /*
+     * build epilogue
+     */
+
     if ( out.empty() )
         builder.CreateRetVoid();
-    else
-        builder.CreateRet( builder.CreateLoad(m->retAlloca_) );
+    else 
+    {
+        // connect last bb with return bb
+        builder.CreateBr(m->returnBB_);
+        fct->getBasicBlockList().push_back(m->returnBB_);
+        builder.SetInsertPoint(m->returnBB_);
+
+        if (main)
+        {
+            RetVal* retval = m->sig_.out_[0];
+            llvm::Value* value = builder.CreateLoad( retval->getAddr(ctxt_) );
+            builder.CreateRet(value);
+        }
+        else
+        {
+            llvm::Value* retStruct = llvm::UndefValue::get(m->retType_);
+            for (size_t i = 0; i < out.size(); ++i)
+            {
+                RetVal* retval = m->sig_.out_[i];
+                retStruct = builder.CreateInsertValue(
+                        retStruct, builder.CreateLoad( retval->getAddr(ctxt_) ), i );
+            }
+
+            builder.CreateRet(retStruct);
+        }
+    }
 }
 
 } // namespace swift

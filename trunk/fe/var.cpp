@@ -57,18 +57,15 @@ const char* Var::cid() const
     return id_->c_str();
 }
 
-llvm::Value* Var::getAddr(Context* /*ctxt*/) const
-{
-    return alloca_;
-}
-
-void Var::createEntryAlloca(Context* ctxt)
+llvm::AllocaInst* Var::createEntryAlloca(Context* ctxt)
 {
     llvm::BasicBlock* entry = &ctxt->llvmFct_->getEntryBlock();
     llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
 
     const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
     alloca_ = tmpBuilder.CreateAlloca( llvmType, 0, cid() );
+
+    return alloca_;
 }
 
 //------------------------------------------------------------------------------
@@ -76,6 +73,11 @@ void Var::createEntryAlloca(Context* ctxt)
 Local::Local(location loc, Type* type, std::string* id)
     : Var(loc, type, id)
 {}
+
+llvm::Value* Local::getAddr(Context* /*ctxt*/) const
+{
+    return alloca_;
+}
 
 //------------------------------------------------------------------------------
 
@@ -94,6 +96,16 @@ Param::Param(location loc, Type* type, std::string* id)
     : InOut(loc, type, id)
 {}
 
+llvm::Value* Param::getAddr(Context* ctxt) const
+{
+    llvm::IRBuilder<>& builder = ctxt->builder_;
+
+    if ( !type_->isRef() )
+        return alloca_;
+    else
+        return builder.CreateLoad( alloca_, cid() );
+}
+
 //------------------------------------------------------------------------------
 
 RetVal::RetVal(location loc, Type* type, std::string* id)
@@ -108,9 +120,20 @@ void RetVal::setAlloca(llvm::AllocaInst* alloca, int retIndex)
 
 llvm::Value* RetVal::getAddr(Context* ctxt) const
 {
-    return ctxt->builder_.CreateGEP(alloca_, llvm::ConstantInt::get(
-                *ctxt->module_->llvmCtxt_, 
-                llvm::APInt(32, 0)) );
+    //llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
+    //llvm::IRBuilder<>& builder = ctxt->builder_;
+
+    //llvm::Value* input[2];
+    //input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
+    //input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, retIndex_) );
+
+    //llvm::Value* result = builder.CreateInBoundsGEP( alloca_, input, input+2, cid() );
+
+    //if ( type_->isRef() )
+        //result = builder.CreateLoad( result, cid() );
+
+    //return result;
+    return alloca_;
 }
 
 } // namespace swift

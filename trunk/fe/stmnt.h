@@ -32,9 +32,8 @@ namespace swift {
 
 class Decl;
 class Expr;
-class ExprList;
+class TNList;
 class SimdPrefix;
-class Tuple;
 class StmntVisitorBase;
 
 //------------------------------------------------------------------------------
@@ -208,7 +207,7 @@ class AssignStmnt : public ActionStmnt
 {
 public:
 
-    AssignStmnt(location loc, SimdPrefix* simdPrefix, TokenType token, Tuple* tuple, ExprList* exprList);
+    AssignStmnt(location loc, SimdPrefix* simdPrefix, TokenType token, TNList* tuple, TNList* exprList);
     virtual ~AssignStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -217,8 +216,8 @@ protected:
 
     TokenType token_;
 
-    Tuple* tuple_;       ///< The lvalue.
-    ExprList* exprList_; ///< The rvalue.
+    TNList* tuple_;    ///< The lvalues.
+    TNList* exprList_; ///< The rvalues.
 
     template<class T> friend class StmntVisitor;
 };

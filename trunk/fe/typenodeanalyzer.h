@@ -37,12 +37,16 @@ public:
     virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
 
+    bool isLValue() const;
+
 private:
 
     void analyzeMemberFctCall(MemberFctCall* m);
     bool setClass(MethodCall* m);
     bool setClass(OperatorCall* r);
     bool setClass(RoutineCall* r);
+
+    bool lvalue_;
 };
 
 typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;
