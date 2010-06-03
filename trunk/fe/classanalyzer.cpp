@@ -1,5 +1,7 @@
 #include "fe/classanalyzer.h"
 
+#include <algorithm>
+
 #include "fe/context.h"
 #include "fe/error.h"
 #include "fe/scope.h"
@@ -50,7 +52,7 @@ void ClassAnalyzer::visit(Assign* a)
     }
     else
     {
-        const BaseType* bt = in[0]->isInner();
+        const BaseType* bt = in[0]->cast<BaseType>();
         if (bt && bt->lookupClass(ctxt_->module_) != ctxt_->class_ )
         {
             errorf(a->loc(), "first parameter of an assignment must be of class '%s'", 
@@ -103,7 +105,7 @@ void ClassAnalyzer::visit(Operator* o)
     }
 
     {
-        const BaseType* bt = in[0]->isInner();
+        const BaseType* bt = in[0]->cast<BaseType>();
         if (bt && bt->lookupClass(ctxt_->module_) != ctxt_->class_ )
         {
             errorf(o->loc(), "first parameter of 'operator %s' must be of class '%s'", 
@@ -126,22 +128,54 @@ void ClassAnalyzer::visit(MemberVar* m)
 {
 }
 
+namespace 
+{
+    static bool lessInOut(const InOut* io1, const InOut* io2)
+    {
+        return *io1->id() < *io2->id();
+    }
+}
+
 void ClassAnalyzer::checkSig(MemberFct* m)
 {
-    // check each ingoing params and register in the root scope
-    for (size_t i = 0; i < m->sig_.in_.size(); ++i)
-    {
-        InOut* io = m->sig_.in_[i];
-        ctxt_->result_ &= io->validate(ctxt_->module_);
-        m->scope_->insert(io);
-    }
+    Params& in = m->sig_.in_;
+    RetVals& out = m->sig_.out_;
+    
+    /*
+     * are there duplicates?
+     */
+    std::vector<InOut*> ios( in.size() + out.size() );
+    std::copy( out.begin(), out.end(), 
+            std::copy(in.begin(), in.end(), ios.begin()) );
+    std::sort( ios.begin(), ios.end(), &lessInOut );
 
-    // check each return value and register in the root scope
-    for (size_t i = 0; i < m->sig_.out_.size(); ++i)
+    if ( ios.empty() )
+        return; // nothing to do
+
+    // check all ios
+    InOut* pre = ios[0];
+    ctxt_->result_ &= pre->validate(ctxt_->module_);
+    m->scope_->insert(pre);
+
+    for (size_t i = 1; i < ios.size(); ++i)
     {
-        InOut* io = m->sig_.out_[i];
+        InOut* io = ios[i];
+
         ctxt_->result_ &= io->validate(ctxt_->module_);
-        m->scope_->insert(io);
+
+        if ( *pre->id() == *io->id() )
+        {
+            errorf( io->loc(), 
+                    "there is already a %s named '%s' defined in this signature",
+                    pre->kind(),
+                    io->cid() );
+            SWIFT_PREV_ERROR( pre->loc() );
+            ctxt_->result_ = false;
+        }
+        else
+            m->scope_->insert(io);
+
+        pre = io;
     }
 }
 

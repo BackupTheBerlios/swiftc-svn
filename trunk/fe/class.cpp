@@ -19,6 +19,7 @@
 
 #include "fe/class.h"
 
+#include <memory>
 #include <sstream>
 
 #include "utils/assert.h"
@@ -56,7 +57,7 @@ Class::~Class()
 void Class::accept(ClassVisitorBase* c)
 {
     // omit builtin types here
-    if ( BaseType::isBuiltin(id_) )
+    if ( ScalarType::isScalar(id_) )
         return;
 
     c->ctxt_->class_ = this;
@@ -141,12 +142,13 @@ void Class::addAssignCreate(Context* ctxt)
     typedef MemberFctMap::const_iterator CIter;
 
     // create base type of this class
-    BaseType bt( loc(), Token::CONST, new std::string(*id_) );
+    std::auto_ptr<BaseType> bt( 
+            BaseType::create( loc(), Token::CONST, new std::string(*id_), true ) );
 
     // needed for signature check
     TypeList empty;
     TypeList in;
-    in.push_back(&bt);
+    in.push_back( bt.get() );
 
     {
         // is there any user defined copy or default constructor?
@@ -210,7 +212,7 @@ void Class::addAssignCreate(Context* ctxt)
         Scope* scope = ctxt->enterScope();
         Create* create = new Create(loc_, false, scope);
         ctxt->memberFct_ = create;
-        create->sig_.in_.push_back( new Param(loc_, bt.clone(), new std::string("arg")) );
+        create->sig_.in_.push_back( new Param(loc_, bt->clone(), new std::string("arg")) );
         create->sig_.buildTypeLists();
         ctxt->leaveScope();
 
@@ -226,7 +228,7 @@ void Class::addAssignCreate(Context* ctxt)
         Scope* scope = ctxt->enterScope();
         Assign* assign = new Assign(loc_, false, Token::ASGN, scope);
         ctxt->memberFct_ = assign;
-        assign->sig_.in_.push_back( new Param(loc_, bt.clone(), new std::string("arg")) );
+        assign->sig_.in_.push_back( new Param(loc_, bt->clone(), new std::string("arg")) );
         assign->sig_.buildTypeLists();
         ctxt->leaveScope();
 

@@ -6,23 +6,25 @@
 #include "utils/list.h"
 
 #include "fe/class.h"
+#include "fe/context.h"
 #include "fe/error.h"
 #include "fe/type.h"
 
 namespace swift {
 
-LLVMTypebuilder::LLVMTypebuilder(Module* module)
-    : module_(module)
+LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
+    : ctxt_(ctxt)
     , result_(true)
 {
     typedef Module::ClassMap::const_iterator CIter;
+    const Module::ClassMap& classes = ctxt_->module_->classes();
 
-    for (CIter iter = module_->classes().begin(); iter != module_->classes().end(); ++iter)
+    for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
     {
         Class* c = iter->second;
 
         // skip builtin types
-        if ( BaseType::isBuiltin(c->id()) )
+        if ( ScalarType::isScalar(c->id()) )
             continue;
 
         if ( process(c) )
@@ -43,6 +45,13 @@ LLVMTypebuilder::LLVMTypebuilder(Module* module)
             return;
         }
     }
+
+    // refine all opaque types
+    for (size_t i = 0; i < refinements.size(); ++i)
+    {
+        Refine& refine = refinements[i];
+        refine.opaque_->refineAbstractTypeTo( refine.type_->getLLVMType(ctxt_->module_) );
+    }
 }
 
 bool LLVMTypebuilder::getResult() const
@@ -52,6 +61,8 @@ bool LLVMTypebuilder::getResult() const
 
 bool LLVMTypebuilder::process(Class* c)
 {
+    Module* m = ctxt_->module_;
+
     // already processed?
     if ( c->llvmType() )
         return true;
@@ -69,27 +80,36 @@ bool LLVMTypebuilder::process(Class* c)
         c->memberVars()[i]->index_ = i;
         const Type* type = c->memberVars()[i]->getType();
 
-        if ( !type->isSimple() )
+        llvm::OpaqueType* opaque;
+        const UserType* missing;
+        const llvm::Type* llvmType = type->defineLLVMType(opaque, missing, m);
+
+        if (opaque)
         {
-            if (const BaseType* bt = type->isInner() )
-            {
-                Class* c = bt->lookupClass(module_);
-                swiftAssert(c, "must be found");
+            swiftAssert(missing, "must be set");
+            swiftAssert(llvmType, "must be set");
+            refinements.push_back( Refine(opaque, missing) );
+        }
+        else if (!llvmType)
+        {
+            swiftAssert(missing, "must be set");
 
-                if ( !process(c) )
-                    return false;
-            }
+            if ( !process(missing->lookupClass(ctxt_->module_)) )
+                return false;
 
-            swiftAssert(true, "TODO");
+            llvmType = type->getLLVMType(m);
         }
 
-        llvmTypes.push_back( type->getLLVMType(module_) );
+        llvmTypes.push_back(llvmType);
     }
 
-    c->llvmType() = llvm::StructType::get(*module_->llvmCtxt_, llvmTypes);
+    c->llvmType() = llvm::StructType::get(*m->llvmCtxt_, llvmTypes);
 
     // mark this class as done
     cycle_.erase(c);
+
+    // add a name
+    m->getLLVMModule()->addTypeName( c->cid(), c->llvmType() );
 
     return true;
 }

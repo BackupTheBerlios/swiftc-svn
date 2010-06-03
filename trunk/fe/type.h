@@ -20,6 +20,8 @@
 #ifndef SWIFT_TYPE_H
 #define SWIFT_TYPE_H
 
+#include <utility>
+
 #include "fe/auto.h"
 #include "fe/location.hh"
 #include "fe/node.h"
@@ -28,13 +30,13 @@
 namespace llvm {
     class Type;
     class LLVMContext;
+    class OpaqueType;
 }
 
 namespace swift {
 
-class BaseType;
 class Class;
-class Ptr;
+class UserType;
 
 //------------------------------------------------------------------------------
 
@@ -46,31 +48,29 @@ public:
     virtual ~Type() {}
 
     virtual Type* clone() const = 0;
-    virtual bool validate(Module* m) const = 0;
-    virtual bool check(const Type* type, Module* m) const = 0;
-    virtual std::string toString() const = 0;
-    virtual const BaseType* isInner() const { return 0; }
+    virtual bool check(const Type* t, Module* m) const = 0;
     virtual bool isBool() const { return false; }
     virtual bool isIndex() const { return false; }
     virtual bool isInt() const { return false; }
-
-    /// All types which are not user defined types are builtin types.
-    virtual bool isBuiltin() const { return true; }
-
-    /**
-     * All int, uint, sat, usat, real types and bools, 
-     * i.e. all BaseTypes which are builtin.
-     */
-    virtual bool isSimple() const { return false; }
-
-    /// All simple types and pointers.
-    virtual bool isAtomic() const = 0;
     virtual bool perRef() const = 0;
+    virtual bool validate(Module* m) const = 0;
+    virtual std::string toString() const = 0;
 
-    virtual const llvm::Type* getLLVMType(Module* module) const = 0;
+    virtual const llvm::Type* getLLVMType(Module* m) const = 0;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const = 0;
+
     TokenType getModifier() const;
     bool isVar() const;
     bool isRef() const;
+
+    template<class T>
+    const T* cast() const
+    {
+        return dynamic_cast<const T*>(this);
+    }
 
 protected:
 
@@ -88,11 +88,14 @@ public:
 
     virtual Type* clone() const;
     virtual bool validate(Module* m) const;
-    virtual bool check(const Type* type, Module* m) const;
+    virtual bool check(const Type* t, Module* m) const;
     virtual std::string toString() const;
-    virtual bool isAtomic() const;
     virtual bool perRef() const;
-    virtual const llvm::Type* getLLVMType(Module* module) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -105,11 +108,14 @@ public:
 
     virtual Type* clone() const;
     virtual bool validate(Module* m) const;
-    virtual bool check(const Type* type, Module* m) const;
+    virtual bool check(const Type* t, Module* m) const;
     virtual std::string toString() const;
-    virtual bool isAtomic() const;
     virtual bool perRef() const;
-    virtual const llvm::Type* getLLVMType(Module* module) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -118,44 +124,83 @@ class BaseType : public Type
 {
 public:
 
-    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
+    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut);
     virtual ~BaseType();
 
-    virtual BaseType* clone() const;
-    virtual bool validate(Module* m) const;
-    virtual bool check(const Type* type, Module* m) const;
+    static BaseType* create(
+            location loc, 
+            TokenType modifier, 
+            std::string* id, 
+            bool isInOut = false);
+
     virtual std::string toString() const;
-    virtual const BaseType* isInner() const;
-    virtual bool isBool() const;
-    virtual bool isIndex() const;
-    virtual bool isInt() const;
-    bool isSigned() const;
-    bool isUnsigned() const;
-    bool isInteger() const;
-    bool isFloat() const;
-
-    virtual bool isBuiltin() const;
-    virtual bool isSimple() const;
-    virtual bool isAtomic() const;
-    virtual bool perRef() const;
-
-    virtual const llvm::Type* getLLVMType(Module* module) const;
 
     Class* lookupClass(Module* m) const;
     const std::string* id() const;
     const char* cid() const;
 
-    static bool isBuiltin(const std::string* id);
     static void initTypeMap(llvm::LLVMContext* llvmCtxt);
     static void destroyTypeMap();
+
+protected:
+
+    typedef std::map<std::string, const llvm::Type*> TypeMap;
+    typedef std::map<std::string, int> SizeMap;
+    static TypeMap* typeMap_; 
+    static SizeMap* sizeMap_; 
 
 private:
 
     std::string* id_;
-    bool builtin_;
+};
 
-    typedef std::map<std::string, const llvm::Type*> TypeMap;
-    static TypeMap* typeMap_; 
+//------------------------------------------------------------------------------
+
+class ScalarType : public BaseType
+{
+public:
+
+    ScalarType(location loc, TokenType modifier, std::string* id);
+
+    virtual ScalarType* clone() const;
+    virtual bool check(const Type* t, Module* m) const;
+    virtual bool isBool() const;
+    virtual bool isIndex() const;
+    virtual bool isInt() const;
+    virtual bool perRef() const;
+    virtual bool validate(Module* m) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
+
+    bool isFloat() const;
+    bool isInteger() const;
+    bool isSigned() const;
+    bool isUnsigned() const;
+    int sizeOf() const;
+
+    static bool isScalar(const std::string* id);
+};
+
+//------------------------------------------------------------------------------
+
+class UserType : public BaseType
+{
+public:
+
+    UserType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
+
+    virtual UserType* clone() const;
+    virtual bool check(const Type* t, Module* m) const;
+    virtual bool perRef() const;
+    virtual bool validate(Module* m) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -168,7 +213,7 @@ public:
     virtual ~NestedType();
 
     virtual bool validate(Module* m) const;
-    virtual bool check(const Type* type, Module* m) const;
+    virtual bool check(const Type* t, Module* m) const;
     virtual bool perRef() const;
 
     Type* getInnerType();
@@ -189,8 +234,11 @@ public:
 
     virtual Ptr* clone() const;
     virtual std::string toString() const;
-    virtual bool isAtomic() const;
-    virtual const llvm::Type* getLLVMType(Module* module) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -203,11 +251,14 @@ public:
 
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
-    virtual bool isAtomic() const;
 
     static void initMeContainer();
     static size_t getContainerSize();
-    virtual const llvm::Type* getLLVMType(Module* module) const;
+    virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* defineLLVMType(
+            llvm::OpaqueType*& opaque, 
+            const UserType*& missing,
+            Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -232,9 +283,6 @@ public:
 
     virtual Simd* clone() const;
     virtual std::string containerStr() const;
-
-    BaseType* getInnerType();
-    const BaseType* getInnerType() const;
 };
 
 //------------------------------------------------------------------------------

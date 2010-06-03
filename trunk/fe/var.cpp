@@ -90,13 +90,7 @@ bool InOut::validate(Module* module) const
     return type_->validate(module);
 }
 
-//------------------------------------------------------------------------------
-
-Param::Param(location loc, Type* type, std::string* id)
-    : InOut(loc, type, id)
-{}
-
-llvm::Value* Param::getAddr(Context* ctxt) const
+llvm::Value* InOut::getAddr(Context* ctxt) const
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
 
@@ -108,32 +102,24 @@ llvm::Value* Param::getAddr(Context* ctxt) const
 
 //------------------------------------------------------------------------------
 
+Param::Param(location loc, Type* type, std::string* id)
+    : InOut(loc, type, id)
+{}
+
+const char* Param::kind() const
+{
+    return "parameter";
+}
+
+//------------------------------------------------------------------------------
+
 RetVal::RetVal(location loc, Type* type, std::string* id)
     : InOut(loc, type, id)
 {}
 
-void RetVal::setAlloca(llvm::AllocaInst* alloca, int retIndex)
+const char* RetVal::kind() const
 {
-    alloca_ = alloca;
-    retIndex_ = retIndex;
-}
-
-llvm::Value* RetVal::getAddr(Context* ctxt) const
-{
-    //llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
-    //llvm::IRBuilder<>& builder = ctxt->builder_;
-
-    //llvm::Value* input[2];
-    //input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-    //input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, retIndex_) );
-
-    //llvm::Value* result = builder.CreateInBoundsGEP( alloca_, input, input+2, cid() );
-
-    //if ( type_->isRef() )
-        //result = builder.CreateLoad( result, cid() );
-
-    //return result;
-    return alloca_;
+    return "return value";
 }
 
 } // namespace swift

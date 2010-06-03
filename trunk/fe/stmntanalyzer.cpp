@@ -143,7 +143,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         name = "operator";
     }
 
-    if ( const BaseType* bt = lhs->getType()->isInner() )
+    if ( const BaseType* bt = lhs->getType()->cast<BaseType>() )
     {
         Class* _class = bt->lookupClass(ctxt_->module_);
         MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
@@ -152,6 +152,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         {
             errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                     name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+            ctxt_->result_ = false;
+            return;
         }
     }
 }

@@ -115,7 +115,7 @@ void Module::analyze()
 
 void Module::buildLLVMTypes()
 {
-    LLVMTypebuilder llvmTypeBuilder(this);
+    LLVMTypebuilder llvmTypeBuilder(ctxt_);
     ctxt_->result_ = llvmTypeBuilder.getResult();
 }
 

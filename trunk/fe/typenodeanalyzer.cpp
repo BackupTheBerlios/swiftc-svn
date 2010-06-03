@@ -83,30 +83,30 @@ void TypeNodeAnalyzer::visit(Literal* l)
 
     switch ( l->getToken() )
     {
-        case Token::L_INDEX:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("index") ); break;
+        case Token::L_INDEX:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("index") ); break;
 
-        case Token::L_INT:    l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("int")   ); break;
-        case Token::L_INT8:   l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("int8")  ); break;
-        case Token::L_INT16:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("int16") ); break;
-        case Token::L_INT32:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("int32") ); break;
-        case Token::L_INT64:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("int64") ); break;
-        case Token::L_SAT8:   l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("sat8")  ); break;
-        case Token::L_SAT16:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("sat16") ); break;
+        case Token::L_INT:    l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("int")   ); break;
+        case Token::L_INT8:   l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("int8")  ); break;
+        case Token::L_INT16:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("int16") ); break;
+        case Token::L_INT32:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("int32") ); break;
+        case Token::L_INT64:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("int64") ); break;
+        case Token::L_SAT8:   l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("sat8")  ); break;
+        case Token::L_SAT16:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("sat16") ); break;
 
-        case Token::L_UINT:   l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("uint")  ); break;
-        case Token::L_UINT8:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("uint8") ); break;
-        case Token::L_UINT16: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("uint16")); break;
-        case Token::L_UINT32: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("uint32")); break;
-        case Token::L_UINT64: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("uint64")); break;
-        case Token::L_USAT8:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("usat8") ); break;
-        case Token::L_USAT16: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("usat16")); break;
+        case Token::L_UINT:   l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("uint")  ); break;
+        case Token::L_UINT8:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("uint8") ); break;
+        case Token::L_UINT16: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("uint16")); break;
+        case Token::L_UINT32: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("uint32")); break;
+        case Token::L_UINT64: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("uint64")); break;
+        case Token::L_USAT8:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("usat8") ); break;
+        case Token::L_USAT16: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("usat16")); break;
 
-        case Token::L_REAL:   l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("real")  ); break;
-        case Token::L_REAL32: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("real32")); break;
-        case Token::L_REAL64: l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("real64")); break;
+        case Token::L_REAL:   l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("real")  ); break;
+        case Token::L_REAL32: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("real32")); break;
+        case Token::L_REAL64: l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("real64")); break;
 
         case Token::L_TRUE:
-        case Token::L_FALSE:  l->type_ = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); break;
+        case Token::L_FALSE:  l->type_ = new ScalarType(l->loc(), Token::CONST, new std::string("bool")  ); break;
 
         default:
             swiftAssert(false, "illegal switch-case-value");
@@ -132,12 +132,8 @@ void TypeNodeAnalyzer::visit(Self* s)
 
     if ( Method* m = dynamic_cast<Method*>(ctxt_->memberFct_) )
     {
-        s->type_ = new BaseType( 
-                s->loc(),                              // location 
-                m->getModifier(),                      // VAR or CONST?
-                new std::string(*ctxt_->class_->id()), // identifier
-                true);                                 // is always a reference
-
+        s->type_ = new UserType( 
+                s->loc(), m->getModifier(), new std::string(*ctxt_->class_->id()) );
     }
     else
     {
@@ -160,9 +156,9 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
     m->prefixExpr_->accept(this);
     lvalue_ = true;
 
-    if ( const BaseType* bt = m->prefixExpr_->type_->isInner() )
+    if ( const UserType* user = m->prefixExpr_->type_->cast<UserType>() )
     {
-        m->class_ = bt->lookupClass(ctxt_->module_);
+        m->class_ = user->lookupClass(ctxt_->module_);
         swiftAssert(m->class_, "must be found");
 
         m->memberVar_ = m->class_->lookupMemberVar( m->id() );
@@ -225,9 +221,10 @@ void TypeNodeAnalyzer::visit(UnExpr* u)
 
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
 {
+    m->expr_->accept(this);
     m->exprList_->accept(this);
 
-    if ( const BaseType* bt = m->expr_->type_->isInner() )
+    if ( const BaseType* bt = m->expr_->type_->cast<BaseType>() )
     {
         m->class_ = bt->lookupClass(ctxt_->module_);
         return true;
@@ -240,7 +237,7 @@ bool TypeNodeAnalyzer::setClass(OperatorCall* o)
 {
     o->exprList_->accept(this);
 
-    if ( const BaseType* bt = o->op1_->type_->isInner() )
+    if ( const BaseType* bt = o->op1_->type_->cast<BaseType>() )
     {
         o->class_ = bt->lookupClass(ctxt_->module_);
         return true;

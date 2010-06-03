@@ -36,7 +36,6 @@ out=$in.out
 ./swift $swift_opts
 
 if [ $? -ne 0 ]; then 
-    echo "error: internal compiler error"
     exit -1 # something went wrong
 fi
 

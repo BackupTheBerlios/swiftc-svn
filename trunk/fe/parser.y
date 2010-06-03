@@ -560,22 +560,22 @@ tuple
     ;
 
 var_type
-    : ID                 { $$ = new BaseType(@$, Token::VAR, $1, true); }
+    : ID                 { $$ = BaseType::create(@$, Token::VAR, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::VAR, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::VAR, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::VAR, $3); }
     ;
 
 const_type
-    : ID                 { $$ = new BaseType(@$, Token::CONST, $1, true); }
+    : ID                 { $$ = BaseType::create(@$, Token::CONST, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::CONST, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::CONST, $3); }
     ;
 
 type
-    : ID                       { $$ = new BaseType(@$, Token::  VAR, $1); }
-    | CONST ID                 { $$ = new BaseType(@$, Token::CONST, $2); }
+    : ID                       { $$ = BaseType::create(@$, Token::  VAR, $1); }
+    | CONST ID                 { $$ = BaseType::create(@$, Token::CONST, $2); }
     | PTR         '{' type '}' { $$ = new      Ptr(@$, Token::  VAR, $3); }
     | CONST PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $4); }
     | ARRAY       '{' type '}' { $$ = new    Array(@$, Token::  VAR, $3); }

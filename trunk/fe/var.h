@@ -80,6 +80,8 @@ protected:
 public:
 
     bool validate(Module* module) const;
+    virtual llvm::Value* getAddr(Context* ctxt) const;
+    virtual const char* kind() const = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -93,7 +95,8 @@ class Param : public InOut
 public:
 
     Param(location loc, Type* type, std::string* id);
-    virtual llvm::Value* getAddr(Context* ctxt) const;
+
+    virtual const char* kind() const;
 };
 
 //------------------------------------------------------------------------------
@@ -104,8 +107,7 @@ public:
 
     RetVal(location loc, Type* type, std::string* id);
 
-    void setAlloca(llvm::AllocaInst* alloca, int retIndex);
-    virtual llvm::Value* getAddr(Context* ctxt) const;
+    virtual const char* kind() const;
 
 private:
 

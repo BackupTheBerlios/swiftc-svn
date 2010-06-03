@@ -89,6 +89,8 @@ void ClassCodeGen::codeGen(MemberFct* m)
      */
 
     std::vector<const llvm::Type*> params;
+    std::vector<InOut*> realIn;
+    std::vector<RetVal*> realOut;
 
     // push hidden 'self' param first if necessary
     if ( dynamic_cast<Method*>(m) )
@@ -101,26 +103,41 @@ void ClassCodeGen::codeGen(MemberFct* m)
     if ( out.empty() )
         m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
     else if (main)
+    {
         m->retType_ = llvm::IntegerType::getInt32Ty(llvmCtxt);
+        realOut.push_back( m->sig_.out_[0] );
+    }
     else
     {
-        std::vector<const llvm::Type*> types;
+        std::vector<const llvm::Type*> retTypes;
         for (size_t i = 0; i < out.size(); ++i)
         {
             RetVal* retval = m->sig_.out_[i];
+            const llvm::Type* llvmType = retval->getType()->getLLVMType(module);
 
             if ( retval->getType()->isRef() )
-                params.push_back( out[i]->getLLVMType(module) );
+            {
+                params.push_back(llvmType);
+                realIn.push_back(retval);
+            }
             else
-                types .push_back( out[i]->getLLVMType(module) );
+            {
+                retTypes.push_back(llvmType);
+                realOut.push_back(retval);
+            }
         }
 
-        m->retType_ = llvm::StructType::get(llvmCtxt, types);
+        m->retType_ = llvm::StructType::get(llvmCtxt, retTypes);
+        //ctxt_->module_->getLLVMModule()->addTypeName("ret-type", m->retType_);
     }
 
     // now push the rest
     for (size_t i = 0; i < in.size(); ++i)
-        params.push_back( in[i]->getLLVMType(module) );
+    {
+        InOut* io = m->sig_.in_[i];
+        params.push_back(io->getType()->getLLVMType(module));
+        realIn.push_back(io);
+    }
 
     const llvm::FunctionType* fctType = llvm::FunctionType::get(
             m->retType_, params, false);
@@ -156,7 +173,6 @@ void ClassCodeGen::codeGen(MemberFct* m)
      * emit code for the function
      */
 
-
     // create root BB and connect to fct and to the builder    
     llvm::BasicBlock* bb = llvm::BasicBlock::Create(llvmCtxt, m->llvmName_, fct);
     builder.SetInsertPoint(bb);
@@ -186,15 +202,15 @@ void ClassCodeGen::codeGen(MemberFct* m)
     }
 
     // initialize params
-    for (size_t i = 0; i < m->sig_.in_.size(); ++iter, ++i)
+    for (size_t i = 0; i < realIn.size(); ++iter, ++i)
     {
-        Param* param = m->sig_.in_[i];
+        InOut* io = realIn[i];
 
         // create alloca and store the initial
-        llvm::AllocaInst* alloca = param->createEntryAlloca(ctxt_);
+        llvm::AllocaInst* alloca = io->createEntryAlloca(ctxt_);
         builder.CreateStore(iter, alloca);
 
-        iter->setName( param->cid() );
+        iter->setName( io->cid() );
     }
 
     // enter scope and gen code
@@ -204,7 +220,7 @@ void ClassCodeGen::codeGen(MemberFct* m)
      * build epilogue
      */
 
-    if ( out.empty() )
+    if ( realOut.empty() )
         builder.CreateRetVoid();
     else 
     {
@@ -216,17 +232,21 @@ void ClassCodeGen::codeGen(MemberFct* m)
         if (main)
         {
             RetVal* retval = m->sig_.out_[0];
-            llvm::Value* value = builder.CreateLoad( retval->getAddr(ctxt_) );
+            llvm::Value* value = builder.CreateLoad( 
+                    retval->getAddr(ctxt_), retval->cid() );
             builder.CreateRet(value);
         }
         else
         {
             llvm::Value* retStruct = llvm::UndefValue::get(m->retType_);
-            for (size_t i = 0; i < out.size(); ++i)
+            for (size_t i = 0; i < realOut.size(); ++i)
             {
-                RetVal* retval = m->sig_.out_[i];
+                RetVal* retval = realOut[i];
                 retStruct = builder.CreateInsertValue(
-                        retStruct, builder.CreateLoad( retval->getAddr(ctxt_) ), i );
+                        retStruct, 
+                        builder.CreateLoad( retval->getAddr(ctxt_), retval->cid() ), 
+                        i,
+                        "retval");
             }
 
             builder.CreateRet(retStruct);

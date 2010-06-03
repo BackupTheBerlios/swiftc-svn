@@ -207,6 +207,58 @@ void TypeNodeCodeGen::visit(CCall* c)
 
 void TypeNodeCodeGen::visit(ReaderCall* r)
 {
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
+    r->expr_->accept(this);
+
+    if ( const ScalarType* from = r->expr_->getType()->cast<ScalarType>() )
+    {
+        // -> assumes that r is a cast
+
+        const ScalarType* to = llvm::cast<const ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
+        const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
+        const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
+
+        if ( llvmTo == llvmFrom )
+            return; // llvmValue_ and isAddr_ are still correct, so nothing to do
+
+        if (isAddr_)
+            llvmValue_ = builder.CreateLoad(llvmValue_, llvmValue_->getName() );
+        isAddr_ = false;
+
+        llvm::StringRef name = llvmValue_->getName();
+
+        if ( from->isInteger() && to->isInteger() )
+        {
+            if ( from->sizeOf() > to->sizeOf() )
+                llvmValue_ = builder.CreateTrunc(llvmValue_, llvmTo, name);
+            else
+            {
+                // -> sizeof(from) < sizeof(to)
+                if ( from->isUnsigned() )
+                    llvmValue_ = builder.CreateZExt(llvmValue_, llvmTo, name);
+                else
+                    llvmValue_ = builder.CreateSExt(llvmValue_, llvmTo, name);
+            }
+        }
+        else if ( from->isFloat() && to->isSigned() )   // fp -> si
+            llvmValue_ = builder.CreateFPToSI(llvmValue_, llvmTo, name);
+        else if ( from->isFloat() && to->isUnsigned() ) // fp -> ui
+            llvmValue_ = builder.CreateFPToUI(llvmValue_, llvmTo, name);
+        else if ( from->isSigned() && to->isFloat() )   // si -> fp
+            llvmValue_ = builder.CreateSIToFP(llvmValue_, llvmTo, name);
+        else if ( from->isUnsigned() && to->isFloat() ) // ui -> fp
+            llvmValue_ = builder.CreateUIToFP(llvmValue_, llvmTo, name);
+        else
+        {
+            swiftAssert( from->isFloat() && to->isFloat(), "must both be floats" );
+
+            if ( from->sizeOf() > to->sizeOf() )
+                llvmValue_ = builder.CreateFPTrunc(llvmValue_, llvmTo, name);
+            else // -> sizeof(from) < sizeof(to)
+                llvmValue_ = builder.CreateFPExt(llvmValue_, llvmTo, name);
+        }
+    }
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
@@ -225,10 +277,8 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     llvm::Value* v2 = llvmValue_;
     bool isAddr2 = isAddr_;
 
-    if ( b->op1_->getType()->isBuiltin() )
+    if ( const ScalarType* scalar = dynamic_cast<const ScalarType*>(b->op1_->getType()) )
     {
-        const BaseType* bt = (BaseType*) b->op1_->getType();
-
         if (isAddr1)
             v1 = builder.CreateLoad(v1, v1->getName() );
         if (isAddr2)
@@ -246,11 +296,11 @@ void TypeNodeCodeGen::visit(BinExpr* b)
             case Token::SUB: llvmValue_ = builder.CreateSub(v1, v2); return;
             case Token::MUL: llvmValue_ = builder.CreateMul(v1, v2); return;
             case Token::DIV:
-                if ( bt->isFloat() )
+                if ( scalar->isFloat() )
                     llvmValue_ = builder.CreateFDiv(v1, v2);
                 else
                 {
-                    if ( bt->isSigned() )
+                    if ( scalar->isSigned() )
                         llvmValue_ = builder.CreateSDiv(v1, v2);
                     else // -> unsigned
                         llvmValue_ = builder.CreateUDiv(v1, v2);
@@ -262,13 +312,13 @@ void TypeNodeCodeGen::visit(BinExpr* b)
              */
 
             case Token::EQ:
-                if ( bt->isFloat() )
+                if ( scalar->isFloat() )
                     llvmValue_ = builder.CreateFCmpOEQ(v1, v2);
                 else
                     llvmValue_ = builder.CreateICmpEQ(v1, v2);
                 return;
             case Token::NE:
-                if ( bt->isFloat() )
+                if ( scalar->isFloat() )
                     llvmValue_ = builder.CreateFCmpONE(v1, v2);
                 else
                     llvmValue_ = builder.CreateICmpNE(v1, v2);
@@ -276,11 +326,11 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 
 #define SWIFT_EMIT_CMP(token, fcmp, scmp, ucmp) \
     case Token:: token : \
-        if ( bt->isFloat() ) \
+        if ( scalar->isFloat() ) \
             llvmValue_ = builder. fcmp (v1, v2); \
         else \
         { \
-            if ( bt->isSigned() ) \
+            if ( scalar->isSigned() ) \
                 llvmValue_ = builder. scmp (v1, v2); \
             else \
                 llvmValue_ = builder. ucmp (v1, v2); \
@@ -312,10 +362,8 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     llvm::Value* v1 = llvmValue_;
     bool isAddr1 = isAddr_;
 
-    if ( u->op1_->getType()->isBuiltin() )
+    if ( const ScalarType* scalar = u->op1_->getType()->cast<ScalarType>() )
     {
-        const BaseType* bt = (BaseType*) u->op1_->getType();
-
         if (isAddr1)
             v1 = builder.CreateLoad( v1, v1->getName() );
 
@@ -327,9 +375,10 @@ void TypeNodeCodeGen::visit(UnExpr* u)
                 // nothing to do
                 return;
             case Token::SUB:
-                llvmValue_ = builder.CreateSub(
-                        llvm::Constant::getNullValue(bt->getLLVMType(ctxt_->module_)), 
-                        v1);
+                llvmValue_ = builder.CreateSub( 
+                        llvm::Constant::getNullValue(
+                            scalar->getLLVMType(ctxt_->module_)), 
+                        v1 );
                 return;
             default:
                 swiftAssert(false, "TODO");
@@ -359,13 +408,14 @@ void TypeNodeCodeGen::visit(RoutineCall* r)
         args.push_back(arg);
     }
 
-    //llvm::Value* result = builder.CreateCall( 
-            //r->memberFct_->llvmFct_, args.begin(), args.end() );
-    llvm::CallInst* call = llvm::CallInst::Create( r->memberFct_->llvmFct_, args.begin(), args.end() );
+    llvm::CallInst* call = llvm::CallInst::Create( 
+            r->memberFct_->llvmFct_, args.begin(), args.end() );
     call->setCallingConv(llvm::CallingConv::Fast);
-    llvm::Value* result = builder.Insert(call);
+    llvmValue_ = builder.Insert(call);
 
-    llvmValue_ = builder.CreateExtractValue(result, 0);
+    if ( !r->memberFct_->sig_.out_.empty() )
+        llvmValue_ = builder.CreateExtractValue(llvmValue_, 0);
+
     isAddr_ = false;
 }
 

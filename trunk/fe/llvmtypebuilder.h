@@ -3,16 +3,22 @@
 
 #include "utils/set.h"
 
+namespace llvm {
+    class OpaqueType;
+}
+
 namespace swift {
 
+class Context;
 class Class;
 class Module;
+class Type;
 
 class LLVMTypebuilder
 {
 public:
 
-    LLVMTypebuilder(Module* m);
+    LLVMTypebuilder(Context* ctxt);
 
     bool getResult() const;
 
@@ -22,10 +28,24 @@ private:
 
     typedef Set<Class*> ClassSet;
 
-    Module* module_;
+    Context* ctxt_;
     bool result_;
 
     ClassSet cycle_;
+
+    struct Refine
+    {
+        Refine(llvm::OpaqueType* opaque, const Type* type)
+            : opaque_(opaque)
+            , type_(type)
+        {}
+
+        llvm::OpaqueType* opaque_;
+        const Type* type_;
+    };
+
+    typedef std::vector<Refine> Refinements;
+    Refinements refinements;
 };
 
 } // namespace swift
