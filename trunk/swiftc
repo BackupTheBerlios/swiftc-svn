@@ -40,8 +40,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # compile lib.c if necessary
-if [ ! -e 'test/lib.bc' ]; then
-    llvm-gcc -c test/lib.c -emit-llvm -o test/lib.bc
+if [ ! -e 'test/lib.o' ]; then
+    gcc -c test/lib.c -o test/lib.o
 fi
 
 if [ $? -ne 0 ]; then 
@@ -50,7 +50,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # and link everything
-llvm-ld test/lib.bc $bc $* -o $out
+llvm-ld -native test/lib.o $bc $* -o $out
 
 if [ $? -ne 0 ]; then 
     echo "error: internal compiler error"

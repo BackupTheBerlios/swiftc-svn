@@ -221,7 +221,13 @@ MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , class_(0)
     , memberFct_(0)
+    , tuple_(0)
 {}
+
+void MemberFctCall::setTuple(const Tuple* tuple)
+{
+    tuple_ = tuple;
+}
 
 //------------------------------------------------------------------------------
 

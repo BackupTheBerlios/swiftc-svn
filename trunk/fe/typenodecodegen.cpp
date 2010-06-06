@@ -38,6 +38,10 @@ void TypeNodeCodeGen::visit(Id* id)
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
     llvmValue_ = var->getAddr(ctxt_);
+
+    if ( const Ptr* ptr = var->getType()->cast<Ptr>() )
+        llvmValue_ = ptr->recDeref(ctxt_->builder_, llvmValue_);
+
     isAddr_ = true;
 }
 
@@ -259,10 +263,16 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
                 llvmValue_ = builder.CreateFPExt(llvmValue_, llvmTo, name);
         }
     }
+    else
+    {
+        setArgs(r, llvmValue_);
+    }
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
 {
+    w->expr_->accept(this);
+    setArgs(w, llvmValue_);
 }
 
 void TypeNodeCodeGen::visit(BinExpr* b)
@@ -392,35 +402,64 @@ void TypeNodeCodeGen::visit(UnExpr* u)
 
 void TypeNodeCodeGen::visit(RoutineCall* r)
 {
+    setArgs(r, 0);
+    //llvm::IRBuilder<>& builder = ctxt_->builder_;
+    //std::vector<llvm::Value*> args;
+
+    //r->exprList_->accept(this);
+
+    //for (size_t i = 0; i < r->exprList_->size(); ++i)
+    //{
+        //const Type* type = r->exprList_->typeList()[i];
+
+        //llvm::Value* arg = type->perRef() 
+            //? r->exprList_->getLLVMValue(i)
+            //: r->exprList_->getScalar(i, builder);
+
+        //args.push_back(arg);
+    //}
+
+    //llvm::CallInst* call = llvm::CallInst::Create( 
+            //r->memberFct_->llvmFct_, args.begin(), args.end() );
+    //call->setCallingConv(llvm::CallingConv::Fast);
+    //llvmValue_ = builder.Insert(call);
+
+    //if ( !r->memberFct_->sig_.out_.empty() )
+        //llvmValue_ = builder.CreateExtractValue(llvmValue_, 0);
+
+    //isAddr_ = false;
+}
+
+void TypeNodeCodeGen::setArgs(MemberFctCall* fct, llvm::Value* self)
+{
     llvm::IRBuilder<>& builder = ctxt_->builder_;
     std::vector<llvm::Value*> args;
 
-    r->exprList_->accept(this);
+    fct->exprList_->accept(this);
 
-    for (size_t i = 0; i < r->exprList_->size(); ++i)
+    if (self)
+        args.push_back(self);
+
+    for (size_t i = 0; i < fct->exprList_->size(); ++i)
     {
-        const Type* type = r->exprList_->typeList()[i];
+        const Type* type = fct->exprList_->typeList()[i];
 
         llvm::Value* arg = type->perRef() 
-            ? r->exprList_->getLLVMValue(i)
-            : r->exprList_->getScalar(i, builder);
+            ? fct->exprList_->getLLVMValue(i)
+            : fct->exprList_->getScalar(i, builder);
 
         args.push_back(arg);
     }
 
     llvm::CallInst* call = llvm::CallInst::Create( 
-            r->memberFct_->llvmFct_, args.begin(), args.end() );
+            fct->memberFct_->llvmFct_, args.begin(), args.end() );
     call->setCallingConv(llvm::CallingConv::Fast);
     llvmValue_ = builder.Insert(call);
 
-    if ( !r->memberFct_->sig_.out_.empty() )
+    if ( !fct->memberFct_->sig_.out_.empty() )
         llvmValue_ = builder.CreateExtractValue(llvmValue_, 0);
 
     isAddr_ = false;
-}
-
-void TypeNodeCodeGen::setArgs(FctCall* fct)
-{
 }
 
 llvm::Value* TypeNodeCodeGen::getLLVMValue() const
@@ -440,17 +479,5 @@ bool TypeNodeCodeGen::isAddr() const
 {
     return isAddr_;
 }
-
-
-//llvm::Value* TypeNodeCodeGen::createEntryAllocaAndStore(llvm::Value* value);
-//{
-    //llvm::BasicBlock* entry = &ctxt_->llvmFct_->getEntryBlock();
-    //llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
-
-    //const llvm::Type* llvmType = value->getType();
-    //llvm::AllocaInst* alloca = tmpBuilder.CreateAlloca( llvmType, 0, "tmp" );
-
-    //return ctxt_->builder_.CreateStore(value, alloca);
-//}
 
 } // namespace swift

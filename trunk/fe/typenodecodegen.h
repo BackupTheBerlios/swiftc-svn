@@ -48,7 +48,7 @@ public:
     llvm::Value* getScalar();
     //llvm::Value* createEntryAllocaAndStore(llvm::Value* value);
 
-    void setArgs(FctCall* fct);
+    void setArgs(MemberFctCall* fct, llvm::Value* self);
 
 private:
 

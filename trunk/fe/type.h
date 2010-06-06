@@ -22,6 +22,8 @@
 
 #include <utility>
 
+#include <llvm/Support/IRBuilder.h>
+
 #include "fe/auto.h"
 #include "fe/location.hh"
 #include "fe/node.h"
@@ -31,6 +33,7 @@ namespace llvm {
     class Type;
     class LLVMContext;
     class OpaqueType;
+    class Value;
 }
 
 namespace swift {
@@ -239,6 +242,8 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+
+    llvm::Value* recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const;
 };
 
 //------------------------------------------------------------------------------

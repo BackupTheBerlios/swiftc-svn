@@ -545,7 +545,7 @@ expr_list
 
 expr_list_not_empty
     : expr                         { ctxt_->exprList_->append($1); }
-    | expr ',' expr_list_not_empty { ctxt_->exprList_->append($1); }
+    | expr_list_not_empty ',' expr { ctxt_->exprList_->append($3); }
     ;
 
 decl
@@ -555,8 +555,8 @@ decl
 tuple
     : expr           { ctxt_->tuple_->append($1); }
     | decl           { ctxt_->tuple_->append($1); }
-    | expr ',' tuple { ctxt_->tuple_->append($1); }
-    | decl ',' tuple { ctxt_->tuple_->append($1); }
+    | tuple ',' expr { ctxt_->tuple_->append($3); }
+    | tuple ',' decl { ctxt_->tuple_->append($3); }
     ;
 
 var_type

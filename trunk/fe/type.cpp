@@ -523,6 +523,17 @@ const llvm::Type* Ptr::defineLLVMType(
     return llvm::PointerType::getUnqual(opaque);
 }
 
+llvm::Value* Ptr::recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const
+{
+    if ( const Ptr* ptr = innerType_->cast<Ptr>() )
+    {
+        llvm::Value* deref = ptr->recDeref(builder, value);
+        return builder.CreateLoad( deref, deref->getName() );
+    }
+
+    return builder.CreateLoad( value, value->getName() );
+}
+
 //------------------------------------------------------------------------------
 
 Container::Container(location loc, TokenType modifier, Type* innerType)

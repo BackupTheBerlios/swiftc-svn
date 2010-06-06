@@ -204,6 +204,9 @@ public:
 
     Class* class_;
     MemberFct* memberFct_;
+    const Tuple* tuple_;
+
+    void setTuple(const Tuple* tuple);
 };
 
 //------------------------------------------------------------------------------
