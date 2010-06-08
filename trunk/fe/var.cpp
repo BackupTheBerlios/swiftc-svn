@@ -59,11 +59,8 @@ const char* Var::cid() const
 
 llvm::AllocaInst* Var::createEntryAlloca(Context* ctxt)
 {
-    llvm::BasicBlock* entry = &ctxt->llvmFct_->getEntryBlock();
-    llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
-
     const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
-    alloca_ = tmpBuilder.CreateAlloca( llvmType, 0, cid() );
+    alloca_ = ctxt->createEntryAlloca( llvmType, cid() );
 
     return alloca_;
 }

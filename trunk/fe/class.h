@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 
 #include "fe/auto.h"
 #include "fe/location.hh"
@@ -31,14 +32,16 @@
 namespace llvm {
     class BasicBlock;
     class Function;
-    class Type;
     class StructType;
+    class Type;
 }
 
 namespace swift {
 
 class ClassVisitorBase;
 class Context;
+class InOut;
+class RetVal;
 class Scope;
 class Type;
 
@@ -61,8 +64,10 @@ public:
     void addAssignCreate(Context* ctxt);
 
     typedef std::vector<MemberVar*> MemberVars;
+    typedef std::vector<MemberFct*> MemberFcts;
 
     const MemberVars& memberVars() const;
+    const MemberFcts& memberFcts() const;
 
     enum Impl
     {
@@ -84,7 +89,6 @@ protected:
 
     bool simd_;
 
-    typedef std::vector<MemberFct*> MemberFcts;
     typedef std::     map<const std::string*, MemberVar*, StringPtrCmp> MemberVarMap;
     typedef std::multimap<const std::string*, MemberFct*, StringPtrCmp> MemberFctMap;
 
@@ -114,6 +118,8 @@ public:
     virtual void accept(ClassVisitorBase* c) = 0;
     const std::string* id() const;
     const char* cid() const;
+    std::string getLLVMName() const;
+    void setLLVMName(const std::string& name);
 
 private:
 
@@ -140,6 +146,12 @@ protected:
     bool simd_;
     Scope* scope_;
 
+    std::vector<const llvm::Type*> params_;
+    std::vector<InOut*> realIn_;
+    std::vector<RetVal*> realOut_;
+    bool main_;
+
+
 public:
 
     Sig sig_;
@@ -149,6 +161,7 @@ public:
     llvm::BasicBlock* returnBB_;
 
     template<class T> friend class ClassVisitor;
+    friend class LLVMFctDeclarer;
 };
 
 //------------------------------------------------------------------------------
@@ -165,6 +178,26 @@ public:
 private:
 
     llvm::Value* selfValue_;
+
+    template<class T> friend class ClassVisitor;
+};
+
+//------------------------------------------------------------------------------
+
+class Assign : public Method
+{
+public:
+
+    Assign(location loc, bool simd, int token, Scope* scope);
+
+    virtual void accept(ClassVisitorBase* c);
+    virtual TokenType getModifier() const;
+    virtual const char* qualifierStr() const;
+    int getToken() const;
+
+private:
+
+    int token_;
 
     template<class T> friend class ClassVisitor;
 };
@@ -215,26 +248,6 @@ class StaticMethod : public MemberFct
 public:
 
     StaticMethod(location loc, bool simd, std::string* id, Scope* scope);
-};
-
-//------------------------------------------------------------------------------
-
-class Assign : public StaticMethod
-{
-public:
-
-    Assign(location loc, bool simd, int token, Scope* scope);
-
-    virtual void accept(ClassVisitorBase* c);
-    virtual TokenType getModifier() const;
-    virtual const char* qualifierStr() const;
-    int getToken() const;
-
-private:
-
-    int token_;
-
-    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------

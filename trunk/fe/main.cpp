@@ -111,7 +111,10 @@ static int start(int argc, char** argv)
         module->buildLLVMTypes();
 
     if (module->ctxt_->result_)
+    {
+        module->declareFcts();
         module->codeGen();
+    }
 
     if ( clp.cleanDump() )
         module->llvmDump();

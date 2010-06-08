@@ -92,42 +92,58 @@ void StmntAnalyzer::visit(AssignStmnt* s)
      *
      * 3. a normal function call that returns several return values:
      *      a, b, ... = f()
+     *
+     *      a = f()
      */
 
-    s->exprList_->accept( tna_.get() );
-    s->tuple_->accept( tna_.get() );
+    size_t outSize = s->tuple_->size();
+    size_t inSize = s->exprList_->size();
 
-    TypeList in = s->exprList_->typeList();
-    TypeList out = s->tuple_->typeList();
+    swiftAssert( inSize != 0 && outSize != 0,
+            "there must be at least one item on the left- "
+            "and one on the right-hand side" );
 
-    if ( in.size() != 1 && out.size() != 1 )
+    if (inSize == 1)
     {
-        errorf( s->loc(), "either the left-hand side or the right-hand side of an " 
-                "assignment statement must have exactly one element");
-        ctxt_->result_ = false;
-        return;
-    }
+        if ( MemberFctCall* call = 
+                dynamic_cast<MemberFctCall*>(s->exprList_->getTypeNode(0)) )
+        {
+            // mark stmnt as call stmnt
+            s->kind_ = AssignStmnt::CALL;
 
-    if (out.size() != 1)
-    {
-        MemberFctCall* call = dynamic_cast<MemberFctCall*>(s->exprList_->getTypeNode(0));
+            // analyze args
+            s->tuple_->accept( tna_.get() );
 
-        if (!call)
+            // analyze call
+            call->setTuple(s->tuple_);
+            call->accept( tna_.get() );
+
+            return;
+        }
+        else if (outSize != 1)
         {
             errorf( s->loc(), "the right-hand side of an assignment statement with "
                     "more than one item on the left-hand side " 
                     "must be a member function call");
             ctxt_->result_ = false;
-            return;
-        }
 
-        MemberFct* fct = call->memberFct_;
-        if ( fct && !fct->sig_.checkOut(ctxt_->module_, out) )
-        {
-            errorf( s->loc(), "bier" );
-            ctxt_->result_ = false;
             return;
         }
+    }
+
+    // analyze args and tuple
+    s->tuple_->accept( tna_.get() );
+    s->exprList_->accept( tna_.get() );
+
+    const TypeList& in = s->exprList_->typeList();
+    //const TypeList& out = s->tuple_->typeList();
+
+    if ( inSize != 1 && outSize != 1 )
+    {
+        errorf( s->loc(), "either the left-hand side or the right-hand side of an " 
+                "assignment statement must have exactly one element");
+        ctxt_->result_ = false;
+        return;
     }
 
     TypeNode* lhs = s->tuple_->getTypeNode(0);
@@ -136,11 +152,13 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     {
         str = "create";
         name = "contructor";
+        s->kind_ = AssignStmnt::CREATE;
     }
     else
     {
         str = "=";
         name = "operator";
+        s->kind_ = AssignStmnt::ASSIGN;
     }
 
     if ( const BaseType* bt = lhs->getType()->cast<BaseType>() )

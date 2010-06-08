@@ -244,6 +244,11 @@ const Class::MemberVars& Class::memberVars() const
     return memberVars_;
 }
 
+const Class::MemberFcts& Class::memberFcts() const
+{
+    return memberFcts_;
+}
+
 Class::Impl Class::getCopyCreate() const
 {
     return copyCreate_;
@@ -291,12 +296,24 @@ const char* ClassMember::cid() const
 {
     return id_->c_str();
 }
+
+std::string ClassMember::getLLVMName() const
+{
+    return llvmName_;
+}
+
+void ClassMember::setLLVMName(const std::string& name)
+{
+    llvmName_ = name;
+}
+
 //------------------------------------------------------------------------------
 
 MemberFct::MemberFct(location loc, bool simd, std::string* id, Scope* scope)
     : ClassMember(loc, id)
     , simd_(simd)
     , scope_(scope)
+    , main_(false)
 {}
 
 MemberFct::~MemberFct()
@@ -366,31 +383,8 @@ const char* Writer::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-Create::Create(location loc, bool simd, Scope* scope)
-    : Method( loc, simd, new std::string("create"), scope )
-{}
-
-void Create::accept(ClassVisitorBase* c)
-{
-    c->ctxt_->memberFct_ = this;
-    c->visit(this);
-}
-
-TokenType Create::getModifier() const
-{
-    return Token::VAR;
-}
-
-const char* Create::qualifierStr() const
-{
-    static const char* str = "create";
-    return str;
-}
-
-//------------------------------------------------------------------------------
-
 Assign::Assign(location loc, bool simd, int token, Scope* scope)
-    : StaticMethod( loc, simd, token2str(token), scope )
+    : Method( loc, simd, token2str(token), scope )
     , token_(token)
 {}
 
@@ -414,6 +408,29 @@ const char* Assign::qualifierStr() const
 int Assign::getToken() const
 {
     return token_;
+}
+
+//------------------------------------------------------------------------------
+
+Create::Create(location loc, bool simd, Scope* scope)
+    : Method( loc, simd, new std::string("create"), scope )
+{}
+
+void Create::accept(ClassVisitorBase* c)
+{
+    c->ctxt_->memberFct_ = this;
+    c->visit(this);
+}
+
+TokenType Create::getModifier() const
+{
+    return Token::VAR;
+}
+
+const char* Create::qualifierStr() const
+{
+    static const char* str = "create";
+    return str;
 }
 
 //------------------------------------------------------------------------------

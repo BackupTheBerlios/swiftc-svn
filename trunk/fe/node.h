@@ -67,6 +67,7 @@ public:
     const char* cid() const;
     void analyze();
     void buildLLVMTypes();
+    void declareFcts();
     void codeGen();
     void verify();
     llvm::Module* getLLVMModule() const;

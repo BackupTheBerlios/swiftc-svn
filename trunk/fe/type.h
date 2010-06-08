@@ -90,8 +90,11 @@ public:
     ErrorType(location, TokenType modifier);
 
     virtual Type* clone() const;
-    virtual bool validate(Module* m) const;
     virtual bool check(const Type* t, Module* m) const;
+    virtual bool isBool() const { return true; }
+    virtual bool isIndex() const { return true; }
+    virtual bool isInt() const { return true; }
+    virtual bool validate(Module* m) const;
     virtual std::string toString() const;
     virtual bool perRef() const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
@@ -136,6 +139,7 @@ public:
             std::string* id, 
             bool isInOut = false);
 
+    virtual bool check(const Type* t, Module* m) const;
     virtual std::string toString() const;
 
     Class* lookupClass(Module* m) const;
@@ -166,7 +170,6 @@ public:
     ScalarType(location loc, TokenType modifier, std::string* id);
 
     virtual ScalarType* clone() const;
-    virtual bool check(const Type* t, Module* m) const;
     virtual bool isBool() const;
     virtual bool isIndex() const;
     virtual bool isInt() const;
@@ -196,7 +199,6 @@ public:
     UserType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
 
     virtual UserType* clone() const;
-    virtual bool check(const Type* t, Module* m) const;
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
@@ -244,6 +246,7 @@ public:
             Module* m) const;
 
     llvm::Value* recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const;
+    llvm::Value* recDerefAddr(llvm::IRBuilder<>& builder, llvm::Value* value) const;
 };
 
 //------------------------------------------------------------------------------

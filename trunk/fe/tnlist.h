@@ -13,6 +13,7 @@ namespace llvm {
 
 namespace swift {
 
+class Context;
 class TypeNode;
 template <class T> class TypeNodeVisitor;
 typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;
@@ -35,6 +36,7 @@ public:
     bool isAddr(size_t i) const;
     llvm::Value* getLLVMValue(size_t i) const;
     llvm::Value* getScalar(size_t i, llvm::IRBuilder<>& builder) const;
+    llvm::Value* getAddr(size_t i, Context* ctxt) const;
     const TypeList& typeList() const;
     size_t size() const;
 

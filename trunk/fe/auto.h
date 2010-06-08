@@ -40,7 +40,6 @@ class Module;
 class Scope;
 class SimdPrefix;
 class Stmnt;
-class Tuple;
 class Type;
 
 //------------------------------------------------------------------------------

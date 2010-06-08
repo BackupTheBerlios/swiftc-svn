@@ -163,7 +163,7 @@ BaseType::TypeMap* BaseType::typeMap_ = 0;
 BaseType::SizeMap* BaseType::sizeMap_ = 0;
 
 BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInOut)
-    : Type(loc, modifier, false)
+    : Type(loc, modifier, isInOut)
     , id_(id)
 {}
 
@@ -182,6 +182,28 @@ BaseType* BaseType::create(
 BaseType::~BaseType()
 {
     delete id_;
+}
+
+bool BaseType::check(const Type* type, Module* m) const
+{
+    if ( const BaseType* bt = type->cast<BaseType>() )
+    {
+
+        Class* class1 = m->lookupClass( id() );
+        Class* class2 = m->lookupClass( bt->id() );
+
+        // both classes must exist
+        swiftAssert(class1,  "first class not found");
+        swiftAssert(class2, "second class not found");
+
+        // different pointers mean different types
+        if (class1 != class2) 
+            return false;
+        else
+            return true;
+    }
+
+    return false;
 }
 
 std::string BaseType::toString() const
@@ -282,11 +304,6 @@ ScalarType* ScalarType::clone() const
     return new ScalarType( loc_, modifier_, new std::string(*id()) );
 }
 
-bool ScalarType::check(const Type* type, Module* m) const
-{
-    return dynamic_cast<const ScalarType*>(type);
-}
-
 bool ScalarType::isBool() const
 {
     return *id() == "bool";
@@ -377,28 +394,6 @@ UserType* UserType::clone() const
     return new UserType(loc_, modifier_, new std::string(*id()), isRef_);
 }
 
-bool UserType::check(const Type* type, Module* m) const
-{
-    if ( const UserType* ut = dynamic_cast<const UserType*>(type) )
-    {
-
-        Class* class1 = m->lookupClass( id() );
-        Class* class2 = m->lookupClass( ut->id() );
-
-        // both classes must exist
-        swiftAssert(class1,  "first class not found");
-        swiftAssert(class2, "second class not found");
-
-        // different pointers mean different types
-        if (class1 != class2) 
-            return false;
-        else
-            return true;
-    }
-
-    return false;
-}
-
 bool UserType::perRef() const
 {
     return true;
@@ -419,7 +414,12 @@ const llvm::Type* UserType::getLLVMType(Module* m) const
 {
     Class* c = m->lookupClass( id() );
     swiftAssert(c, "must be found");
-    return c->llvmType();
+    const llvm::Type* llvmType = c->llvmType();
+
+    if (isRef_)
+        return llvm::PointerType::getUnqual(llvmType);
+    else
+        return llvmType;
 }
 
 const llvm::Type* UserType::defineLLVMType(
@@ -525,13 +525,21 @@ const llvm::Type* Ptr::defineLLVMType(
 
 llvm::Value* Ptr::recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const
 {
+    return builder.CreateLoad( recDeref(builder, value), value->getName() );
+}
+
+llvm::Value* Ptr::recDerefAddr(llvm::IRBuilder<>& builder, llvm::Value* value) const
+{
+    swiftAssert( !innerType_->isRef(), "must not be a reference" );
+    swiftAssert( !isRef_, "must not be a reference" );
+
     if ( const Ptr* ptr = innerType_->cast<Ptr>() )
     {
         llvm::Value* deref = ptr->recDeref(builder, value);
         return builder.CreateLoad( deref, deref->getName() );
     }
 
-    return builder.CreateLoad( value, value->getName() );
+    return value;
 }
 
 //------------------------------------------------------------------------------

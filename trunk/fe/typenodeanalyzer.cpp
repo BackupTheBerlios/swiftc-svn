@@ -211,12 +211,18 @@ void TypeNodeAnalyzer::visit(BinExpr* b)
 {
     if ( setClass(b) )
         analyzeMemberFctCall(b);
+
+    if ( !b->op1_->getType()->cast<ScalarType>() )
+        b->builtin_ = false;
 }
 
 void TypeNodeAnalyzer::visit(UnExpr* u)
 {
     if ( setClass(u) )
         analyzeMemberFctCall(u);
+
+    if ( !u->op1_->getType()->cast<ScalarType>() )
+        u->builtin_ = false;
 }
 
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
@@ -242,6 +248,9 @@ bool TypeNodeAnalyzer::setClass(OperatorCall* o)
         o->class_ = bt->lookupClass(ctxt_->module_);
         return true;
     }
+
+    ctxt_->result_ = false;
+    o->type_ = new ErrorType( o->loc(), Token::CONST );
 
     return false;
 }
@@ -269,19 +278,40 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 {
     lvalue_ = false;
 
-    TypeList inTypes = m->exprList_->typeList();
-    m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), inTypes);
+    const TypeList& in = m->exprList_->typeList();
+    m->memberFct_ = m->class_->lookupMemberFct(ctxt_->module_, m->id(), in);
 
     if (!m->memberFct_)
     {
         errorf( m->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-            m->qualifierStr(), m->cid(), inTypes.toString().c_str(), m->class_->cid() );
+            m->qualifierStr(), m->cid(), in.toString().c_str(), m->class_->cid() );
 
         ctxt_->result_ = false;
         m->type_ = new ErrorType( m->loc(), Token::CONST );
     }
     else if ( !m->memberFct_->sig_.outTypes_.empty() )
+    {
         m->type_ = m->memberFct_->sig_.outTypes_[0]->clone();
+
+        if (m->tuple_)
+        {
+            const TypeList& out = m->tuple_->typeList();
+
+            if ( !m->memberFct_->sig_.checkOut(ctxt_->module_, out) )
+            {
+                errorf( m->loc(), 
+                        "there is no '%s %s(%s) -> %s' defined in class '%s'",
+                        m->qualifierStr(),
+                        m->cid(),
+                        in.toString().c_str(),
+                        out.toString().c_str(),
+                        m->class_->cid() );
+                ctxt_->result_ = false;
+
+                return;
+            }
+        }
+    }
     else
         m->type_ = new VoidType( m->loc() );
 }

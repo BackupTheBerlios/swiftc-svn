@@ -5,6 +5,7 @@
 #include "fe/scope.h"
 
 #include <llvm/BasicBlock.h>
+#include <llvm/Function.h>
 
 namespace swift {
 
@@ -65,6 +66,16 @@ void Context::newExprList()
 void Context::newTuple()
 {
     tuple_ = new TNList();
+}
+
+llvm::AllocaInst* Context::createEntryAlloca(
+        const llvm::Type* llvmType, 
+        const llvm::Twine& name /*= ""*/) const
+{
+    llvm::BasicBlock* entry = &llvmFct_->getEntryBlock();
+    llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
+
+    return tmpBuilder.CreateAlloca(llvmType, 0, name);
 }
 
 } // namespace swift

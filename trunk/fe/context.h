@@ -9,6 +9,7 @@
 namespace llvm {
     class BasicBlock;
     class Function;
+    class Type;
 }
 
 namespace swift {
@@ -47,6 +48,10 @@ public:
 
     llvm::Function* llvmFct_; ///< Current llvm function.
     llvm::IRBuilder<> builder_;
+
+    llvm::AllocaInst* createEntryAlloca(
+            const llvm::Type* llvmType, 
+            const llvm::Twine& name = "") const;
 
 private:
 

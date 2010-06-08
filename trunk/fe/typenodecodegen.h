@@ -43,12 +43,13 @@ public:
     virtual void visit(UnExpr* u);
     virtual void visit(RoutineCall* r);
 
-    llvm::Value* getLLVMValue() const;
     bool isAddr() const;
-    llvm::Value* getScalar();
-    //llvm::Value* createEntryAllocaAndStore(llvm::Value* value);
+    llvm::Value* getScalar() const;
+    llvm::Value* getAddr() const;
+    llvm::Value* getLLVMValue() const;
 
-    void setArgs(MemberFctCall* fct, llvm::Value* self);
+    void emitCall(MemberFctCall* call, llvm::Value* self);
+    void getSelf(MethodCall* m);
 
 private:
 

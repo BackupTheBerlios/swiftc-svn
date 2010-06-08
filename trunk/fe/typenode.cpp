@@ -166,7 +166,6 @@ FctCall::FctCall(location loc, std::string* id, TNList* exprList)
     : Expr(loc)
     , id_(id)
     , exprList_(exprList)
-    , tuple_(0)
 {}
 
 FctCall::~FctCall()
@@ -183,11 +182,6 @@ const std::string* FctCall::id() const
 const char* FctCall::cid() const
 {
     return id_->c_str();
-}
-
-void FctCall::setTuple(TNList* tuple)
-{
-    tuple_ = tuple;
 }
 
 //------------------------------------------------------------------------------
@@ -214,7 +208,6 @@ const char* CCall::qualifierStr() const
     return str;
 }
 
-
 //------------------------------------------------------------------------------
 
 MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
@@ -224,9 +217,14 @@ MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
     , tuple_(0)
 {}
 
-void MemberFctCall::setTuple(const Tuple* tuple)
+void MemberFctCall::setTuple(const TNList* tuple)
 {
     tuple_ = tuple;
+}
+
+MemberFct* MemberFctCall::getMemberFct() const
+{
+    return memberFct_;
 }
 
 //------------------------------------------------------------------------------
@@ -264,6 +262,7 @@ OperatorCall::OperatorCall(location loc, TokenType token, Expr* op1)
     : StaticMethodCall(loc, token2str(token), new TNList() ) 
     , token_(token)
     , op1_(op1)
+    , builtin_(true)
 {
     exprList_->append(op1);
 }

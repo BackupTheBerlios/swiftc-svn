@@ -199,13 +199,24 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
-    s->exprList_->accept( tncg_.get() );
-    llvm::Value* rvalue = tncg_->getScalar();
-
     s->tuple_->accept( tncg_.get() );
-    llvm::Value* lvalue = tncg_->getLLVMValue();
+    llvm::Value* lvalue = tncg_->getAddr();
 
-    ctxt_->builder_.CreateStore(rvalue, lvalue);
+    if ( s->tuple_->size() != 1)
+    {
+        swiftAssert( s->exprList_->size() == 1, "must exactly have one item" );
+        MemberFctCall* call = llvm::cast<MemberFctCall>( 
+                s->exprList_->getTypeNode(0) );
+
+        call->setTuple(s->tuple_);
+        call->accept( tncg_.get() );
+    }
+    else
+    {
+        s->exprList_->accept( tncg_.get() );
+        llvm::Value* rvalue = tncg_->getScalar();
+        ctxt_->builder_.CreateStore(rvalue, lvalue);
+    }
 }
 
 void StmntCodeGen::visit(ExprStmnt* s)

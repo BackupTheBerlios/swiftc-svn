@@ -161,16 +161,11 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
-    void setTuple(TNList* tuple);
-
 protected:
 
     std::string* id_;
 
-public:
-
     TNList* exprList_;
-    TNList* tuple_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -191,6 +186,7 @@ protected:
 
     Type* retType_;
     TokenType token_;
+
     template<class T> friend class TypeNodeVisitor;
 };
 
@@ -202,11 +198,16 @@ public:
 
     MemberFctCall(location loc, std::string* id, TNList* exprList);
 
+    void setTuple(const TNList* tuple);
+    MemberFct* getMemberFct() const;
+
+protected:
+
     Class* class_;
     MemberFct* memberFct_;
-    const Tuple* tuple_;
+    const TNList* tuple_;
 
-    void setTuple(const Tuple* tuple);
+    template<class T> friend class TypeNodeVisitor;
 };
 
 //------------------------------------------------------------------------------
@@ -289,6 +290,7 @@ protected:
 
     TokenType token_;
     Expr* op1_;
+    bool builtin_;
 
     template<class T> friend class TypeNodeVisitor;
 };

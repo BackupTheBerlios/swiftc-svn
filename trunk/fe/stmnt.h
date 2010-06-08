@@ -219,6 +219,15 @@ protected:
     TNList* tuple_;    ///< The lvalues.
     TNList* exprList_; ///< The rvalues.
 
+    enum Kind
+    {
+        CREATE,
+        ASSIGN,
+        CALL
+    };
+
+    Kind kind_;
+
     template<class T> friend class StmntVisitor;
 };
 

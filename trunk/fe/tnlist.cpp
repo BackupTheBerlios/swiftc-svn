@@ -1,5 +1,6 @@
 #include "fe/tnlist.h"
 
+#include "fe/context.h"
 #include "fe/type.h"
 #include "fe/typenodeanalyzer.h"
 #include "fe/typenodecodegen.h"
@@ -63,6 +64,22 @@ bool TNList::isAddr(size_t i) const
 llvm::Value* TNList::getLLVMValue(size_t i) const
 {
     return llvmValues_[i];
+}
+
+llvm::Value* TNList::getAddr(size_t i, Context* ctxt) const
+{
+    llvm::Value* val = llvmValues_[i];
+
+    if ( !isAddr(i) )
+    {
+        llvm::AllocaInst* alloca = ctxt->createEntryAlloca( 
+                val->getType(), val->getName() );
+        ctxt->builder_.CreateStore( val, alloca);
+
+        return alloca;
+    }
+    else
+        return val;
 }
 
 llvm::Value* TNList::getScalar(size_t i, llvm::IRBuilder<>& builder) const

@@ -93,6 +93,7 @@ ADD_EXECUTABLE (swift
     fe/error.cpp
     fe/tnlist.cpp
     fe/llvmtypebuilder.cpp
+    fe/llvmfctdeclarer.cpp
     fe/node.cpp
     fe/scope.cpp
     fe/sig.cpp

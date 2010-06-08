@@ -37,11 +37,8 @@ void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
+
     llvmValue_ = var->getAddr(ctxt_);
-
-    if ( const Ptr* ptr = var->getType()->cast<Ptr>() )
-        llvmValue_ = ptr->recDeref(ctxt_->builder_, llvmValue_);
-
     isAddr_ = true;
 }
 
@@ -150,19 +147,22 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    // get ptr of the prefix expr
+    // get address of the prefix expr
     m->prefixExpr_->accept(this);
-    llvm::Value* ptr = llvmValue_;
+    llvm::Value* addr = getAddr();
+
+    if ( const Ptr* ptr = m->getType()->cast<Ptr>() )
+        addr = ptr->recDerefAddr(ctxt_->builder_, addr);
 
     // build input
     llvm::Value* input[2];
     input[0] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(64, 0) );
     input[1] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, m->memberVar_->getIndex()) );
 
-    // build get and get value
+    // build and get value
     std::ostringstream oss;
     oss << m->prefixExpr_->getType()->toString() << '.' << m->cid();
-    llvmValue_ = builder.CreateInBoundsGEP( ptr, input, input+2, oss.str() );
+    llvmValue_ = builder.CreateInBoundsGEP( addr, input, input+2, oss.str() );
     isAddr_ = true;
 }
 
@@ -213,13 +213,13 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    r->expr_->accept(this);
+    getSelf(r);
 
     if ( const ScalarType* from = r->expr_->getType()->cast<ScalarType>() )
     {
         // -> assumes that r is a cast
 
-        const ScalarType* to = llvm::cast<const ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
+        const ScalarType* to = llvm::cast<ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
@@ -264,35 +264,27 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         }
     }
     else
-    {
-        setArgs(r, llvmValue_);
-    }
+        emitCall(r, llvmValue_);
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
 {
-    w->expr_->accept(this);
-    setArgs(w, llvmValue_);
+    getSelf(w);
+    emitCall(w, llvmValue_);
 }
 
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    b->op1_->accept(this);
-    llvm::Value* v1 = llvmValue_;
-    bool isAddr1 = isAddr_;
-
-    b->op2_->accept(this);
-    llvm::Value* v2 = llvmValue_;
-    bool isAddr2 = isAddr_;
-
-    if ( const ScalarType* scalar = dynamic_cast<const ScalarType*>(b->op1_->getType()) )
+    if ( b->builtin_ )
     {
-        if (isAddr1)
-            v1 = builder.CreateLoad(v1, v1->getName() );
-        if (isAddr2)
-            v2 = builder.CreateLoad(v2, v2->getName() );
+        b->op1_->accept(this);
+        llvm::Value* v1 = getScalar();
+        b->op2_->accept(this);
+        llvm::Value* v2 = getScalar();
+
+        const ScalarType* scalar = llvm::cast<ScalarType>( b->op1_->getType() );
 
         isAddr_ = false;
 
@@ -358,24 +350,19 @@ void TypeNodeCodeGen::visit(BinExpr* b)
                 swiftAssert(false, "TODO");
         }
     }
-    // -> is not builtin
-
-    swiftAssert(false, "TODO");
-    isAddr_ = true;
+    else
+        emitCall(b, 0);
 }
 
 void TypeNodeCodeGen::visit(UnExpr* u)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    u->op1_->accept(this);
-    llvm::Value* v1 = llvmValue_;
-    bool isAddr1 = isAddr_;
-
-    if ( const ScalarType* scalar = u->op1_->getType()->cast<ScalarType>() )
+    if ( u->builtin_ )
     {
-        if (isAddr1)
-            v1 = builder.CreateLoad( v1, v1->getName() );
+        u->op1_->accept(this);
+        llvm::Value* v1 = getScalar();
+        const ScalarType* scalar = llvm::cast<ScalarType>( u->op1_->getType() );
 
         isAddr_ = false;
 
@@ -394,72 +381,117 @@ void TypeNodeCodeGen::visit(UnExpr* u)
                 swiftAssert(false, "TODO");
         }
     }
-    // -> is not builtin
-
-    swiftAssert(false, "TODO");
-    isAddr_ = true;
+    else
+        emitCall(u, 0);
 }
 
 void TypeNodeCodeGen::visit(RoutineCall* r)
 {
-    setArgs(r, 0);
-    //llvm::IRBuilder<>& builder = ctxt_->builder_;
-    //std::vector<llvm::Value*> args;
-
-    //r->exprList_->accept(this);
-
-    //for (size_t i = 0; i < r->exprList_->size(); ++i)
-    //{
-        //const Type* type = r->exprList_->typeList()[i];
-
-        //llvm::Value* arg = type->perRef() 
-            //? r->exprList_->getLLVMValue(i)
-            //: r->exprList_->getScalar(i, builder);
-
-        //args.push_back(arg);
-    //}
-
-    //llvm::CallInst* call = llvm::CallInst::Create( 
-            //r->memberFct_->llvmFct_, args.begin(), args.end() );
-    //call->setCallingConv(llvm::CallingConv::Fast);
-    //llvmValue_ = builder.Insert(call);
-
-    //if ( !r->memberFct_->sig_.out_.empty() )
-        //llvmValue_ = builder.CreateExtractValue(llvmValue_, 0);
-
-    //isAddr_ = false;
+    emitCall(r, 0);
 }
 
-void TypeNodeCodeGen::setArgs(MemberFctCall* fct, llvm::Value* self)
+void TypeNodeCodeGen::getSelf(MethodCall* m)
+{
+    m->expr_->accept(this);
+
+    if ( const Ptr* ptr = m->expr_->getType()->cast<Ptr>() )
+        llvmValue_ = ptr->recDerefAddr(ctxt_->builder_, llvmValue_);
+}
+
+void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
     std::vector<llvm::Value*> args;
+    MemberFct* fct = call->getMemberFct();
+    const TNList* tuple = call->tuple_;
 
-    fct->exprList_->accept(this);
+    call->exprList_->accept(this);
+    TypeList& out = fct->sig_.outTypes_;
+
+    /* 
+     * prepare arguments
+     */
 
     if (self)
         args.push_back(self);
 
-    for (size_t i = 0; i < fct->exprList_->size(); ++i)
+    llvm::Value* perRefMainRetAlloca = 0;
+
+    // append return-value arguments
+    for (size_t i = 0; i < out.size(); ++i)
     {
-        const Type* type = fct->exprList_->typeList()[i];
+        const Type* type = out[i];
+
+        if ( type->perRef() )
+        {
+            llvm::Value* arg;
+            if (tuple && dynamic_cast<Decl*>( tuple->getTypeNode(i) ) )
+                arg = tuple->getAddr(i, ctxt_);
+            else
+            {
+                const llvm::Type* llvmType = type->getLLVMType( ctxt_->module_);
+                llvm::AllocaInst* alloca = ctxt_->createEntryAlloca(llvmType);
+                arg = builder.CreateLoad(alloca);
+
+                if (i == 0)
+                    perRefMainRetAlloca = alloca;
+            }
+
+            args.push_back(arg);
+        }
+    }
+
+    // append regular arguments
+    for (size_t i = 0; i < call->exprList_->size(); ++i)
+    {
+        const Type* type = call->exprList_->typeList()[i];
 
         llvm::Value* arg = type->perRef() 
-            ? fct->exprList_->getLLVMValue(i)
-            : fct->exprList_->getScalar(i, builder);
+            ? call->exprList_->getAddr(i, ctxt_)
+            : call->exprList_->getScalar(i, builder);
 
         args.push_back(arg);
     }
 
-    llvm::CallInst* call = llvm::CallInst::Create( 
-            fct->memberFct_->llvmFct_, args.begin(), args.end() );
-    call->setCallingConv(llvm::CallingConv::Fast);
-    llvmValue_ = builder.Insert(call);
+    // create actual call
+    llvm::CallInst* callInst = llvm::CallInst::Create( 
+            fct->llvmFct_, args.begin(), args.end() );
+    callInst->setCallingConv(llvm::CallingConv::Fast);
+    llvm::Value* retValue = builder.Insert(callInst);
 
-    if ( !fct->memberFct_->sig_.out_.empty() )
-        llvmValue_ = builder.CreateExtractValue(llvmValue_, 0);
+    // write results back
+    if (tuple)
+    {
+        size_t index = 0;
+        for (size_t i = 0; i < out.size(); ++i)
+        {
+            const Type* type = out[i];
 
-    isAddr_ = false;
+            if ( type->perRef() )
+                continue;
+
+            swiftAssert( tuple->isAddr(i), "must be an address" );
+            llvm::Value* retElem = builder.CreateExtractValue(retValue, index);
+            builder.CreateStore( retElem, tuple->getAddr(i, ctxt_) );
+
+            ++index;
+        }
+    }
+    else if ( !fct->sig_.out_.empty() )
+    {
+        if ( perRefMainRetAlloca )
+        {
+            llvmValue_ = perRefMainRetAlloca;
+            isAddr_ = true;
+        }
+        else
+        {
+            llvmValue_ = builder.CreateExtractValue(retValue, 0);
+            isAddr_ = false;
+        }
+    }
+    else
+        llvmValue_ = 0;
 }
 
 llvm::Value* TypeNodeCodeGen::getLLVMValue() const
@@ -467,7 +499,21 @@ llvm::Value* TypeNodeCodeGen::getLLVMValue() const
     return llvmValue_;
 }
 
-llvm::Value* TypeNodeCodeGen::getScalar()
+llvm::Value* TypeNodeCodeGen::getAddr() const
+{
+    if (!isAddr_)
+    {
+        llvm::AllocaInst* alloca = ctxt_->createEntryAlloca( 
+                llvmValue_->getType(), llvmValue_->getName() );
+        ctxt_->builder_.CreateStore(llvmValue_, alloca);
+
+        return alloca;
+    }
+    else
+        return llvmValue_;
+}
+
+llvm::Value* TypeNodeCodeGen::getScalar() const
 {
     if (isAddr_)
         return ctxt_->builder_.CreateLoad( llvmValue_, llvmValue_->getName() );

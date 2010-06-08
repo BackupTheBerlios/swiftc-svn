@@ -9,6 +9,7 @@
 #include "fe/classcodegen.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/llvmfctdeclarer.h"
 #include "fe/llvmtypebuilder.h"
 #include "fe/typenode.h"
 
@@ -117,6 +118,11 @@ void Module::buildLLVMTypes()
 {
     LLVMTypebuilder llvmTypeBuilder(ctxt_);
     ctxt_->result_ = llvmTypeBuilder.getResult();
+}
+
+void Module::declareFcts()
+{
+    LLVMFctDeclarer llvmFctDeclarer(ctxt_);
 }
 
 void Module::codeGen()

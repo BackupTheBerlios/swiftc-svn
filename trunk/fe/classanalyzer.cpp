@@ -50,16 +50,6 @@ void ClassAnalyzer::visit(Assign* a)
         errorf( a->loc(), "an assignment must at least have one parameter" );
         ctxt_->result_ = false;
     }
-    else
-    {
-        const BaseType* bt = in[0]->cast<BaseType>();
-        if (bt && bt->lookupClass(ctxt_->module_) != ctxt_->class_ )
-        {
-            errorf(a->loc(), "first parameter of an assignment must be of class '%s'", 
-                    ctxt_->class_->cid());
-            ctxt_->result_ = false;
-        }
-    }
 
     checkStmnts(a);
 }
