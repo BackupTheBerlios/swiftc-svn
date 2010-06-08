@@ -33,7 +33,7 @@ void StmntAnalyzer::visit(IfElStmnt* s)
 {
     s->expr_->accept( tna_.get() );
 
-    if ( !s->expr_->getType()->isBool() )
+    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the check condition of an if-clause must return a 'bool'");
@@ -50,7 +50,7 @@ void StmntAnalyzer::visit(RepeatUntilStmnt* s)
 {
     s->expr_->accept( tna_.get() );
 
-    if ( !s->expr_->getType()->isBool() )
+    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
@@ -69,7 +69,7 @@ void StmntAnalyzer::visit(WhileStmnt* s)
 {
     s->expr_->accept( tna_.get() );
 
-    if ( !s->expr_->getType()->isBool() )
+    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the exit condition of a while statement must return a 'bool'");
@@ -96,14 +96,14 @@ void StmntAnalyzer::visit(AssignStmnt* s)
      *      a = f()
      */
 
-    size_t outSize = s->tuple_->size();
-    size_t inSize = s->exprList_->size();
+    size_t lSize = s->tuple_->size();
+    size_t rSize = s->exprList_->size();
 
-    swiftAssert( inSize != 0 && outSize != 0,
+    swiftAssert( rSize != 0 && lSize != 0,
             "there must be at least one item on the left- "
             "and one on the right-hand side" );
 
-    if (inSize == 1)
+    if (rSize == 1)
     {
         if ( MemberFctCall* call = 
                 dynamic_cast<MemberFctCall*>(s->exprList_->getTypeNode(0)) )
@@ -120,7 +120,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 
             return;
         }
-        else if (outSize != 1)
+        else if (lSize != 1)
         {
             errorf( s->loc(), "the right-hand side of an assignment statement with "
                     "more than one item on the left-hand side " 
@@ -138,7 +138,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     const TypeList& in = s->exprList_->typeList();
     //const TypeList& out = s->tuple_->typeList();
 
-    if ( inSize != 1 && outSize != 1 )
+    if ( rSize != 1 && lSize != 1 )
     {
         errorf( s->loc(), "either the left-hand side or the right-hand side of an " 
                 "assignment statement must have exactly one element");
@@ -147,6 +147,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     }
 
     TypeNode* lhs = s->tuple_->getTypeNode(0);
+    swiftAssert(lhs->size() == 1, "must return one item");
+
     std::string str, name;
     if ( typeid(*lhs) == typeid(Decl) )
     {

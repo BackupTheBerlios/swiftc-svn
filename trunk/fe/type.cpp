@@ -62,13 +62,13 @@ bool Type::isRef() const
 
 //------------------------------------------------------------------------------
 
-ErrorType::ErrorType(location loc, TokenType modifier)
-    : Type(loc, modifier, false)
+ErrorType::ErrorType()
+    : Type( location(), Token::VAR, false )
 {}
 
 Type* ErrorType::clone() const
 {
-    return new ErrorType(loc_, modifier_);
+    return new ErrorType();
 }
 
 bool ErrorType::validate(Module* m) const
@@ -111,53 +111,53 @@ const llvm::Type* ErrorType::defineLLVMType(
 
 //------------------------------------------------------------------------------
 
-VoidType::VoidType(location loc)
-    : Type(loc, Token::CONST, false)
-{}
+//VoidType::VoidType(location loc)
+    //: Type(loc, Token::CONST, false)
+//{}
 
-Type* VoidType::clone() const
-{
-    return new VoidType(loc_);
-}
+//Type* VoidType::clone() const
+//{
+    //return new VoidType(loc_);
+//}
 
-bool VoidType::validate(Module* m) const
-{
-    return true;
-}
+//bool VoidType::validate(Module* m) const
+//{
+    //return true;
+//}
 
-bool VoidType::check(const Type* t, Module* m) const
-{
-    errorf(loc_, "void value not ignored as it ought to be");
-    return false;
-}
+//bool VoidType::check(const Type* t, Module* m) const
+//{
+    //errorf(loc_, "void value not ignored as it ought to be");
+    //return false;
+//}
 
-std::string VoidType::toString() const
-{
-    return "void";
-}
+//std::string VoidType::toString() const
+//{
+    //return "void";
+//}
 
-bool VoidType::perRef() const
-{
-    swiftAssert(false, "unreachable");
-    return false;
-}
+//bool VoidType::perRef() const
+//{
+    //swiftAssert(false, "unreachable");
+    //return false;
+//}
 
-const llvm::Type* VoidType::getLLVMType(Module* m) const
-{
-    return llvm::TypeBuilder<void, true>::get(*m->llvmCtxt_);
-}
+//const llvm::Type* VoidType::getLLVMType(Module* m) const
+//{
+    //return llvm::TypeBuilder<void, true>::get(*m->llvmCtxt_);
+//}
 
-const llvm::Type* VoidType::defineLLVMType(
-        llvm::OpaqueType*& opaque, 
-        const UserType*& missing,
-        Module* m) const
-{
-    opaque = 0;
-    missing = 0;
-    return getLLVMType(m);
-}
+//const llvm::Type* VoidType::defineLLVMType(
+        //llvm::OpaqueType*& opaque, 
+        //const UserType*& missing,
+        //Module* m) const
+//{
+    //opaque = 0;
+    //missing = 0;
+    //return getLLVMType(m);
+//}
 
-//------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
 
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 BaseType::SizeMap* BaseType::sizeMap_ = 0;

@@ -1,5 +1,7 @@
 #include "fe/tnlist.h"
 
+#include <algorithm>
+
 #include "fe/context.h"
 #include "fe/type.h"
 #include "fe/typenodeanalyzer.h"
@@ -20,29 +22,31 @@ void TNList::append(TypeNode* typeNode)
 
 void TNList::accept(TypeNodeAnalyzer* tna)
 {
-    size_t size = typeNodes_.size();
-    lvalueTNList_.resize(size);
-    typeList_  .resize(size);
-
-    for (size_t i = 0; i < size; ++i)
+    for (size_t i = 0; i < typeNodes_.size(); ++i)
     {
-        typeNodes_[i]->accept(tna);
-        lvalueTNList_[i] = tna->isLValue();
-        typeList_[i] = typeNodes_[i]->getType();
+        TypeNode* tn = typeNodes_[i];
+        tn->accept(tna);
+
+        for (size_t j = 0; j < tn->size(); ++j)
+        {
+            typeList_.push_back( tn->getType(j) );
+            lvalues_.push_back( tna->isLValue(j) );
+        }
     }
 }
 
 void TNList::accept(TypeNodeCodeGen* tncg)
 {
-    size_t size = typeNodes_.size();
-    isAddrTNList_.resize(size);
-    llvmValues_.resize(size);
-
-    for (size_t i = 0; i < size; ++i)
+    for (size_t i = 0; i < typeNodes_.size(); ++i)
     {
-        typeNodes_[i]->accept(tncg);
-        isAddrTNList_[i] = tncg->isAddr();
-        llvmValues_[i] = tncg->getLLVMValue();
+        TypeNode* tn = typeNodes_[i];
+        tn->accept(tncg);
+
+        for (size_t j = 0; j < tn->size(); ++j)
+        {
+            addresses_.push_back( tncg->isAddr(j) );
+            values_.push_back( tncg->getLLVMValue(j) );
+        }
     }
 }
 
@@ -53,22 +57,22 @@ TypeNode* TNList::getTypeNode(size_t i) const
 
 bool TNList::isLValue(size_t i) const
 {
-    return lvalueTNList_[i];
+    return lvalues_[i];
 }
 
 bool TNList::isAddr(size_t i) const
 {
-    return isAddrTNList_[i];
+    return addresses_[i];
 }
 
 llvm::Value* TNList::getLLVMValue(size_t i) const
 {
-    return llvmValues_[i];
+    return values_[i];
 }
 
 llvm::Value* TNList::getAddr(size_t i, Context* ctxt) const
 {
-    llvm::Value* val = llvmValues_[i];
+    llvm::Value* val = values_[i];
 
     if ( !isAddr(i) )
     {

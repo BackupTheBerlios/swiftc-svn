@@ -43,18 +43,20 @@ public:
     virtual void visit(UnExpr* u);
     virtual void visit(RoutineCall* r);
 
-    bool isAddr() const;
-    llvm::Value* getScalar() const;
-    llvm::Value* getAddr() const;
-    llvm::Value* getLLVMValue() const;
+    bool isAddr(size_t i = 0) const;
+    llvm::Value* getScalar(size_t i = 0) const;
+    llvm::Value* getAddr(size_t i = 0) const;
+    llvm::Value* getLLVMValue(size_t i = 0) const;
 
     void emitCall(MemberFctCall* call, llvm::Value* self);
     void getSelf(MethodCall* m);
 
 private:
 
-    llvm::Value* llvmValue_;
-    bool isAddr_;
+    void setResult(llvm::Value* value, bool isAddr);
+
+    std::vector<llvm::Value*> values_;
+    BoolVec addresses_;
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

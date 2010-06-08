@@ -43,14 +43,13 @@ public:
 private:
 
     typedef std::vector<TypeNode*> TypeNodeVec;
-    typedef std::vector<bool> BoolVec;
-    typedef std::vector<llvm::Value*> ValueTNList;
+    typedef std::vector<llvm::Value*> ValueVec;
 
     TypeNodeVec typeNodes_;
-    BoolVec lvalueTNList_;
-    BoolVec isAddrTNList_;
+    BoolVec lvalues_;
+    BoolVec addresses_;
     TypeList typeList_;
-    ValueTNList llvmValues_;
+    ValueVec values_;
 };
 
 //------------------------------------------------------------------------------

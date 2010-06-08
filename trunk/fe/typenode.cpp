@@ -16,17 +16,28 @@ namespace swift {
 
 TypeNode::TypeNode(location loc, Type* type /*= 0*/)
     : Node(loc)
-    , type_(type)
-{}
+{
+    if (type)
+    {
+        types_.resize(1);
+        types_[0] = type;
+    }
+}
 
 TypeNode::~TypeNode()
 {
-    delete type_;
+    for (size_t i = 0; i < types_.size(); ++i)
+        delete types_[i];
 }
 
-const Type* TypeNode::getType() const
+const Type* TypeNode::getType(size_t i /*= 0*/) const
 {
-    return type_;
+    return types_[i];
+}
+
+size_t TypeNode::size() const
+{
+    return types_.size();
 }
 
 //------------------------------------------------------------------------------

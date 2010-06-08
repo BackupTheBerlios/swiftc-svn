@@ -490,10 +490,10 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token:: C_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    | VC_CALL type ID '(' expr_list ')' { $$ = new CCall(@$,               $2, Token::VC_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    |  C_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token:: C_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
-    | VC_CALL ID '(' expr_list ')'      { $$ = new CCall(@$, new VoidType(@$), Token::VC_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    |  C_CALL type ID '(' expr_list ')' { $$ = new CCall(@$, $2, Token:: C_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    | VC_CALL type ID '(' expr_list ')' { $$ = new CCall(@$, $2, Token::VC_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    |  C_CALL ID '(' expr_list ')'      { $$ = new CCall(@$,  0, Token:: C_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    | VC_CALL ID '(' expr_list ')'      { $$ = new CCall(@$,  0, Token::VC_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
 
     /* 
         routines 

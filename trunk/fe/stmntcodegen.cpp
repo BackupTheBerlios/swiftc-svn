@@ -60,7 +60,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar();
+    llvm::Value* cond = tncg_->getScalar(0);
 
     /*
      * create new basic blocks
@@ -133,7 +133,7 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
     builder.SetInsertPoint(loopBB);
     s->scope_->accept(this, ctxt_);
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar();
+    llvm::Value* cond = tncg_->getScalar(0);
     builder.CreateCondBr(cond, outBB, loopBB);
 
     /*
@@ -177,7 +177,7 @@ void StmntCodeGen::visit(WhileStmnt* s)
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder.SetInsertPoint(headerBB);
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar();
+    llvm::Value* cond = tncg_->getScalar(0);
     builder.CreateCondBr(cond, loopBB, outBB);
 
     /*
@@ -200,7 +200,7 @@ void StmntCodeGen::visit(WhileStmnt* s)
 void StmntCodeGen::visit(AssignStmnt* s)
 {
     s->tuple_->accept( tncg_.get() );
-    llvm::Value* lvalue = tncg_->getAddr();
+    llvm::Value* lvalue = tncg_->getAddr(0); // TODO
 
     if ( s->tuple_->size() != 1)
     {
@@ -214,7 +214,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
     else
     {
         s->exprList_->accept( tncg_.get() );
-        llvm::Value* rvalue = tncg_->getScalar();
+        llvm::Value* rvalue = tncg_->getScalar(0); // TODO
         ctxt_->builder_.CreateStore(rvalue, lvalue);
     }
 }

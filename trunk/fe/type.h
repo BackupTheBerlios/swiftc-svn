@@ -87,7 +87,7 @@ class ErrorType : public Type
 {
 public:
 
-    ErrorType(location, TokenType modifier);
+    ErrorType();
 
     virtual Type* clone() const;
     virtual bool check(const Type* t, Module* m) const;
@@ -106,25 +106,25 @@ public:
 
 //------------------------------------------------------------------------------
 
-class VoidType : public Type
-{
-public:
+//class VoidType : public Type
+//{
+//public:
 
-    VoidType(location);
+    //VoidType(location);
 
-    virtual Type* clone() const;
-    virtual bool validate(Module* m) const;
-    virtual bool check(const Type* t, Module* m) const;
-    virtual std::string toString() const;
-    virtual bool perRef() const;
-    virtual const llvm::Type* getLLVMType(Module* m) const;
-    virtual const llvm::Type* defineLLVMType(
-            llvm::OpaqueType*& opaque, 
-            const UserType*& missing,
-            Module* m) const;
-};
+    //virtual Type* clone() const;
+    //virtual bool validate(Module* m) const;
+    //virtual bool check(const Type* t, Module* m) const;
+    //virtual std::string toString() const;
+    //virtual bool perRef() const;
+    //virtual const llvm::Type* getLLVMType(Module* m) const;
+    //virtual const llvm::Type* defineLLVMType(
+            //llvm::OpaqueType*& opaque, 
+            //const UserType*& missing,
+            //Module* m) const;
+//};
 
-//------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
 
 class BaseType : public Type
 {

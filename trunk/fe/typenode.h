@@ -32,11 +32,12 @@ public:
 
     virtual void accept(TypeNodeVisitorBase* t) = 0;
 
-    const Type* getType() const;
+    const Type* getType(size_t i = 0) const;
+    size_t size() const;
 
 protected:
 
-    Type* type_;
+    TypeList types_;
 
     template<class T> friend class TypeNodeVisitor;
 };
