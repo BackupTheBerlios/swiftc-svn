@@ -46,7 +46,7 @@ public:
     bool isAddr(size_t i = 0) const;
     llvm::Value* getScalar(size_t i = 0) const;
     llvm::Value* getAddr(size_t i = 0) const;
-    llvm::Value* getLLVMValue(size_t i = 0) const;
+    llvm::Value* getValue(size_t i = 0) const;
 
     void emitCall(MemberFctCall* call, llvm::Value* self);
     void getSelf(MethodCall* m);

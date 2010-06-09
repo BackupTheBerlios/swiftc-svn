@@ -81,107 +81,123 @@ void StmntAnalyzer::visit(WhileStmnt* s)
 
 void StmntAnalyzer::visit(AssignStmnt* s)
 {
-    /*
-     * Here are 3 cases:
-     *
-     * 1. a contructor call
-     *      Type t = a, b, ...
-     *
-     * 2. an assignment
-     *      t = a, b, ...
-     *
-     * 3. a normal function call that returns several return values:
-     *      a, b, ... = f()
-     *
-     *      a = f()
-     */
+    size_t lhsSize = s->tuple_->numItems();
 
-    size_t lSize = s->tuple_->size();
-    size_t rSize = s->exprList_->size();
-
-    swiftAssert( rSize != 0 && lSize != 0,
+    swiftAssert( lhsSize != 0 && s->exprList_->numItems() != 0,
             "there must be at least one item on the left- "
             "and one on the right-hand side" );
 
-    if (rSize == 1)
-    {
-        if ( MemberFctCall* call = 
-                dynamic_cast<MemberFctCall*>(s->exprList_->getTypeNode(0)) )
-        {
-            // mark stmnt as call stmnt
-            s->kind_ = AssignStmnt::CALL;
-
-            // analyze args
-            s->tuple_->accept( tna_.get() );
-
-            // analyze call
-            call->setTuple(s->tuple_);
-            call->accept( tna_.get() );
-
-            return;
-        }
-        else if (lSize != 1)
-        {
-            errorf( s->loc(), "the right-hand side of an assignment statement with "
-                    "more than one item on the left-hand side " 
-                    "must be a member function call");
-            ctxt_->result_ = false;
-
-            return;
-        }
-    }
-
     // analyze args and tuple
-    s->tuple_->accept( tna_.get() );
     s->exprList_->accept( tna_.get() );
+    s->tuple_->accept( tna_.get() );
 
     const TypeList& in = s->exprList_->typeList();
-    //const TypeList& out = s->tuple_->typeList();
+    const TypeList& out = s->tuple_->typeList();
 
-    if ( rSize != 1 && lSize != 1 )
+    swiftAssert(lhsSize == out.size(), 
+            "the tuple may not introduce additional nodes");
+
+    if ( in.empty() )
     {
-        errorf( s->loc(), "either the left-hand side or the right-hand side of an " 
-                "assignment statement must have exactly one element");
+        errorf( s->loc(), "right-hand side does not return anything" );
         ctxt_->result_ = false;
         return;
     }
 
-    TypeNode* lhs = s->tuple_->getTypeNode(0);
-    swiftAssert(lhs->size() == 1, "must return one item");
-
-    std::string str, name;
-    if ( typeid(*lhs) == typeid(Decl) )
+    if ( lhsSize == 1 && in.size() > 1 )
     {
-        str = "create";
-        name = "contructor";
-        s->kind_ = AssignStmnt::CREATE;
+        TypeNode* lhs = s->tuple_->getTypeNode(0);
+        std::string str, name;
+
+        if ( dynamic_cast<Decl*>(lhs) )
+        {
+            str = "create";
+            name = "contructor";
+            s->kind_ = AssignStmnt::CREATE;
+        }
+        else
+        {
+            str = "=";
+            name = "assignment";
+            s->kind_ = AssignStmnt::ASSIGN;
+        }
+
+        if ( const BaseType* bt = lhs->getType()->cast<BaseType>() )
+        {
+            Class* _class = bt->lookupClass(ctxt_->module_);
+            MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
+
+            if (!fct)
+            {
+                errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
+                        name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+                ctxt_->result_ = false;
+                return;
+            }
+        }
     }
     else
     {
-        str = "=";
-        name = "operator";
-        s->kind_ = AssignStmnt::ASSIGN;
-    }
-
-    if ( const BaseType* bt = lhs->getType()->cast<BaseType>() )
-    {
-        Class* _class = bt->lookupClass(ctxt_->module_);
-        MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, in);
-
-        if (!fct)
+        if ( lhsSize != in.size() )
         {
-            errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                    name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+            errorf( s->loc(), "the number of left-hand side items must match "
+                    "the number or returned values on the right-hand side here" );
             ctxt_->result_ = false;
             return;
+        }
+
+        s->kind_ = AssignStmnt::CALL;
+
+        if ( !in.check(ctxt_->module_, out) )
+        {
+            errorf( s->loc(), "the types of left-hand side (%s) must match "
+                    "the types of the right-hand side (%s)",
+                    in.toString().c_str(), out.toString().c_str() );
+            ctxt_->result_ = false;
+            return;
+        }
+
+        for (size_t i = 0; i < lhsSize; ++i)
+        {
+            TypeNode* tn = s->tuple_->getTypeNode(i);
+            std::string str, name;
+
+            if ( dynamic_cast<Decl*>(tn) )
+            {
+                str = "create";
+                name = "contructor";
+
+                if ( s->exprList_->isInit(i) )
+                    continue;
+            }
+            else
+            {
+                str = "=";
+                name = "assignment";
+            }
+
+            TypeList tmp;
+            tmp.push_back( in[i] );
+
+            if ( const BaseType* bt = out[i]->cast<BaseType>() )
+            {
+                Class* _class = bt->lookupClass(ctxt_->module_);
+                MemberFct* fct = _class->lookupMemberFct(ctxt_->module_, &str, tmp);
+
+                if (!fct)
+                {
+                    errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
+                            name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
+                    ctxt_->result_ = false;
+                }
+            }
         }
     }
 }
 
 void StmntAnalyzer::visit(ExprStmnt* s)
 {
-    if (s->expr_)
-        s->expr_->accept( tna_.get() );
+    s->expr_->accept( tna_.get() );
 }
 
 } // namespace swift

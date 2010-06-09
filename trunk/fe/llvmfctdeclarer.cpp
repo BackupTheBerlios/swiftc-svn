@@ -34,8 +34,8 @@ LLVMFctDeclarer::LLVMFctDeclarer(Context* ctxt)
 
 void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 {
-    if ( m->isTrivial() )
-        return; // do nothing
+    //if ( m->isTrivial() )
+        //return; // do nothing
 
     /*
      * get some stuff for easy access

@@ -199,16 +199,56 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
+    s->exprList_->accept( tncg_.get() );
+
+    if (s->kind_ == AssignStmnt::CALL)
+    {
+        swiftAssert( s->exprList_->numRetValues() == s->tuple_->numItems(),
+                "sizes must match" );
+
+        size_t num = s->tuple_->numItems();
+
+        // set initial value for created decls
+        for (size_t i = 0; i < num; ++i)
+        {
+            if ( !s->exprList_->isInit(i) )
+                continue;
+
+            if ( Decl* decl = dynamic_cast<Decl*>(s->tuple_->getTypeNode(i)) )
+            {
+                decl->setAlloca(
+                    llvm::cast<llvm::AllocaInst>(s->exprList_->getValue(i)) );
+            }
+        }
+
+        s->tuple_->accept( tncg_.get() );
+
+        for (size_t i = 0; i < num; ++i)
+        {
+            if ( s->exprList_->isInit(i) )
+                continue; // this has already been set
+
+
+            // TODO assign calls
+            llvm::Value* rvalue = s->exprList_->getScalar(i, ctxt_->builder_);
+            llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
+            ctxt_->builder_.CreateStore(rvalue, lvalue);
+        }
+
+        return;
+    }
+
+#if 0
+
     s->tuple_->accept( tncg_.get() );
     llvm::Value* lvalue = tncg_->getAddr(0); // TODO
 
-    if ( s->tuple_->size() != 1)
+    if ( s->tuple_->numItems() != 1)
     {
         swiftAssert( s->exprList_->size() == 1, "must exactly have one item" );
         MemberFctCall* call = llvm::cast<MemberFctCall>( 
                 s->exprList_->getTypeNode(0) );
 
-        call->setTuple(s->tuple_);
         call->accept( tncg_.get() );
     }
     else
@@ -217,6 +257,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
         llvm::Value* rvalue = tncg_->getScalar(0); // TODO
         ctxt_->builder_.CreateStore(rvalue, lvalue);
     }
+
+#endif
 }
 
 void StmntCodeGen::visit(ExprStmnt* s)

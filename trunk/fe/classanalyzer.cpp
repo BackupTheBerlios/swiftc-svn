@@ -20,7 +20,10 @@ ClassAnalyzer::~ClassVisitor()
 {
 }
 
-void ClassAnalyzer::visit(Class* c) {}
+void ClassAnalyzer::visit(Class* c) 
+{
+    ctxt_->class_ = c;
+}
 
 void ClassAnalyzer::visit(Create* c)
 {

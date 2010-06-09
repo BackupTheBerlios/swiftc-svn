@@ -139,7 +139,7 @@ public:
     virtual ~MemberFct();
 
     virtual const char* qualifierStr() const = 0;
-    bool isTrivial() const;
+    bool isEmpty() const;
 
 protected:
 

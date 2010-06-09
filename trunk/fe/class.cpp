@@ -321,7 +321,7 @@ MemberFct::~MemberFct()
     delete scope_;
 }
 
-bool MemberFct::isTrivial() const
+bool MemberFct::isEmpty() const
 {
     return scope_->isEmpty();
 }

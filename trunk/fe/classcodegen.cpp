@@ -57,8 +57,8 @@ void ClassCodeGen::visit(MemberVar* m)
 
 void ClassCodeGen::codeGen(MemberFct* m)
 {
-    if ( m->isTrivial() )
-        return; // do nothing
+    //if ( m->isTrivial() )
+        //return; // do nothing
 
     /*
      * get some stuff for easy access

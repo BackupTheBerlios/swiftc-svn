@@ -76,6 +76,11 @@ llvm::Value* Local::getAddr(Context* /*ctxt*/) const
     return alloca_;
 }
 
+void Local::setAlloca(llvm::AllocaInst* alloca)
+{
+    alloca_ = alloca;
+}
+
 //------------------------------------------------------------------------------
 
 InOut::InOut(location loc, Type* type, std::string* id)

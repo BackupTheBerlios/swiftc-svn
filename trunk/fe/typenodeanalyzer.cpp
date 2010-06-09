@@ -44,7 +44,9 @@ void TypeNodeAnalyzer::visit(Decl* d)
         ctxt_->scope()->insert(d->local_);
 
         lvalues_.resize(1);
+        d->inits_.resize(1);
         lvalues_[0] = true;
+        d->inits_[0] = false;
     }
 }
 
@@ -148,7 +150,6 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
     if ( m->prefixExpr_->size() != 1 )
     {
-        std::cout << m->loc() << ", " << m->size() << std::endl;
         errorf( m->loc(), "the prefix expression of a member access "
                 "must exactly return one element" );
         setError(m, true);
@@ -195,6 +196,7 @@ void TypeNodeAnalyzer::visit(CCall* c)
     else
     {
         c->types_.clear();
+        c->inits_.clear();
         lvalues_.clear();
     }
 }
@@ -268,9 +270,9 @@ bool TypeNodeAnalyzer::setClass(OperatorCall* o)
     bool result = true;
     o->exprList_->accept(this);
 
-    for (size_t i = 0; i < o->exprList_->size(); ++i)
+    for (size_t i = 0; i < o->exprList_->numItems(); ++i)
     {
-        if ( o->exprList_->getTypeNode(i)->size() != 1)
+        if ( o->exprList_->getTypeNode(i)->types_.size() != 1)
         {
             errorf( o->loc(), "an argument of an operator call "
                     "must exactly return one element" );
@@ -327,13 +329,20 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
     }
 
     const TypeList& out = m->memberFct_->sig_.outTypes_;
+
     m->types_.clear();
+    m->inits_.clear();
     lvalues_.clear();
 
     for (size_t i = 0; i < out.size(); ++i)
     {
         m->types_.push_back( out[i]->clone() );
         lvalues_.push_back(false);
+
+        if ( out[0]->perRef() )
+            m->inits_.push_back(true);
+        else
+            m->inits_.push_back(false);
     }
 
         //if (m->tuple_)
@@ -380,16 +389,22 @@ bool TypeNodeAnalyzer::isLValue(size_t i) const
 void TypeNodeAnalyzer::setResult(TypeNode* tn, Type* type, bool lvalue)
 {
     tn->types_.resize(1);
+    tn->inits_.resize(1);
     lvalues_.resize(1);
+
     tn->types_[0] = type;
+    tn->inits_[0] = false;
     lvalues_[0] = lvalue;
 }
 
 void TypeNodeAnalyzer::setError(TypeNode* tn, bool lvalue)
 {
     tn->types_.resize(1);
+    tn->inits_.resize(1);
     lvalues_.resize(1);
+
     tn->types_[0] = new ErrorType();
+    tn->inits_[0] = false;
     lvalues_[0] = lvalue;
 
     ctxt_->result_ = false;

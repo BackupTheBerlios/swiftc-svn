@@ -13,14 +13,12 @@ Context::Context(Module* module)
     : result_(true)
     , module_(module)
     , tuple_( new TNList() )
-    , exprList_( new TNList() )
     , builder_( llvm::IRBuilder<>(*module->llvmCtxt_) )
 {}
 
 Context::~Context()
 {
     delete tuple_;
-    delete exprList_;
 }
 
 Scope* Context::enterScope()
@@ -52,15 +50,22 @@ Scope* Context::scope()
     return scopes_.top();
 }
 
-void Context::newLists()
+void Context::pushExprList()
 {
-    tuple_ = new TNList();
-    exprList_ = new TNList();
+    exprLists_.push( new TNList() );
 }
 
-void Context::newExprList()
+TNList* Context::popExprList()
 {
-    exprList_ = new TNList();
+    TNList* exprList = exprLists_.top();
+    exprLists_.pop();
+
+    return exprList;
+}
+
+TNList* Context::topExprList() const
+{
+    return exprLists_.top();
 }
 
 void Context::newTuple()

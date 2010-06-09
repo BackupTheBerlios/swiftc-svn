@@ -20,7 +20,9 @@ TypeNode::TypeNode(location loc, Type* type /*= 0*/)
     if (type)
     {
         types_.resize(1);
+        inits_.resize(1);
         types_[0] = type;
+        inits_[0] = false;
     }
 }
 
@@ -30,14 +32,22 @@ TypeNode::~TypeNode()
         delete types_[i];
 }
 
-const Type* TypeNode::getType(size_t i /*= 0*/) const
-{
-    return types_[i];
-}
-
 size_t TypeNode::size() const
 {
+    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
     return types_.size();
+}
+
+bool TypeNode::isInit(size_t i /*= 0*/) const
+{
+    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
+    return inits_[i];
+}
+
+const Type* TypeNode::getType(size_t i /*= 0*/) const
+{
+    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
+    return types_[i];
 }
 
 //------------------------------------------------------------------------------
@@ -67,6 +77,11 @@ const std::string* Decl::id() const
 const char* Decl::cid() const
 {
     return id_->c_str();
+}
+
+void Decl::setAlloca(llvm::AllocaInst* alloca)
+{
+    alloca_ = alloca;
 }
 
 //------------------------------------------------------------------------------
@@ -225,13 +240,7 @@ MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , class_(0)
     , memberFct_(0)
-    , tuple_(0)
 {}
-
-void MemberFctCall::setTuple(const TNList* tuple)
-{
-    tuple_ = tuple;
-}
 
 MemberFct* MemberFctCall::getMemberFct() const
 {

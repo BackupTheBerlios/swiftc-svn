@@ -24,7 +24,7 @@ OPTION (BUILD_RELEASE "Should I build the release (on) or debug version (off)?" 
 IF (BUILD_RELEASE)
     ADD_DEFINITIONS (-DNDEBUG -O3 -fomit-frame-pointer -pipe `llvm-config --cxxflags`)
 ELSE (BUILD_RELEASE)
-    ADD_DEFINITIONS (-ggdb -Wall -DSWIFT_DEBUG `llvm-config --cxxflags`)
+    ADD_DEFINITIONS (-g3 -Wall -DSWIFT_DEBUG `llvm-config --cxxflags`)
 ENDIF (BUILD_RELEASE)
 
 # add . as include path

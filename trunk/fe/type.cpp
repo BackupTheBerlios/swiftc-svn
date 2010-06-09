@@ -98,6 +98,13 @@ const llvm::Type* ErrorType::getLLVMType(Module* m) const
     return 0;
 }
 
+const llvm::Type* ErrorType::getRawLLVMType(Module* m) const
+{
+    swiftAssert(false, "unreachable");
+    return 0;
+}
+
+
 const llvm::Type* ErrorType::defineLLVMType(
         llvm::OpaqueType*& opaque, 
         const UserType*& missing,
@@ -110,54 +117,6 @@ const llvm::Type* ErrorType::defineLLVMType(
 }
 
 //------------------------------------------------------------------------------
-
-//VoidType::VoidType(location loc)
-    //: Type(loc, Token::CONST, false)
-//{}
-
-//Type* VoidType::clone() const
-//{
-    //return new VoidType(loc_);
-//}
-
-//bool VoidType::validate(Module* m) const
-//{
-    //return true;
-//}
-
-//bool VoidType::check(const Type* t, Module* m) const
-//{
-    //errorf(loc_, "void value not ignored as it ought to be");
-    //return false;
-//}
-
-//std::string VoidType::toString() const
-//{
-    //return "void";
-//}
-
-//bool VoidType::perRef() const
-//{
-    //swiftAssert(false, "unreachable");
-    //return false;
-//}
-
-//const llvm::Type* VoidType::getLLVMType(Module* m) const
-//{
-    //return llvm::TypeBuilder<void, true>::get(*m->llvmCtxt_);
-//}
-
-//const llvm::Type* VoidType::defineLLVMType(
-        //llvm::OpaqueType*& opaque, 
-        //const UserType*& missing,
-        //Module* m) const
-//{
-    //opaque = 0;
-    //missing = 0;
-    //return getLLVMType(m);
-//}
-
-////------------------------------------------------------------------------------
 
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 BaseType::SizeMap* BaseType::sizeMap_ = 0;
@@ -334,6 +293,11 @@ const llvm::Type* ScalarType::getLLVMType(Module* m) const
     return (*typeMap_)[ *id() ];
 }
 
+const llvm::Type* ScalarType::getRawLLVMType(Module* m) const
+{
+    return (*typeMap_)[ *id() ];
+}
+
 const llvm::Type* ScalarType::defineLLVMType(
         llvm::OpaqueType*& opaque, 
         const UserType*& missing,
@@ -412,14 +376,21 @@ bool UserType::validate(Module* m) const
 
 const llvm::Type* UserType::getLLVMType(Module* m) const
 {
-    Class* c = m->lookupClass( id() );
-    swiftAssert(c, "must be found");
-    const llvm::Type* llvmType = c->llvmType();
+    const llvm::Type* llvmType = getRawLLVMType(m);
 
     if (isRef_)
         return llvm::PointerType::getUnqual(llvmType);
     else
         return llvmType;
+}
+
+const llvm::Type* UserType::getRawLLVMType(Module* m) const
+{
+    Class* c = m->lookupClass( id() );
+    swiftAssert(c, "must be found");
+    const llvm::Type* llvmType = c->llvmType();
+
+    return llvmType;
 }
 
 const llvm::Type* UserType::defineLLVMType(
@@ -503,7 +474,12 @@ std::string Ptr::toString() const
 
 const llvm::Type* Ptr::getLLVMType(Module* m) const
 {
-    return llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
+    return getRawLLVMType(m);
+}
+
+const llvm::Type* Ptr::getRawLLVMType(Module* m) const
+{
+    return llvm::PointerType::getUnqual( innerType_->getRawLLVMType(m) );
 }
 
 const llvm::Type* Ptr::defineLLVMType(
@@ -557,6 +533,11 @@ std::string Container::toString() const
 }
 
 const llvm::Type* Container::getLLVMType(Module* m) const
+{
+    return getRawLLVMType(m);
+}
+
+const llvm::Type* Container::getRawLLVMType(Module* m) const
 {
     llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
 

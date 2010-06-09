@@ -34,9 +34,10 @@ public:
     void leaveScope();
     size_t scopeDepth() const;
     Scope* scope();
-    void newLists();
     void newTuple();
-    void newExprList();
+    void pushExprList();
+    TNList* popExprList();
+    TNList* topExprList() const;
 
     bool result_;
 
@@ -44,7 +45,6 @@ public:
     Class* class_;
     MemberFct* memberFct_;
     TNList* tuple_;
-    TNList* exprList_;
 
     llvm::Function* llvmFct_; ///< Current llvm function.
     llvm::IRBuilder<> builder_;
@@ -57,6 +57,9 @@ private:
 
     typedef std::stack<Scope*> Scopes;
     Scopes scopes_;
+
+    typedef std::stack<TNList*> TNLists;
+    TNLists exprLists_;
 };
 
 } // namespace swift

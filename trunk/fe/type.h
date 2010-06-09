@@ -60,6 +60,7 @@ public:
     virtual std::string toString() const = 0;
 
     virtual const llvm::Type* getLLVMType(Module* m) const = 0;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const = 0;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -98,6 +99,7 @@ public:
     virtual std::string toString() const;
     virtual bool perRef() const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -105,26 +107,6 @@ public:
 };
 
 //------------------------------------------------------------------------------
-
-//class VoidType : public Type
-//{
-//public:
-
-    //VoidType(location);
-
-    //virtual Type* clone() const;
-    //virtual bool validate(Module* m) const;
-    //virtual bool check(const Type* t, Module* m) const;
-    //virtual std::string toString() const;
-    //virtual bool perRef() const;
-    //virtual const llvm::Type* getLLVMType(Module* m) const;
-    //virtual const llvm::Type* defineLLVMType(
-            //llvm::OpaqueType*& opaque, 
-            //const UserType*& missing,
-            //Module* m) const;
-//};
-
-////------------------------------------------------------------------------------
 
 class BaseType : public Type
 {
@@ -176,6 +158,7 @@ public:
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -202,6 +185,7 @@ public:
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -240,6 +224,7 @@ public:
     virtual Ptr* clone() const;
     virtual std::string toString() const;
     virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -263,6 +248,7 @@ public:
     static void initMeContainer();
     static size_t getContainerSize();
     virtual const llvm::Type* getLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,

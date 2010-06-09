@@ -24,8 +24,16 @@ TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
 
 void TypeNodeCodeGen::visit(Decl* d)
 {
-    d->local_->createEntryAlloca(ctxt_);
-    setResult( d->local_->getAddr(ctxt_), true );
+    if (d->alloca_)
+    {
+        d->local_->setAlloca(d->alloca_);
+        setResult( d->alloca_, true );
+    }
+    else
+    {
+        d->local_->createEntryAlloca(ctxt_);
+        setResult( d->local_->getAddr(ctxt_), true );
+    }
 }
 
 void TypeNodeCodeGen::visit(ErrorExpr* d)
@@ -183,7 +191,7 @@ void TypeNodeCodeGen::visit(CCall* c)
         llvmModule->getOrInsertFunction( c->cid(), fctType) );
 
     // copy over values
-    std::vector<llvm::Value*> args( c->exprList_->size() );
+    std::vector<llvm::Value*> args( c->exprList_->numRetValues() );
     for (size_t i = 0; i < args.size(); ++i)
         args[i] = c->exprList_->getScalar(i, builder);
 
@@ -214,9 +222,9 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
         if ( llvmTo == llvmFrom )
-            return; // llvmValue_ and isAddr_ are still correct, so nothing to do
+            return; // value_ and isAddr_ are still correct, so nothing to do
 
-        llvm::Value* val = getLLVMValue();
+        llvm::Value* val = getValue();
 
         if ( isAddr() )
             val = builder.CreateLoad(val, val->getName() );
@@ -257,13 +265,13 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         setResult(val, false);
     }
     else
-        emitCall( r, getLLVMValue() );
+        emitCall( r, getValue() );
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
 {
     getSelf(w);
-    emitCall( w, getLLVMValue() );
+    emitCall( w, getValue() );
 }
 
 void TypeNodeCodeGen::visit(BinExpr* b)
@@ -399,7 +407,6 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     llvm::IRBuilder<>& builder = ctxt_->builder_;
     std::vector<llvm::Value*> args;
     MemberFct* fct = call->getMemberFct();
-    const TNList* tuple = call->tuple_;
 
     call->exprList_->accept(this);
     TypeList& out = fct->sig_.outTypes_;
@@ -420,29 +427,23 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
 
         if ( type->perRef() )
         {
-            llvm::Value* arg;
-            if (tuple && dynamic_cast<Decl*>( tuple->getTypeNode(i) ) )
-                arg = tuple->getAddr(i, ctxt_);
-            else
-            {
-                const llvm::Type* llvmType = type->getLLVMType( ctxt_->module_);
-                llvm::AllocaInst* alloca = ctxt_->createEntryAlloca(llvmType);
-                arg = builder.CreateLoad(alloca);
-            }
+            const llvm::Type* llvmType = type->getRawLLVMType( ctxt_->module_);
+            llvm::AllocaInst* alloca = ctxt_->createEntryAlloca(llvmType);
 
-            args.push_back(arg);
-            perRefRetValues.push_back(arg);
+            args.push_back(alloca);
+            perRefRetValues.push_back(alloca);
         }
     }
 
     // append regular arguments
-    for (size_t i = 0; i < call->exprList_->size(); ++i)
+    for (size_t i = 0; i < call->exprList_->numRetValues(); ++i)
     {
         const Type* type = call->exprList_->typeList()[i];
 
         llvm::Value* arg = type->perRef() 
             ? call->exprList_->getAddr(i, ctxt_)
             : call->exprList_->getScalar(i, builder);
+
 
         args.push_back(arg);
     }
@@ -475,11 +476,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
         }
         else
         {
-            //swiftAssert( tuple->isAddr(i), "must be an address" );
-            //llvm::Value* retElem = 
-                val = builder.CreateExtractValue(retValue, idxRetType);
-            //val = builder.CreateStore( retElem, tuple->getAddr(i, ctxt_) );
-
+            val = builder.CreateExtractValue(retValue, idxRetType);
             addresses_.push_back(false);
             ++idxRetType;
         }
@@ -488,7 +485,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     }
 }
 
-llvm::Value* TypeNodeCodeGen::getLLVMValue(size_t i /*= 0*/) const
+llvm::Value* TypeNodeCodeGen::getValue(size_t i /*= 0*/) const
 {
     return values_[i];
 }

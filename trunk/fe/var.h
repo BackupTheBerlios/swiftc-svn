@@ -67,6 +67,8 @@ public:
 
     Local(location loc, Type* type, std::string* id);
     virtual llvm::Value* getAddr(Context* ctxt) const;
+
+    void setAlloca(llvm::AllocaInst* alloca);
 };
 
 //------------------------------------------------------------------------------

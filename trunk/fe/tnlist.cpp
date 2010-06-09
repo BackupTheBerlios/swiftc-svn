@@ -29,7 +29,8 @@ void TNList::accept(TypeNodeAnalyzer* tna)
 
         for (size_t j = 0; j < tn->size(); ++j)
         {
-            typeList_.push_back( tn->getType(j) );
+            types_.push_back( tn->getType(j) );
+            inits_.push_back( tn->isInit(j) );
             lvalues_.push_back( tna->isLValue(j) );
         }
     }
@@ -45,7 +46,7 @@ void TNList::accept(TypeNodeCodeGen* tncg)
         for (size_t j = 0; j < tn->size(); ++j)
         {
             addresses_.push_back( tncg->isAddr(j) );
-            values_.push_back( tncg->getLLVMValue(j) );
+            values_.push_back( tncg->getValue(j) );
         }
     }
 }
@@ -60,12 +61,17 @@ bool TNList::isLValue(size_t i) const
     return lvalues_[i];
 }
 
+bool TNList::isInit(size_t i) const
+{
+    return inits_[i];
+}
+
 bool TNList::isAddr(size_t i) const
 {
     return addresses_[i];
 }
 
-llvm::Value* TNList::getLLVMValue(size_t i) const
+llvm::Value* TNList::getValue(size_t i) const
 {
     return values_[i];
 }
@@ -89,19 +95,24 @@ llvm::Value* TNList::getAddr(size_t i, Context* ctxt) const
 llvm::Value* TNList::getScalar(size_t i, llvm::IRBuilder<>& builder) const
 {
     if ( isAddr(i) )
-        return builder.CreateLoad( getLLVMValue(i), getLLVMValue(i)->getName() );
+        return builder.CreateLoad( getValue(i), getValue(i)->getName() );
     else
-        return getLLVMValue(i);
+        return getValue(i);
 }
 
 const TypeList& TNList::typeList() const
 {
-    return typeList_;
+    return types_;
 }
 
-size_t TNList::size() const
+size_t TNList::numItems() const
 {
     return typeNodes_.size();
+}
+
+size_t TNList::numRetValues() const
+{
+    return types_.size();
 }
 
 } // namespace swift

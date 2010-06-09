@@ -359,8 +359,8 @@ stmnt
     |             expr EOL { $$ = new ExprStmnt(@$,  0, $1); }
     | simd_prefix expr EOL { $$ = new ExprStmnt(@$, $1, $2); }
 
-    |             tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$,  0, Token::ASGN, ctxt_->tuple_, ctxt_->exprList_); ctxt_->newLists(); }
-    | simd_prefix tuple ASGN expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $1, Token::ASGN, ctxt_->tuple_, ctxt_->exprList_); ctxt_->newLists(); }
+    |             tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$,  0, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
+    | simd_prefix tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $1, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
 
     /*
         control flow stmnts
@@ -490,24 +490,24 @@ postfix_expr
     /* 
         c_call 
     */
-    |  C_CALL type ID '(' expr_list ')' { $$ = new CCall(@$, $2, Token:: C_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    | VC_CALL type ID '(' expr_list ')' { $$ = new CCall(@$, $2, Token::VC_CALL, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    |  C_CALL ID '(' expr_list ')'      { $$ = new CCall(@$,  0, Token:: C_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
-    | VC_CALL ID '(' expr_list ')'      { $$ = new CCall(@$,  0, Token::VC_CALL, $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    |  C_CALL type ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token:: C_CALL, $3, ctxt_->popExprList()); }
+    | VC_CALL type ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token::VC_CALL, $3, ctxt_->popExprList()); }
+    |  C_CALL      ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token:: C_CALL, $2, ctxt_->popExprList()); }
+    | VC_CALL      ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token::VC_CALL, $2, ctxt_->popExprList()); }
 
     /* 
         routines 
     */
-    |    DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->exprList_); ctxt_->newExprList(); }
-    | ID DOUBLE_COLON ID '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
+    |    DOUBLE_COLON ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->popExprList()); }
+    | ID DOUBLE_COLON ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->popExprList()); }
 
     /* 
         methods 
     */
-    | postfix_expr ':' ID '(' expr_list ')' { $$ = new ReaderCall(@$,           $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    | postfix_expr '.' ID '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, ctxt_->exprList_); ctxt_->newExprList(); }
-    | ':' ID '(' expr_list ')'              { $$ = new ReaderCall(@$, new Self(@$), $2, ctxt_->exprList_); ctxt_->newExprList(); }
-    | '.' ID '(' expr_list ')'              { $$ = new WriterCall(@$, new Self(@$), $2, ctxt_->exprList_); ctxt_->newExprList(); }
+    | postfix_expr ':' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new ReaderCall(@$,           $1, $3, ctxt_->popExprList()); }
+    | postfix_expr '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, ctxt_->popExprList()); }
+    |              ':' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new ReaderCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
+    |              '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
     ;
 
 primary_expr
@@ -544,8 +544,8 @@ expr_list
     ;
 
 expr_list_not_empty
-    : expr                         { ctxt_->exprList_->append($1); }
-    | expr_list_not_empty ',' expr { ctxt_->exprList_->append($3); }
+    : expr                         { ctxt_->topExprList()->append($1); }
+    | expr_list_not_empty ',' expr { ctxt_->topExprList()->append($3); }
     ;
 
 decl

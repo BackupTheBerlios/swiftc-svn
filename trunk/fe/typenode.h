@@ -11,6 +11,7 @@
 
 namespace llvm {
     class Type;
+    class AllocaInst;
 }
 
 namespace swift {
@@ -32,12 +33,14 @@ public:
 
     virtual void accept(TypeNodeVisitorBase* t) = 0;
 
-    const Type* getType(size_t i = 0) const;
     size_t size() const;
+    bool isInit(size_t i = 0) const;
+    const Type* getType(size_t i = 0) const;
 
 protected:
 
     TypeList types_;
+    BoolVec inits_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -55,10 +58,13 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
+    void setAlloca(llvm::AllocaInst* alloca);
+
 protected:
 
     std::string* id_;
     Local* local_;
+    llvm::AllocaInst* alloca_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -199,14 +205,12 @@ public:
 
     MemberFctCall(location loc, std::string* id, TNList* exprList);
 
-    void setTuple(const TNList* tuple);
     MemberFct* getMemberFct() const;
 
 protected:
 
     Class* class_;
     MemberFct* memberFct_;
-    const TNList* tuple_;
 
     template<class T> friend class TypeNodeVisitor;
 };
