@@ -41,18 +41,19 @@ public:
     const TypeList& typeList() const;
     size_t numItems() const;
     size_t numRetValues() const;
+    void getArgs(Values& args, Context* ctxt) const;
+    llvm::Value* getArg(size_t i, Context* ctxt) const;
 
 private:
 
     typedef std::vector<TypeNode*> TypeNodeVec;
-    typedef std::vector<llvm::Value*> ValueVec;
 
     TypeNodeVec typeNodes_;
     BoolVec lvalues_;
     BoolVec inits_;
     BoolVec addresses_;
     TypeList types_;
-    ValueVec values_;
+    Values values_;
 };
 
 //------------------------------------------------------------------------------

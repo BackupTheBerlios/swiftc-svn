@@ -344,41 +344,6 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
         else
             m->inits_.push_back(false);
     }
-
-        //if (m->tuple_)
-        //{
-            //const TypeList& out = m->sig_.outTypes_;
-            //const TypeList& lvalues = m->tuple_->typeList();
-
-            //if ( out.size() != lvalues.size() )
-            //{
-
-            //}
-
-            //for (size_t i = 0; i < out.size(); ++i)
-            //{
-                //const Type* type = out[i];
-
-                //if 
-            //}
-
-            //if ( !m->memberFct_->sig_.checkOut(ctxt_->module_, out) )
-            //{
-                //errorf( m->loc(), 
-                        //"there is no '%s %s(%s) -> %s' defined in class '%s'",
-                        //m->qualifierStr(),
-                        //m->cid(),
-                        //in.toString().c_str(),
-                        //out.toString().c_str(),
-                        //m->class_->cid() );
-                //ctxt_->result_ = false;
-
-                //return;
-            //}
-        //}
-    //}
-    //else
-        //m->type_ = new VoidType( m->loc() );
 }
 
 bool TypeNodeAnalyzer::isLValue(size_t i) const

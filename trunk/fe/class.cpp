@@ -204,6 +204,7 @@ void Class::addAssignCreate(Context* ctxt)
         memberFctMap_.insert( std::make_pair(create->id(), create) );
 
         defaultCreate_ = DEFAULT;
+        create->isAutoDefault_ = true;
     }
 
     if (copyCreate_ == NOT_ANALYZED)
@@ -220,6 +221,7 @@ void Class::addAssignCreate(Context* ctxt)
         memberFctMap_.insert( std::make_pair(create->id(), create) );
 
         copyCreate_ = DEFAULT;
+        create->isAutoCopy_ = true;
     }
 
     if (copyAssign_ == NOT_ANALYZED)
@@ -236,6 +238,7 @@ void Class::addAssignCreate(Context* ctxt)
         memberFctMap_.insert( std::make_pair(assign->id(), assign) );
 
         copyAssign_ = DEFAULT;
+        assign->isAutoCopy_ = true;
     }
 }
 
@@ -386,6 +389,7 @@ const char* Writer::qualifierStr() const
 Assign::Assign(location loc, bool simd, int token, Scope* scope)
     : Method( loc, simd, token2str(token), scope )
     , token_(token)
+    , isAutoCopy_(false)
 {}
 
 void Assign::accept(ClassVisitorBase* c)
@@ -410,10 +414,18 @@ int Assign::getToken() const
     return token_;
 }
 
+bool Assign::isAutoCopy() const 
+{ 
+    swiftAssert( sig_.in_.size() == 1,
+            "a copy constructor takes exactly one argument" );
+    return isAutoCopy_;
+}
+
 //------------------------------------------------------------------------------
 
 Create::Create(location loc, bool simd, Scope* scope)
     : Method( loc, simd, new std::string("create"), scope )
+    , isAutoCopy_(false)
 {}
 
 void Create::accept(ClassVisitorBase* c)
@@ -431,6 +443,20 @@ const char* Create::qualifierStr() const
 {
     static const char* str = "create";
     return str;
+}
+
+bool Create::isAutoCopy() const 
+{ 
+    swiftAssert( sig_.in_.size() == 1,
+            "a copy constructor takes exactly one argument" );
+    return isAutoCopy_;
+}
+
+bool Create::isAutoDefault() const 
+{ 
+    swiftAssert( sig_.in_.empty(), 
+            "a default constructor does not take any arguments" );
+    return isAutoDefault_;
 }
 
 //------------------------------------------------------------------------------

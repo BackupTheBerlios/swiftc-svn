@@ -115,4 +115,15 @@ size_t TNList::numRetValues() const
     return types_.size();
 }
 
+llvm::Value* TNList::getArg(size_t i, Context* ctxt) const
+{
+    return types_[i]->perRef() ? getAddr(i, ctxt) : getScalar(i, ctxt->builder_);
+}
+
+void TNList::getArgs(Values& args, Context* ctxt) const
+{
+    for (size_t i = 0; i < values_.size(); ++i)
+        args.push_back( getArg(i, ctxt) );
+}
+
 } // namespace swift

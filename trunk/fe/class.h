@@ -194,11 +194,14 @@ public:
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
     int getToken() const;
+    bool isAutoCopy() const;
 
 private:
 
     int token_;
+    bool isAutoCopy_;
 
+    friend class Class;
     template<class T> friend class ClassVisitor;
 };
 
@@ -213,6 +216,16 @@ public:
     virtual void accept(ClassVisitorBase* c);
     virtual TokenType getModifier() const;
     virtual const char* qualifierStr() const;
+    bool isAutoCopy() const;
+    bool isAutoDefault() const;
+
+private:
+
+    bool isAutoCopy_;
+    bool isAutoDefault_;
+
+    friend class Class;
+    template<class T> friend class ClassVisitor;
 };
 
 //------------------------------------------------------------------------------

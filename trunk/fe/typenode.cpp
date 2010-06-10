@@ -56,6 +56,7 @@ Decl::Decl(location loc, Type* type, std::string* id)
     : TypeNode(loc, type)
     , id_(id)
     , local_(0)
+    , alloca_(0)
 {}
 
 Decl::~Decl()

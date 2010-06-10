@@ -59,7 +59,7 @@ public:
     virtual bool validate(Module* m) const = 0;
     virtual std::string toString() const = 0;
 
-    virtual const llvm::Type* getLLVMType(Module* m) const = 0;
+    const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const = 0;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
@@ -98,7 +98,6 @@ public:
     virtual bool validate(Module* m) const;
     virtual std::string toString() const;
     virtual bool perRef() const;
-    virtual const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
@@ -157,7 +156,6 @@ public:
     virtual bool isInt() const;
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
-    virtual const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
@@ -184,7 +182,6 @@ public:
     virtual UserType* clone() const;
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
-    virtual const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
@@ -223,7 +220,6 @@ public:
 
     virtual Ptr* clone() const;
     virtual std::string toString() const;
-    virtual const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
@@ -247,7 +243,6 @@ public:
 
     static void initMeContainer();
     static size_t getContainerSize();
-    virtual const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 

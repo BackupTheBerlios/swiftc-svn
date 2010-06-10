@@ -3,6 +3,8 @@
 #include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/cast.h"
+
 #include "fe/context.h"
 #include "fe/class.h"
 #include "fe/node.h"
@@ -34,9 +36,6 @@ LLVMFctDeclarer::LLVMFctDeclarer(Context* ctxt)
 
 void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 {
-    //if ( m->isTrivial() )
-        //return; // do nothing
-
     /*
      * get some stuff for easy access
      */
@@ -79,7 +78,7 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
     else
     {
-        std::vector<const llvm::Type*> retTypes;
+        LLVMTypes retTypes;
         for (size_t i = 0; i < out.size(); ++i)
         {
             RetVal* retval = m->sig_.out_[i];
@@ -129,8 +128,8 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         m->setLLVMName( oss.str() );
     }
 
-    llvm::Function* fct = llvm::cast<llvm::Function>(
-        llvmModule->getOrInsertFunction(m->getLLVMName().c_str(), fctType) );
+    llvm::Function* fct = cast<llvm::Function>( 
+            llvmModule->getOrInsertFunction(m->getLLVMName().c_str(), fctType) );
 
     ctxt_->llvmFct_ = fct;
     m->llvmFct_     = fct;

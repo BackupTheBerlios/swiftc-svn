@@ -23,6 +23,14 @@
 #include <string>
 #include <vector>
 
+namespace llvm {
+    class Type;
+    class Value;
+}
+
+typedef std::vector<llvm::Value*> Values;
+typedef std::vector<const llvm::Type*> LLVMTypes;
+
 namespace swift {
 
 class Module;

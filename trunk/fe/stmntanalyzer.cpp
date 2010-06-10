@@ -81,9 +81,35 @@ void StmntAnalyzer::visit(WhileStmnt* s)
 
 void StmntAnalyzer::visit(AssignStmnt* s)
 {
-    size_t lhsSize = s->tuple_->numItems();
+    /*
+     * Here are three cases:
+     *
+     * 1. A constructor call:
+     *  A a = b, c, ...             (AssignStmnt::CREATE)
+     *
+     * 2. An assignment call:       (AssignStmnt::ASSIGN)
+     *  a = b, c, ...
+     *
+     * 3. A more complicated assignment:
+     *  A a, b, C c, d, ... = ...   (AssignStmnt::MULTIPLE)
+     *
+     *  Here the number of rhs items (which equals the number of lhs return
+     *  values) must match the number of return values on the rhs.  For each
+     *  (lhs value, rhs value ) =: (l, r)  pair the following is done:
+     *
+     *      a) If l is a Decl and r is an init value, l is set to this value.
+     *      No further calls are done.
+     *
+     *      b) If l is a Decl but r is not an init value, the copy constructor
+     *      is called in order to initialize l.
+     *
+     *      c) Otherwise the copy assignment with r as argumet is called in
+     *      order set l.
+     */
 
-    swiftAssert( lhsSize != 0 && s->exprList_->numItems() != 0,
+    size_t numLhs = s->tuple_->numItems();
+
+    swiftAssert( numLhs != 0 && s->exprList_->numItems() != 0,
             "there must be at least one item on the left- "
             "and one on the right-hand side" );
 
@@ -94,7 +120,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     const TypeList& in = s->exprList_->typeList();
     const TypeList& out = s->tuple_->typeList();
 
-    swiftAssert(lhsSize == out.size(), 
+    swiftAssert(numLhs == out.size(), 
             "the tuple may not introduce additional nodes");
 
     if ( in.empty() )
@@ -104,8 +130,13 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         return;
     }
 
-    if ( lhsSize == 1 && in.size() > 1 )
+
+    if ( numLhs == 1 && in.size() > 1 )
     {
+        /*
+         * do we have case 1 or 2?
+         */
+
         TypeNode* lhs = s->tuple_->getTypeNode(0);
         std::string str, name;
 
@@ -134,19 +165,23 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                 ctxt_->result_ = false;
                 return;
             }
+
+            s->fcts_.push_back(fct);
         }
     }
     else
     {
-        if ( lhsSize != in.size() )
+        /*
+         * we have case 3
+         */
+
+        if ( numLhs != in.size() )
         {
             errorf( s->loc(), "the number of left-hand side items must match "
                     "the number or returned values on the right-hand side here" );
             ctxt_->result_ = false;
             return;
         }
-
-        s->kind_ = AssignStmnt::CALL;
 
         if ( !in.check(ctxt_->module_, out) )
         {
@@ -157,7 +192,10 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             return;
         }
 
-        for (size_t i = 0; i < lhsSize; ++i)
+        s->kind_ = AssignStmnt::MULTIPLE;
+
+        // check each lhs/rhs pair
+        for (size_t i = 0; i < numLhs; ++i)
         {
             TypeNode* tn = s->tuple_->getTypeNode(i);
             std::string str, name;
@@ -168,7 +206,10 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                 name = "contructor";
 
                 if ( s->exprList_->isInit(i) )
+                {
+                    s->fcts_.push_back(0); // no call needed for this pair
                     continue;
+                }
             }
             else
             {
@@ -190,8 +231,16 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                             name.c_str(), str.c_str(), in.toString().c_str(), _class->cid() );
                     ctxt_->result_ = false;
                 }
+
+                s->fcts_.push_back(fct);
+            }
+            else
+            {
+                s->fcts_.push_back(0); // TOOD
             }
         }
+
+        swiftAssert( s->fcts_.size() == s->exprList_->numRetValues(), "sizes must match" );
     }
 }
 

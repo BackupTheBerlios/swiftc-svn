@@ -9,6 +9,8 @@
 #include <llvm/ADT/APSInt.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/cast.h"
+
 #include "fe/context.h"
 #include "fe/class.h"
 #include "fe/scope.h"
@@ -28,6 +30,7 @@ void TypeNodeCodeGen::visit(Decl* d)
     {
         d->local_->setAlloca(d->alloca_);
         setResult( d->alloca_, true );
+        d->alloca_->setName( d->cid() );
     }
     else
     {
@@ -129,7 +132,7 @@ void TypeNodeCodeGen::visit(Nil* n)
 
 void TypeNodeCodeGen::visit(Self* n)
 {
-    Method* m = llvm::cast<Method>(ctxt_->memberFct_);
+    Method* m = cast<Method>(ctxt_->memberFct_);
     setResult( ctxt_->builder_.CreateLoad( m->getSelfValue(), "self" ), true );
 }
 
@@ -178,7 +181,7 @@ void TypeNodeCodeGen::visit(CCall* c)
     else
         retType = llvm::TypeBuilder<void, true>::get(*ctxt_->module_->llvmCtxt_);
 
-    std::vector<const llvm::Type*> params( inTypes.size() );
+    LLVMTypes params( inTypes.size() );
 
     for (size_t i = 0; i < inTypes.size(); ++i)
         params[i] = inTypes[i]->getLLVMType(ctxt_->module_);
@@ -187,11 +190,11 @@ void TypeNodeCodeGen::visit(CCall* c)
             retType, params, false);
 
     // declare function
-    llvm::Function* fct = llvm::cast<llvm::Function>(
+    llvm::Function* fct = cast<llvm::Function>(
         llvmModule->getOrInsertFunction( c->cid(), fctType) );
 
     // copy over values
-    std::vector<llvm::Value*> args( c->exprList_->numRetValues() );
+    Values args( c->exprList_->numRetValues() );
     for (size_t i = 0; i < args.size(); ++i)
         args[i] = c->exprList_->getScalar(i, builder);
 
@@ -217,7 +220,7 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
     {
         // -> assumes that r is a cast
 
-        const ScalarType* to = llvm::cast<ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
+        const ScalarType* to = cast<ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
@@ -285,7 +288,7 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         b->op2_->accept(this);
         llvm::Value* v2 = getScalar();
 
-        const ScalarType* scalar = llvm::cast<ScalarType>( b->op1_->getType() );
+        const ScalarType* scalar = cast<ScalarType>( b->op1_->getType() );
 
         llvm::Value* val;
 
@@ -366,7 +369,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     {
         u->op1_->accept(this);
         llvm::Value* val = getScalar();
-        const ScalarType* scalar = llvm::cast<ScalarType>( u->op1_->getType() );
+        const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
 
         switch (u->token_)
         {
@@ -405,7 +408,7 @@ void TypeNodeCodeGen::getSelf(MethodCall* m)
 void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
-    std::vector<llvm::Value*> args;
+    Values args;
     MemberFct* fct = call->getMemberFct();
 
     call->exprList_->accept(this);
@@ -418,7 +421,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     if (self)
         args.push_back(self);
 
-    std::vector<llvm::Value*> perRefRetValues;
+    Values perRefRetValues;
 
     // append return-value arguments
     for (size_t i = 0; i < out.size(); ++i)
@@ -436,17 +439,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     }
 
     // append regular arguments
-    for (size_t i = 0; i < call->exprList_->numRetValues(); ++i)
-    {
-        const Type* type = call->exprList_->typeList()[i];
-
-        llvm::Value* arg = type->perRef() 
-            ? call->exprList_->getAddr(i, ctxt_)
-            : call->exprList_->getScalar(i, builder);
-
-
-        args.push_back(arg);
-    }
+    call->exprList_->getArgs(args, ctxt_);
 
     // create actual call
     llvm::CallInst* callInst = llvm::CallInst::Create( 

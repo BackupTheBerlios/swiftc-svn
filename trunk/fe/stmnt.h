@@ -26,6 +26,10 @@
 #include "fe/node.h"
 #include "fe/typelist.h"
 
+namespace llvm {
+    class Function;
+}
+
 namespace swift {
 
 //------------------------------------------------------------------------------
@@ -223,10 +227,13 @@ protected:
     {
         CREATE,
         ASSIGN,
-        CALL
+        MULTIPLE
     };
 
     Kind kind_;
+
+    typedef std::vector<MemberFct*> Fcts;
+    Fcts fcts_;
 
     template<class T> friend class StmntVisitor;
 };

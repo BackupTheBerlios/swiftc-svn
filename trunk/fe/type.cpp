@@ -60,6 +60,16 @@ bool Type::isRef() const
     return isRef_;
 }
 
+const llvm::Type* Type::getLLVMType(Module* m) const
+{
+    const llvm::Type* llvmType = getRawLLVMType(m);
+
+    if (isRef_)
+        return llvm::PointerType::getUnqual(llvmType);
+    else
+        return llvmType;
+}
+
 //------------------------------------------------------------------------------
 
 ErrorType::ErrorType()
@@ -90,12 +100,6 @@ bool ErrorType::perRef() const
 {
     swiftAssert(false, "unreachable");
     return false;
-}
-
-const llvm::Type* ErrorType::getLLVMType(Module* m) const
-{
-    swiftAssert(false, "unreachable");
-    return 0;
 }
 
 const llvm::Type* ErrorType::getRawLLVMType(Module* m) const
@@ -288,11 +292,6 @@ bool ScalarType::validate(Module* m) const
     return true;
 }
 
-const llvm::Type* ScalarType::getLLVMType(Module* m) const
-{
-    return (*typeMap_)[ *id() ];
-}
-
 const llvm::Type* ScalarType::getRawLLVMType(Module* m) const
 {
     return (*typeMap_)[ *id() ];
@@ -372,16 +371,6 @@ bool UserType::validate(Module* m) const
     }
 
     return true;
-}
-
-const llvm::Type* UserType::getLLVMType(Module* m) const
-{
-    const llvm::Type* llvmType = getRawLLVMType(m);
-
-    if (isRef_)
-        return llvm::PointerType::getUnqual(llvmType);
-    else
-        return llvmType;
 }
 
 const llvm::Type* UserType::getRawLLVMType(Module* m) const
@@ -472,11 +461,6 @@ std::string Ptr::toString() const
     return oss.str();
 }
 
-const llvm::Type* Ptr::getLLVMType(Module* m) const
-{
-    return getRawLLVMType(m);
-}
-
 const llvm::Type* Ptr::getRawLLVMType(Module* m) const
 {
     return llvm::PointerType::getUnqual( innerType_->getRawLLVMType(m) );
@@ -532,16 +516,11 @@ std::string Container::toString() const
     return oss.str();
 }
 
-const llvm::Type* Container::getLLVMType(Module* m) const
-{
-    return getRawLLVMType(m);
-}
-
 const llvm::Type* Container::getRawLLVMType(Module* m) const
 {
     llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
 
-    std::vector<const llvm::Type*> llvmTypes(2);
+    LLVMTypes llvmTypes(2);
     llvmTypes[0] = llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
     llvmTypes[1] = llvm::IntegerType::getInt64Ty(llvmCtxt);
 

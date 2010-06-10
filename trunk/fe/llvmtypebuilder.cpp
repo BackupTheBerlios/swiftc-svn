@@ -74,7 +74,7 @@ bool LLVMTypebuilder::process(Class* c)
     else
         cycle_.insert(c);
 
-    std::vector<const llvm::Type*> llvmTypes;
+    LLVMTypes llvmTypes;
     for (size_t i = 0; i < c->memberVars().size(); ++i)
     {
         c->memberVars()[i]->index_ = i;
