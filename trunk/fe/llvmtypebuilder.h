@@ -3,6 +3,8 @@
 
 #include "utils/set.h"
 
+#include "vec/typevectorizer.h"
+
 namespace llvm {
     class OpaqueType;
 }
@@ -14,13 +16,15 @@ class Class;
 class Module;
 class Type;
 
-class LLVMTypebuilder
+class LLVMTypebuilder : public vec::ErrorHandler
 {
 public:
 
     LLVMTypebuilder(Context* ctxt);
 
     bool getResult() const;
+    virtual void notInMap(const llvm::StructType* st, const llvm::StructType* parent) const;
+    virtual void notVectorizable(const llvm::StructType* st) const;
 
 private:
 
@@ -46,6 +50,11 @@ private:
 
     typedef std::vector<Refine> Refinements;
     Refinements refinements;
+
+    vec::VecStructs vecStructs_;
+
+    typedef std::map<const llvm::StructType*, Class*> Struct2Class;
+    Struct2Class struct2Class_;
 };
 
 } // namespace swift

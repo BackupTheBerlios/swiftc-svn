@@ -12,11 +12,12 @@
 
 namespace swift {
 
+typedef Module::ClassMap::const_iterator CIter;
+
 LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
     : ctxt_(ctxt)
     , result_(true)
 {
-    typedef Module::ClassMap::const_iterator CIter;
     const Module::ClassMap& classes = ctxt_->module_->classes();
 
     for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
@@ -52,6 +53,23 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
         Refine& refine = refinements[i];
         refine.opaque_->refineAbstractTypeTo( refine.type_->getLLVMType(ctxt_->module_) );
     }
+
+    /*
+     * collect structs which should be vectorized
+     * and build up reverse map
+     */
+
+    for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
+    {
+        Class* c = iter->second;
+
+        struct2Class_[ c->llvmType() ] = c;
+
+        if ( c->isSimd() )
+            vecStructs_[ c->llvmType() ] = 0;
+    }
+
+    vec::TypeVectorizer typeVec( this, vecStructs_, ctxt_->module_->getLLVMModule() );
 }
 
 bool LLVMTypebuilder::getResult() const
@@ -112,6 +130,29 @@ bool LLVMTypebuilder::process(Class* c)
     m->getLLVMModule()->addTypeName( c->cid(), c->llvmType() );
 
     return true;
+}
+
+void LLVMTypebuilder::notInMap(const llvm::StructType* st, const llvm::StructType* parent) const
+{
+    {
+        Class* c = struct2Class_.find(st)->second;
+        errorf( c->loc(), "class '%s' is not declared as simd class", c->cid() );
+    }
+
+    {
+        Class* c = struct2Class_.find(parent)->second;
+        errorf( c->loc(), "needed by class '%s'", c->cid() );
+    }
+
+    ctxt_->result_ = false;
+}
+
+void LLVMTypebuilder::notVectorizable(const llvm::StructType* st) const
+{
+    Class* c = struct2Class_.find(st)->second;
+    errorf( c->loc(), "class '%s' is not vectorizable", c->cid() );
+
+    ctxt_->result_ = false;
 }
 
 } // namespace swift

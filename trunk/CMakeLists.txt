@@ -111,6 +111,8 @@ ADD_EXECUTABLE (swift
 
     fe/cmdlineparser.cpp
     fe/main.cpp
+
+    vec/typevectorizer.cpp
 )
 
 #-------------------------------------------------------------------------------
