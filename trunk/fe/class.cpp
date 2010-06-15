@@ -439,6 +439,7 @@ bool Assign::isAutoCopy() const
 Create::Create(location loc, bool simd, Scope* scope)
     : Method( loc, simd, new std::string("create"), scope )
     , isAutoCopy_(false)
+    , isAutoDefault_(false)
 {}
 
 void Create::accept(ClassVisitorBase* c)

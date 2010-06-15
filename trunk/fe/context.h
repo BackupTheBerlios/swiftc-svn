@@ -26,6 +26,11 @@ class Context
 {
 public:
 
+    enum
+    {
+        SIMD_WIDTH = 16
+    };
+
     Context(Module* module);
     ~Context();
 
@@ -52,6 +57,11 @@ public:
     llvm::AllocaInst* createEntryAlloca(
             const llvm::Type* llvmType, 
             const llvm::Twine& name = "") const;
+
+    llvm::Value* createMalloc(llvm::Value* size, const llvm::PointerType* ptrType);
+    void createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size);
+    llvm::Function* malloc_;
+    llvm::Function* memcpy_;
 
 private:
 

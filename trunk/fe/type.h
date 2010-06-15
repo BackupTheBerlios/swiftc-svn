@@ -52,13 +52,13 @@ public:
 
     virtual Type* clone() const = 0;
     virtual bool check(const Type* t, Module* m) const = 0;
+    virtual const Type* derefPtr() const { return this; };
     virtual bool isBool() const { return false; }
     virtual bool isIndex() const { return false; }
     virtual bool isInt() const { return false; }
     virtual bool perRef() const = 0;
     virtual bool validate(Module* m) const = 0;
     virtual std::string toString() const = 0;
-
     const llvm::Type* getLLVMType(Module* m) const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const = 0;
     virtual const llvm::Type* defineLLVMType(
@@ -226,6 +226,7 @@ public:
             const UserType*& missing,
             Module* m) const;
 
+    const Type* derefPtr() const;
     llvm::Value* recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const;
     llvm::Value* recDerefAddr(llvm::IRBuilder<>& builder, llvm::Value* value) const;
 };
@@ -236,18 +237,26 @@ class Container : public NestedType
 {
 public:
 
+    enum StructLayout
+    {
+        POINTER, 
+        SIZE
+    };
+
     Container(location loc, TokenType modifier, Type* innerType);
 
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
 
-    static void initMeContainer();
-    static size_t getContainerSize();
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+
+    unsigned getElemSize(Module* m) const;
+    static void emitCreate(Context* ctxt, llvm::Value* agg, llvm::Value* size);
+    static void emitCopy(Context* ctxt, llvm::Value* agg, llvm::Value* size);
 };
 
 //------------------------------------------------------------------------------

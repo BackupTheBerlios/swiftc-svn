@@ -138,25 +138,67 @@ void TypeNodeAnalyzer::visit(Self* s)
     }
 }
 
+bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)
+{
+    // examine prefix expr
+    a->prefixExpr_->accept(this);
+
+    if ( a->prefixExpr_->size() != 1 )
+    {
+        errorf( a->loc(), "the prefix expression of a member access "
+                "must exactly return one element" );
+        setError(a, true);
+        return false;
+    }
+
+    return true;
+}
+
 void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
-    // todo
+    i->indexExpr_->accept(this);
+
+    if ( i->indexExpr_->size() != 1 )
+    {
+        errorf( i->loc(), "an indexing expression must exactly return one element" );
+        setError(i, true);
+        return;
+    }
+
+    const Type* indexType = i->indexExpr_->getType();
+    if ( indexType->isIndex() != 1 )
+    {
+        errorf( i->loc(), 
+                "the indexing type of an indexing expression "
+                "must be of type 'index' but type '%s' is given", 
+                indexType->toString().c_str() );
+        setError(i, true);
+        return;
+    }
+
+    if ( !examinePrefixExpr(i) )
+        return;
+
+    const Type* prefixType = i->prefixExpr_->getType()->derefPtr();
+    if ( const Container* container = prefixType->derefPtr()->cast<Container>() )
+        setResult(i, container->getInnerType()->clone(), true);
+    else
+    {
+        errorf( i->loc(), 
+                "the indexed expression must be an array or simd-container "
+                "but type '%s' is given", 
+                prefixType->toString().c_str() );
+        setError(i, true);
+    }
 }
 
 void TypeNodeAnalyzer::visit(MemberAccess* m)
 {
-    // examine prefix expr
-    m->prefixExpr_->accept(this);
-
-    if ( m->prefixExpr_->size() != 1 )
-    {
-        errorf( m->loc(), "the prefix expression of a member access "
-                "must exactly return one element" );
-        setError(m, true);
+    if ( !examinePrefixExpr(m) )
         return;
-    }
 
-    if ( const UserType* user = m->prefixExpr_->getType()->cast<UserType>() )
+    if ( const UserType* user = 
+            m->prefixExpr_->getType()->derefPtr()->cast<UserType>() )
     {
         m->class_ = user->lookupClass(ctxt_->module_);
         swiftAssert(m->class_, "must be found");
@@ -254,11 +296,13 @@ bool TypeNodeAnalyzer::setClass(MethodCall* m)
 
     if (result)
     {
-        if ( const BaseType* bt = m->expr_->getType()->cast<BaseType>() )
+        if ( const BaseType* bt = m->expr_->getType()->derefPtr()->cast<BaseType>() )
         {
             m->class_ = bt->lookupClass(ctxt_->module_);
             return true;
         }
+
+        errorf( m->loc(), "TODO" );
     }
 
     setError(m, false);
@@ -287,6 +331,8 @@ bool TypeNodeAnalyzer::setClass(OperatorCall* o)
             o->class_ = bt->lookupClass(ctxt_->module_);
             return true;
         }
+
+        errorf( o->loc(), "TODO" );
     }
 
     setError(o, false);

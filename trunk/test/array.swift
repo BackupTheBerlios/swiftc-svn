@@ -16,11 +16,14 @@
 # Boston, MA 02110-1301, USA.
 
 class Foo
-    index x
+    int i
     real r
 end
 
 class Test
+    routine foo() -> int a, int b
+    end
+
     routine main() -> int result
         array{index} a = 20x
         index i = 0x
@@ -28,13 +31,16 @@ class Test
         # write
         while i < 20x
             a[i] = i
+            c_call print_int( a[i]:to_int() )
             i = i + 1x
         end
 
+        # copy over
+        array{index} b = a
+
         i = 0x
-        # load and print
         while i < 20x
-            c_call print_int( a[i] )
+            c_call print_int( b[i]:to_int() )
             i = i + 1x
         end
 
@@ -47,25 +53,25 @@ class Test
             i = i + 1x
         end
 
-        c_call print_int(sum)
+        c_call print_int( sum:to_int() )
 
-        # array{Foo} af = 20x
+        array{Foo} af = 20x
 
-        # i = 0x
-        # # load and print
-        # # write
-        # while i < 20x
-        #     af[i].x = i
-        #     af[i].r = 5.0
-        #     i = i + 1x
-        # end
+        # and backwards
+        i = 19x
+        while i <= 19x
+            af[19x - i].i = i:to_int() # fill increasingly
+            af[i].r = i:to_real()      # fill decreasingly
+            i = i - 1x
+        end
 
-        # i = 0x
-        # # load and print
-        # while i < 20x
-        #     c_call print_float( af[i].r )
-        #     i = i + 1x
-        # end
+        i = 0x
+        while i < 20x
+            c_call print_int( af[i].i )
+            c_call print_float( af[i].r )
+            i = i + 1x
+        end
 
+        result = 0
     end
 end

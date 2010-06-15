@@ -28,6 +28,7 @@ public:
     virtual void visit(Self* n);
 
     // TypeNode -> Expr -> Access
+    llvm::Value* resolvePrefixExpr(Access* a);
     virtual void visit(IndexExpr* i);
     virtual void visit(MemberAccess* m);
 

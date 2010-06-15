@@ -1,11 +1,14 @@
 #include "fe/context.h"
 
+#include "utils/cast.h"
+
 #include "fe/tnlist.h"
 #include "fe/node.h"
 #include "fe/scope.h"
 
 #include <llvm/BasicBlock.h>
 #include <llvm/Function.h>
+#include <llvm/Module.h>
 
 namespace swift {
 
@@ -81,6 +84,49 @@ llvm::AllocaInst* Context::createEntryAlloca(
     llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
 
     return tmpBuilder.CreateAlloca(llvmType, 0, name);
+}
+
+llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* ptrType)
+{
+    llvm::LLVMContext& llvmCtxt = *module_->llvmCtxt_;
+    const llvm::Type* allocType = ptrType->getContainedType(0);
+
+    llvm::Value* allocSize = llvm::ConstantInt::get( 
+            llvm::IntegerType::getInt64Ty(llvmCtxt), 
+            allocType->getScalarSizeInBits() / 8 );
+
+    llvm::Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
+
+    llvm::CallInst* call = llvm::CallInst::Create(malloc_, mallocSize, "malloc-ptr");
+    call->setTailCall();
+    call->addAttribute(0, llvm::Attribute::NoAlias);
+    call->addAttribute(~0, llvm::Attribute::NoUnwind);
+    builder_.Insert(call);
+
+    return builder_.CreateBitCast(call, ptrType, "malloc-ptr");
+}
+
+void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size)
+{
+    llvm::LLVMContext& llvmCtxt = *module_->llvmCtxt_;
+    const llvm::PointerType* ptrType = ::cast<llvm::PointerType>( src->getType() );
+    const llvm::Type* allocType = ptrType->getContainedType(0);
+
+    llvm::Value* allocSize = llvm::ConstantInt::get( 
+            llvm::IntegerType::getInt64Ty(llvmCtxt), 
+            allocType->getScalarSizeInBits() / 8 );
+
+    llvm::Value* cpySize = builder_.CreateMul(size, allocSize, "memcpy-size");
+
+    Values args(3);
+    args[0] = builder_.CreateBitCast(dst, llvm::PointerType::getInt8PtrTy(llvmCtxt) );
+    args[1] = builder_.CreateBitCast(src, llvm::PointerType::getInt8PtrTy(llvmCtxt) );
+    args[2] = cpySize;
+
+    llvm::CallInst* call = llvm::CallInst::Create( memcpy_, args.begin(), args.end() );
+    call->setTailCall();
+    call->addAttribute(~0, llvm::Attribute::NoUnwind);
+    builder_.Insert(call);
 }
 
 } // namespace swift

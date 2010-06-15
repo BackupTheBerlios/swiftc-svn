@@ -36,8 +36,50 @@ LLVMFctDeclarer::LLVMFctDeclarer(Context* ctxt)
                 process(c, m);
         }
     }
-}
 
+    llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
+    llvm::LLVMContext& llvmCtxt = llvmModule->getContext();
+
+    /*
+     * declare malloc
+     */
+
+    {
+        const llvm::Type* retType = llvm::PointerType::getInt8PtrTy(llvmCtxt);
+
+        LLVMTypes params(1);
+        params[0] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+
+        const llvm::FunctionType* fctType = 
+            llvm::FunctionType::get(retType, params, false);
+
+        ctxt_->malloc_ = cast<llvm::Function>(
+            llvmModule->getOrInsertFunction("malloc", fctType) );
+        ctxt_->malloc_->addAttribute(0, llvm::Attribute::NoAlias);
+        ctxt_->malloc_->addAttribute(~0, llvm::Attribute::NoUnwind);
+    }
+
+    /*
+     * declare memcpy
+     */
+
+    {
+        const llvm::Type* retType = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+        LLVMTypes params(3);
+        params[0] = llvm::PointerType::getInt8PtrTy(llvmCtxt);
+        params[1] = llvm::PointerType::getInt8PtrTy(llvmCtxt);
+        params[2] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+
+        const llvm::FunctionType* fctType = 
+            llvm::FunctionType::get(retType, params, false);
+
+        ctxt_->memcpy_ = cast<llvm::Function>(
+            llvmModule->getOrInsertFunction("memcpy", fctType) );
+        ctxt_->memcpy_->addAttribute(1, llvm::Attribute::NoCapture);
+        ctxt_->memcpy_->addAttribute(2, llvm::Attribute::NoCapture);
+        ctxt_->memcpy_->addAttribute(~0, llvm::Attribute::NoUnwind);
+    }
+}
 
 void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 {

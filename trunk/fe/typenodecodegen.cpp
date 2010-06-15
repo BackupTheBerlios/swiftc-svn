@@ -136,26 +136,45 @@ void TypeNodeCodeGen::visit(Self* n)
     setResult( ctxt_->builder_.CreateLoad( m->getSelfValue(), "self" ), true );
 }
 
+llvm::Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
+{
+    // get address of the prefix expr
+    a->prefixExpr_->accept(this);
+    llvm::Value* addr = getAddr();
+
+    if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
+        addr = ptr->recDerefAddr(ctxt_->builder_, addr);
+
+    return addr;
+}
+
 void TypeNodeCodeGen::visit(IndexExpr* i)
 {
-    // TODO
+    llvm::IRBuilder<>& builder = ctxt_->builder_;
+
+    llvm::Value* addr = resolvePrefixExpr(i);
+
+    i->indexExpr_->accept(this);
+
+    llvm::Value* container = builder.CreateLoad(addr);
+    llvm::Value* ptr = builder.CreateExtractValue(container, Container::POINTER);
+    
+    llvm::Value* result = builder.CreateInBoundsGEP(ptr, getScalar());
+
+    setResult(result, true);
 }
 
 void TypeNodeCodeGen::visit(MemberAccess* m)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
+    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
 
-    // get address of the prefix expr
-    m->prefixExpr_->accept(this);
-    llvm::Value* addr = getAddr();
-
-    if ( const Ptr* ptr = m->getType()->cast<Ptr>() )
-        addr = ptr->recDerefAddr(ctxt_->builder_, addr);
+    llvm::Value* addr = resolvePrefixExpr(m);
 
     // build input
     llvm::Value* input[2];
-    input[0] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(64, 0) );
-    input[1] = llvm::ConstantInt::get( *ctxt_->module_->llvmCtxt_, llvm::APInt(32, m->memberVar_->getIndex()) );
+    input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
+    input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, m->memberVar_->getIndex()) );
 
     // build and get value
     std::ostringstream oss;

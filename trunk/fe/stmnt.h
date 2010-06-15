@@ -227,13 +227,34 @@ protected:
     {
         CREATE,
         ASSIGN,
-        MULTIPLE
+        PAIRWISE
     };
 
     Kind kind_;
 
-    typedef std::vector<MemberFct*> Fcts;
-    Fcts fcts_;
+    struct Call
+    {
+        enum Kind
+        {
+            EMPTY,
+            COPY,
+            USER,
+            CONTAINER_COPY,
+            CONTAINER_CREATE,
+            GETS_INITIALIZED_BY_CALLER
+        };
+
+        Call(Kind kind, MemberFct* fct = 0)
+            : kind_(kind)
+            , fct_(fct)
+        {}
+
+        Kind kind_;
+        MemberFct* fct_;
+    };
+
+    typedef std::vector<Call> Calls;
+    Calls calls_;
 
     template<class T> friend class StmntVisitor;
 };
