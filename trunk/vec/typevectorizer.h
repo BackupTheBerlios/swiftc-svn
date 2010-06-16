@@ -3,6 +3,7 @@
 
 #include <map>
 #include <stack>
+#include <utility>
 
 #include "utils/map.h"
 #include "utils/types.h"
@@ -15,14 +16,29 @@ namespace llvm {
 
 namespace vec {
 
-typedef Map<const llvm::StructType*, const llvm::StructType*> VecStructs;
+typedef llvm::Type Type;
+typedef llvm::StructType Struct;
+
+struct VecType
+{
+    const Struct* struct_;
+    int simdLength_;
+
+    VecType() {}
+    VecType(const Struct* st, int simdLength) 
+        : struct_(st)
+        , simdLength_(simdLength)
+    {}
+};
+
+typedef Map<const Struct*, VecType> VecStructs;
 
 class ErrorHandler
 {
 public:
 
-    virtual void notInMap(const llvm::StructType* st, const llvm::StructType* parent) const = 0;
-    virtual void notVectorizable(const llvm::StructType* st) const = 0;
+    virtual void notInMap(const Struct* st, const Struct* parent) const = 0;
+    virtual void notVectorizable(const Struct* st) const = 0;
 };
 
 class TypeVectorizer
@@ -30,33 +46,30 @@ class TypeVectorizer
 public:
 
     TypeVectorizer(const ErrorHandler* errorHandler, 
-                   const VecStructs& vecStructs, 
+                   VecStructs& vecStructs, 
                    llvm::Module*);
 
-    static int lengthOfScalar(const llvm::Type* type, int simdWidth);
-           int lengthOfScalar(const llvm::Type* type);
-           int lengthOfStruct(const llvm::StructType* st);
-           int lengthOf(const llvm::Type* type);
+    static int lengthOfScalar(const Type* type, int simdWidth);
+           int lengthOfScalar(const Type* type);
+           int lengthOfStruct(const Struct* st);
+           int lengthOfType  (const Type* type);
 
-    static const llvm::Type* vecScalarType(const llvm::Type* type, int n, int simdWidth);
-           const llvm::Type* vecScalarType(const llvm::Type* type, int n);
-           const llvm::StructType* vecStructType(const llvm::StructType* st, int n);
-           const llvm::Type* vecType(const llvm::Type* type, int n);
+    static const Type*   vecScalar(const Type* type, int& n, int simdWidth);
+           const Type*   vecScalar(const Type* type, int& n);
+           const Struct* vecStruct(const Struct* st, int& n);
+           const Type*   vecType  (const Type* type, int& n);
 
 private:
 
     const ErrorHandler* errorHandler_;
-    const VecStructs& vecStructs_;
+    VecStructs& vecStructs_;
     llvm::Module* module_;
     int simdWidth_;
 
-    typedef std::map<const llvm::Type*, int> Lengths;
+    typedef std::map<const Type*, int> Lengths;
     Lengths lengths_;
 
-    typedef std::map<const llvm::StructType*, const llvm::StructType*> StructMap;
-    StructMap structMap_;
-
-    const llvm::StructType* parent_;
+    const Struct* parent_;
 };
 
 } // namespace vec

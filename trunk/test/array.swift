@@ -20,6 +20,12 @@ class Foo
     real r
 end
 
+simd class Vec3
+    real x
+    real y
+    real z
+end
+
 class Test
     routine foo() -> int a, int b
     end
@@ -71,6 +77,9 @@ class Test
             c_call print_float( af[i].r )
             i = i + 1x
         end
+
+        simd{Vec3} s1 = 1024x
+        #simd{Vec3} s2 = s1
 
         result = 0
     end

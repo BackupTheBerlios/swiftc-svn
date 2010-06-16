@@ -31,6 +31,9 @@
 
 #include "utils/assert.h"
 #include "utils/cast.h"
+#include "utils/llvmhelper.h"
+
+#include "vec/typevectorizer.h"
 
 #include "fe/class.h"
 #include "fe/context.h"
@@ -121,6 +124,12 @@ const llvm::Type* ErrorType::defineLLVMType(
     swiftAssert(false, "unreachable");
     opaque = 0;
     missing = 0;
+    return 0;
+}
+
+const llvm::Type* ErrorType::getVecLLVMType(Module* m, int& simdLength) const 
+{
+    swiftAssert(false, "unreachable");
     return 0;
 }
 
@@ -311,6 +320,13 @@ const llvm::Type* ScalarType::defineLLVMType(
     return getLLVMType(m);
 }
 
+const llvm::Type* ScalarType::getVecLLVMType(Module* m, int& simdLength) const 
+{
+    const llvm::Type* llvmType = getLLVMType(m);
+    simdLength = vec::TypeVectorizer::lengthOfScalar(llvmType, Context::SIMD_WIDTH);
+    return vec::TypeVectorizer::vecScalar(llvmType, simdLength, Context::SIMD_WIDTH);
+}
+
 bool ScalarType::isFloat() const
 {
     return *id() == "real" || *id() == "real32" || *id() == "real64";
@@ -381,7 +397,7 @@ const llvm::Type* UserType::getRawLLVMType(Module* m) const
 {
     Class* c = m->lookupClass( id() );
     swiftAssert(c, "must be found");
-    const llvm::Type* llvmType = c->llvmType();
+    const llvm::Type* llvmType = c->getLLVMType();
 
     return llvmType;
 }
@@ -399,6 +415,20 @@ const llvm::Type* UserType::defineLLVMType(
         missing = this;
 
     return llvmType;
+}
+
+const llvm::Type* UserType::getVecLLVMType(Module* m, int& simdLength) const 
+{
+    Class* c = lookupClass(m);
+    swiftAssert( c->isSimd(), "not declared as simd type" );
+
+    const llvm::StructType* vecType = c->getVecType();
+    simdLength = c->getSimdLength();
+
+    swiftAssert( vecType, "must be valid" );
+    swiftAssert( simdLength > 0, "must be valid" );
+
+    return vecType;
 }
 
 //------------------------------------------------------------------------------
@@ -444,6 +474,12 @@ Type* NestedType::getInnerType()
 const Type* NestedType::getInnerType() const
 {
     return innerType_;
+}
+
+const llvm::Type* NestedType::getVecLLVMType(Module* m, int& simdLength) const
+{
+    swiftAssert(false, "unreachable"); 
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -524,21 +560,6 @@ std::string Container::toString() const
     return oss.str();
 }
 
-const llvm::Type* Container::getRawLLVMType(Module* m) const
-{
-    llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
-
-    LLVMTypes llvmTypes(2);
-    llvmTypes[POINTER] = llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
-    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(llvmCtxt);
-
-
-    const llvm::StructType* st = llvm::StructType::get(llvmCtxt, llvmTypes);
-    m->getLLVMModule()->addTypeName( toString().c_str(), st );
-     
-    return st;
-}
-
 const llvm::Type* Container::defineLLVMType(
         llvm::OpaqueType*& opaque, 
         const UserType*& missing,
@@ -550,38 +571,42 @@ const llvm::Type* Container::defineLLVMType(
     return 0;
 }
 
-unsigned Container::getElemSize(Module* m) const
-{
-    const llvm::Type* llvmType = innerType_->getRawLLVMType(m);
-    return llvmType->getScalarSizeInBits() / 8;
-}
-
-void Container::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size)
+void Container::emitCreate(Context* ctxt, 
+                           const llvm::Type* allocType, 
+                           llvm::Value* aggPtr, 
+                           llvm::Value* size,
+                           int simdLength)
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
     llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
 
-    const llvm::StructType* st = 
+    const llvm::PointerType* ptrType = llvm::PointerType::getUnqual(allocType);
+
+#ifdef SWIFT_DEBUG
+    const llvm::StructType* allocType2 = 
         ::cast<llvm::StructType>( 
                 ::cast<llvm::PointerType>( aggPtr->getType() )->getContainedType(0) );
+    const llvm::PointerType* ptrType2 = 
+        ::cast<llvm::PointerType>( (allocType2->element_begin() + POINTER)->get() );
 
-    const llvm::PointerType* ptrType = 
-        ::cast<llvm::PointerType>( (st->element_begin() + POINTER)->get() );
+    swiftAssert(ptrType == ptrType2, "types must be equall");
+#endif // SWIFT_DEBUG
 
-    llvm::Value* ptr = ctxt->createMalloc(size, ptrType);
+    llvm::Value* ptr = ctxt->createMalloc(
+            adjustSize(ctxt, size, simdLength), ptrType );
 
     llvm::Value* ptrDstAddr;
     {
         llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, POINTER) );
+        input[0] = createInt64(llvmCtxt);
+        input[1] = createInt32(llvmCtxt, POINTER);
         ptrDstAddr = builder.CreateInBoundsGEP(aggPtr, input, input+2);
     }
     llvm::Value* sizeDstAddr;
     {
         llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, SIZE) );
+        input[0] = createInt64(llvmCtxt);
+        input[1] = createInt32(llvmCtxt, SIZE);
         sizeDstAddr = builder.CreateInBoundsGEP(aggPtr, input, input+2);
     }
 
@@ -590,37 +615,53 @@ void Container::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size
     builder.CreateStore(size, sizeDstAddr);
 }
 
-void Container::emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue)
+void Container::emitCopy(Context* ctxt, 
+                         const llvm::Type* allocType, 
+                         llvm::Value* lvalue, 
+                         llvm::Value* rvalue, 
+                         int simdLength)
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
-    llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = *ctxt->module_->llvmCtxt_;
 
-    llvm::Value* size;
-    {
-        llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, SIZE) );
-        size = builder.CreateLoad( builder.CreateInBoundsGEP(rvalue, input, input+2) );
-    }
+    llvm::Value* size = createInBoundsGEP_0_i32(lc, builder, rvalue, SIZE);
+    //llvm::Value* size;
+    //{
+        //llvm::Value* input[2];
+        //input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
+        //input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, SIZE) );
+        //size = builder.CreateLoad( builder.CreateInBoundsGEP(rvalue, input, input+2) );
+    //}
 
-    emitCreate(ctxt, lvalue, size);
+    emitCreate(ctxt, allocType, lvalue, size, simdLength);
 
     llvm::Value* src;
     {
         llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, POINTER) );
+        input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
+        input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, POINTER) );
         src = builder.CreateLoad( builder.CreateInBoundsGEP(rvalue, input, input+2) );
     }
     llvm::Value* dst;
     {
         llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, POINTER) );
+        input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
+        input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, POINTER) );
         dst = builder.CreateLoad( builder.CreateInBoundsGEP(lvalue, input, input+2) );
     }
 
-    ctxt->createMemCpy(dst, src, size);
+    ctxt->createMemCpy( dst, src, adjustSize(ctxt, size, simdLength) );
+}
+
+llvm::Value* Container::adjustSize(Context* ctxt, llvm::Value* oldSize, int simdLength)
+{
+    return oldSize;
+    llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
+
+    llvm::Value* simdLengthValue = 
+        llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, simdLength) );
+
+    return ctxt->builder_.CreateUDiv(oldSize, simdLengthValue);
 }
 
 //------------------------------------------------------------------------------
@@ -639,6 +680,33 @@ std::string Array::containerStr() const
     return "array";
 }
 
+const llvm::Type* Array::getRawLLVMType(Module* m) const
+{
+    llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
+
+    LLVMTypes llvmTypes(2);
+    llvmTypes[POINTER] = llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+
+
+    const llvm::StructType* st = llvm::StructType::get(llvmCtxt, llvmTypes);
+    m->getLLVMModule()->addTypeName( toString().c_str(), st );
+     
+    return st;
+}
+
+void Array::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const
+{
+    Container::emitCreate(
+            ctxt, innerType_->getLLVMType(ctxt->module_), aggPtr, size, 1);
+}
+
+void Array::emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const
+{
+    Container::emitCreate(
+            ctxt, innerType_->getLLVMType(ctxt->module_), lvalue, rvalue, 1);
+}
+
 //------------------------------------------------------------------------------
 
 Simd::Simd(location loc, TokenType modifier, Type* innerType)
@@ -653,6 +721,38 @@ Simd* Simd::clone() const
 std::string Simd::containerStr() const
 {
     return "simd";
+}
+
+const llvm::Type* Simd::getRawLLVMType(Module* m) const
+{
+    llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
+
+    LLVMTypes llvmTypes(2);
+    int simdLength;
+    llvmTypes[POINTER] = llvm::PointerType::getUnqual( 
+            innerType_->getVecLLVMType(m, simdLength) );
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+
+    const llvm::StructType* st = llvm::StructType::get(llvmCtxt, llvmTypes);
+    m->getLLVMModule()->addTypeName( toString().c_str(), st );
+     
+    return st;
+}
+
+void Simd::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const
+{
+    int simdLength;
+    const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
+
+    Container::emitCreate(ctxt, vecType, aggPtr, size, simdLength);
+}
+
+void Simd::emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const
+{
+    int simdLength;
+    const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
+
+    Container::emitCreate(ctxt, vecType, lvalue, rvalue, simdLength);
 }
 
 } // namespace swift

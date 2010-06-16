@@ -1,6 +1,7 @@
 #include "fe/context.h"
 
 #include "utils/cast.h"
+#include "utils/llvmhelper.h"
 
 #include "fe/tnlist.h"
 #include "fe/node.h"
@@ -9,6 +10,7 @@
 #include <llvm/BasicBlock.h>
 #include <llvm/Function.h>
 #include <llvm/Module.h>
+#include <llvm/Target/TargetData.h>
 
 namespace swift {
 
@@ -91,9 +93,10 @@ llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* p
     llvm::LLVMContext& llvmCtxt = *module_->llvmCtxt_;
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
-    llvm::Value* allocSize = llvm::ConstantInt::get( 
-            llvm::IntegerType::getInt64Ty(llvmCtxt), 
-            allocType->getScalarSizeInBits() / 8 );
+    std::cout << allocType->getDescription() << std::endl;
+
+    llvm::TargetData td( module_->getLLVMModule() );
+    llvm::Value* allocSize = createInt64( llvmCtxt, td.getTypeStoreSize(allocType) );
 
     llvm::Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
 
@@ -112,9 +115,8 @@ void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size
     const llvm::PointerType* ptrType = ::cast<llvm::PointerType>( src->getType() );
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
-    llvm::Value* allocSize = llvm::ConstantInt::get( 
-            llvm::IntegerType::getInt64Ty(llvmCtxt), 
-            allocType->getScalarSizeInBits() / 8 );
+    llvm::TargetData td( module_->getLLVMModule() );
+    llvm::Value* allocSize = createInt64( llvmCtxt, td.getTypeStoreSize(allocType) );
 
     llvm::Value* cpySize = builder_.CreateMul(size, allocSize, "memcpy-size");
 
@@ -127,6 +129,11 @@ void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size
     call->setTailCall();
     call->addAttribute(~0, llvm::Attribute::NoUnwind);
     builder_.Insert(call);
+}
+
+llvm::LLVMContext& Context::llvmCtxt()
+{
+    return *module_->llvmCtxt_;
 }
 
 } // namespace swift

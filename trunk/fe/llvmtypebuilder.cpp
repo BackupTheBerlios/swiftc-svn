@@ -63,13 +63,40 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
     {
         Class* c = iter->second;
 
-        struct2Class_[ c->llvmType() ] = c;
+        // skip builtin types
+        if ( ScalarType::isScalar(c->id()) )
+            continue;
+
+        struct2Class_[ c->llvmType_ ] = c;
 
         if ( c->isSimd() )
-            vecStructs_[ c->llvmType() ] = 0;
+            vecStructs_[ c->llvmType_ ] = vec::VecType();
     }
 
+    // vec types
     vec::TypeVectorizer typeVec( this, vecStructs_, ctxt_->module_->getLLVMModule() );
+
+    /*
+     * fill entries in class
+     */
+
+    for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
+    {
+        Class* c = iter->second;
+
+        // skip builtin types
+        if ( ScalarType::isScalar(c->id()) )
+            continue;
+
+        if ( c->isSimd() )
+        {
+            struct2Class_[ c->llvmType_ ] = c;
+            vec::VecType& vec = vecStructs_[c->llvmType_];
+
+            c->vecType_ = vec.struct_;
+            c->simdLength_ = vec.simdLength_;
+        }
+    }
 }
 
 bool LLVMTypebuilder::getResult() const
@@ -82,7 +109,7 @@ bool LLVMTypebuilder::process(Class* c)
     Module* m = ctxt_->module_;
 
     // already processed?
-    if ( c->llvmType() )
+    if ( c->llvmType_ )
         return true;
 
     typedef Class::MemberVars::const_iterator MVIter;
@@ -121,13 +148,13 @@ bool LLVMTypebuilder::process(Class* c)
         llvmTypes.push_back(llvmType);
     }
 
-    c->llvmType() = llvm::StructType::get(*m->llvmCtxt_, llvmTypes);
+    c->llvmType_ = llvm::StructType::get(*m->llvmCtxt_, llvmTypes);
 
     // mark this class as done
     cycle_.erase(c);
 
     // add a name
-    m->getLLVMModule()->addTypeName( c->cid(), c->llvmType() );
+    m->getLLVMModule()->addTypeName( c->cid(), c->llvmType_ );
 
     return true;
 }

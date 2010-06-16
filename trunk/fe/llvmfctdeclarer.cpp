@@ -113,7 +113,7 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 
     // push hidden 'self' param first if necessary
     if ( dynamic_cast<Method*>(m) )
-        m->params_.push_back( llvm::PointerType::getUnqual( c->llvmType()) );
+        m->params_.push_back( llvm::PointerType::getUnqual( c->getLLVMType()) );
 
     // build return type
     if (m->main_)

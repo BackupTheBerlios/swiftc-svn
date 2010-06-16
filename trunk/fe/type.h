@@ -66,6 +66,9 @@ public:
             const UserType*& missing,
             Module* m) const = 0;
 
+    typedef std::pair<const llvm::Type*, int> VecType;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const = 0;
+
     TokenType getModifier() const;
     bool isVar() const;
     bool isRef() const;
@@ -103,6 +106,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
 };
 
 //------------------------------------------------------------------------------
@@ -161,6 +165,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
 
     bool isFloat() const;
     bool isInteger() const;
@@ -187,6 +192,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
 };
 
 //------------------------------------------------------------------------------
@@ -201,6 +207,7 @@ public:
     virtual bool validate(Module* m) const;
     virtual bool check(const Type* t, Module* m) const;
     virtual bool perRef() const;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
 
     Type* getInnerType();
     const Type* getInnerType() const;
@@ -248,15 +255,26 @@ public:
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
 
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
 
-    unsigned getElemSize(Module* m) const;
-    static void emitCreate(Context* ctxt, llvm::Value* agg, llvm::Value* size);
-    static void emitCopy(Context* ctxt, llvm::Value* agg, llvm::Value* size);
+    virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const = 0;
+    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const = 0;
+
+    static void emitCreate(Context* ctxt, 
+                           const llvm::Type* allocType, 
+                           llvm::Value* aggPtr,
+                           llvm::Value* size,
+                           int simdLength);
+    static void emitCopy(Context* ctxt, 
+                         const llvm::Type* allocType, 
+                         llvm::Value* lvalue, 
+                         llvm::Value* rvalue,
+                         int simdLength);
+
+    static llvm::Value* adjustSize(Context* ctxt, llvm::Value* oldSize, int simdLength);
 };
 
 //------------------------------------------------------------------------------
@@ -269,6 +287,9 @@ public:
 
     virtual Array* clone() const;
     virtual std::string containerStr() const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
+    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const;
 };
 
 //------------------------------------------------------------------------------
@@ -281,6 +302,9 @@ public:
 
     virtual Simd* clone() const;
     virtual std::string containerStr() const;
+    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
+    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const;
 };
 
 //------------------------------------------------------------------------------

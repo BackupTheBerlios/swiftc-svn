@@ -82,6 +82,7 @@ ADD_EXECUTABLE (swift
     utils/disjointsets.cpp
     utils/memmgr.cpp
     utils/stringhelper.cpp
+    utils/llvmhelper.cpp
 
     fe/lexer.cpp
     fe/parser.cpp
@@ -113,7 +114,7 @@ ADD_EXECUTABLE (swift
     fe/main.cpp
 
     vec/typevectorizer.cpp
-)
+    )
 
 #-------------------------------------------------------------------------------
 
@@ -124,7 +125,7 @@ ADD_CUSTOM_COMMAND (
     COMMAND ./gentypes.sh
     WORKING_DIRECTORY fe/builtin
     DEPENDS fe/builtin/int_template.swift fe/builtin/real_template.swift fe/builtin/bool.swift
-)
+    )
 
 #-------------------------------------------------------------------------------
 
@@ -133,13 +134,13 @@ EXECUTE_PROCESS(
     RESULT_VARIABLE res_llvm_libs
     OUTPUT_VARIABLE llvm_libs
     OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+    )
 
 EXECUTE_PROCESS(
     COMMAND sh -c "llvm-config --ldflags"
     RESULT_VARIABLE res_llvm_flags
     OUTPUT_VARIABLE llvm_flags
     OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+    )
 
 TARGET_LINK_LIBRARIES(swift ${llvm_libs} ${llvm_flags})

@@ -81,10 +81,10 @@ public:
     Impl getDefaultCreate() const;
     Impl getAssign() const;
 
-    llvm::StructType*& llvmType();
-    typedef llvm::StructType* LLVMStructTypePtr;
-    const LLVMStructTypePtr& llvmType() const;
     bool isSimd() const;
+    const llvm::StructType* getLLVMType() const;
+    const llvm::StructType* getVecType() const;
+    int getSimdLength() const;
 
 protected:
 
@@ -100,11 +100,18 @@ protected:
 
 private:
 
+    void setLLVMType(const llvm::Type* llvmType);
+    void setVecType(const llvm::Type* vecType);
+
     Impl copyCreate_;
     Impl defaultCreate_;
     Impl copyAssign_;
 
-    llvm::StructType* llvmType_;
+    const llvm::StructType* llvmType_;
+    const llvm::StructType* vecType_;
+    int simdLength_;
+
+    friend class LLVMTypebuilder;
 };
 
 //------------------------------------------------------------------------------

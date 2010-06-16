@@ -317,16 +317,22 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     }
                     case ASCall::CONTAINER_COPY:
                     {
+                        const Container* c = 
+                            cast<Container>( s->tuple_->getTypeNode(i)->getType() );
+
                         llvm::Value* rvalue = s->exprList_->getAddr(i, ctxt_);
                         llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
-                        Container::emitCopy(ctxt_, lvalue, rvalue);
+                        c->emitCopy(ctxt_, lvalue, rvalue);
                         continue;
                     }
                     case ASCall::CONTAINER_CREATE:
                     {
+                        const Container* c = 
+                            cast<Container>( s->tuple_->getTypeNode(i)->getType() );
+
                         llvm::Value* size = s->exprList_->getScalar(i, ctxt_->builder_);
                         llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
-                        Container::emitCreate(ctxt_, lvalue, size);
+                        c->emitCreate(ctxt_, lvalue, size);
                         continue;
                     }
                 }

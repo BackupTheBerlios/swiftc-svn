@@ -210,10 +210,17 @@ void StmntAnalyzer::visit(AssignStmnt* s)
          * we have case 3
          */
 
+        if ( s->exprList_->numItems() > 1 )
+        {
+            errorf(s->loc(), "todo");
+            ctxt_->result_ = false;
+            return;
+        }
+
         if ( numLhs != rhs.size() )
         {
             errorf( s->loc(), "the number of left-hand side items must match "
-                    "the number or returned values on the right-hand side here" );
+                    "the number of returned values on the right-hand side here" );
             ctxt_->result_ = false;
             return;
         }
@@ -324,16 +331,22 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                             name.c_str(), 
                             str.c_str(), 
                             rhs[i]->toString().c_str(),
-                            c->containerStr().c_str() );
+                            c->toString().c_str() );
 
                     ctxt_->result_ = false;
                 }
             }
             else
-                swiftAssert(false, "unreachable");
+            {
+                swiftAssert( lhs[i]->cast<ErrorType>(), "unreachable" );
+            }
         } // for each lhs/rhs pair
 
-        swiftAssert( s->calls_.size() == s->exprList_->numRetValues(), "sizes must match" );
+        if (ctxt_->result_)
+        {
+            swiftAssert( s->calls_.size() == s->exprList_->numRetValues(), 
+                    "sizes must match" );
+        }
     }
 }
 

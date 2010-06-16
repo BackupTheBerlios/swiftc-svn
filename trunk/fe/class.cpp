@@ -43,6 +43,8 @@ Class::Class(location loc, bool simd, std::string* id)
     , defaultCreate_(NOT_ANALYZED)
     , copyAssign_(NOT_ANALYZED)
     , llvmType_(0)
+    , vecType_(0)
+    , simdLength_(-1)
 {}
 
 Class::~Class()
@@ -267,19 +269,24 @@ Class::Impl Class::getAssign() const
     return copyAssign_;
 }
 
-llvm::StructType*& Class::llvmType()
-{
-    return llvmType_;
-}
-
-const Class::LLVMStructTypePtr& Class::llvmType() const
-{
-    return llvmType_;
-}
-
 bool Class::isSimd() const
 {
     return simd_;
+}
+
+const llvm::StructType* Class::getLLVMType() const
+{
+    return llvmType_;
+}
+
+const llvm::StructType* Class::getVecType() const
+{
+    return vecType_;
+}
+
+int Class::getSimdLength() const
+{
+    return simdLength_;
 }
 
 //------------------------------------------------------------------------------

@@ -63,6 +63,8 @@ public:
     llvm::Function* malloc_;
     llvm::Function* memcpy_;
 
+    llvm::LLVMContext& llvmCtxt();
+
 private:
 
     typedef std::stack<Scope*> Scopes;

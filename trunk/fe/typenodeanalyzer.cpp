@@ -32,12 +32,45 @@ void TypeNodeAnalyzer::visit(Decl* d)
 
         SWIFT_PREV_ERROR( var->loc() );
 
+        goto error_out;
+    }
+    else if ( const Simd* simd = d->getType()->cast<Simd>() )
+    {
+        const Type* inner = simd->getInnerType();
+
+        if ( const BaseType* bt = inner->cast<BaseType>() )
+        {
+            if ( !bt->lookupClass(ctxt_->module_)->isSimd() )
+            {
+                errorf( d->loc(), 
+                        "the inner type '%s' of the simd container '%s' "
+                        "is not declared with 'simd'",
+                        inner->toString().c_str(),
+                        d->cid() );
+                goto error_out;
+            }
+            else
+                goto ok_out;
+        }
+        else
+        {
+            errorf( d->loc(), 
+                    "the inner type of an simd container must be a base type "
+                    "but type '%s' is given",
+                    inner->toString().c_str() );
+            goto error_out;
+        }
+    }
+    else
+        goto ok_out;
+
+error_out:
         // substiture decl's type with an error type and set error
         delete d->types_[0];
         setError(d, true);
-    }
-    else
-    {
+        return;
+
+ok_out:
         // everything fine - so register the local
         d->local_ = new Local( 
                 d->loc(), d->getType()->clone(), new std::string(*d->id()) );
@@ -47,7 +80,6 @@ void TypeNodeAnalyzer::visit(Decl* d)
         d->inits_.resize(1);
         lvalues_[0] = true;
         d->inits_[0] = false;
-    }
 }
 
 void TypeNodeAnalyzer::visit(ErrorExpr* e)

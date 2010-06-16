@@ -150,7 +150,6 @@ static int start(int argc, char** argv)
     swift::BaseType::destroyTypeMap();
     delete swift::g_lexer_filename;
     delete module;
-    //swift::Literal::destroyTypeMap();
 
     if (!result)
         return EXIT_FAILURE; // abort on error
