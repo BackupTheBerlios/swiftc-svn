@@ -18,7 +18,7 @@ Context::Context(Module* module)
     : result_(true)
     , module_(module)
     , tuple_( new TNList() )
-    , builder_( llvm::IRBuilder<>(*module->llvmCtxt_) )
+    , builder_( llvm::IRBuilder<>(*module->lc_) )
 {}
 
 Context::~Context()
@@ -90,13 +90,11 @@ llvm::AllocaInst* Context::createEntryAlloca(
 
 llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* ptrType)
 {
-    llvm::LLVMContext& llvmCtxt = *module_->llvmCtxt_;
+    llvm::LLVMContext& lc = *module_->lc_;
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
-    std::cout << allocType->getDescription() << std::endl;
-
     llvm::TargetData td( module_->getLLVMModule() );
-    llvm::Value* allocSize = createInt64( llvmCtxt, td.getTypeStoreSize(allocType) );
+    llvm::Value* allocSize = createInt64( lc, td.getTypeStoreSize(allocType) );
 
     llvm::Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
 
@@ -111,18 +109,18 @@ llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* p
 
 void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size)
 {
-    llvm::LLVMContext& llvmCtxt = *module_->llvmCtxt_;
+    llvm::LLVMContext& lc = *module_->lc_;
     const llvm::PointerType* ptrType = ::cast<llvm::PointerType>( src->getType() );
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
     llvm::TargetData td( module_->getLLVMModule() );
-    llvm::Value* allocSize = createInt64( llvmCtxt, td.getTypeStoreSize(allocType) );
+    llvm::Value* allocSize = createInt64( lc, td.getTypeStoreSize(allocType) );
 
     llvm::Value* cpySize = builder_.CreateMul(size, allocSize, "memcpy-size");
 
     Values args(3);
-    args[0] = builder_.CreateBitCast(dst, llvm::PointerType::getInt8PtrTy(llvmCtxt) );
-    args[1] = builder_.CreateBitCast(src, llvm::PointerType::getInt8PtrTy(llvmCtxt) );
+    args[0] = builder_.CreateBitCast(dst, llvm::PointerType::getInt8PtrTy(lc) );
+    args[1] = builder_.CreateBitCast(src, llvm::PointerType::getInt8PtrTy(lc) );
     args[2] = cpySize;
 
     llvm::CallInst* call = llvm::CallInst::Create( memcpy_, args.begin(), args.end() );
@@ -131,9 +129,14 @@ void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size
     builder_.Insert(call);
 }
 
-llvm::LLVMContext& Context::llvmCtxt()
+llvm::LLVMContext& Context::lc()
 {
-    return *module_->llvmCtxt_;
+    return *module_->lc_;
+}
+
+llvm::Module* Context::lm()
+{
+    return module_->getLLVMModule();
 }
 
 } // namespace swift

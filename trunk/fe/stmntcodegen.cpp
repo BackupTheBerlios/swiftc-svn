@@ -1,6 +1,7 @@
 #include "fe/stmntcodegen.h"
 
 #include <llvm/BasicBlock.h>
+#include <llvm/Function.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
 
@@ -41,7 +42,7 @@ void StmntCodeGen::visit(CFStmnt* s)
         else
             builder.CreateBr(ctxt_->memberFct_->returnBB_);
 
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(*ctxt_->module_->llvmCtxt_, "unreachable");
+        llvm::BasicBlock* bb = llvm::BasicBlock::Create(ctxt_->lc(), "unreachable");
         ctxt_->llvmFct_->getBasicBlockList().push_back(bb);
         builder.SetInsertPoint(bb);
 
@@ -58,7 +59,7 @@ void StmntCodeGen::visit(DeclStmnt* s)
 
 void StmntCodeGen::visit(IfElStmnt* s)
 {
-    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = *ctxt_->module_->lc_;
     llvm::Function* llvmFct = ctxt_->llvmFct_;
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
@@ -70,9 +71,9 @@ void StmntCodeGen::visit(IfElStmnt* s)
      */
 
     typedef llvm::BasicBlock BB;
-    BB* thenBB = llvm::BasicBlock::Create(llvmCtxt, "then");
-    BB* mergeBB = llvm::BasicBlock::Create(llvmCtxt, "merge");
-    BB* elseBB = s->elScope_ ? llvm::BasicBlock::Create(llvmCtxt, "else") : 0;
+    BB* thenBB = llvm::BasicBlock::Create(lc, "then");
+    BB* mergeBB = llvm::BasicBlock::Create(lc, "merge");
+    BB* elseBB = s->elScope_ ? llvm::BasicBlock::Create(lc, "else") : 0;
 
     /*
      * create branch
@@ -110,7 +111,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
 
 void StmntCodeGen::visit(RepeatUntilStmnt* s)
 {
-    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt_->lc();
     llvm::Function* llvmFct = ctxt_->llvmFct_;
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
@@ -119,8 +120,8 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
      */
 
     typedef llvm::BasicBlock BB;
-    BB* loopBB   = llvm::BasicBlock::Create(llvmCtxt, "rep");
-    BB*  outBB   = llvm::BasicBlock::Create(llvmCtxt, "rep-out");
+    BB* loopBB   = llvm::BasicBlock::Create(lc, "rep");
+    BB*  outBB   = llvm::BasicBlock::Create(lc, "rep-out");
 
     /*
      * close current bb
@@ -154,7 +155,7 @@ void StmntCodeGen::visit(ScopeStmnt* s)
 
 void StmntCodeGen::visit(WhileStmnt* s)
 {
-    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt_->lc();
     llvm::Function* llvmFct = ctxt_->llvmFct_;
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
@@ -163,9 +164,9 @@ void StmntCodeGen::visit(WhileStmnt* s)
      */
 
     typedef llvm::BasicBlock BB;
-    BB* headerBB = llvm::BasicBlock::Create(llvmCtxt, "while-header");
-    BB* loopBB   = llvm::BasicBlock::Create(llvmCtxt, "while");
-    BB*  outBB   = llvm::BasicBlock::Create(llvmCtxt, "while-out");
+    BB* headerBB = llvm::BasicBlock::Create(lc, "while-header");
+    BB* loopBB   = llvm::BasicBlock::Create(lc, "while");
+    BB*  outBB   = llvm::BasicBlock::Create(lc, "while-out");
 
     /*
      * close current bb
@@ -320,9 +321,9 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        llvm::Value* rvalue = s->exprList_->getAddr(i, ctxt_);
-                        llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
-                        c->emitCopy(ctxt_, lvalue, rvalue);
+                        llvm::Value* dst = s->tuple_->getAddr(i, ctxt_);
+                        llvm::Value* src = s->exprList_->getAddr(i, ctxt_);
+                        c->emitCopy(ctxt_, dst, src);
                         continue;
                     }
                     case ASCall::CONTAINER_CREATE:

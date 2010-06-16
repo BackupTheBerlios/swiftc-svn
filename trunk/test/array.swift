@@ -37,7 +37,6 @@ class Test
         # write
         while i < 20x
             a[i] = i
-            c_call print_int( a[i]:to_int() )
             i = i + 1x
         end
 
@@ -50,16 +49,7 @@ class Test
             i = i + 1x
         end
 
-        index sum = 0x
-        i = 0x
-
-        # sum up
-        while i < 20x
-            sum = sum + a[i]
-            i = i + 1x
-        end
-
-        c_call print_int( sum:to_int() )
+        c_call print_int(1111111111)
 
         array{Foo} af = 20x
 
@@ -79,7 +69,7 @@ class Test
         end
 
         simd{Vec3} s1 = 1024x
-        #simd{Vec3} s2 = s1
+        simd{Vec3} s2 = s1
 
         result = 0
     end

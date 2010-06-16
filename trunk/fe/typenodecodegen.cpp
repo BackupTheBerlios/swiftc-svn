@@ -10,6 +10,7 @@
 #include <llvm/Support/TypeBuilder.h>
 
 #include "utils/cast.h"
+#include "utils/llvmhelper.h"
 
 #include "fe/context.h"
 #include "fe/class.h"
@@ -17,6 +18,8 @@
 #include "fe/tnlist.h"
 #include "fe/type.h"
 #include "fe/var.h"
+
+using llvm::Value;
 
 namespace swift {
 
@@ -59,8 +62,8 @@ void TypeNodeCodeGen::visit(Literal* l)
     using llvm::APInt;
     using llvm::APFloat;
 
-    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
-    llvm::Value* val;
+    llvm::LLVMContext& lc = ctxt_->lc();
+    Value* val;
 
     switch ( l->getToken() )
     {
@@ -70,18 +73,18 @@ void TypeNodeCodeGen::visit(Literal* l)
 
         case Token::L_SAT8:
         case Token::L_INT8: 
-            val = ConstantInt::get(llvmCtxt, APInt( 8, l->box_.int64_, true)); break;
+            val = ConstantInt::get(lc, APInt( 8, l->box_.int64_, true)); break;
 
         case Token::L_SAT16:
         case Token::L_INT16:
-            val = ConstantInt::get(llvmCtxt, APInt(16, l->box_.int64_, true)); break;
+            val = ConstantInt::get(lc, APInt(16, l->box_.int64_, true)); break;
 
         case Token::L_INT:  
         case Token::L_INT32:
-            val = ConstantInt::get(llvmCtxt, APInt(32, l->box_.int64_, true)); break;   
+            val = ConstantInt::get(lc, APInt(32, l->box_.int64_, true)); break;   
 
         case Token::L_INT64:
-            val = ConstantInt::get(llvmCtxt, APInt(64, l->box_.int64_, true)); break;   
+            val = ConstantInt::get(lc, APInt(64, l->box_.int64_, true)); break;   
 
         /*
          * unsigned ints
@@ -89,19 +92,19 @@ void TypeNodeCodeGen::visit(Literal* l)
 
         case Token::L_USAT8:
         case Token::L_UINT8: 
-            val = ConstantInt::get(llvmCtxt, APInt( 8, l->box_.uint64_)); break;   
+            val = ConstantInt::get(lc, APInt( 8, l->box_.uint64_)); break;   
 
         case Token::L_USAT16:
         case Token::L_UINT16:
-            val = ConstantInt::get(llvmCtxt, APInt(16, l->box_.uint64_)); break;   
+            val = ConstantInt::get(lc, APInt(16, l->box_.uint64_)); break;   
 
         case Token::L_UINT:  
         case Token::L_UINT32:
-            val = ConstantInt::get(llvmCtxt, APInt(32, l->box_.uint64_)); break;   
+            val = ConstantInt::get(lc, APInt(32, l->box_.uint64_)); break;   
 
         case Token::L_INDEX:
         case Token::L_UINT64:
-            val = ConstantInt::get(llvmCtxt, APInt(64, l->box_.uint64_)); break;   
+            val = ConstantInt::get(lc, APInt(64, l->box_.uint64_)); break;   
 
         /*
          * floats
@@ -109,9 +112,9 @@ void TypeNodeCodeGen::visit(Literal* l)
 
         case Token::L_REAL:
         case Token::L_REAL32: 
-            val = ConstantFP::get(llvmCtxt, APFloat(l->box_.float_) ); break;
+            val = ConstantFP::get(lc, APFloat(l->box_.float_) ); break;
         case Token::L_REAL64: 
-            val = ConstantFP::get(llvmCtxt, APFloat(l->box_.double_) ); break;
+            val = ConstantFP::get(lc, APFloat(l->box_.double_) ); break;
 
         case Token::L_TRUE:
         case Token::L_FALSE:
@@ -136,11 +139,11 @@ void TypeNodeCodeGen::visit(Self* n)
     setResult( ctxt_->builder_.CreateLoad( m->getSelfValue(), "self" ), true );
 }
 
-llvm::Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
+Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
 {
     // get address of the prefix expr
     a->prefixExpr_->accept(this);
-    llvm::Value* addr = getAddr();
+    Value* addr = getAddr();
 
     if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
         addr = ptr->recDerefAddr(ctxt_->builder_, addr);
@@ -152,14 +155,14 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
 
-    llvm::Value* addr = resolvePrefixExpr(i);
+    Value* addr = resolvePrefixExpr(i);
 
     i->indexExpr_->accept(this);
 
-    llvm::Value* container = builder.CreateLoad(addr);
-    llvm::Value* ptr = builder.CreateExtractValue(container, Container::POINTER);
+    Value* container = builder.CreateLoad(addr);
+    Value* ptr = builder.CreateExtractValue(container, Container::POINTER);
     
-    llvm::Value* result = builder.CreateInBoundsGEP(ptr, getScalar());
+    Value* result = builder.CreateInBoundsGEP(ptr, getScalar());
 
     setResult(result, true);
 }
@@ -167,25 +170,28 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
 void TypeNodeCodeGen::visit(MemberAccess* m)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
-    llvm::LLVMContext& llvmCtxt = *ctxt_->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt_->lc();
 
-    llvm::Value* addr = resolvePrefixExpr(m);
+    Value* addr = resolvePrefixExpr(m);
 
     // build input
-    llvm::Value* input[2];
-    input[0] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, 0) );
-    input[1] = llvm::ConstantInt::get( llvmCtxt, llvm::APInt(32, m->memberVar_->getIndex()) );
+    Value* input[2];
+    input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
+    input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, m->memberVar_->getIndex()) );
 
     // build and get value
     std::ostringstream oss;
     oss << m->prefixExpr_->getType()->toString() << '.' << m->cid();
-    setResult( builder.CreateInBoundsGEP( addr, input, input+2, oss.str() ), true );
+    int index = m->memberVar_->getIndex();
+    Value* result = createInBoundsGEP_0_i32( lc, builder, addr, index, oss.str() );
+
+    setResult(result, true);
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
-    llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
+    llvm::Module* llvmModule = ctxt_->lm();
 
     c->exprList_->accept(this);
     const TypeList& inTypes = c->exprList_->typeList();
@@ -194,11 +200,9 @@ void TypeNodeCodeGen::visit(CCall* c)
      * build function type
      */
 
-    const llvm::Type* retType;
-    if (c->retType_)
-        retType = c->retType_->getLLVMType(ctxt_->module_);
-    else
-        retType = llvm::TypeBuilder<void, true>::get(*ctxt_->module_->llvmCtxt_);
+    const llvm::Type* retType = c->retType_ 
+        ? c->retType_->getLLVMType(ctxt_->module_) 
+        : createVoid(ctxt_->lc());
 
     LLVMTypes params( inTypes.size() );
 
@@ -246,7 +250,7 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         if ( llvmTo == llvmFrom )
             return; // value_ and isAddr_ are still correct, so nothing to do
 
-        llvm::Value* val = getValue();
+        Value* val = getValue();
 
         if ( isAddr() )
             val = builder.CreateLoad(val, val->getName() );
@@ -303,13 +307,13 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     if ( b->builtin_ )
     {
         b->op1_->accept(this);
-        llvm::Value* v1 = getScalar();
+        Value* v1 = getScalar();
         b->op2_->accept(this);
-        llvm::Value* v2 = getScalar();
+        Value* v2 = getScalar();
 
         const ScalarType* scalar = cast<ScalarType>( b->op1_->getType() );
 
-        llvm::Value* val;
+        Value* val;
 
         switch (b->token_)
         {
@@ -387,7 +391,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     if ( u->builtin_ )
     {
         u->op1_->accept(this);
-        llvm::Value* val = getScalar();
+        Value* val = getScalar();
         const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
 
         switch (u->token_)
@@ -424,7 +428,7 @@ void TypeNodeCodeGen::getSelf(MethodCall* m)
         values_[0] = ptr->recDerefAddr(ctxt_->builder_, values_[0]);
 }
 
-void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
+void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
 {
     llvm::IRBuilder<>& builder = ctxt_->builder_;
     Values args;
@@ -464,7 +468,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     llvm::CallInst* callInst = llvm::CallInst::Create( 
             fct->llvmFct_, args.begin(), args.end() );
     callInst->setCallingConv(llvm::CallingConv::Fast);
-    llvm::Value* retValue = builder.Insert(callInst);
+    Value* retValue = builder.Insert(callInst);
 
     /*
      * write results back
@@ -478,7 +482,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     for (size_t i = 0; i < out.size(); ++i)
     {
         const Type* type = out[i];
-        llvm::Value* val;
+        Value* val;
 
         if ( type->perRef() )
         {
@@ -497,14 +501,14 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, llvm::Value* self)
     }
 }
 
-llvm::Value* TypeNodeCodeGen::getValue(size_t i /*= 0*/) const
+Value* TypeNodeCodeGen::getValue(size_t i /*= 0*/) const
 {
     return values_[i];
 }
 
-llvm::Value* TypeNodeCodeGen::getAddr(size_t i /*= 0*/) const
+Value* TypeNodeCodeGen::getAddr(size_t i /*= 0*/) const
 {
-    llvm::Value* val = values_[i];
+    Value* val = values_[i];
 
     if ( !addresses_[i] )
     {
@@ -518,9 +522,9 @@ llvm::Value* TypeNodeCodeGen::getAddr(size_t i /*= 0*/) const
         return val;
 }
 
-llvm::Value* TypeNodeCodeGen::getScalar(size_t i /*= 0*/) const
+Value* TypeNodeCodeGen::getScalar(size_t i /*= 0*/) const
 {
-    llvm::Value* val = values_[i];
+    Value* val = values_[i];
 
     if ( addresses_[i] )
         return ctxt_->builder_.CreateLoad( val, val->getName() );
@@ -533,7 +537,7 @@ bool TypeNodeCodeGen::isAddr(size_t i /*= 0*/) const
     return addresses_[i];
 }
 
-void TypeNodeCodeGen::setResult(llvm::Value* value, bool isAddr)
+void TypeNodeCodeGen::setResult(Value* value, bool isAddr)
 {
     swiftAssert( values_.size() == addresses_.size(), "sizes must match" );
 

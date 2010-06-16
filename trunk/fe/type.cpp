@@ -39,6 +39,8 @@
 #include "fe/context.h"
 #include "fe/error.h"
 
+using llvm::Value;
+
 namespace swift {
 
 //------------------------------------------------------------------------------
@@ -203,35 +205,35 @@ const char* BaseType::cid() const
     return id_->c_str();
 }
 
-void BaseType::initTypeMap(llvm::LLVMContext* llvmCtxt)
+void BaseType::initTypeMap(llvm::LLVMContext* lc)
 {
     typeMap_ = new TypeMap();
     TypeMap& typeMap = *typeMap_;
 
-    typeMap["bool"]   = llvm::IntegerType::getInt1Ty(*llvmCtxt);
+    typeMap["bool"]   = llvm::IntegerType::getInt1Ty(*lc);
 
-    typeMap["int8"]   = llvm::IntegerType::getInt8Ty(*llvmCtxt);
-    typeMap["uint8"]  = llvm::IntegerType::getInt8Ty(*llvmCtxt);
-    typeMap["sat8"]   = llvm::IntegerType::getInt8Ty(*llvmCtxt);
-    typeMap["usat8"]  = llvm::IntegerType::getInt8Ty(*llvmCtxt);
+    typeMap["int8"]   = llvm::IntegerType::getInt8Ty(*lc);
+    typeMap["uint8"]  = llvm::IntegerType::getInt8Ty(*lc);
+    typeMap["sat8"]   = llvm::IntegerType::getInt8Ty(*lc);
+    typeMap["usat8"]  = llvm::IntegerType::getInt8Ty(*lc);
 
-    typeMap["int16"]  = llvm::IntegerType::getInt16Ty(*llvmCtxt);
-    typeMap["uint16"] = llvm::IntegerType::getInt16Ty(*llvmCtxt);
-    typeMap["sat16"]  = llvm::IntegerType::getInt16Ty(*llvmCtxt);
-    typeMap["usat16"] = llvm::IntegerType::getInt16Ty(*llvmCtxt);
+    typeMap["int16"]  = llvm::IntegerType::getInt16Ty(*lc);
+    typeMap["uint16"] = llvm::IntegerType::getInt16Ty(*lc);
+    typeMap["sat16"]  = llvm::IntegerType::getInt16Ty(*lc);
+    typeMap["usat16"] = llvm::IntegerType::getInt16Ty(*lc);
 
-    typeMap["int32"]  = llvm::IntegerType::getInt32Ty(*llvmCtxt);
-    typeMap["uint32"] = llvm::IntegerType::getInt32Ty(*llvmCtxt);
-    typeMap["int"]    = llvm::IntegerType::getInt32Ty(*llvmCtxt);
-    typeMap["uint"]   = llvm::IntegerType::getInt32Ty(*llvmCtxt);
+    typeMap["int32"]  = llvm::IntegerType::getInt32Ty(*lc);
+    typeMap["uint32"] = llvm::IntegerType::getInt32Ty(*lc);
+    typeMap["int"]    = llvm::IntegerType::getInt32Ty(*lc);
+    typeMap["uint"]   = llvm::IntegerType::getInt32Ty(*lc);
 
-    typeMap["int64"]  = llvm::IntegerType::getInt64Ty(*llvmCtxt);
-    typeMap["uint64"] = llvm::IntegerType::getInt64Ty(*llvmCtxt);
-    typeMap["index"]  = llvm::IntegerType::getInt64Ty(*llvmCtxt);
+    typeMap["int64"]  = llvm::IntegerType::getInt64Ty(*lc);
+    typeMap["uint64"] = llvm::IntegerType::getInt64Ty(*lc);
+    typeMap["index"]  = llvm::IntegerType::getInt64Ty(*lc);
 
-    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*llvmCtxt);
-    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*llvmCtxt);
-    typeMap["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*llvmCtxt);
+    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lc);
+    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lc);
+    typeMap["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*lc);
 
     sizeMap_ = new SizeMap();
     SizeMap& sizeMap = *sizeMap_;
@@ -518,7 +520,7 @@ const llvm::Type* Ptr::defineLLVMType(
     swiftAssert( !opaque, "must not be set" );
     swiftAssert( missing, "must be set" );
 
-    opaque = llvm::OpaqueType::get(*m->llvmCtxt_);
+    opaque = llvm::OpaqueType::get(*m->lc_);
 
     return llvm::PointerType::getUnqual(opaque);
 }
@@ -528,12 +530,12 @@ const Type* Ptr::derefPtr() const
     return innerType_->derefPtr();
 }
 
-llvm::Value* Ptr::recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const
+Value* Ptr::recDeref(llvm::IRBuilder<>& builder, Value* value) const
 {
     return builder.CreateLoad( recDeref(builder, value), value->getName() );
 }
 
-llvm::Value* Ptr::recDerefAddr(llvm::IRBuilder<>& builder, llvm::Value* value) const
+Value* Ptr::recDerefAddr(llvm::IRBuilder<>& builder, Value* value) const
 {
     swiftAssert( !innerType_->isRef(), "must not be a reference" );
     swiftAssert( !isRef_, "must not be a reference" );
@@ -573,42 +575,23 @@ const llvm::Type* Container::defineLLVMType(
 
 void Container::emitCreate(Context* ctxt, 
                            const llvm::Type* allocType, 
-                           llvm::Value* aggPtr, 
-                           llvm::Value* size,
+                           Value* aggPtr, 
+                           Value* size,
                            int simdLength)
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
-    llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt->lc();
 
     const llvm::PointerType* ptrType = llvm::PointerType::getUnqual(allocType);
 
-#ifdef SWIFT_DEBUG
-    const llvm::StructType* allocType2 = 
-        ::cast<llvm::StructType>( 
-                ::cast<llvm::PointerType>( aggPtr->getType() )->getContainedType(0) );
-    const llvm::PointerType* ptrType2 = 
-        ::cast<llvm::PointerType>( (allocType2->element_begin() + POINTER)->get() );
+    // adjust size to simdLength-1 if necessary
+    Value* adjustedSize = (simdLength > 1) 
+        ? adjustSize(ctxt, size, simdLength)
+        : size;
 
-    swiftAssert(ptrType == ptrType2, "types must be equall");
-#endif // SWIFT_DEBUG
-
-    llvm::Value* ptr = ctxt->createMalloc(
-            adjustSize(ctxt, size, simdLength), ptrType );
-
-    llvm::Value* ptrDstAddr;
-    {
-        llvm::Value* input[2];
-        input[0] = createInt64(llvmCtxt);
-        input[1] = createInt32(llvmCtxt, POINTER);
-        ptrDstAddr = builder.CreateInBoundsGEP(aggPtr, input, input+2);
-    }
-    llvm::Value* sizeDstAddr;
-    {
-        llvm::Value* input[2];
-        input[0] = createInt64(llvmCtxt);
-        input[1] = createInt32(llvmCtxt, SIZE);
-        sizeDstAddr = builder.CreateInBoundsGEP(aggPtr, input, input+2);
-    }
+    Value* ptr = ctxt->createMalloc(adjustedSize, ptrType);
+    Value*  ptrDstAddr = createInBoundsGEP_0_i32(lc, builder, aggPtr, POINTER);
+    Value* sizeDstAddr = createInBoundsGEP_0_i32(lc, builder, aggPtr, SIZE);
 
     // and store
     builder.CreateStore(ptr, ptrDstAddr);
@@ -617,51 +600,32 @@ void Container::emitCreate(Context* ctxt,
 
 void Container::emitCopy(Context* ctxt, 
                          const llvm::Type* allocType, 
-                         llvm::Value* lvalue, 
-                         llvm::Value* rvalue, 
+                         Value* dst, 
+                         Value* src, 
                          int simdLength)
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
-    llvm::LLVMContext& lc = *ctxt->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt->lc();
 
-    llvm::Value* size = createInBoundsGEP_0_i32(lc, builder, rvalue, SIZE);
-    //llvm::Value* size;
-    //{
-        //llvm::Value* input[2];
-        //input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
-        //input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, SIZE) );
-        //size = builder.CreateLoad( builder.CreateInBoundsGEP(rvalue, input, input+2) );
-    //}
+    Value* size = createLoadInBoundsGEP_0_i32(lc, builder, src, SIZE);
 
-    emitCreate(ctxt, allocType, lvalue, size, simdLength);
+    emitCreate(ctxt, allocType, dst, size, simdLength);
 
-    llvm::Value* src;
-    {
-        llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, POINTER) );
-        src = builder.CreateLoad( builder.CreateInBoundsGEP(rvalue, input, input+2) );
-    }
-    llvm::Value* dst;
-    {
-        llvm::Value* input[2];
-        input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
-        input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, POINTER) );
-        dst = builder.CreateLoad( builder.CreateInBoundsGEP(lvalue, input, input+2) );
-    }
+    Value* srcPtr = createLoadInBoundsGEP_0_i32(lc, builder, src, POINTER);
+    Value* dstPtr = createLoadInBoundsGEP_0_i32(lc, builder, dst, POINTER);
 
-    ctxt->createMemCpy( dst, src, adjustSize(ctxt, size, simdLength) );
+    Value* adjustedSize = adjustSize(ctxt, size, simdLength);
+    ctxt->createMemCpy(dstPtr, srcPtr, adjustedSize);
 }
 
-llvm::Value* Container::adjustSize(Context* ctxt, llvm::Value* oldSize, int simdLength)
+Value* Container::adjustSize(Context* ctxt, Value* size, int simdLength)
 {
-    return oldSize;
-    llvm::LLVMContext& llvmCtxt = *ctxt->module_->llvmCtxt_;
+    llvm::LLVMContext& lc = ctxt->lc();
 
-    llvm::Value* simdLengthValue = 
-        llvm::ConstantInt::get( llvmCtxt, llvm::APInt(64, simdLength) );
+    if (simdLength > 1) // round up
+        size = ctxt->builder_.CreateAdd( size, createInt64(lc, simdLength-1) );
 
-    return ctxt->builder_.CreateUDiv(oldSize, simdLengthValue);
+    return ctxt->builder_.CreateUDiv( size, createInt64(lc, simdLength) );
 }
 
 //------------------------------------------------------------------------------
@@ -682,29 +646,29 @@ std::string Array::containerStr() const
 
 const llvm::Type* Array::getRawLLVMType(Module* m) const
 {
-    llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
+    llvm::LLVMContext& lc = *m->lc_;
 
     LLVMTypes llvmTypes(2);
     llvmTypes[POINTER] = llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
-    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lc);
 
 
-    const llvm::StructType* st = llvm::StructType::get(llvmCtxt, llvmTypes);
+    const llvm::StructType* st = llvm::StructType::get(lc, llvmTypes);
     m->getLLVMModule()->addTypeName( toString().c_str(), st );
      
     return st;
 }
 
-void Array::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const
+void Array::emitCreate(Context* ctxt, Value* aggPtr, Value* size) const
 {
-    Container::emitCreate(
-            ctxt, innerType_->getLLVMType(ctxt->module_), aggPtr, size, 1);
+    const llvm::Type* inner = innerType_->getLLVMType(ctxt->module_);
+    Container::emitCreate(ctxt, inner, aggPtr, size, 1);
 }
 
-void Array::emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const
+void Array::emitCopy(Context* ctxt, Value* dst, Value* src) const
 {
-    Container::emitCreate(
-            ctxt, innerType_->getLLVMType(ctxt->module_), lvalue, rvalue, 1);
+    const llvm::Type* inner = innerType_->getLLVMType(ctxt->module_);
+    Container::emitCopy(ctxt, inner, dst, src, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -725,21 +689,21 @@ std::string Simd::containerStr() const
 
 const llvm::Type* Simd::getRawLLVMType(Module* m) const
 {
-    llvm::LLVMContext& llvmCtxt = *m->llvmCtxt_;
+    llvm::LLVMContext& lc = *m->lc_;
 
     LLVMTypes llvmTypes(2);
     int simdLength;
     llvmTypes[POINTER] = llvm::PointerType::getUnqual( 
             innerType_->getVecLLVMType(m, simdLength) );
-    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lc);
 
-    const llvm::StructType* st = llvm::StructType::get(llvmCtxt, llvmTypes);
+    const llvm::StructType* st = llvm::StructType::get(lc, llvmTypes);
     m->getLLVMModule()->addTypeName( toString().c_str(), st );
      
     return st;
 }
 
-void Simd::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const
+void Simd::emitCreate(Context* ctxt, Value* aggPtr, Value* size) const
 {
     int simdLength;
     const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
@@ -747,12 +711,12 @@ void Simd::emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) con
     Container::emitCreate(ctxt, vecType, aggPtr, size, simdLength);
 }
 
-void Simd::emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const
+void Simd::emitCopy(Context* ctxt, Value* dst, Value* src) const
 {
     int simdLength;
     const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
 
-    Container::emitCreate(ctxt, vecType, lvalue, rvalue, simdLength);
+    Container::emitCopy(ctxt, vecType, dst, src, simdLength);
 }
 
 } // namespace swift

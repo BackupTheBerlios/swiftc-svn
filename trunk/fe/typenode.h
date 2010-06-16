@@ -341,7 +341,7 @@ public:
     virtual void accept(TypeNodeVisitorBase* t);
     TokenType getToken() const;
 
-    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
+    static void initTypeMap(llvm::LLVMContext* lc);
     static void destroyTypeMap();
 
 protected:

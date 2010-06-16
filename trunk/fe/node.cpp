@@ -43,8 +43,8 @@ Def::~Def()
 Module::Module(location loc, std::string* id)
     : Node(loc)
     , id_(id)
-    , llvmCtxt_( new llvm::LLVMContext() )
-    , llvmModule_( new llvm::Module( llvm::StringRef("default"), *llvmCtxt_) )
+    , lc_( new llvm::LLVMContext() )
+    , llvmModule_( new llvm::Module( llvm::StringRef("default"), *lc_) )
     , ctxt_( new Context(this) )
 {
     ctxt_->module_ = this;
@@ -59,7 +59,7 @@ Module::~Module()
         delete iter->second;
 
     delete llvmModule_;
-    delete llvmCtxt_;
+    delete lc_;
 }
 
 void Module::insert(Class* c)

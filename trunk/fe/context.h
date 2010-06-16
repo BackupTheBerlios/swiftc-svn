@@ -63,7 +63,8 @@ public:
     llvm::Function* malloc_;
     llvm::Function* memcpy_;
 
-    llvm::LLVMContext& llvmCtxt();
+    llvm::LLVMContext& lc();
+    llvm::Module* lm();
 
 private:
 

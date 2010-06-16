@@ -131,7 +131,7 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
-    static void initTypeMap(llvm::LLVMContext* llvmCtxt);
+    static void initTypeMap(llvm::LLVMContext* lc);
     static void destroyTypeMap();
 
 protected:
@@ -261,7 +261,7 @@ public:
             Module* m) const;
 
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const = 0;
-    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const = 0;
+    virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const = 0;
 
     static void emitCreate(Context* ctxt, 
                            const llvm::Type* allocType, 
@@ -270,11 +270,13 @@ public:
                            int simdLength);
     static void emitCopy(Context* ctxt, 
                          const llvm::Type* allocType, 
-                         llvm::Value* lvalue, 
-                         llvm::Value* rvalue,
+                         llvm::Value* dst, 
+                         llvm::Value* src,
                          int simdLength);
 
-    static llvm::Value* adjustSize(Context* ctxt, llvm::Value* oldSize, int simdLength);
+    static llvm::Value* adjustSize(Context* ctxt, 
+                                   llvm::Value* size, 
+                                   int simdLength);
 };
 
 //------------------------------------------------------------------------------
@@ -289,7 +291,7 @@ public:
     virtual std::string containerStr() const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
-    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const;
+    virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const;
 };
 
 //------------------------------------------------------------------------------
@@ -304,7 +306,7 @@ public:
     virtual std::string containerStr() const;
     virtual const llvm::Type* getRawLLVMType(Module* m) const;
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
-    virtual void emitCopy(Context* ctxt, llvm::Value* lvalue, llvm::Value* rvalue) const;
+    virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const;
 };
 
 //------------------------------------------------------------------------------

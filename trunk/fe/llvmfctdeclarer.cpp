@@ -4,6 +4,7 @@
 #include <llvm/Support/TypeBuilder.h>
 
 #include "utils/cast.h"
+#include "utils/llvmhelper.h"
 
 #include "fe/context.h"
 #include "fe/class.h"
@@ -37,18 +38,18 @@ LLVMFctDeclarer::LLVMFctDeclarer(Context* ctxt)
         }
     }
 
-    llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
-    llvm::LLVMContext& llvmCtxt = llvmModule->getContext();
+    llvm::Module* llvmModule = ctxt_->lm();
+    llvm::LLVMContext& lc = llvmModule->getContext();
 
     /*
      * declare malloc
      */
 
     {
-        const llvm::Type* retType = llvm::PointerType::getInt8PtrTy(llvmCtxt);
+        const llvm::Type* retType = llvm::PointerType::getInt8PtrTy(lc);
 
         LLVMTypes params(1);
-        params[0] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+        params[0] = llvm::IntegerType::getInt64Ty(lc);
 
         const llvm::FunctionType* fctType = 
             llvm::FunctionType::get(retType, params, false);
@@ -64,11 +65,11 @@ LLVMFctDeclarer::LLVMFctDeclarer(Context* ctxt)
      */
 
     {
-        const llvm::Type* retType = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+        const llvm::Type* retType = createVoid(lc);
         LLVMTypes params(3);
-        params[0] = llvm::PointerType::getInt8PtrTy(llvmCtxt);
-        params[1] = llvm::PointerType::getInt8PtrTy(llvmCtxt);
-        params[2] = llvm::IntegerType::getInt64Ty(llvmCtxt);
+        params[0] = llvm::PointerType::getInt8PtrTy(lc);
+        params[1] = llvm::PointerType::getInt8PtrTy(lc);
+        params[2] = llvm::IntegerType::getInt64Ty(lc);
 
         const llvm::FunctionType* fctType = 
             llvm::FunctionType::get(retType, params, false);
@@ -90,8 +91,8 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
     TypeList&  in = m->sig_. inTypes_;
     TypeList& out = m->sig_.outTypes_;
     Module* module = ctxt_->module_;
-    llvm::Module* llvmModule = ctxt_->module_->getLLVMModule();
-    llvm::LLVMContext& llvmCtxt = llvmModule->getContext();
+    llvm::Module* llvmModule = ctxt_->lm();
+    llvm::LLVMContext& lc = llvmModule->getContext();
 
     /*
      * is this the entry point?
@@ -118,11 +119,11 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
     // build return type
     if (m->main_)
     {
-        m->retType_ = llvm::IntegerType::getInt32Ty(llvmCtxt);
+        m->retType_ = llvm::IntegerType::getInt32Ty(lc);
         m->realOut_.push_back( m->sig_.out_[0] );
     }
     else if ( out.empty() )
-        m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+        m->retType_ = createVoid(lc);
     else
     {
         LLVMTypes retTypes;
@@ -144,9 +145,9 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         }
 
         if ( m->realOut_.empty() )
-            m->retType_ = llvm::TypeBuilder<void, true>::get(llvmCtxt);
+            m->retType_ = createVoid(lc);
         else
-            m->retType_ = llvm::StructType::get(llvmCtxt, retTypes);
+            m->retType_ = llvm::StructType::get(lc, retTypes);
     }
 
     // now push the rest
