@@ -93,9 +93,9 @@ void StmntAnalyzer::visit(AssignStmnt* s)
      *  a = b, c, ...
      *
      * 3. A more complicated assignment:
-     *  A a, b, C c, d, ... = ...   (AssignStmnt::MULTIPLE)
+     *  A a, b, C c, d, ... = f   (AssignStmnt::PAIRWISE)
      *
-     *  Here the number of rhs items (which equals the number of lhs return
+     *  Here the number of lhs items (which equals the number of lhs return
      *  values) must match the number of return values on the rhs.  For each
      *  (lhs value, rhs value ) =: (l, r)  pair the following is done:
      *
@@ -273,6 +273,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                             _class->cid() );
 
                     ctxt_->result_ = false;
+                    s->calls_.push_back( ASCall(ASCall::EMPTY) );
+                    continue;
                 }
 
                 if ( dynamic_cast<const ScalarType*>(bt) )

@@ -150,7 +150,7 @@ const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
     VecStructs::iterator iter = vecStructs_.find(st);
     swiftAssert( iter != vecStructs_.end(), "must contain st" );
 
-    if ( iter->second.struct_ == 0 )
+    if ( iter->second.struct_ != 0 )
     {
         n = iter->second.simdLength_;
         return iter->second.struct_;

@@ -24,7 +24,10 @@ struct VecType
     const Struct* struct_;
     int simdLength_;
 
-    VecType() {}
+    VecType()
+        : struct_(0)
+        , simdLength_(0)
+    {}
     VecType(const Struct* st, int simdLength) 
         : struct_(st)
         , simdLength_(simdLength)
