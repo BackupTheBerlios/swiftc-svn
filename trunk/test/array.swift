@@ -70,6 +70,9 @@ class Test
 
         simd{Vec3} s1 = 1024x
         simd{Vec3} s2 = s1
+        s2[15x]
+        simd{int} si
+        si[15x]
 
         result = 0
     end

@@ -130,13 +130,51 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
     Value* addr = resolvePrefixExpr(i);
 
     i->indexExpr_->accept(this);
+    Value* idx = getScalar();
 
-    Value* container = builder_.CreateLoad(addr);
-    Value* ptr = builder_.CreateExtractValue(container, Container::POINTER);
-    
-    Value* result = builder_.CreateInBoundsGEP(ptr, getScalar());
+    Value* ptr = createLoadInBoundsGEP_0_i32(lctxt_, builder_, addr, Container::POINTER);
 
-    setResult(result, true);
+    const Type* prefixType = i->prefixExpr_->getType();
+    if ( dynamic_cast<const Array*>(prefixType) )
+        setResult( builder_.CreateInBoundsGEP(ptr, idx), true );
+    else
+    {
+        const Simd* simd = cast<Simd>(prefixType);
+        const Type* inner = simd->getInnerType();
+
+        int simdLength;
+        /* const llvm::Type* vecType = */
+        inner->getVecLLVMType(ctxt_->module_, simdLength);
+
+        Value* slv = createInt64(lctxt_, simdLength);
+        Value* div = builder_.CreateUDiv(idx, slv);
+        Value* rem = builder_.CreateURem(idx, slv);
+        Value* mod = builder_.CreateTrunc( rem , llvm::IntegerType::getInt32Ty(lctxt_) );
+        Value* aElem = createLoadInBoundsGEP_x(lctxt_, builder_, ptr, div);
+
+        if ( const llvm::StructType* vecStruct = 
+                dynamic_cast<const llvm::StructType*>(aElem->getType()) )
+        {
+            const UserType* ut = inner->cast<UserType>();
+            const llvm::Type* scalarStruct = ut->lookupClass(ctxt_->module_)->getLLVMType();
+
+            typedef llvm::StructType::element_iterator EIter;
+            int memIdx = 0;
+            Value* res = llvm::UndefValue::get(scalarStruct);
+            for (EIter iter = vecStruct->element_begin(); iter != vecStruct->element_end(); ++iter)
+            {
+                Value* vElem = builder_.CreateExtractValue(aElem, memIdx);
+                Value*  elem = builder_.CreateExtractElement(vElem, mod);
+                res = builder_.CreateInsertValue(res, elem, memIdx);
+
+                ++memIdx;
+            }
+
+            setResult(res, false);
+        }
+        else
+            setResult( builder_.CreateExtractElement(aElem, mod), false );
+    }
 }
 
 void TypeNodeCodeGen::visit(MemberAccess* m)

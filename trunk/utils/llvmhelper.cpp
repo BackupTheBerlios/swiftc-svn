@@ -73,12 +73,20 @@ Value* createInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder,
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
 
+llvm::Value* createLoadInBoundsGEP_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+                                     llvm::Value* ptr, llvm::Value* x, 
+                                     const std::string& name /*= ""*/)
+{
+    return builder.CreateLoad(
+            builder.CreateInBoundsGEP(ptr, x, name), name);
+}
+
 Value* createLoadInBoundsGEP_0_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
                                  Value* ptr, Value* x,
                                  const std::string& name /*= ""*/)
 {
     return builder.CreateLoad( 
-            createInBoundsGEP_0_x(lctxt, builder, ptr, x, name) );
+            createInBoundsGEP_0_x(lctxt, builder, ptr, x, name), name );
 }
 
 Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
@@ -86,7 +94,7 @@ Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builde
                                    const std::string& name /*= ""*/)
 {
     return builder.CreateLoad( 
-        createInBoundsGEP_0_i32(lctxt, builder, ptr, i, name) );
+        createInBoundsGEP_0_i32(lctxt, builder, ptr, i, name), name );
 }
 
 Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
@@ -94,5 +102,5 @@ Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builde
                                    const std::string& name /*= ""*/)
 {
     return builder.CreateLoad( 
-        createInBoundsGEP_0_i64(lctxt, builder, ptr, i, name) );
+        createInBoundsGEP_0_i64(lctxt, builder, ptr, i, name), name );
 }
