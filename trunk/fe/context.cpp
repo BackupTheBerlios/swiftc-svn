@@ -12,6 +12,8 @@
 #include <llvm/Module.h>
 #include <llvm/Target/TargetData.h>
 
+using llvm::Value;
+
 namespace swift {
 
 Context::Context(Module* module)
@@ -88,14 +90,14 @@ llvm::AllocaInst* Context::createEntryAlloca(
     return tmpBuilder.CreateAlloca(llvmType, 0, name);
 }
 
-llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* ptrType)
+Value* Context::createMalloc(Value* size, const llvm::PointerType* ptrType)
 {
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
     llvm::TargetData td( module_->getLLVMModule() );
-    llvm::Value* allocSize = createInt64( lctxt(), td.getTypeStoreSize(allocType) );
+    Value* allocSize = createInt64( lctxt(), td.getTypeStoreSize(allocType) );
 
-    llvm::Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
+    Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
 
     llvm::CallInst* call = llvm::CallInst::Create(malloc_, mallocSize, "malloc-ptr");
     call->setTailCall();
@@ -106,15 +108,15 @@ llvm::Value* Context::createMalloc(llvm::Value* size, const llvm::PointerType* p
     return builder_.CreateBitCast(call, ptrType, "malloc-ptr");
 }
 
-void Context::createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size)
+void Context::createMemCpy(Value* dst, Value* src, Value* size)
 {
     const llvm::PointerType* ptrType = ::cast<llvm::PointerType>( src->getType() );
     const llvm::Type* allocType = ptrType->getContainedType(0);
 
     llvm::TargetData td( module_->getLLVMModule() );
-    llvm::Value* allocSize = createInt64( lctxt(), td.getTypeStoreSize(allocType) );
+    Value* allocSize = createInt64( lctxt(), td.getTypeStoreSize(allocType) );
 
-    llvm::Value* cpySize = builder_.CreateMul(size, allocSize, "memcpy-size");
+    Value* cpySize = builder_.CreateMul(size, allocSize, "memcpy-size");
 
     Values args(3);
     args[0] = builder_.CreateBitCast(dst, llvm::PointerType::getInt8PtrTy(lctxt()) );

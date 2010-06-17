@@ -14,6 +14,8 @@
 #include "fe/type.h"
 #include "fe/typenodecodegen.h"
 
+using llvm::Value;
+
 namespace swift {
 
 StmntCodeGen::StmntVisitor(Context* ctxt)
@@ -63,7 +65,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvm::Function* llvmFct = ctxt_->llvmFct_;
 
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar(0);
+    Value* cond = tncg_->getScalar(0);
 
     /*
      * create new basic blocks
@@ -134,7 +136,7 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
     builder_.SetInsertPoint(loopBB);
     s->scope_->accept(this, ctxt_);
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar(0);
+    Value* cond = tncg_->getScalar(0);
     builder_.CreateCondBr(cond, outBB, loopBB);
 
     /*
@@ -176,7 +178,7 @@ void StmntCodeGen::visit(WhileStmnt* s)
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder_.SetInsertPoint(headerBB);
     s->expr_->accept( tncg_.get() );
-    llvm::Value* cond = tncg_->getScalar(0);
+    Value* cond = tncg_->getScalar(0);
     builder_.CreateCondBr(cond, loopBB, outBB);
 
     /*
@@ -243,8 +245,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     swiftAssert(s->exprList_->numRetValues() == 1, 
                             "only a copy constructor/assignment is in question here");
 
-                    llvm::Value* rvalue = s->exprList_->getScalar(0, builder_);
-                    llvm::Value* lvalue = s->tuple_->getAddr(0, ctxt_);
+                    Value* rvalue = s->exprList_->getScalar(0, builder_);
+                    Value* lvalue = s->tuple_->getAddr(0, ctxt_);
                     builder_.CreateStore(rvalue, lvalue);
 
                     return;
@@ -288,8 +290,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     case ASCall::COPY:
                     {
                         // create store
-                        llvm::Value* rvalue = s->exprList_->getScalar(i, builder_);
-                        llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
+                        Value* rvalue = s->exprList_->getScalar(i, builder_);
+                        Value* lvalue = s->tuple_->getAddr(i, ctxt_);
                         builder_.CreateStore(rvalue, lvalue);
                         continue;
                     }
@@ -314,8 +316,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        llvm::Value* dst = s->tuple_->getAddr(i, ctxt_);
-                        llvm::Value* src = s->exprList_->getAddr(i, ctxt_);
+                        Value* dst = s->tuple_->getAddr(i, ctxt_);
+                        Value* src = s->exprList_->getAddr(i, ctxt_);
                         c->emitCopy(ctxt_, dst, src);
                         continue;
                     }
@@ -324,8 +326,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        llvm::Value* size = s->exprList_->getScalar(i, builder_);
-                        llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
+                        Value* size = s->exprList_->getScalar(i, builder_);
+                        Value* lvalue = s->tuple_->getAddr(i, ctxt_);
                         c->emitCreate(ctxt_, lvalue, size);
                         continue;
                     }

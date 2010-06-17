@@ -25,6 +25,8 @@
 #include "fe/type.h"
 #include "fe/context.h"
 
+using llvm::Value;
+
 namespace swift {
 
 //------------------------------------------------------------------------------
@@ -71,7 +73,7 @@ Local::Local(location loc, Type* type, std::string* id)
     : Var(loc, type, id)
 {}
 
-llvm::Value* Local::getAddr(Context* /*ctxt*/) const
+Value* Local::getAddr(Context* /*ctxt*/) const
 {
     return alloca_;
 }
@@ -92,7 +94,7 @@ bool InOut::validate(Module* module) const
     return type_->validate(module);
 }
 
-llvm::Value* InOut::getAddr(Context* ctxt) const
+Value* InOut::getAddr(Context* ctxt) const
 {
     llvm::IRBuilder<>& builder = ctxt->builder_;
 

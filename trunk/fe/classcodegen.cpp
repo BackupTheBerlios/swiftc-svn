@@ -11,6 +11,8 @@
 #include "fe/stmntcodegen.h"
 #include "fe/type.h"
 
+using llvm::Value;
+
 namespace swift {
 
 ClassCodeGen::ClassVisitor(Context* ctxt)
@@ -135,13 +137,13 @@ void ClassCodeGen::codeGen(MemberFct* m)
         if (m->main_)
         {
             RetVal* retval = m->sig_.out_[0];
-            llvm::Value* value = builder.CreateLoad( 
+            Value* value = builder.CreateLoad( 
                     retval->getAddr(ctxt_), retval->cid() );
             builder.CreateRet(value);
         }
         else
         {
-            llvm::Value* retStruct = llvm::UndefValue::get(m->retType_);
+            Value* retStruct = llvm::UndefValue::get(m->retType_);
             for (size_t i = 0; i < m->realOut_.size(); ++i)
             {
                 RetVal* retval = m->realOut_[i];

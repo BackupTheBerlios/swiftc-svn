@@ -27,36 +27,12 @@ llvm::Value* createDouble(llvm::LLVMContext& lctxt, double val);
 
 const llvm::Type* createVoid(llvm::LLVMContext& lctxt);
 
-llvm::Value* createInBoundsGEP_0_x  (llvm::LLVMContext& lctxt, 
-                                     LLVMBuilder& builder, 
-                                     llvm::Value* ptr,
-                                     llvm::Value* x,
-                                     const std::string& Name = "");
-llvm::Value* createInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, 
-                                     LLVMBuilder& builder, 
-                                     llvm::Value* ptr,
-                                     uint64_t i,
-                                     const std::string& Name = "");
-llvm::Value* createInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, 
-                                     LLVMBuilder& builder, 
-                                     llvm::Value* ptr,
-                                     uint64_t i,
-                                     const std::string& Name = "");
+llvm::Value* createInBoundsGEP_0_x  (llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, llvm::Value* x, const std::string& Name = "");
+llvm::Value* createInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, uint64_t i, const std::string& Name = "");
+llvm::Value* createInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, uint64_t i, const std::string& Name = "");
 
-llvm::Value* createLoadInBoundsGEP_0_x  (llvm::LLVMContext& lctxt, 
-                                         LLVMBuilder& builder, 
-                                         llvm::Value* ptr,
-                                         llvm::Value* x,
-                                        const std::string& Name = "");
-llvm::Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, 
-                                         LLVMBuilder& builder, 
-                                         llvm::Value* ptr,
-                                         uint64_t i,
-                                        const std::string& Name = "");
-llvm::Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, 
-                                         LLVMBuilder& builder, 
-                                         llvm::Value* ptr,
-                                         uint64_t i,
-                                         const std::string& Name = "");
+llvm::Value* createLoadInBoundsGEP_0_x  (llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, llvm::Value* x, const std::string& Name = "");
+llvm::Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, uint64_t i, const std::string& Name = "");
+llvm::Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, uint64_t i, const std::string& Name = "");
 
 #endif // UTILS_LLVM_HELPER_H

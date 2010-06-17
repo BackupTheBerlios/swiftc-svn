@@ -7,6 +7,8 @@
 #include "fe/typenodeanalyzer.h"
 #include "fe/typenodecodegen.h"
 
+using llvm::Value;
+
 namespace swift {
 
 TNList::~TNList()
@@ -71,14 +73,14 @@ bool TNList::isAddr(size_t i) const
     return addresses_[i];
 }
 
-llvm::Value* TNList::getValue(size_t i) const
+Value* TNList::getValue(size_t i) const
 {
     return values_[i];
 }
 
-llvm::Value* TNList::getAddr(size_t i, Context* ctxt) const
+Value* TNList::getAddr(size_t i, Context* ctxt) const
 {
-    llvm::Value* val = values_[i];
+    Value* val = values_[i];
 
     if ( !isAddr(i) )
     {
@@ -92,7 +94,7 @@ llvm::Value* TNList::getAddr(size_t i, Context* ctxt) const
         return val;
 }
 
-llvm::Value* TNList::getScalar(size_t i, llvm::IRBuilder<>& builder) const
+Value* TNList::getScalar(size_t i, llvm::IRBuilder<>& builder) const
 {
     if ( isAddr(i) )
         return builder.CreateLoad( getValue(i), getValue(i)->getName() );
@@ -115,7 +117,7 @@ size_t TNList::numRetValues() const
     return types_.size();
 }
 
-llvm::Value* TNList::getArg(size_t i, Context* ctxt) const
+Value* TNList::getArg(size_t i, Context* ctxt) const
 {
     return types_[i]->perRef() ? getAddr(i, ctxt) : getScalar(i, ctxt->builder_);
 }

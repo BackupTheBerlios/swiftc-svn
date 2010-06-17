@@ -32,6 +32,8 @@
 #include "fe/stmnt.h"
 #include "fe/type.h"
 
+using llvm::Value;
+
 namespace swift {
 
 //------------------------------------------------------------------------------
@@ -345,7 +347,7 @@ Method::Method(location loc, bool simd, std::string* id, Scope* scope)
     : MemberFct(loc, simd, id, scope)
 {}
 
-llvm::Value* Method::getSelfValue() const
+Value* Method::getSelfValue() const
 {
     return selfValue_;
 }
