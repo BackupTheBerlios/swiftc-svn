@@ -4,9 +4,6 @@
 
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
-#include <llvm/ADT/APFloat.h>
-#include <llvm/ADT/APInt.h>
-#include <llvm/ADT/APSInt.h>
 #include <llvm/Support/TypeBuilder.h>
 
 #include "utils/cast.h"
@@ -25,6 +22,8 @@ namespace swift {
 
 TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
     : TypeNodeVisitorBase(ctxt)
+    , builder_(ctxt->builder_)
+    , lctxt_( ctxt->lctxt() )
 {}
 
 void TypeNodeCodeGen::visit(Decl* d)
@@ -57,71 +56,46 @@ void TypeNodeCodeGen::visit(Id* id)
 
 void TypeNodeCodeGen::visit(Literal* l)
 {
-    using llvm::ConstantInt;
-    using llvm::ConstantFP;
-    using llvm::APInt;
-    using llvm::APFloat;
-
-    llvm::LLVMContext& lc = ctxt_->lc();
     Value* val;
 
     switch ( l->getToken() )
     {
         /*
-         * signed ints
+         * ints
          */
 
         case Token::L_SAT8:
-        case Token::L_INT8: 
-            val = ConstantInt::get(lc, APInt( 8, l->box_.int64_, true)); break;
+        case Token::L_INT8:
+        case Token::L_USAT8:
+        case Token::L_UINT8:  val = createInt8 (lctxt_, l->box_.uint64_); break;
 
         case Token::L_SAT16:
-        case Token::L_INT16:
-            val = ConstantInt::get(lc, APInt(16, l->box_.int64_, true)); break;
+        case Token::L_INT16: 
+        case Token::L_USAT16:
+        case Token::L_UINT16: val = createInt16(lctxt_, l->box_.uint64_); break;
 
         case Token::L_INT:  
-        case Token::L_INT32:
-            val = ConstantInt::get(lc, APInt(32, l->box_.int64_, true)); break;   
-
-        case Token::L_INT64:
-            val = ConstantInt::get(lc, APInt(64, l->box_.int64_, true)); break;   
-
-        /*
-         * unsigned ints
-         */
-
-        case Token::L_USAT8:
-        case Token::L_UINT8: 
-            val = ConstantInt::get(lc, APInt( 8, l->box_.uint64_)); break;   
-
-        case Token::L_USAT16:
-        case Token::L_UINT16:
-            val = ConstantInt::get(lc, APInt(16, l->box_.uint64_)); break;   
-
         case Token::L_UINT:  
-        case Token::L_UINT32:
-            val = ConstantInt::get(lc, APInt(32, l->box_.uint64_)); break;   
+        case Token::L_INT32: 
+        case Token::L_UINT32: val = createInt32(lctxt_, l->box_.uint64_); break;
 
         case Token::L_INDEX:
-        case Token::L_UINT64:
-            val = ConstantInt::get(lc, APInt(64, l->box_.uint64_)); break;   
+        case Token::L_INT64: 
+        case Token::L_UINT64: val = createInt64(lctxt_, l->box_.uint64_); break;
+
+        case Token::L_TRUE:
+        case Token::L_FALSE:
+            //val = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); return;
 
         /*
          * floats
          */
 
         case Token::L_REAL:
-        case Token::L_REAL32: 
-            val = ConstantFP::get(lc, APFloat(l->box_.float_) ); break;
-        case Token::L_REAL64: 
-            val = ConstantFP::get(lc, APFloat(l->box_.double_) ); break;
+        case Token::L_REAL32: val = createFloat (lctxt_, l->box_.float_);  break;
+        case Token::L_REAL64: val = createDouble(lctxt_, l->box_.double_); break;
 
-        case Token::L_TRUE:
-        case Token::L_FALSE:
-            //val = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); return;
-
-        default:
-            val = 0;
+        default: val = 0;
             swiftAssert(false, "illegal switch-case-value");
     }
 
@@ -136,7 +110,7 @@ void TypeNodeCodeGen::visit(Nil* n)
 void TypeNodeCodeGen::visit(Self* n)
 {
     Method* m = cast<Method>(ctxt_->memberFct_);
-    setResult( ctxt_->builder_.CreateLoad( m->getSelfValue(), "self" ), true );
+    setResult( builder_.CreateLoad( m->getSelfValue(), "self" ), true );
 }
 
 Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
@@ -146,53 +120,40 @@ Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
     Value* addr = getAddr();
 
     if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
-        addr = ptr->recDerefAddr(ctxt_->builder_, addr);
+        addr = ptr->recDerefAddr(builder_, addr);
 
     return addr;
 }
 
 void TypeNodeCodeGen::visit(IndexExpr* i)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-
     Value* addr = resolvePrefixExpr(i);
 
     i->indexExpr_->accept(this);
 
-    Value* container = builder.CreateLoad(addr);
-    Value* ptr = builder.CreateExtractValue(container, Container::POINTER);
+    Value* container = builder_.CreateLoad(addr);
+    Value* ptr = builder_.CreateExtractValue(container, Container::POINTER);
     
-    Value* result = builder.CreateInBoundsGEP(ptr, getScalar());
+    Value* result = builder_.CreateInBoundsGEP(ptr, getScalar());
 
     setResult(result, true);
 }
 
 void TypeNodeCodeGen::visit(MemberAccess* m)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-    llvm::LLVMContext& lc = ctxt_->lc();
-
     Value* addr = resolvePrefixExpr(m);
-
-    // build input
-    Value* input[2];
-    input[0] = llvm::ConstantInt::get( lc, llvm::APInt(64, 0) );
-    input[1] = llvm::ConstantInt::get( lc, llvm::APInt(32, m->memberVar_->getIndex()) );
 
     // build and get value
     std::ostringstream oss;
     oss << m->prefixExpr_->getType()->toString() << '.' << m->cid();
     int index = m->memberVar_->getIndex();
-    Value* result = createInBoundsGEP_0_i32( lc, builder, addr, index, oss.str() );
+    Value* result = createInBoundsGEP_0_i32( lctxt_, builder_, addr, index, oss.str() );
 
     setResult(result, true);
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-    llvm::Module* llvmModule = ctxt_->lm();
-
     c->exprList_->accept(this);
     const TypeList& inTypes = c->exprList_->typeList();
 
@@ -202,7 +163,7 @@ void TypeNodeCodeGen::visit(CCall* c)
 
     const llvm::Type* retType = c->retType_ 
         ? c->retType_->getLLVMType(ctxt_->module_) 
-        : createVoid(ctxt_->lc());
+        : createVoid(lctxt_);
 
     LLVMTypes params( inTypes.size() );
 
@@ -214,12 +175,12 @@ void TypeNodeCodeGen::visit(CCall* c)
 
     // declare function
     llvm::Function* fct = cast<llvm::Function>(
-        llvmModule->getOrInsertFunction( c->cid(), fctType) );
+        ctxt_->module_->getLLVMModule()->getOrInsertFunction( c->cid(), fctType) );
 
     // copy over values
     Values args( c->exprList_->numRetValues() );
     for (size_t i = 0; i < args.size(); ++i)
-        args[i] = c->exprList_->getScalar(i, builder);
+        args[i] = c->exprList_->getScalar(i, builder_);
 
     fct->setCallingConv(llvm::CallingConv::C);
     fct->setLinkage(llvm::Function::ExternalLinkage);
@@ -230,13 +191,11 @@ void TypeNodeCodeGen::visit(CCall* c)
     call->setTailCall();
     call->addAttribute(~0, llvm::Attribute::NoUnwind);
 
-    setResult( builder.Insert(call), false );
+    setResult( builder_.Insert(call), false );
 }
 
 void TypeNodeCodeGen::visit(ReaderCall* r)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-
     getSelf(r);
 
     if ( const ScalarType* from = r->expr_->getType()->cast<ScalarType>() )
@@ -253,39 +212,39 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         Value* val = getValue();
 
         if ( isAddr() )
-            val = builder.CreateLoad(val, val->getName() );
+            val = builder_.CreateLoad(val, val->getName() );
 
         llvm::StringRef name = val->getName();
 
         if ( from->isInteger() && to->isInteger() )
         {
             if ( from->sizeOf() > to->sizeOf() )
-                val = builder.CreateTrunc(val, llvmTo, name);
+                val = builder_.CreateTrunc(val, llvmTo, name);
             else
             {
                 // -> sizeof(from) < sizeof(to)
                 if ( from->isUnsigned() )
-                    val = builder.CreateZExt(val, llvmTo, name);
+                    val = builder_.CreateZExt(val, llvmTo, name);
                 else
-                    val = builder.CreateSExt(val, llvmTo, name);
+                    val = builder_.CreateSExt(val, llvmTo, name);
             }
         }
         else if ( from->isFloat() && to->isSigned() )   // fp -> si
-            val = builder.CreateFPToSI(val, llvmTo, name);
+            val = builder_.CreateFPToSI(val, llvmTo, name);
         else if ( from->isFloat() && to->isUnsigned() ) // fp -> ui
-            val = builder.CreateFPToUI(val, llvmTo, name);
+            val = builder_.CreateFPToUI(val, llvmTo, name);
         else if ( from->isSigned() && to->isFloat() )   // si -> fp
-            val = builder.CreateSIToFP(val, llvmTo, name);
+            val = builder_.CreateSIToFP(val, llvmTo, name);
         else if ( from->isUnsigned() && to->isFloat() ) // ui -> fp
-            val = builder.CreateUIToFP(val, llvmTo, name);
+            val = builder_.CreateUIToFP(val, llvmTo, name);
         else
         {
             swiftAssert( from->isFloat() && to->isFloat(), "must both be floats" );
 
             if ( from->sizeOf() > to->sizeOf() )
-                val = builder.CreateFPTrunc(val, llvmTo, name);
+                val = builder_.CreateFPTrunc(val, llvmTo, name);
             else // -> sizeof(from) < sizeof(to)
-                val = builder.CreateFPExt(val, llvmTo, name);
+                val = builder_.CreateFPExt(val, llvmTo, name);
         }
 
         setResult(val, false);
@@ -302,8 +261,6 @@ void TypeNodeCodeGen::visit(WriterCall* w)
 
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-
     if ( b->builtin_ )
     {
         b->op1_->accept(this);
@@ -321,18 +278,18 @@ void TypeNodeCodeGen::visit(BinExpr* b)
              * arithmetic operators
              */
 
-            case Token::ADD: val = builder.CreateAdd(v1, v2); break;
-            case Token::SUB: val = builder.CreateSub(v1, v2); break;
-            case Token::MUL: val = builder.CreateMul(v1, v2); break;
+            case Token::ADD: val = builder_.CreateAdd(v1, v2); break;
+            case Token::SUB: val = builder_.CreateSub(v1, v2); break;
+            case Token::MUL: val = builder_.CreateMul(v1, v2); break;
             case Token::DIV:
                 if ( scalar->isFloat() )
-                    val = builder.CreateFDiv(v1, v2);
+                    val = builder_.CreateFDiv(v1, v2);
                 else
                 {
                     if ( scalar->isSigned() )
-                        val = builder.CreateSDiv(v1, v2);
+                        val = builder_.CreateSDiv(v1, v2);
                     else // -> unsigned
-                        val = builder.CreateUDiv(v1, v2);
+                        val = builder_.CreateUDiv(v1, v2);
                 }
                 break;
 
@@ -342,27 +299,27 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 
             case Token::EQ:
                 if ( scalar->isFloat() )
-                    val = builder.CreateFCmpOEQ(v1, v2);
+                    val = builder_.CreateFCmpOEQ(v1, v2);
                 else
-                    val = builder.CreateICmpEQ(v1, v2);
+                    val = builder_.CreateICmpEQ(v1, v2);
                 break;
             case Token::NE:
                 if ( scalar->isFloat() )
-                    val = builder.CreateFCmpONE(v1, v2);
+                    val = builder_.CreateFCmpONE(v1, v2);
                 else
-                    val = builder.CreateICmpNE(v1, v2);
+                    val = builder_.CreateICmpNE(v1, v2);
                 break;
 
 #define SWIFT_EMIT_CMP(token, fcmp, scmp, ucmp) \
     case Token:: token : \
         if ( scalar->isFloat() ) \
-            val = builder. fcmp (v1, v2); \
+            val = builder_. fcmp (v1, v2); \
         else \
         { \
             if ( scalar->isSigned() ) \
-                val = builder. scmp (v1, v2); \
+                val = builder_. scmp (v1, v2); \
             else \
-                val = builder. ucmp (v1, v2); \
+                val = builder_. ucmp (v1, v2); \
         } \
         break;
 
@@ -386,8 +343,6 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 
 void TypeNodeCodeGen::visit(UnExpr* u)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
-
     if ( u->builtin_ )
     {
         u->op1_->accept(this);
@@ -400,7 +355,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
                 // nothing to do
                 break;
             case Token::SUB:
-                val = builder.CreateSub( llvm::Constant::getNullValue( 
+                val = builder_.CreateSub( llvm::Constant::getNullValue( 
                             scalar->getLLVMType(ctxt_->module_)), val );
                 break;
             default:
@@ -430,7 +385,6 @@ void TypeNodeCodeGen::getSelf(MethodCall* m)
 
 void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
     Values args;
     MemberFct* fct = call->getMemberFct();
 
@@ -468,7 +422,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
     llvm::CallInst* callInst = llvm::CallInst::Create( 
             fct->llvmFct_, args.begin(), args.end() );
     callInst->setCallingConv(llvm::CallingConv::Fast);
-    Value* retValue = builder.Insert(callInst);
+    Value* retValue = builder_.Insert(callInst);
 
     /*
      * write results back
@@ -492,7 +446,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
         }
         else
         {
-            val = builder.CreateExtractValue(retValue, idxRetType);
+            val = builder_.CreateExtractValue(retValue, idxRetType);
             addresses_.push_back(false);
             ++idxRetType;
         }

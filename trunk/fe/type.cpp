@@ -205,35 +205,35 @@ const char* BaseType::cid() const
     return id_->c_str();
 }
 
-void BaseType::initTypeMap(llvm::LLVMContext* lc)
+void BaseType::initTypeMap(llvm::LLVMContext* lctxt)
 {
     typeMap_ = new TypeMap();
     TypeMap& typeMap = *typeMap_;
 
-    typeMap["bool"]   = llvm::IntegerType::getInt1Ty(*lc);
+    typeMap["bool"]   = llvm::IntegerType::getInt1Ty(*lctxt);
 
-    typeMap["int8"]   = llvm::IntegerType::getInt8Ty(*lc);
-    typeMap["uint8"]  = llvm::IntegerType::getInt8Ty(*lc);
-    typeMap["sat8"]   = llvm::IntegerType::getInt8Ty(*lc);
-    typeMap["usat8"]  = llvm::IntegerType::getInt8Ty(*lc);
+    typeMap["int8"]   = llvm::IntegerType::getInt8Ty(*lctxt);
+    typeMap["uint8"]  = llvm::IntegerType::getInt8Ty(*lctxt);
+    typeMap["sat8"]   = llvm::IntegerType::getInt8Ty(*lctxt);
+    typeMap["usat8"]  = llvm::IntegerType::getInt8Ty(*lctxt);
 
-    typeMap["int16"]  = llvm::IntegerType::getInt16Ty(*lc);
-    typeMap["uint16"] = llvm::IntegerType::getInt16Ty(*lc);
-    typeMap["sat16"]  = llvm::IntegerType::getInt16Ty(*lc);
-    typeMap["usat16"] = llvm::IntegerType::getInt16Ty(*lc);
+    typeMap["int16"]  = llvm::IntegerType::getInt16Ty(*lctxt);
+    typeMap["uint16"] = llvm::IntegerType::getInt16Ty(*lctxt);
+    typeMap["sat16"]  = llvm::IntegerType::getInt16Ty(*lctxt);
+    typeMap["usat16"] = llvm::IntegerType::getInt16Ty(*lctxt);
 
-    typeMap["int32"]  = llvm::IntegerType::getInt32Ty(*lc);
-    typeMap["uint32"] = llvm::IntegerType::getInt32Ty(*lc);
-    typeMap["int"]    = llvm::IntegerType::getInt32Ty(*lc);
-    typeMap["uint"]   = llvm::IntegerType::getInt32Ty(*lc);
+    typeMap["int32"]  = llvm::IntegerType::getInt32Ty(*lctxt);
+    typeMap["uint32"] = llvm::IntegerType::getInt32Ty(*lctxt);
+    typeMap["int"]    = llvm::IntegerType::getInt32Ty(*lctxt);
+    typeMap["uint"]   = llvm::IntegerType::getInt32Ty(*lctxt);
 
-    typeMap["int64"]  = llvm::IntegerType::getInt64Ty(*lc);
-    typeMap["uint64"] = llvm::IntegerType::getInt64Ty(*lc);
-    typeMap["index"]  = llvm::IntegerType::getInt64Ty(*lc);
+    typeMap["int64"]  = llvm::IntegerType::getInt64Ty(*lctxt);
+    typeMap["uint64"] = llvm::IntegerType::getInt64Ty(*lctxt);
+    typeMap["index"]  = llvm::IntegerType::getInt64Ty(*lctxt);
 
-    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lc);
-    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lc);
-    typeMap["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*lc);
+    typeMap["real"]   = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lctxt);
+    typeMap["real32"] = llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(*lctxt);
+    typeMap["real64"] = llvm::TypeBuilder<llvm::types::ieee_double, true>::get(*lctxt);
 
     sizeMap_ = new SizeMap();
     SizeMap& sizeMap = *sizeMap_;
@@ -520,7 +520,7 @@ const llvm::Type* Ptr::defineLLVMType(
     swiftAssert( !opaque, "must not be set" );
     swiftAssert( missing, "must be set" );
 
-    opaque = llvm::OpaqueType::get(*m->lc_);
+    opaque = llvm::OpaqueType::get(*m->lctxt_);
 
     return llvm::PointerType::getUnqual(opaque);
 }
@@ -579,8 +579,8 @@ void Container::emitCreate(Context* ctxt,
                            Value* size,
                            int simdLength)
 {
-    llvm::IRBuilder<>& builder = ctxt->builder_;
-    llvm::LLVMContext& lc = ctxt->lc();
+    LLVMBuilder& builder = ctxt->builder_;
+    llvm::LLVMContext& lctxt = ctxt->lctxt();
 
     const llvm::PointerType* ptrType = llvm::PointerType::getUnqual(allocType);
 
@@ -590,8 +590,8 @@ void Container::emitCreate(Context* ctxt,
         : size;
 
     Value* ptr = ctxt->createMalloc(adjustedSize, ptrType);
-    Value*  ptrDstAddr = createInBoundsGEP_0_i32(lc, builder, aggPtr, POINTER);
-    Value* sizeDstAddr = createInBoundsGEP_0_i32(lc, builder, aggPtr, SIZE);
+    Value*  ptrDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, POINTER);
+    Value* sizeDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, SIZE);
 
     // and store
     builder.CreateStore(ptr, ptrDstAddr);
@@ -604,15 +604,15 @@ void Container::emitCopy(Context* ctxt,
                          Value* src, 
                          int simdLength)
 {
-    llvm::IRBuilder<>& builder = ctxt->builder_;
-    llvm::LLVMContext& lc = ctxt->lc();
+    LLVMBuilder& builder = ctxt->builder_;
+    llvm::LLVMContext& lctxt = ctxt->lctxt();
 
-    Value* size = createLoadInBoundsGEP_0_i32(lc, builder, src, SIZE);
+    Value* size = createLoadInBoundsGEP_0_i32(lctxt, builder, src, SIZE);
 
     emitCreate(ctxt, allocType, dst, size, simdLength);
 
-    Value* srcPtr = createLoadInBoundsGEP_0_i32(lc, builder, src, POINTER);
-    Value* dstPtr = createLoadInBoundsGEP_0_i32(lc, builder, dst, POINTER);
+    Value* srcPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, src, POINTER);
+    Value* dstPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, dst, POINTER);
 
     Value* adjustedSize = adjustSize(ctxt, size, simdLength);
     ctxt->createMemCpy(dstPtr, srcPtr, adjustedSize);
@@ -620,12 +620,12 @@ void Container::emitCopy(Context* ctxt,
 
 Value* Container::adjustSize(Context* ctxt, Value* size, int simdLength)
 {
-    llvm::LLVMContext& lc = ctxt->lc();
+    llvm::LLVMContext& lctxt = ctxt->lctxt();
 
     if (simdLength > 1) // round up
-        size = ctxt->builder_.CreateAdd( size, createInt64(lc, simdLength-1) );
+        size = ctxt->builder_.CreateAdd( size, createInt64(lctxt, simdLength-1) );
 
-    return ctxt->builder_.CreateUDiv( size, createInt64(lc, simdLength) );
+    return ctxt->builder_.CreateUDiv( size, createInt64(lctxt, simdLength) );
 }
 
 //------------------------------------------------------------------------------
@@ -646,14 +646,14 @@ std::string Array::containerStr() const
 
 const llvm::Type* Array::getRawLLVMType(Module* m) const
 {
-    llvm::LLVMContext& lc = *m->lc_;
+    llvm::LLVMContext& lctxt = *m->lctxt_;
 
     LLVMTypes llvmTypes(2);
     llvmTypes[POINTER] = llvm::PointerType::getUnqual( innerType_->getLLVMType(m) );
-    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lc);
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lctxt);
 
 
-    const llvm::StructType* st = llvm::StructType::get(lc, llvmTypes);
+    const llvm::StructType* st = llvm::StructType::get(lctxt, llvmTypes);
     m->getLLVMModule()->addTypeName( toString().c_str(), st );
      
     return st;
@@ -689,15 +689,15 @@ std::string Simd::containerStr() const
 
 const llvm::Type* Simd::getRawLLVMType(Module* m) const
 {
-    llvm::LLVMContext& lc = *m->lc_;
+    llvm::LLVMContext& lctxt = *m->lctxt_;
 
     LLVMTypes llvmTypes(2);
     int simdLength;
     llvmTypes[POINTER] = llvm::PointerType::getUnqual( 
             innerType_->getVecLLVMType(m, simdLength) );
-    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lc);
+    llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lctxt);
 
-    const llvm::StructType* st = llvm::StructType::get(lc, llvmTypes);
+    const llvm::StructType* st = llvm::StructType::get(lctxt, llvmTypes);
     m->getLLVMModule()->addTypeName( toString().c_str(), st );
      
     return st;

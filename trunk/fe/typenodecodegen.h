@@ -3,10 +3,15 @@
 
 #include <memory>
 
+#include "utils/llvmhelper.h"
+
 #include "fe/typenode.h"
 
 namespace llvm {
     class Value;
+    class LLVMContext;
+    class Module;
+
 }
 
 namespace swift {
@@ -58,6 +63,9 @@ private:
 
     std::vector<llvm::Value*> values_;
     BoolVec addresses_;
+
+    LLVMBuilder& builder_;
+    llvm::LLVMContext& lctxt_;
 };
 
 typedef TypeNodeVisitor<class CodeGen> TypeNodeCodeGen;

@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "utils/llvmhelper.h"
+
 #include "fe/stmnt.h"
 
 namespace swift {
@@ -36,6 +38,9 @@ public:
 private:
 
     std::auto_ptr<TypeNodeCodeGen> tncg_;
+
+    LLVMBuilder& builder_;
+    llvm::LLVMContext& lctxt_;
 };
 
 typedef StmntVisitor<class CodeGen> StmntCodeGen;

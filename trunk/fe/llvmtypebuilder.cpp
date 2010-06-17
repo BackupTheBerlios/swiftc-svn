@@ -74,7 +74,7 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
     }
 
     // vec types
-    vec::TypeVectorizer typeVec( this, vecStructs_, ctxt_->lm() );
+    vec::TypeVectorizer typeVec( this, vecStructs_, ctxt_->lmodule() );
 
     /*
      * fill entries in class
@@ -148,7 +148,7 @@ bool LLVMTypebuilder::process(Class* c)
         llvmTypes.push_back(llvmType);
     }
 
-    c->llvmType_ = llvm::StructType::get(*m->lc_, llvmTypes);
+    c->llvmType_ = llvm::StructType::get(*m->lctxt_, llvmTypes);
 
     // mark this class as done
     cycle_.erase(c);

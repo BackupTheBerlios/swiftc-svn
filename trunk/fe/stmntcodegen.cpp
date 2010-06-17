@@ -19,6 +19,8 @@ namespace swift {
 StmntCodeGen::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
     , tncg_( new TypeNodeCodeGen(ctxt) )
+    , builder_(ctxt->builder_)
+    , lctxt_( ctxt->lctxt() )
 {}
 
 StmntCodeGen::~StmntVisitor() 
@@ -32,19 +34,18 @@ void StmntCodeGen::visit(ErrorStmnt* s)
 
 void StmntCodeGen::visit(CFStmnt* s)
 {
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
     MemberFct* memberFct = ctxt_->memberFct_;
 
     if (s->token_ == Token::RETURN)
     {
         if ( memberFct->sig_.out_.empty() )
-            builder.CreateRetVoid();
+            builder_.CreateRetVoid();
         else
-            builder.CreateBr(ctxt_->memberFct_->returnBB_);
+            builder_.CreateBr(ctxt_->memberFct_->returnBB_);
 
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(ctxt_->lc(), "unreachable");
+        llvm::BasicBlock* bb = llvm::BasicBlock::Create(lctxt_, "unreachable");
         ctxt_->llvmFct_->getBasicBlockList().push_back(bb);
-        builder.SetInsertPoint(bb);
+        builder_.SetInsertPoint(bb);
 
         return;
     }
@@ -59,9 +60,7 @@ void StmntCodeGen::visit(DeclStmnt* s)
 
 void StmntCodeGen::visit(IfElStmnt* s)
 {
-    llvm::LLVMContext& lc = *ctxt_->module_->lc_;
     llvm::Function* llvmFct = ctxt_->llvmFct_;
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     s->expr_->accept( tncg_.get() );
     llvm::Value* cond = tncg_->getScalar(0);
@@ -71,27 +70,27 @@ void StmntCodeGen::visit(IfElStmnt* s)
      */
 
     typedef llvm::BasicBlock BB;
-    BB* thenBB = llvm::BasicBlock::Create(lc, "then");
-    BB* mergeBB = llvm::BasicBlock::Create(lc, "merge");
-    BB* elseBB = s->elScope_ ? llvm::BasicBlock::Create(lc, "else") : 0;
+    BB* thenBB  = llvm::BasicBlock::Create(lctxt_, "then");
+    BB* mergeBB = llvm::BasicBlock::Create(lctxt_, "merge");
+    BB* elseBB = s->elScope_ ? llvm::BasicBlock::Create(lctxt_, "else") : 0;
 
     /*
      * create branch
      */
 
     if (elseBB)
-        builder.CreateCondBr(cond, thenBB, elseBB);
+        builder_.CreateCondBr(cond, thenBB, elseBB);
     else
-        builder.CreateCondBr(cond, thenBB, mergeBB);
+        builder_.CreateCondBr(cond, thenBB, mergeBB);
 
     /*
      * emit code for thenBB
      */
 
     llvmFct->getBasicBlockList().push_back(thenBB);
-    builder.SetInsertPoint(thenBB);
+    builder_.SetInsertPoint(thenBB);
     s->ifScope_->accept(this, ctxt_);
-    builder.CreateBr(mergeBB);
+    builder_.CreateBr(mergeBB);
 
     /*
      * emit code for elseBB if applicable
@@ -100,52 +99,50 @@ void StmntCodeGen::visit(IfElStmnt* s)
     if (elseBB)
     {
         llvmFct->getBasicBlockList().push_back(elseBB);
-        builder.SetInsertPoint(elseBB);
+        builder_.SetInsertPoint(elseBB);
         s->elScope_->accept(this, ctxt_);
-        builder.CreateBr(mergeBB);
+        builder_.CreateBr(mergeBB);
     }
 
     llvmFct->getBasicBlockList().push_back(mergeBB);
-    builder.SetInsertPoint(mergeBB);
+    builder_.SetInsertPoint(mergeBB);
 }
 
 void StmntCodeGen::visit(RepeatUntilStmnt* s)
 {
-    llvm::LLVMContext& lc = ctxt_->lc();
     llvm::Function* llvmFct = ctxt_->llvmFct_;
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     /*
      * create new basic blocks
      */
 
     typedef llvm::BasicBlock BB;
-    BB* loopBB   = llvm::BasicBlock::Create(lc, "rep");
-    BB*  outBB   = llvm::BasicBlock::Create(lc, "rep-out");
+    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "rep");
+    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "rep-out");
 
     /*
      * close current bb
      */
 
-    builder.CreateBr(loopBB);
+    builder_.CreateBr(loopBB);
 
     /*
      * emit code for loopBB
      */
 
     llvmFct->getBasicBlockList().push_back(loopBB);
-    builder.SetInsertPoint(loopBB);
+    builder_.SetInsertPoint(loopBB);
     s->scope_->accept(this, ctxt_);
     s->expr_->accept( tncg_.get() );
     llvm::Value* cond = tncg_->getScalar(0);
-    builder.CreateCondBr(cond, outBB, loopBB);
+    builder_.CreateCondBr(cond, outBB, loopBB);
 
     /*
      * emit code for outBB
      */
 
     llvmFct->getBasicBlockList().push_back(outBB);
-    builder.SetInsertPoint(outBB);
+    builder_.SetInsertPoint(outBB);
 }
 
 void StmntCodeGen::visit(ScopeStmnt* s) 
@@ -155,57 +152,53 @@ void StmntCodeGen::visit(ScopeStmnt* s)
 
 void StmntCodeGen::visit(WhileStmnt* s)
 {
-    llvm::LLVMContext& lc = ctxt_->lc();
     llvm::Function* llvmFct = ctxt_->llvmFct_;
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     /*
      * create new basic blocks
      */
 
     typedef llvm::BasicBlock BB;
-    BB* headerBB = llvm::BasicBlock::Create(lc, "while-header");
-    BB* loopBB   = llvm::BasicBlock::Create(lc, "while");
-    BB*  outBB   = llvm::BasicBlock::Create(lc, "while-out");
+    BB* headerBB = llvm::BasicBlock::Create(lctxt_, "while-header");
+    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "while");
+    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "while-out");
 
     /*
      * close current bb
      */
 
-    builder.CreateBr(headerBB);
+    builder_.CreateBr(headerBB);
 
     /*
      * emit code for headerBB
      */
 
     llvmFct->getBasicBlockList().push_back(headerBB);
-    builder.SetInsertPoint(headerBB);
+    builder_.SetInsertPoint(headerBB);
     s->expr_->accept( tncg_.get() );
     llvm::Value* cond = tncg_->getScalar(0);
-    builder.CreateCondBr(cond, loopBB, outBB);
+    builder_.CreateCondBr(cond, loopBB, outBB);
 
     /*
      * emit code for loopBB
      */
 
     llvmFct->getBasicBlockList().push_back(loopBB);
-    builder.SetInsertPoint(loopBB);
+    builder_.SetInsertPoint(loopBB);
     s->scope_->accept(this, ctxt_);
-    builder.CreateBr(headerBB);
+    builder_.CreateBr(headerBB);
 
     /*
      * emit code for outBB
      */
 
     llvmFct->getBasicBlockList().push_back(outBB);
-    builder.SetInsertPoint(outBB);
+    builder_.SetInsertPoint(outBB);
 }
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
     typedef AssignStmnt::Call ASCall;
-
-    llvm::IRBuilder<>& builder = ctxt_->builder_;
 
     s->exprList_->accept( tncg_.get() );
     size_t numLhs = s->tuple_->numItems();
@@ -241,7 +234,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     llvm::CallInst* call = 
                         llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
                     call->setCallingConv(llvm::CallingConv::Fast);
-                    builder.Insert(call);
+                    builder_.Insert(call);
 
                     return;
                 }
@@ -250,9 +243,9 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     swiftAssert(s->exprList_->numRetValues() == 1, 
                             "only a copy constructor/assignment is in question here");
 
-                    llvm::Value* rvalue = s->exprList_->getScalar(0, ctxt_->builder_);
+                    llvm::Value* rvalue = s->exprList_->getScalar(0, builder_);
                     llvm::Value* lvalue = s->tuple_->getAddr(0, ctxt_);
-                    ctxt_->builder_.CreateStore(rvalue, lvalue);
+                    builder_.CreateStore(rvalue, lvalue);
 
                     return;
                 }
@@ -295,9 +288,9 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     case ASCall::COPY:
                     {
                         // create store
-                        llvm::Value* rvalue = s->exprList_->getScalar(i, ctxt_->builder_);
+                        llvm::Value* rvalue = s->exprList_->getScalar(i, builder_);
                         llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
-                        builder.CreateStore(rvalue, lvalue);
+                        builder_.CreateStore(rvalue, lvalue);
                         continue;
                     }
                     case ASCall::USER:
@@ -313,7 +306,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         llvm::CallInst* call = 
                             llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
                         call->setCallingConv(llvm::CallingConv::Fast);
-                        builder.Insert(call);
+                        builder_.Insert(call);
                         continue;
                     }
                     case ASCall::CONTAINER_COPY:
@@ -331,7 +324,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        llvm::Value* size = s->exprList_->getScalar(i, ctxt_->builder_);
+                        llvm::Value* size = s->exprList_->getScalar(i, builder_);
                         llvm::Value* lvalue = s->tuple_->getAddr(i, ctxt_);
                         c->emitCreate(ctxt_, lvalue, size);
                         continue;

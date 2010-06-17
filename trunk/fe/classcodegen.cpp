@@ -64,8 +64,8 @@ void ClassCodeGen::codeGen(MemberFct* m)
      */
 
     TypeList& out = m->sig_.outTypes_;
-    llvm::Module* llvmModule = ctxt_->lm();
-    llvm::LLVMContext& lc = llvmModule->getContext();
+    llvm::Module* llvmModule = ctxt_->lmodule();
+    llvm::LLVMContext& lctxt = llvmModule->getContext();
     llvm::IRBuilder<>& builder = ctxt_->builder_;
     llvm::Function* fct = m->llvmFct_;
 
@@ -77,11 +77,11 @@ void ClassCodeGen::codeGen(MemberFct* m)
      */
 
     // create root BB and connect to fct and to the builder    
-    llvm::BasicBlock* bb = llvm::BasicBlock::Create(lc, m->llvmName_, fct);
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(lctxt, m->llvmName_, fct);
     builder.SetInsertPoint(bb);
 
     // create return basic block
-    m->returnBB_ = llvm::BasicBlock::Create(lc, "return");
+    m->returnBB_ = llvm::BasicBlock::Create(lctxt, "return");
 
     // initialize return values
     for (size_t i = 0; i < out.size(); ++i)

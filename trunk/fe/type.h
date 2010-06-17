@@ -131,7 +131,7 @@ public:
     const std::string* id() const;
     const char* cid() const;
 
-    static void initTypeMap(llvm::LLVMContext* lc);
+    static void initTypeMap(llvm::LLVMContext* lctxt);
     static void destroyTypeMap();
 
 protected:

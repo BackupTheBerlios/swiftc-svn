@@ -84,7 +84,7 @@ private:
 
 public:
 
-    llvm::LLVMContext* const lc_;
+    llvm::LLVMContext* const lctxt_;
 
 private:
 

@@ -83,7 +83,7 @@ static int start(int argc, char** argv)
     //swift::Literal::initTypeMap();
 
     swift::Module* module = new swift::Module( swift::location(), new std::string("default") );
-    swift::BaseType::initTypeMap(module->lc_);
+    swift::BaseType::initTypeMap(module->lctxt_);
 
     // populate data structures with builtin types
     readBuiltinTypes(module->ctxt_);
