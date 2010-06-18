@@ -11,58 +11,20 @@
 
 namespace llvm {
 
-class LLVMContext;
-class Type;
-class Value;
+    class AllocaInst;
+    class LLVMContext;
+    class Type;
+    class Value;
 
-class ConstantFolder;
-template <bool preserveNames> class IRBuilderDefaultInserter;
-template<bool preserveNames, typename T, typename Inserter> class IRBuilder;
-
+    class ConstantFolder;
+    template <bool preserveNames> class IRBuilderDefaultInserter;
+    template<bool preserveNames, typename T, typename Inserter> class IRBuilder;
 }
 
 //----------------------------------------------------------------------
 
 typedef llvm::IRBuilder <true, llvm::ConstantFolder, 
         llvm::IRBuilderDefaultInserter<true> > LLVMBuilder;
-
-//----------------------------------------------------------------------
-
-class Addr 
-{
-public:
-
-    Addr(llvm::Value* ptr)
-        : ptr_(ptr)
-    {}
-    virtual ~Addr() {}
-
-    virtual llvm::Value* load(LLVMBuilder& builder, const std::string& name);
-    virtual void store(LLVMBuilder& builder, llvm::Value value, const std::string& name);
-
-protected:
-
-    llvm::Value* ptr_;
-};
-
-class SimdAddr : public Addr
-{
-public:
-
-    SimdAddr(llvm::Value* ptr, llvm::Value* mod)
-        : Addr(ptr)
-        , mod_(mod)
-    {}
-    virtual ~SimdAddr() {}
-
-    virtual llvm::Value* load(LLVMBuilder& builder, const std::string& name);
-    virtual void store(LLVMBuilder& builder, llvm::Value value, const std::string& name);
-
-protected:
-
-    llvm::Value* mod_;
-
-};
 
 //----------------------------------------------------------------------
 
@@ -89,5 +51,10 @@ llvm::Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& 
 llvm::Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, llvm::Value* ptr, uint64_t i, const std::string& name = "");
 
 //----------------------------------------------------------------------
+
+llvm::AllocaInst* createEntryAlloca(LLVMBuilder& builder, const llvm::Type* type, const std::string& name = "");
+
+//----------------------------------------------------------------------
+
 
 #endif // UTILS_LLVM_HELPER_H

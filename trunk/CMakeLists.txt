@@ -83,6 +83,7 @@ ADD_EXECUTABLE (swift
     utils/memmgr.cpp
     utils/stringhelper.cpp
     utils/llvmhelper.cpp
+    utils/llvmplace.cpp
 
     fe/lexer.cpp
     fe/parser.cpp

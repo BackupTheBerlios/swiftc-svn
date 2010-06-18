@@ -22,6 +22,8 @@
 #include <llvm/BasicBlock.h>
 #include <llvm/Function.h>
 
+#include "utils/llvmhelper.h"
+
 #include "fe/type.h"
 #include "fe/context.h"
 
@@ -62,7 +64,7 @@ const char* Var::cid() const
 llvm::AllocaInst* Var::createEntryAlloca(Context* ctxt)
 {
     const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
-    alloca_ = ctxt->createEntryAlloca( llvmType, cid() );
+    alloca_ = ::createEntryAlloca( ctxt->builder_, llvmType, cid() );
 
     return alloca_;
 }
@@ -125,5 +127,7 @@ const char* RetVal::kind() const
 {
     return "return value";
 }
+
+//------------------------------------------------------------------------------
 
 } // namespace swift

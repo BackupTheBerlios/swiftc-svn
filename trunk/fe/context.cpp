@@ -20,7 +20,7 @@ Context::Context(Module* module)
     : result_(true)
     , module_(module)
     , tuple_( new TNList() )
-    , builder_( llvm::IRBuilder<>(*module->lctxt_) )
+    , builder_( LLVMBuilder(*module->lctxt_) )
 {}
 
 Context::~Context()
@@ -78,16 +78,6 @@ TNList* Context::topExprList() const
 void Context::newTuple()
 {
     tuple_ = new TNList();
-}
-
-llvm::AllocaInst* Context::createEntryAlloca(
-        const llvm::Type* llvmType, 
-        const llvm::Twine& name /*= ""*/) const
-{
-    llvm::BasicBlock* entry = &llvmFct_->getEntryBlock();
-    llvm::IRBuilder<> tmpBuilder( entry, entry->begin() );
-
-    return tmpBuilder.CreateAlloca(llvmType, 0, name);
 }
 
 Value* Context::createMalloc(Value* size, const llvm::PointerType* ptrType)

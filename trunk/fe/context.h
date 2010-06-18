@@ -54,10 +54,6 @@ public:
     llvm::Function* llvmFct_; ///< Current llvm function.
     llvm::IRBuilder<> builder_;
 
-    llvm::AllocaInst* createEntryAlloca(
-            const llvm::Type* llvmType, 
-            const llvm::Twine& name = "") const;
-
     llvm::Value* createMalloc(llvm::Value* size, const llvm::PointerType* ptrType);
     void createMemCpy(llvm::Value* dst, llvm::Value* src, llvm::Value* size);
     llvm::Function* malloc_;

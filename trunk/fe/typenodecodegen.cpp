@@ -446,7 +446,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
         if ( type->perRef() )
         {
             const llvm::Type* llvmType = type->getRawLLVMType( ctxt_->module_);
-            llvm::AllocaInst* alloca = ctxt_->createEntryAlloca(llvmType);
+            llvm::AllocaInst* alloca = createEntryAlloca(builder_, llvmType);
 
             args.push_back(alloca);
             perRefRetValues.push_back(alloca);
@@ -504,8 +504,8 @@ Value* TypeNodeCodeGen::getAddr(size_t i /*= 0*/) const
 
     if ( !addresses_[i] )
     {
-        llvm::AllocaInst* alloca = 
-            ctxt_->createEntryAlloca( val->getType(), val->getName() );
+        llvm::AllocaInst* alloca = createEntryAlloca( 
+                builder_, val->getType(), val->getName() );
         ctxt_->builder_.CreateStore(val, alloca);
 
         return alloca;

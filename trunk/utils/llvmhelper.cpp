@@ -2,6 +2,7 @@
 
 #include <llvm/Constants.h>
 #include <llvm/DerivedTypes.h>
+#include <llvm/Function.h>
 #include <llvm/ADT/APFloat.h>
 #include <llvm/Support/TypeBuilder.h>
 #include <llvm/Support/IRBuilder.h>
@@ -103,4 +104,13 @@ Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builde
 {
     return builder.CreateLoad( 
         createInBoundsGEP_0_i64(lctxt, builder, ptr, i, name), name );
+}
+
+llvm::AllocaInst* createEntryAlloca(LLVMBuilder& builder, const llvm::Type* type, 
+                                    const std::string& name /*= ""*/)
+{
+    llvm::BasicBlock* entry = &builder.GetInsertBlock()->getParent()->getEntryBlock();
+    LLVMBuilder tmpBuilder( entry, entry->begin() );
+
+    return tmpBuilder.CreateAlloca(type, 0, name);
 }

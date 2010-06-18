@@ -84,8 +84,8 @@ Value* TNList::getAddr(size_t i, Context* ctxt) const
 
     if ( !isAddr(i) )
     {
-        llvm::AllocaInst* alloca = ctxt->createEntryAlloca( 
-                val->getType(), val->getName() );
+        llvm::AllocaInst* alloca = createEntryAlloca( 
+                ctxt->builder_, val->getType(), val->getName() );
         ctxt->builder_.CreateStore( val, alloca);
 
         return alloca;
