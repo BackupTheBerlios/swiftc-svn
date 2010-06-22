@@ -34,7 +34,6 @@
 #include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/sig.h"
-#include "fe/simdprefix.h"
 #include "fe/stmnt.h"
 #include "fe/type.h"
 #include "fe/typenode.h"
@@ -58,7 +57,6 @@ using namespace swift;
     MemberFct*   memberFct_;
     Module*      module_;
     Scope*       scope_;
-    SimdPrefix*  simdPrefix_;
     Stmnt*       stmnt_;
     Type*        type_;
 };
@@ -135,7 +133,6 @@ using namespace swift;
 %type <memberFct_> member_function
 %type <memberVar_> member_var
 %type <scope_> if_head
-%type <simdPrefix_> simd_prefix
 %type <stmnt_> stmnt
 %type <type_> type var_type const_type
 
@@ -355,12 +352,8 @@ stmnt
         basic stmnts
     */
     : decl EOL { $$ = new DeclStmnt(@$, $1); }
-
-    |             expr EOL { $$ = new ExprStmnt(@$,  0, $1); }
-    | simd_prefix expr EOL { $$ = new ExprStmnt(@$, $1, $2); }
-
-    |             tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$,  0, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
-    | simd_prefix tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $1, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
+    | expr EOL { $$ = new ExprStmnt(@$, $1); }
+    | tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
 
     /*
         control flow stmnts
@@ -372,7 +365,7 @@ stmnt
         expr EOL stmnt_list END EOL 
         { 
             ctxt_->leaveScope();
-            $$ = new WhileStmnt(@$, $3, $<scope_>2);
+            $$ = new WhileLoop(@$, $<scope_>2, $3);
         }
     | REPEAT EOL 
         { 
@@ -381,7 +374,16 @@ stmnt
         stmnt_list UNTIL expr EOL 
         { 
             ctxt_->leaveScope();
-            $$ = new RepeatUntilStmnt(@$, $6, $<scope_>3);
+            $$ = new RepeatUntilLoop(@$, $<scope_>3, $6);
+        }
+    | SIMD '[' expr ',' expr ']' EOL
+        {
+            $<scope_>$ = ctxt_->enterScope();
+        }
+        stmnt_list END EOL
+        {
+            ctxt_->leaveScope();
+            $$ = new SimdLoop(@$, $<scope_>8, $3, $5);
         }
     | SCOPE EOL 
         { 
@@ -420,20 +422,6 @@ stmnt
 
 if_head
     : IF { $$ = ctxt_->enterScope(); }
-    ;
-
-/*
-    ***********
-    simd prefix
-    ***********
-*/
-
-simd_prefix
-    : SIMD '[' expr ',' expr ']' ':' { $$ = new SimdPrefix(@$, $3, $5); } 
-    | SIMD '['      ',' expr ']' ':' { $$ = new SimdPrefix(@$,  0, $4); } 
-    | SIMD '[' expr ','      ']' ':' { $$ = new SimdPrefix(@$, $3,  0); } 
-    | SIMD '['      ','      ']' ':' { $$ = new SimdPrefix(@$,  0,  0); } 
-    | SIMD                       ':' { $$ = new SimdPrefix(@$,  0,  0); } 
     ;
 
 /*

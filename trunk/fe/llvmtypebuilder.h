@@ -26,6 +26,9 @@ public:
     virtual void notInMap(const llvm::StructType* st, const llvm::StructType* parent) const;
     virtual void notVectorizable(const llvm::StructType* st) const;
 
+    static const llvm::Type* scalar2vec(const llvm::Type* scalar, int& simdLength);
+    static const llvm::Type* vec2scalar(const llvm::Type* vec, int& simdLength);
+
 private:
 
     bool process(Class* c);
@@ -51,10 +54,11 @@ private:
     typedef std::vector<Refine> Refinements;
     Refinements refinements;
 
-    vec::VecStructs vecStructs_;
-
     typedef std::map<const llvm::StructType*, Class*> Struct2Class;
     Struct2Class struct2Class_;
+
+    static vec::StructMap scalar2vec_;
+    static vec::StructMap vec2scalar_;
 };
 
 } // namespace swift

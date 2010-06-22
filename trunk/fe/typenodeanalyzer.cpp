@@ -417,7 +417,7 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
         m->types_.push_back( out[i]->clone() );
         lvalues_.push_back(false);
 
-        if ( out[0]->perRef() )
+        if ( out[i]->perRef() ) // TODO orignal: out[0] - bug?
             m->inits_.push_back(true);
         else
             m->inits_.push_back(false);

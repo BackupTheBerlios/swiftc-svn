@@ -1,5 +1,7 @@
 #include "fe/stmntcodegen.h"
 
+#include <typeinfo>
+
 #include <llvm/BasicBlock.h>
 #include <llvm/Function.h>
 #include <llvm/LLVMContext.h>
@@ -65,7 +67,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
     llvm::Function* llvmFct = ctxt_->llvmFct_;
 
     s->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getScalar(0);
+    Value* cond = tncg_->getPlace()->getScalar(builder_);
 
     /*
      * create new basic blocks
@@ -110,7 +112,7 @@ void StmntCodeGen::visit(IfElStmnt* s)
     builder_.SetInsertPoint(mergeBB);
 }
 
-void StmntCodeGen::visit(RepeatUntilStmnt* s)
+void StmntCodeGen::visit(RepeatUntilLoop* l)
 {
     llvm::Function* llvmFct = ctxt_->llvmFct_;
 
@@ -134,9 +136,9 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder_.SetInsertPoint(loopBB);
-    s->scope_->accept(this, ctxt_);
-    s->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getScalar(0);
+    l->scope_->accept(this, ctxt_);
+    l->expr_->accept( tncg_.get() );
+    Value* cond = tncg_->getPlace()->getScalar(builder_);
     builder_.CreateCondBr(cond, outBB, loopBB);
 
     /*
@@ -147,12 +149,7 @@ void StmntCodeGen::visit(RepeatUntilStmnt* s)
     builder_.SetInsertPoint(outBB);
 }
 
-void StmntCodeGen::visit(ScopeStmnt* s) 
-{
-    s->scope_->accept(this, ctxt_);
-}
-
-void StmntCodeGen::visit(WhileStmnt* s)
+void StmntCodeGen::visit(WhileLoop* l)
 {
     llvm::Function* llvmFct = ctxt_->llvmFct_;
 
@@ -177,8 +174,8 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder_.SetInsertPoint(headerBB);
-    s->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getScalar(0);
+    l->expr_->accept( tncg_.get() );
+    Value* cond = tncg_->getPlace()->getScalar(builder_);
     builder_.CreateCondBr(cond, loopBB, outBB);
 
     /*
@@ -187,7 +184,7 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder_.SetInsertPoint(loopBB);
-    s->scope_->accept(this, ctxt_);
+    l->scope_->accept(this, ctxt_);
     builder_.CreateBr(headerBB);
 
     /*
@@ -196,6 +193,62 @@ void StmntCodeGen::visit(WhileStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(outBB);
     builder_.SetInsertPoint(outBB);
+}
+
+void StmntCodeGen::visit(SimdLoop* l)
+{
+    llvm::Function* llvmFct = ctxt_->llvmFct_;
+
+    /*
+     * create new basic blocks
+     */
+
+    typedef llvm::BasicBlock BB;
+    BB* headerBB = llvm::BasicBlock::Create(lctxt_, "simd-header");
+    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "simd");
+    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "simd-out");
+
+    /*
+     * close current bb
+     */
+
+    builder_.CreateBr(headerBB);
+
+    /*
+     * emit code for headerBB
+     */
+
+    llvmFct->getBasicBlockList().push_back(headerBB);
+    builder_.SetInsertPoint(headerBB);
+
+    l->lExpr_->accept( tncg_.get() );
+    Value* lower = tncg_->getPlace()->getScalar(builder_);
+    l->rExpr_->accept( tncg_.get() );
+    Value* upper = tncg_->getPlace()->getScalar(builder_);
+
+    Value* cond = builder_.CreateICmpULT(lower, upper);
+    builder_.CreateCondBr(cond, loopBB, outBB);
+
+    /*
+     * emit code for loopBB
+     */
+
+    llvmFct->getBasicBlockList().push_back(loopBB);
+    builder_.SetInsertPoint(loopBB);
+    l->scope_->accept(this, ctxt_);
+    builder_.CreateBr(headerBB);
+
+    /*
+     * emit code for outBB
+     */
+
+    llvmFct->getBasicBlockList().push_back(outBB);
+    builder_.SetInsertPoint(outBB);
+}
+
+void StmntCodeGen::visit(ScopeStmnt* s) 
+{
+    s->scope_->accept(this, ctxt_);
 }
 
 void StmntCodeGen::visit(AssignStmnt* s)
@@ -214,9 +267,10 @@ void StmntCodeGen::visit(AssignStmnt* s)
             swiftAssert(s->tuple_->numRetValues() == 1 && numLhs == 1, 
                     "there must be exactly one item and "
                     "exactly one return value on the lhs");
-
+            Place* lPlace = s->tuple_->getPlace(0);
             ASCall& call = s->calls_[0];
 
+            swiftAssert(call.kind_ == ASCall::USER, "only possibility"); // TODO
             switch (call.kind_)
             {
                 case ASCall::EMPTY:
@@ -228,9 +282,9 @@ void StmntCodeGen::visit(AssignStmnt* s)
 
                     Values args;
                     // push self arg
-                    args.push_back( s->tuple_->getAddr(0, ctxt_) );
+                    args.push_back( lPlace->getAddr(builder_) );
                     // push the rest
-                    s->exprList_->getArgs(args, ctxt_);
+                    s->exprList_->getArgs(args, builder_);
 
                     // create call
                     llvm::CallInst* call = 
@@ -245,8 +299,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     swiftAssert(s->exprList_->numRetValues() == 1, 
                             "only a copy constructor/assignment is in question here");
 
-                    Value* rvalue = s->exprList_->getScalar(0, builder_);
-                    Value* lvalue = s->tuple_->getAddr(0, ctxt_);
+                    Value* rvalue = s->exprList_->getPlace(0)->getScalar(builder_);
+                    Value* lvalue = lPlace->getAddr(builder_);
                     builder_.CreateStore(rvalue, lvalue);
 
                     return;
@@ -267,7 +321,13 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     continue;
 
                 if ( Decl* decl = dynamic_cast<Decl*>(s->tuple_->getTypeNode(i)) )
-                    decl->setAlloca( cast<llvm::AllocaInst>(s->exprList_->getValue(i)) );
+                {
+                    Place* rPlace = s->exprList_->getPlace(i);
+                    swiftAssert( typeid(*rPlace) == typeid(Addr), "must be an Addr" );
+                    llvm::AllocaInst* alloca = 
+                        cast<llvm::AllocaInst>( rPlace->getAddr(builder_) );
+                    decl->setAlloca(alloca);
+                }
             }
 
             // now emit code for the lhs
@@ -280,6 +340,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
             for (size_t i = 0; i < num; ++i)
             {
                 ASCall& call = s->calls_[i];
+                Place* lPlace = s->tuple_->getPlace(i);
+                Place* rPlace = s->exprList_->getPlace(i);
 
                 switch (call.kind_)
                 {
@@ -290,8 +352,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     case ASCall::COPY:
                     {
                         // create store
-                        Value* rvalue = s->exprList_->getScalar(i, builder_);
-                        Value* lvalue = s->tuple_->getAddr(i, ctxt_);
+                        Value* lvalue = lPlace->getAddr(builder_);
+                        Value* rvalue = rPlace->getScalar(builder_);
                         builder_.CreateStore(rvalue, lvalue);
                         continue;
                     }
@@ -301,8 +363,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         swiftAssert(llvmFct, "must be valid");
 
                         // set arg
-                        args[0] = s->tuple_->getArg(0, ctxt_);
-                        args[1] = s->exprList_->getArg(i, ctxt_);
+                        args[0] = s->tuple_->getArg(i, builder_);
+                        args[1] = s->exprList_->getArg(i, builder_);
 
                         // create call
                         llvm::CallInst* call = 
@@ -316,8 +378,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        Value* dst = s->tuple_->getAddr(i, ctxt_);
-                        Value* src = s->exprList_->getAddr(i, ctxt_);
+                        Value* dst = lPlace->getAddr(builder_);
+                        Value* src = rPlace->getAddr(builder_);
                         c->emitCopy(ctxt_, dst, src);
                         continue;
                     }
@@ -326,8 +388,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         const Container* c = 
                             cast<Container>( s->tuple_->getTypeNode(i)->getType() );
 
-                        Value* size = s->exprList_->getScalar(i, builder_);
-                        Value* lvalue = s->tuple_->getAddr(i, ctxt_);
+                        Value* lvalue = lPlace->getAddr(builder_);
+                        Value* size = rPlace->getScalar(builder_);
                         c->emitCreate(ctxt_, lvalue, size);
                         continue;
                     }

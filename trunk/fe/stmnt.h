@@ -37,7 +37,6 @@ namespace swift {
 class Decl;
 class Expr;
 class TNList;
-class SimdPrefix;
 class StmntVisitorBase;
 
 //------------------------------------------------------------------------------
@@ -119,25 +118,6 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class RepeatUntilStmnt : public Stmnt
-{
-public:
-
-    RepeatUntilStmnt(location loc, Expr* expr, Scope* scope);
-    virtual ~RepeatUntilStmnt();
-
-    virtual void accept(StmntVisitorBase* s);
-
-protected:
-
-    Expr* expr_;
-    Scope* scope_;
-
-    template<class T> friend class StmntVisitor;
-};
-
-//------------------------------------------------------------------------------
-
 class ScopeStmnt : public Stmnt
 {
 public:
@@ -156,19 +136,69 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class WhileStmnt : public Stmnt
+class LoopStmnt : public Stmnt
 {
 public:
 
-    WhileStmnt(location loc, Expr* expr, Scope* scope);
-    virtual ~WhileStmnt();
+    LoopStmnt(location loc, Scope* scope);
+    virtual ~LoopStmnt();
+
+protected:
+
+    Scope* scope_;
+};
+
+//------------------------------------------------------------------------------
+
+class WhileLoop : public LoopStmnt
+{
+public:
+
+    WhileLoop(location loc, Scope* scope, Expr* expr);
+    virtual ~WhileLoop();
 
     virtual void accept(StmntVisitorBase* s);
 
 protected:
 
     Expr* expr_;
-    Scope* scope_;
+
+    template<class T> friend class StmntVisitor;
+};
+
+//------------------------------------------------------------------------------
+
+class RepeatUntilLoop : public LoopStmnt
+{
+public:
+
+    RepeatUntilLoop(location loc, Scope* scope, Expr* expr);
+    virtual ~RepeatUntilLoop();
+
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
+
+    Expr* expr_;
+
+    template<class T> friend class StmntVisitor;
+};
+
+//----------------------------------------------------------------------
+
+class SimdLoop : public LoopStmnt
+{
+public:
+
+    SimdLoop(location loc, Scope* scope, Expr* lExpr, Expr* rExpr);
+    virtual ~SimdLoop();
+
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
+
+    Expr* lExpr_;
+    Expr* rExpr_;
 
     template<class T> friend class StmntVisitor;
 };
@@ -179,12 +209,8 @@ class ActionStmnt : public Stmnt
 {
 public:
 
-    ActionStmnt(location loc, SimdPrefix* simd);
+    ActionStmnt(location loc);
     virtual ~ActionStmnt();
-
-protected:
-
-    SimdPrefix* simdPrefix_;
 };
 
 //------------------------------------------------------------------------------
@@ -193,7 +219,7 @@ class ExprStmnt : public ActionStmnt
 {
 public:
 
-    ExprStmnt(location loc, SimdPrefix* simd, Expr* expr);
+    ExprStmnt(location loc, Expr* expr);
     virtual ~ExprStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -211,7 +237,7 @@ class AssignStmnt : public ActionStmnt
 {
 public:
 
-    AssignStmnt(location loc, SimdPrefix* simdPrefix, TokenType token, TNList* tuple, TNList* exprList);
+    AssignStmnt(location loc, TokenType token, TNList* tuple, TNList* exprList);
     virtual ~AssignStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -272,9 +298,10 @@ public:
     virtual void visit(CFStmnt* s) = 0;
     virtual void visit(DeclStmnt* s) = 0;
     virtual void visit(IfElStmnt* s) = 0;
-    virtual void visit(RepeatUntilStmnt* s) = 0;
+    virtual void visit(RepeatUntilLoop* l) = 0;
+    virtual void visit(SimdLoop* l) = 0;
+    virtual void visit(WhileLoop* l) = 0;
     virtual void visit(ScopeStmnt* s) = 0;
-    virtual void visit(WhileStmnt* s) = 0;
 
     // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s) = 0;
@@ -282,9 +309,9 @@ public:
 
     friend void AssignStmnt::accept(StmntVisitorBase* s);
     friend void IfElStmnt::accept(StmntVisitorBase* s);
-    friend void RepeatUntilStmnt::accept(StmntVisitorBase* s);
+    friend void RepeatUntilLoop::accept(StmntVisitorBase* s);
     friend void ScopeStmnt::accept(StmntVisitorBase* s);
-    friend void WhileStmnt::accept(StmntVisitorBase* s);
+    friend void WhileLoop::accept(StmntVisitorBase* s);
 
 protected:
     

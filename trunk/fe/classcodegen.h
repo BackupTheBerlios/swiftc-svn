@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "utils/llvmhelper.h"
+
 #include "fe/class.h"
 
 namespace swift {
@@ -40,6 +42,8 @@ private:
     void codeGen(MemberFct* m);
 
     std::auto_ptr<StmntCodeGen> scg_;
+    LLVMBuilder& builder_;
+    llvm::LLVMContext& lctxt_;
 };
 
 typedef ClassVisitor<class CodeGen> ClassCodeGen;

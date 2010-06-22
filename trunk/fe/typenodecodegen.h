@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "utils/llvmhelper.h"
+#include "utils/llvmplace.h"
 
 #include "fe/typenode.h"
 
@@ -11,7 +12,6 @@ namespace llvm {
     class Value;
     class LLVMContext;
     class Module;
-
 }
 
 namespace swift {
@@ -49,21 +49,16 @@ public:
     virtual void visit(UnExpr* u);
     virtual void visit(RoutineCall* r);
 
-    bool isAddr(size_t i = 0) const;
-    llvm::Value* getScalar(size_t i = 0) const;
-    llvm::Value* getAddr(size_t i = 0) const;
-    llvm::Value* getValue(size_t i = 0) const;
+    Place* getPlace(size_t i = 0) const;
 
-    void emitCall(MemberFctCall* call, llvm::Value* self);
+    void emitCall(MemberFctCall* call, Place* self);
     void getSelf(MethodCall* m);
 
 private:
 
-    void setResult(llvm::Value* value, bool isAddr);
+    void setResult(Place* place);
 
-    std::vector<llvm::Value*> values_;
-    BoolVec addresses_;
-
+    Places places_;
     LLVMBuilder& builder_;
     llvm::LLVMContext& lctxt_;
 };

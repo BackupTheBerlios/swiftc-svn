@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include "utils/llvmhelper.h"
+
 #include "fe/node.h"
 
 namespace llvm {
@@ -50,7 +52,7 @@ public:
     const std::string* id() const;
     const char* cid() const;
     llvm::AllocaInst* createEntryAlloca(Context* ctxt);
-    virtual llvm::Value* getAddr(Context* ctxt) const = 0;
+    virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
 
 protected:
 
@@ -66,7 +68,7 @@ class Local : public Var
 public:
 
     Local(location loc, Type* type, std::string* id);
-    virtual llvm::Value* getAddr(Context* ctxt) const;
+    virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
 
     void setAlloca(llvm::AllocaInst* alloca);
 };
@@ -82,7 +84,7 @@ protected:
 public:
 
     bool validate(Module* module) const;
-    virtual llvm::Value* getAddr(Context* ctxt) const;
+    virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
     virtual const char* kind() const = 0;
 };
 

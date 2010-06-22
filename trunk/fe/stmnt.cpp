@@ -27,7 +27,6 @@
 #include "fe/error.h"
 #include "fe/tnlist.h"
 #include "fe/scope.h"
-#include "fe/simdprefix.h"
 #include "fe/sig.h"
 #include "fe/type.h"
 #include "fe/typenode.h"
@@ -60,14 +59,12 @@ void DeclStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-ActionStmnt::ActionStmnt(location loc, SimdPrefix* simdPrefix)
+ActionStmnt::ActionStmnt(location loc)
     : Stmnt(loc)
-    , simdPrefix_(simdPrefix)
 {}
 
 ActionStmnt::~ActionStmnt()
 {
-    delete simdPrefix_;
 }
 
 //------------------------------------------------------------------------------
@@ -83,8 +80,8 @@ void ErrorStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-ExprStmnt::ExprStmnt(location loc, SimdPrefix* simdPrefix, Expr* expr)
-    : ActionStmnt(loc, simdPrefix)
+ExprStmnt::ExprStmnt(location loc, Expr* expr)
+    : ActionStmnt(loc)
     , expr_(expr)
 {}
 
@@ -102,11 +99,10 @@ void ExprStmnt::accept(StmntVisitorBase* s)
 
 AssignStmnt::AssignStmnt(
         location loc,
-        SimdPrefix* simdPrefix, 
         TokenType token,
         TNList* tuple, 
         TNList* exprList)
-    : ActionStmnt(loc, simdPrefix)
+    : ActionStmnt(loc)
     , token_(token)
     , tuple_(tuple)
     , exprList_(exprList)
@@ -123,40 +119,67 @@ void AssignStmnt::accept(StmntVisitorBase* s)
     s->visit(this);
 }
 
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------
 
-WhileStmnt::WhileStmnt(location loc, Expr* expr, Scope* scope)
+LoopStmnt::LoopStmnt(location loc, Scope* scope)
     : Stmnt(loc)
-    , expr_(expr)
     , scope_(scope)
 {}
 
-WhileStmnt::~WhileStmnt()
+LoopStmnt::~LoopStmnt()
 {
-    delete expr_;
     delete scope_;
 }
 
-void WhileStmnt::accept(StmntVisitorBase* s)
+//------------------------------------------------------------------------------
+
+WhileLoop::WhileLoop(location loc, Scope* scope, Expr* expr)
+    : LoopStmnt(loc, scope)
+    , expr_(expr)
+{}
+
+WhileLoop::~WhileLoop()
+{
+    delete expr_;
+}
+
+void WhileLoop::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }
 
 //------------------------------------------------------------------------------
 
-RepeatUntilStmnt::RepeatUntilStmnt(location loc, Expr* expr, Scope* scope)
-    : Stmnt(loc)
+RepeatUntilLoop::RepeatUntilLoop(location loc, Scope* scope, Expr* expr)
+    : LoopStmnt(loc, scope)
     , expr_(expr)
-    , scope_(scope)
 {}
 
-RepeatUntilStmnt::~RepeatUntilStmnt()
+RepeatUntilLoop::~RepeatUntilLoop()
 {
     delete expr_;
-    delete scope_;
 }
 
-void RepeatUntilStmnt::accept(StmntVisitorBase* s)
+void RepeatUntilLoop::accept(StmntVisitorBase* s)
+{
+    s->visit(this);
+}
+
+//------------------------------------------------------------------------------
+
+SimdLoop::SimdLoop(location loc, Scope* scope, Expr* lExpr, Expr* rExpr)
+    : LoopStmnt(loc, scope)
+    , lExpr_(lExpr)
+    , rExpr_(rExpr)
+{}
+
+SimdLoop::~SimdLoop()
+{
+    delete lExpr_;
+    delete rExpr_;
+}
+
+void SimdLoop::accept(StmntVisitorBase* s)
 {
     s->visit(this);
 }

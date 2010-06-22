@@ -27,9 +27,10 @@ public:
     virtual void visit(CFStmnt* s);
     virtual void visit(DeclStmnt* s);
     virtual void visit(IfElStmnt* s);
-    virtual void visit(RepeatUntilStmnt* s);
+    virtual void visit(RepeatUntilLoop* l);
+    virtual void visit(WhileLoop* l);
+    virtual void visit(SimdLoop* l);
     virtual void visit(ScopeStmnt* s);
-    virtual void visit(WhileStmnt* s);
 
     // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);

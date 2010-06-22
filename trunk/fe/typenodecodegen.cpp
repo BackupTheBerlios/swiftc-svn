@@ -28,17 +28,16 @@ TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
 
 void TypeNodeCodeGen::visit(Decl* d)
 {
+    // has it already been inited via a return value?
     if (d->alloca_)
     {
         d->local_->setAlloca(d->alloca_);
-        setResult( d->alloca_, true );
         d->alloca_->setName( d->cid() );
     }
     else
-    {
         d->local_->createEntryAlloca(ctxt_);
-        setResult( d->local_->getAddr(ctxt_), true );
-    }
+
+    setResult( new Addr(d->local_->getAddr(builder_)) );
 }
 
 void TypeNodeCodeGen::visit(ErrorExpr* d)
@@ -51,7 +50,7 @@ void TypeNodeCodeGen::visit(Id* id)
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
 
-    setResult( var->getAddr(ctxt_), true );
+    setResult( new Addr(var->getAddr(builder_)) );
 }
 
 void TypeNodeCodeGen::visit(Literal* l)
@@ -99,7 +98,7 @@ void TypeNodeCodeGen::visit(Literal* l)
             swiftAssert(false, "illegal switch-case-value");
     }
 
-    setResult(val, false);
+    setResult( new Scalar(val) );
 }
 
 void TypeNodeCodeGen::visit(Nil* n)
@@ -110,14 +109,15 @@ void TypeNodeCodeGen::visit(Nil* n)
 void TypeNodeCodeGen::visit(Self* n)
 {
     Method* m = cast<Method>(ctxt_->memberFct_);
-    setResult( builder_.CreateLoad( m->getSelfValue(), "self" ), true );
+    setResult( new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
 }
 
+// TODO writeback?
 Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
 {
     // get address of the prefix expr
     a->prefixExpr_->accept(this);
-    Value* addr = getAddr();
+    Value* addr = getPlace()->getAddr(builder_);
 
     if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
         addr = ptr->recDerefAddr(builder_, addr);
@@ -130,13 +130,13 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
     Value* addr = resolvePrefixExpr(i);
 
     i->indexExpr_->accept(this);
-    Value* idx = getScalar();
+    Value* idx = getPlace()->getScalar(builder_);
 
     Value* ptr = createLoadInBoundsGEP_0_i32(lctxt_, builder_, addr, Container::POINTER);
 
     const Type* prefixType = i->prefixExpr_->getType();
     if ( dynamic_cast<const Array*>(prefixType) )
-        setResult( builder_.CreateInBoundsGEP(ptr, idx), true );
+        setResult( new Addr(builder_.CreateInBoundsGEP(ptr, idx)) );
     else
     {
         const Simd* simd = cast<Simd>(prefixType);
@@ -170,10 +170,10 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
                 ++memIdx;
             }
 
-            setResult(res, false);
+            setResult( new Scalar(res) );
         }
         else
-            setResult( builder_.CreateExtractElement(aElem, mod), false );
+            setResult( new Scalar(builder_.CreateExtractElement(aElem, mod)) );
     }
 }
 
@@ -187,7 +187,7 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
     int index = m->memberVar_->getIndex();
     Value* result = createInBoundsGEP_0_i32( lctxt_, builder_, addr, index, oss.str() );
 
-    setResult(result, true);
+    setResult( new Addr(result) );
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
@@ -218,7 +218,7 @@ void TypeNodeCodeGen::visit(CCall* c)
     // copy over values
     Values args( c->exprList_->numRetValues() );
     for (size_t i = 0; i < args.size(); ++i)
-        args[i] = c->exprList_->getScalar(i, builder_);
+        args[i] = c->exprList_->getPlace(i)->getScalar(builder_);
 
     fct->setCallingConv(llvm::CallingConv::C);
     fct->setLinkage(llvm::Function::ExternalLinkage);
@@ -229,7 +229,7 @@ void TypeNodeCodeGen::visit(CCall* c)
     call->setTailCall();
     call->addAttribute(~0, llvm::Attribute::NoUnwind);
 
-    setResult( builder_.Insert(call), false );
+    setResult( new Scalar(builder_.Insert(call)) );
 }
 
 void TypeNodeCodeGen::visit(ReaderCall* r)
@@ -247,11 +247,7 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         if ( llvmTo == llvmFrom )
             return; // value_ and isAddr_ are still correct, so nothing to do
 
-        Value* val = getValue();
-
-        if ( isAddr() )
-            val = builder_.CreateLoad(val, val->getName() );
-
+        Value* val = getPlace()->getScalar(builder_);
         llvm::StringRef name = val->getName();
 
         if ( from->isInteger() && to->isInteger() )
@@ -285,16 +281,16 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
                 val = builder_.CreateFPExt(val, llvmTo, name);
         }
 
-        setResult(val, false);
+        setResult( new Scalar(val) );
     }
     else
-        emitCall( r, getValue() );
+        emitCall( r, getPlace() );
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
 {
     getSelf(w);
-    emitCall( w, getValue() );
+    emitCall( w, getPlace() );
 }
 
 void TypeNodeCodeGen::visit(BinExpr* b)
@@ -302,9 +298,9 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     if ( b->builtin_ )
     {
         b->op1_->accept(this);
-        Value* v1 = getScalar();
+        Value* v1 = getPlace()->getScalar(builder_);
         b->op2_->accept(this);
-        Value* v2 = getScalar();
+        Value* v2 = getPlace()->getScalar(builder_);
 
         const ScalarType* scalar = cast<ScalarType>( b->op1_->getType() );
 
@@ -373,7 +369,7 @@ void TypeNodeCodeGen::visit(BinExpr* b)
                 swiftAssert(false, "TODO");
         }
 
-        setResult(val, false);
+        setResult( new Scalar(val) );
     }
     else
         emitCall(b, 0);
@@ -384,7 +380,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
     if ( u->builtin_ )
     {
         u->op1_->accept(this);
-        Value* val = getScalar();
+        Value* val = getPlace()->getScalar(builder_);
         const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
 
         switch (u->token_)
@@ -400,7 +396,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
                 swiftAssert(false, "TODO");
         }
 
-        setResult(val, false);
+        setResult( new Scalar(val) );
     }
     else
         emitCall(u, 0);
@@ -414,14 +410,17 @@ void TypeNodeCodeGen::visit(RoutineCall* r)
 void TypeNodeCodeGen::getSelf(MethodCall* m)
 {
     m->expr_->accept(this);
+    Value* addr = getPlace()->getAddr(builder_);
 
-    swiftAssert(values_.size() == 1, "must exactly have one item");
+    swiftAssert(places_.size() == 1, "must exactly have one item");
 
     if ( const Ptr* ptr = m->expr_->getType()->cast<Ptr>() )
-        values_[0] = ptr->recDerefAddr(ctxt_->builder_, values_[0]);
+        addr = ptr->recDerefAddr(ctxt_->builder_, addr);
+
+    places_[0] = new Addr(addr);
 }
 
-void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
+void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
 {
     Values args;
     MemberFct* fct = call->getMemberFct();
@@ -434,7 +433,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
      */
 
     if (self)
-        args.push_back(self);
+        args.push_back( self->getAddr(builder_) );
 
     Values perRefRetValues;
 
@@ -454,7 +453,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
     }
 
     // append regular arguments
-    call->exprList_->getArgs(args, ctxt_);
+    call->exprList_->getArgs(args, builder_);
 
     // create actual call
     llvm::CallInst* callInst = llvm::CallInst::Create( 
@@ -466,77 +465,32 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Value* self)
      * write results back
      */
 
-    values_.clear();
-    addresses_.clear();
+    places_.clear();
 
     size_t idxRetType = 0;
     size_t idxPerRef = 0;
     for (size_t i = 0; i < out.size(); ++i)
     {
         const Type* type = out[i];
-        Value* val;
 
         if ( type->perRef() )
-        {
-            val = perRefRetValues[idxPerRef];
-            addresses_.push_back(true);
-            ++idxPerRef;
-        }
+            places_.push_back( new Addr(perRefRetValues[idxPerRef]) );
         else
-        {
-            val = builder_.CreateExtractValue(retValue, idxRetType);
-            addresses_.push_back(false);
-            ++idxRetType;
-        }
+            places_.push_back( new Scalar(builder_.CreateExtractValue(retValue, idxRetType)) );
 
-        values_.push_back(val);
+        ++idxPerRef;
     }
 }
 
-Value* TypeNodeCodeGen::getValue(size_t i /*= 0*/) const
+Place* TypeNodeCodeGen::getPlace(size_t i /*= 0*/) const
 {
-    return values_[i];
+    return places_[i];
 }
 
-Value* TypeNodeCodeGen::getAddr(size_t i /*= 0*/) const
+void TypeNodeCodeGen::setResult(Place* place)
 {
-    Value* val = values_[i];
-
-    if ( !addresses_[i] )
-    {
-        llvm::AllocaInst* alloca = createEntryAlloca( 
-                builder_, val->getType(), val->getName() );
-        ctxt_->builder_.CreateStore(val, alloca);
-
-        return alloca;
-    }
-    else
-        return val;
-}
-
-Value* TypeNodeCodeGen::getScalar(size_t i /*= 0*/) const
-{
-    Value* val = values_[i];
-
-    if ( addresses_[i] )
-        return ctxt_->builder_.CreateLoad( val, val->getName() );
-    else
-        return val;
-}
-
-bool TypeNodeCodeGen::isAddr(size_t i /*= 0*/) const
-{
-    return addresses_[i];
-}
-
-void TypeNodeCodeGen::setResult(Value* value, bool isAddr)
-{
-    swiftAssert( values_.size() == addresses_.size(), "sizes must match" );
-
-    values_.resize(1);
-    addresses_.resize(1);
-    values_[0] = value;
-    addresses_[0] = isAddr;
+    places_.resize(1);
+    places_[0] = place;
 }
 
 } // namespace swift

@@ -75,7 +75,7 @@ Local::Local(location loc, Type* type, std::string* id)
     : Var(loc, type, id)
 {}
 
-Value* Local::getAddr(Context* /*ctxt*/) const
+Value* Local::getAddr(LLVMBuilder& /*builder*/) const
 {
     return alloca_;
 }
@@ -96,10 +96,8 @@ bool InOut::validate(Module* module) const
     return type_->validate(module);
 }
 
-Value* InOut::getAddr(Context* ctxt) const
+Value* InOut::getAddr(LLVMBuilder& builder) const
 {
-    llvm::IRBuilder<>& builder = ctxt->builder_;
-
     if ( !type_->isRef() )
         return alloca_;
     else

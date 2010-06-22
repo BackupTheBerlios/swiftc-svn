@@ -3,6 +3,7 @@
 #include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/cast.h"
 #include "utils/list.h"
 
 #include "fe/class.h"
@@ -11,6 +12,9 @@
 #include "fe/type.h"
 
 namespace swift {
+
+vec::StructMap LLVMTypebuilder::scalar2vec_ = vec::StructMap();
+vec::StructMap LLVMTypebuilder::vec2scalar_ = vec::StructMap();
 
 typedef Module::ClassMap::const_iterator CIter;
 
@@ -70,11 +74,11 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
         struct2Class_[ c->llvmType_ ] = c;
 
         if ( c->isSimd() )
-            vecStructs_[ c->llvmType_ ] = vec::VecType();
+            scalar2vec_[ c->llvmType_ ] = vec::StructAndLength();
     }
 
     // vec types
-    vec::TypeVectorizer typeVec( this, vecStructs_, ctxt_->lmodule() );
+    vec::TypeVectorizer typeVec( this, scalar2vec_, vec2scalar_, ctxt_->lmodule() );
 
     /*
      * fill entries in class
@@ -91,7 +95,7 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
         if ( c->isSimd() )
         {
             struct2Class_[ c->llvmType_ ] = c;
-            vec::VecType& vec = vecStructs_[c->llvmType_];
+            vec::StructAndLength& vec = scalar2vec_[c->llvmType_];
 
             c->vecType_ = vec.struct_;
             c->simdLength_ = vec.simdLength_;
@@ -180,6 +184,38 @@ void LLVMTypebuilder::notVectorizable(const llvm::StructType* st) const
     errorf( c->loc(), "class '%s' is not vectorizable", c->cid() );
 
     ctxt_->result_ = false;
+}
+
+const llvm::Type* LLVMTypebuilder::scalar2vec(const llvm::Type* scalar, int& simdLength)
+{
+    if ( const llvm::StructType* st = dynamic_cast<const llvm::StructType*>(scalar) )
+    {
+        vec::StructAndLength& vt = scalar2vec_[st];
+        simdLength = vt.simdLength_;
+
+        return vt.struct_;
+    }
+    else
+    {
+        simdLength = vec::TypeVectorizer::lengthOfScalar(scalar, Context::SIMD_WIDTH);
+        return vec::TypeVectorizer::vecScalar(scalar, simdLength, Context::SIMD_WIDTH);
+    }
+}
+
+const llvm::Type* LLVMTypebuilder::vec2scalar(const llvm::Type* vec, int& simdLength)
+{
+    if ( const llvm::StructType* st = dynamic_cast<const llvm::StructType*>(vec) )
+    {
+        vec::StructAndLength& vec = vec2scalar_[st];
+        simdLength = vec.simdLength_;
+        return vec.struct_;
+    }
+    else
+    {
+        const llvm::VectorType* vt = cast<llvm::VectorType>(vec);
+        simdLength = vt->getNumElements();
+        return vt->getContainedType(0);
+    }
 }
 
 } // namespace swift

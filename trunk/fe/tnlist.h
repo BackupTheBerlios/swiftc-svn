@@ -3,7 +3,8 @@
 
 #include <vector>
 
-#include <llvm/Support/IRBuilder.h>
+#include "utils/llvmhelper.h"
+#include "utils/llvmplace.h"
 
 #include "fe/typelist.h"
 
@@ -34,15 +35,12 @@ public:
     TypeNode* getTypeNode(size_t i) const;
     bool isLValue(size_t i) const;
     bool isInit(size_t i) const;
-    bool isAddr(size_t i) const;
-    llvm::Value* getValue(size_t i) const;
-    llvm::Value* getScalar(size_t i, llvm::IRBuilder<>& builder) const;
-    llvm::Value* getAddr(size_t i, Context* ctxt) const;
+    Place* getPlace(size_t i) const;
     const TypeList& typeList() const;
     size_t numItems() const;
     size_t numRetValues() const;
-    void getArgs(Values& args, Context* ctxt) const;
-    llvm::Value* getArg(size_t i, Context* ctxt) const;
+    void getArgs(Values& args, LLVMBuilder& builder) const;
+    llvm::Value* getArg(size_t i, LLVMBuilder& builder) const;
 
 private:
 
@@ -51,9 +49,8 @@ private:
     TypeNodeVec typeNodes_;
     BoolVec lvalues_;
     BoolVec inits_;
-    BoolVec addresses_;
     TypeList types_;
-    Values values_;
+    Places places_;
 };
 
 //------------------------------------------------------------------------------

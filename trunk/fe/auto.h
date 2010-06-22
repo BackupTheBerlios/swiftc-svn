@@ -38,7 +38,6 @@ class MemberFct;
 class MemberVar;
 class Module;
 class Scope;
-class SimdPrefix;
 class Stmnt;
 class Type;
 

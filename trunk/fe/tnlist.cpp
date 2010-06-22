@@ -15,6 +15,8 @@ TNList::~TNList()
 {
     for (size_t i = 0; i < typeNodes_.size(); ++i)
         delete typeNodes_[i];
+    for (size_t i = 0; i < places_.size(); ++i)
+        delete places_[i];
 }
 
 void TNList::append(TypeNode* typeNode)
@@ -46,10 +48,7 @@ void TNList::accept(TypeNodeCodeGen* tncg)
         tn->accept(tncg);
 
         for (size_t j = 0; j < tn->size(); ++j)
-        {
-            addresses_.push_back( tncg->isAddr(j) );
-            values_.push_back( tncg->getValue(j) );
-        }
+            places_.push_back( tncg->getPlace(j) );
     }
 }
 
@@ -68,38 +67,9 @@ bool TNList::isInit(size_t i) const
     return inits_[i];
 }
 
-bool TNList::isAddr(size_t i) const
+Place* TNList::getPlace(size_t i) const
 {
-    return addresses_[i];
-}
-
-Value* TNList::getValue(size_t i) const
-{
-    return values_[i];
-}
-
-Value* TNList::getAddr(size_t i, Context* ctxt) const
-{
-    Value* val = values_[i];
-
-    if ( !isAddr(i) )
-    {
-        llvm::AllocaInst* alloca = createEntryAlloca( 
-                ctxt->builder_, val->getType(), val->getName() );
-        ctxt->builder_.CreateStore( val, alloca);
-
-        return alloca;
-    }
-    else
-        return val;
-}
-
-Value* TNList::getScalar(size_t i, llvm::IRBuilder<>& builder) const
-{
-    if ( isAddr(i) )
-        return builder.CreateLoad( getValue(i), getValue(i)->getName() );
-    else
-        return getValue(i);
+    return places_[i];
 }
 
 const TypeList& TNList::typeList() const
@@ -117,15 +87,16 @@ size_t TNList::numRetValues() const
     return types_.size();
 }
 
-Value* TNList::getArg(size_t i, Context* ctxt) const
+Value* TNList::getArg(size_t i, LLVMBuilder& builder) const
 {
-    return types_[i]->perRef() ? getAddr(i, ctxt) : getScalar(i, ctxt->builder_);
+    Place* p = places_[i];
+    return types_[i]->perRef() ? p->getAddr(builder) : p->getScalar(builder);
 }
 
-void TNList::getArgs(Values& args, Context* ctxt) const
+void TNList::getArgs(Values& args, LLVMBuilder& builder) const
 {
-    for (size_t i = 0; i < values_.size(); ++i)
-        args.push_back( getArg(i, ctxt) );
+    for (size_t i = 0; i < places_.size(); ++i)
+        args.push_back( getArg(i, builder) );
 }
 
 } // namespace swift

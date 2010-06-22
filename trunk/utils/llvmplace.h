@@ -1,6 +1,8 @@
 #ifndef SWIFT_LLVM_PLACE_H
 #define SWIFT_LLVM_PLACE_H
 
+#include <vector>
+
 #include "utils/llvmhelper.h"
 
 //----------------------------------------------------------------------
@@ -57,32 +59,37 @@ public:
 
 //----------------------------------------------------------------------
 
-//class SimdAddr : public Addr
-//{
-//public:
+class SimdAddr : public Addr
+{
+public:
 
     /** 
      * @param ptr Pointer to the vector element.
      * @param agg The temporary extracted scalar value.
      * @param mod The index within the vector element.
      */
-    //SimdAddr(llvm::Value* ptr, llvm::Value* agg, llvm::Value* mod)
-        //: Addr(ptr)
-        //, mod_(mod)
-    //{}
-    //virtual ~SimdAddr() {}
+    SimdAddr(llvm::Value* ptr, llvm::Value* agg, llvm::Value* mod)
+        : Addr(ptr)
+        , mod_(mod)
+    {}
+    virtual ~SimdAddr() {}
 
-    //virtual llvm::Value* load(LLVMBuilder& builder, const std::string& name) const;
-    //virtual void store(LLVMBuilder& builder, llvm::Value value, const std::string& name) const;
-    //virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
-    //virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
-    //virtual void writeBack(LLVMBuilder& builder) const;
+    virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
+    virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
+    virtual void writeBack(LLVMBuilder& builder) const;
 
-//protected:
+    void extract(llvm::LLVMContext& lctxt, LLVMBuilder& builder);
 
-    //llvm::Value* mod_;
-    //llvm::Value* agg_;
-//};
+protected:
+
+    llvm::Value* mod_;
+    llvm::Value* agg_;
+    int simdLength_;
+};
+
+//----------------------------------------------------------------------
+
+typedef std::vector<Place*> Places;
 
 //----------------------------------------------------------------------
 

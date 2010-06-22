@@ -15,14 +15,16 @@ using namespace llvm;
 namespace vec {
 
 TypeVectorizer::TypeVectorizer(const ErrorHandler* errorHandler, 
-                               VecStructs& vecStructs, 
+                               StructMap& scalar2vec,
+                               StructMap& vec2scalar,
                                llvm::Module* module)
     : errorHandler_(errorHandler)
-    , vecStructs_(vecStructs)
+    , scalar2vec_(scalar2vec)
+    , vec2scalar_(vec2scalar)
     , module_(module)
     , simdWidth_(16)
 {
-    for (VecStructs::const_iterator iter = vecStructs_.begin(); iter != vecStructs_.end(); ++iter)
+    for (StructMap::const_iterator iter = scalar2vec.begin(); iter != scalar2vec.end(); ++iter)
     {
         const Struct* st = iter->first;
 
@@ -69,7 +71,7 @@ int TypeVectorizer::lengthOfScalar(const Type* type)
     
 int TypeVectorizer::lengthOfStruct(const Struct* st)
 {
-    if ( !vecStructs_.contains(st) )
+    if ( !scalar2vec_.contains(st) )
     {
         errorHandler_->notInMap(st, parent_);
         return -1;
@@ -147,15 +149,17 @@ const Type* TypeVectorizer::vecScalar(const Type* type, int& n)
 
 const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
 {
-    VecStructs::iterator iter = vecStructs_.find(st);
-    swiftAssert( iter != vecStructs_.end(), "must contain st" );
+    StructMap::iterator iter = scalar2vec_.find(st);
+    swiftAssert( iter != scalar2vec_.end(), "must contain st" );
 
+    // has this struct already been processed?
     if ( iter->second.struct_ != 0 )
     {
         n = iter->second.simdLength_;
         return iter->second.struct_;
     }
 
+    // calculate the actual simd length
     n = n == 0 ? simdWidth_ : n;
 
     typedef std::vector<const Type*> LLVMTypes;
@@ -165,14 +169,15 @@ const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
     for (EIter iter = st->element_begin(); iter != st->element_end(); ++iter)
         vecTypes.push_back( vecType(iter->get(), n) );
 
-    const Struct* vecStruct = Struct::get( st->getContext(), vecTypes );
-    vecStructs_[st] = VecType(vecStruct, n);
+    const Struct* vt = Struct::get( st->getContext(), vecTypes );
+    scalar2vec_[st] = StructAndLength(vt, n);
+    vec2scalar_[vt] = StructAndLength(st, n);
 
     std::ostringstream oss; 
     oss << "simd." << module_->getTypeName(st);
-    module_->addTypeName( oss.str().c_str(), vecStruct );
+    module_->addTypeName( oss.str().c_str(), vt );
 
-    return vecStruct;
+    return vt;
 }
 
 const Type* TypeVectorizer::vecType(const Type* type, int& n)

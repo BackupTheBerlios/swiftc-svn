@@ -48,38 +48,63 @@ void StmntAnalyzer::visit(IfElStmnt* s)
         s->elScope_->accept(this, ctxt_);
 }
 
-void StmntAnalyzer::visit(RepeatUntilStmnt* s)
+void StmntAnalyzer::visit(RepeatUntilLoop* l)
 {
-    s->expr_->accept( tna_.get() );
+    l->expr_->accept( tna_.get() );
 
-    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
+    if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
     {
-        errorf(s->expr_->loc(), 
+        errorf(l->expr_->loc(), 
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
         ctxt_->result_ = false;
     }
 
-    s->scope_->accept(this, ctxt_);
+    l->scope_->accept(this, ctxt_);
 }
+
+void StmntAnalyzer::visit(WhileLoop* l)
+{
+    l->expr_->accept( tna_.get() );
+
+    if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
+    {
+        errorf(l->expr_->loc(), 
+                "the exit condition of a while statement must return a 'bool'");
+        ctxt_->result_ = false;
+    }
+
+    l->scope_->accept(this, ctxt_);
+}
+
+void StmntAnalyzer::visit(SimdLoop* l)
+{
+    l->lExpr_->accept( tna_.get() );
+
+    if ( l->lExpr_->size() != 1 || !l->lExpr_->getType()->isIndex() )
+    {
+        errorf(l->lExpr_->loc(), 
+                "the lower bound of an simd loop header must return an 'index'");
+        ctxt_->result_ = false;
+    }
+
+    l->rExpr_->accept( tna_.get() );
+
+    if ( l->rExpr_->size() != 1 || !l->rExpr_->getType()->isIndex() )
+    {
+        errorf(l->rExpr_->loc(), 
+                "the upper bound of an simd loop header must return an 'index'");
+        ctxt_->result_ = false;
+    }
+
+    l->scope_->accept(this, ctxt_);
+}
+
 
 void StmntAnalyzer::visit(ScopeStmnt* s) 
 {
     s->scope_->accept(this, ctxt_);
 }
 
-void StmntAnalyzer::visit(WhileStmnt* s)
-{
-    s->expr_->accept( tna_.get() );
-
-    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
-    {
-        errorf(s->expr_->loc(), 
-                "the exit condition of a while statement must return a 'bool'");
-        ctxt_->result_ = false;
-    }
-
-    s->scope_->accept(this, ctxt_);
-}
 
 void StmntAnalyzer::visit(AssignStmnt* s)
 {

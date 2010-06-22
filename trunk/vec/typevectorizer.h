@@ -19,22 +19,22 @@ namespace vec {
 typedef llvm::Type Type;
 typedef llvm::StructType Struct;
 
-struct VecType
+struct StructAndLength
 {
     const Struct* struct_;
     int simdLength_;
 
-    VecType()
+    StructAndLength()
         : struct_(0)
         , simdLength_(0)
     {}
-    VecType(const Struct* st, int simdLength) 
+    StructAndLength(const Struct* st, int simdLength) 
         : struct_(st)
         , simdLength_(simdLength)
     {}
 };
 
-typedef Map<const Struct*, VecType> VecStructs;
+typedef Map<const Struct*, StructAndLength> StructMap;
 
 class ErrorHandler
 {
@@ -49,7 +49,8 @@ class TypeVectorizer
 public:
 
     TypeVectorizer(const ErrorHandler* errorHandler, 
-                   VecStructs& vecStructs, 
+                   StructMap& scalar2vec,
+                   StructMap& vec2scalar,
                    llvm::Module*);
 
     static int lengthOfScalar(const Type* type, int simdWidth);
@@ -65,7 +66,8 @@ public:
 private:
 
     const ErrorHandler* errorHandler_;
-    VecStructs& vecStructs_;
+    StructMap& scalar2vec_;
+    StructMap& vec2scalar_;
     llvm::Module* module_;
     int simdWidth_;
 

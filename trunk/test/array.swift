@@ -68,6 +68,9 @@ class Test
             i = i + 1x
         end
 
+        simd{Vec3} vecs
+        vecs[5x]
+
         result = 0
     end
 end
