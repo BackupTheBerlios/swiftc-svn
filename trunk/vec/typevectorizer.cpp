@@ -103,7 +103,7 @@ int TypeVectorizer::lengthOfType(const Type* type)
         return iter->second; // already calculated
 
     int simdLength;
-    if ( const Struct* st = dynamic_cast<const Struct*>(type) )
+    if ( const Struct* st = dynamic<Struct>(type) )
         simdLength = lengthOfStruct(st);
     else
         simdLength = lengthOfScalar(type, simdWidth_);
@@ -182,7 +182,7 @@ const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
 
 const Type* TypeVectorizer::vecType(const Type* type, int& n)
 {
-    if ( const Struct* st = dynamic_cast<const Struct*>(type) )
+    if ( const Struct* st = dynamic<Struct>(type) )
         return vecStruct(st, n);
     else
         return vecScalar(type, n);

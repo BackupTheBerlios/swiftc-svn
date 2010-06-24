@@ -11,6 +11,8 @@
 #include "fe/error.h"
 #include "fe/type.h"
 
+using llvm::StructType;
+
 namespace swift {
 
 vec::StructMap LLVMTypebuilder::scalar2vec_ = vec::StructMap();
@@ -163,7 +165,7 @@ bool LLVMTypebuilder::process(Class* c)
     return true;
 }
 
-void LLVMTypebuilder::notInMap(const llvm::StructType* st, const llvm::StructType* parent) const
+void LLVMTypebuilder::notInMap(const StructType* st, const StructType* parent) const
 {
     {
         Class* c = struct2Class_.find(st)->second;
@@ -178,7 +180,7 @@ void LLVMTypebuilder::notInMap(const llvm::StructType* st, const llvm::StructTyp
     ctxt_->result_ = false;
 }
 
-void LLVMTypebuilder::notVectorizable(const llvm::StructType* st) const
+void LLVMTypebuilder::notVectorizable(const StructType* st) const
 {
     Class* c = struct2Class_.find(st)->second;
     errorf( c->loc(), "class '%s' is not vectorizable", c->cid() );
@@ -188,7 +190,7 @@ void LLVMTypebuilder::notVectorizable(const llvm::StructType* st) const
 
 const llvm::Type* LLVMTypebuilder::scalar2vec(const llvm::Type* scalar, int& simdLength)
 {
-    if ( const llvm::StructType* st = dynamic_cast<const llvm::StructType*>(scalar) )
+    if ( const StructType* st = dynamic<StructType>(scalar) )
     {
         vec::StructAndLength& vt = scalar2vec_[st];
         simdLength = vt.simdLength_;
@@ -204,7 +206,7 @@ const llvm::Type* LLVMTypebuilder::scalar2vec(const llvm::Type* scalar, int& sim
 
 const llvm::Type* LLVMTypebuilder::vec2scalar(const llvm::Type* vec, int& simdLength)
 {
-    if ( const llvm::StructType* st = dynamic_cast<const llvm::StructType*>(vec) )
+    if ( const StructType* st = dynamic<StructType>(vec) )
     {
         vec::StructAndLength& vec = vec2scalar_[st];
         simdLength = vec.simdLength_;

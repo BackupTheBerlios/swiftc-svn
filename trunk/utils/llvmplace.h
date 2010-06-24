@@ -63,28 +63,23 @@ class SimdAddr : public Addr
 {
 public:
 
-    /** 
-     * @param ptr Pointer to the vector element.
-     * @param agg The temporary extracted scalar value.
-     * @param mod The index within the vector element.
-     */
-    SimdAddr(llvm::Value* ptr, llvm::Value* agg, llvm::Value* mod)
-        : Addr(ptr)
-        , mod_(mod)
-    {}
+    SimdAddr(llvm::Value* ptr, 
+             llvm::Value* mod, 
+             const llvm::Type* scalarType,
+             LLVMBuilder& builder);
     virtual ~SimdAddr() {}
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
     virtual void writeBack(LLVMBuilder& builder) const;
 
-    void extract(llvm::LLVMContext& lctxt, LLVMBuilder& builder);
-
 protected:
 
+    llvm::Value* extract(llvm::Value* vVec, const llvm::Type* scalarType, LLVMBuilder& builder);
+    llvm::Value* pack(llvm::Value* sVal, llvm::Value* vVal, const llvm::Type* sType, LLVMBuilder& builder) const;
+
     llvm::Value* mod_;
-    llvm::Value* agg_;
-    int simdLength_;
+    llvm::Value* alloca_;
 };
 
 //----------------------------------------------------------------------

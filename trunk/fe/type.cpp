@@ -166,19 +166,11 @@ bool BaseType::check(const Type* type, Module* m) const
 {
     if ( const BaseType* bt = type->cast<BaseType>() )
     {
-
         Class* class1 = m->lookupClass( id() );
         Class* class2 = m->lookupClass( bt->id() );
 
-        // both classes must exist
-        swiftAssert(class1,  "first class not found");
-        swiftAssert(class2, "second class not found");
-
-        // different pointers mean different types
-        if (class1 != class2) 
-            return false;
-        else
-            return true;
+        // invalid clases and different pointers mean different types
+        return class1 && class2 && (class1 == class2);
     }
 
     return false;
@@ -455,7 +447,7 @@ bool NestedType::check(const Type* type, Module* m) const
     if ( typeid(*this) != typeid(*type) )
         return false;
 
-    swiftAssert( dynamic_cast<const NestedType*>(type), 
+    swiftAssert( dynamic<NestedType>(type), 
             "must be castable to NestedType" );
     
     const NestedType* nestedType = (const NestedType*) type;
@@ -590,8 +582,8 @@ void Container::emitCreate(Context* ctxt,
         : size;
 
     Value* ptr = ctxt->createMalloc(adjustedSize, ptrType);
-    Value*  ptrDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, POINTER);
-    Value* sizeDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, SIZE);
+    Value*  ptrDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, POINTER, aggPtr->getNameStr() + ".ptr");
+    Value* sizeDstAddr = createInBoundsGEP_0_i32(lctxt, builder, aggPtr, SIZE, aggPtr->getNameStr() + ".size");
 
     // and store
     builder.CreateStore(ptr, ptrDstAddr);
@@ -603,6 +595,7 @@ void Container::emitCopy(Context* ctxt,
                          Value* dst, 
                          Value* src, 
                          int simdLength)
+
 {
     LLVMBuilder& builder = ctxt->builder_;
     llvm::LLVMContext& lctxt = ctxt->lctxt();
@@ -611,8 +604,8 @@ void Container::emitCopy(Context* ctxt,
 
     emitCreate(ctxt, allocType, dst, size, simdLength);
 
-    Value* srcPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, src, POINTER);
-    Value* dstPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, dst, POINTER);
+    Value* srcPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, src, POINTER, src->getNameStr() + ".ptr");
+    Value* dstPtr = createLoadInBoundsGEP_0_i32(lctxt, builder, dst, POINTER, dst->getNameStr() + ".ptr");
 
     Value* adjustedSize = adjustSize(ctxt, size, simdLength);
     ctxt->createMemCpy(dstPtr, srcPtr, adjustedSize);
@@ -679,7 +672,7 @@ Simd::Simd(location loc, TokenType modifier, Type* innerType)
 
 Simd* Simd::clone() const
 {
-    return new Simd(location() , modifier_, innerType_->clone());
+    return new Simd( location(), modifier_, innerType_->clone() );
 }
 
 std::string Simd::containerStr() const

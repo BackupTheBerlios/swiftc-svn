@@ -24,10 +24,19 @@ simd class Vec3
     real x
     real y
     real z
+
+    assign = (real x, real y, real z)
+        .x = x
+        .y = y
+        .z = z
+    end
 end
 
 class Test
     routine foo() -> int a, int b
+    end
+
+    reader bar(Vec3 v)
     end
 
     routine main() -> int result
@@ -68,8 +77,13 @@ class Test
             i = i + 1x
         end
 
-        simd{Vec3} vecs
-        vecs[5x]
+        Test t
+        simd{Vec3} vecs = 100x
+        vecs[5x] = 1.0, 2.0, 3.0
+
+        c_call print_float( vecs[5x].x )
+        c_call print_float( vecs[5x].y )
+        c_call print_float( vecs[5x].z )
 
         result = 0
     end

@@ -27,9 +27,7 @@ StmntCodeGen::StmntVisitor(Context* ctxt)
     , lctxt_( ctxt->lctxt() )
 {}
 
-StmntCodeGen::~StmntVisitor() 
-{
-}
+StmntCodeGen::~StmntVisitor() {}
 
 void StmntCodeGen::visit(ErrorStmnt* s) 
 {
@@ -291,6 +289,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
                     call->setCallingConv(llvm::CallingConv::Fast);
                     builder_.Insert(call);
+                    lPlace->writeBack(builder_);
 
                     return;
                 }
@@ -302,6 +301,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     Value* rvalue = s->exprList_->getPlace(0)->getScalar(builder_);
                     Value* lvalue = lPlace->getAddr(builder_);
                     builder_.CreateStore(rvalue, lvalue);
+                    lPlace->writeBack(builder_);
 
                     return;
                 }
@@ -320,7 +320,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                 if ( !s->exprList_->isInit(i) )
                     continue;
 
-                if ( Decl* decl = dynamic_cast<Decl*>(s->tuple_->getTypeNode(i)) )
+                if ( Decl* decl = dynamic<Decl>(s->tuple_->getTypeNode(i)) )
                 {
                     Place* rPlace = s->exprList_->getPlace(i);
                     swiftAssert( typeid(*rPlace) == typeid(Addr), "must be an Addr" );
@@ -355,6 +355,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         Value* lvalue = lPlace->getAddr(builder_);
                         Value* rvalue = rPlace->getScalar(builder_);
                         builder_.CreateStore(rvalue, lvalue);
+                        lPlace->writeBack(builder_);
                         continue;
                     }
                     case ASCall::USER:
@@ -371,6 +372,7 @@ void StmntCodeGen::visit(AssignStmnt* s)
                             llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
                         call->setCallingConv(llvm::CallingConv::Fast);
                         builder_.Insert(call);
+                        s->tuple_->getPlace(i)->writeBack(builder_);
                         continue;
                     }
                     case ASCall::CONTAINER_COPY:

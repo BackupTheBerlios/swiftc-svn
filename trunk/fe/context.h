@@ -71,6 +71,9 @@ private:
     TNLists exprLists_;
 };
 
+
+#define SWIFT_CONFIRM_ERROR swiftAssert(!ctxt_->result_, "there must already be an error")
+
 } // namespace swift
 
 #endif // SWIFT_CONTEXT_H

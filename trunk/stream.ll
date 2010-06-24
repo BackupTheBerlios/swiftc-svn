@@ -17,6 +17,7 @@ entry:
     br label %header
 header:
     %a2 = phi i32 [%a1, %entry], [%a3, %while]
+    %a3 = i32 %a2
     %cmp = icmp slt i32 %a2, %b
     br i1 %cmp, label %while, label %while-out
 

@@ -17,4 +17,16 @@ const T* cast(const U* u)
     return static_cast<const T*>(u);
 }
 
+template<class T, class U>
+T* dynamic(U* u)
+{
+    return dynamic_cast<T*>(u);
+}
+
+template<class T, class U>
+const T* dynamic(const U* u)
+{
+    return dynamic_cast<const T*>(u);
+}
+
 #endif // SWIFT_CAST_H

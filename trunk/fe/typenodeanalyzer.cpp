@@ -1,5 +1,7 @@
 #include "fe/typenodeanalyzer.h"
 
+#include "utils/cast.h"
+
 #include "fe/class.h"
 #include "fe/context.h"
 #include "fe/tnlist.h"
@@ -21,7 +23,7 @@ void TypeNodeAnalyzer::visit(Decl* d)
     // is here a name clash in this scope?
     if ( Var* var = ctxt_->scope()->lookupVarOneLevelOnly(d->id()) )
     {
-        if ( dynamic_cast<InOut*>(var) )
+        if ( dynamic<InOut>(var) )
             errorf( d->loc(), "local '%s' shadows a parameter", d->cid());
         else
         {
@@ -154,7 +156,7 @@ void TypeNodeAnalyzer::visit(Nil* n)
 
 void TypeNodeAnalyzer::visit(Self* s)
 {
-    if ( Method* m = dynamic_cast<Method*>(ctxt_->memberFct_) )
+    if ( Method* m = dynamic<Method>(ctxt_->memberFct_) )
     {
          Type* type = new UserType( 
                  s->loc(), 
@@ -229,11 +231,18 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
     if ( !examinePrefixExpr(m) )
         return;
 
-    if ( const UserType* user = 
-            m->prefixExpr_->getType()->derefPtr()->cast<UserType>() )
+    const Type* prefixType = m->prefixExpr_->getType();
+
+    if ( const UserType* user = prefixType->derefPtr()->cast<UserType>() )
     {
         m->class_ = user->lookupClass(ctxt_->module_);
-        swiftAssert(m->class_, "must be found");
+
+        if (!m->class_)
+        {
+            SWIFT_CONFIRM_ERROR;
+            setError(m, true);
+            return;
+        }
 
         m->memberVar_ = m->class_->lookupMemberVar( m->id() );
 
@@ -249,6 +258,11 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
             setResult(m, m->memberVar_->getType()->clone(), true);
             return;
         }
+    }
+    if ( prefixType->cast<ErrorType>() )
+    {
+        SWIFT_CONFIRM_ERROR;
+        return;
     }
 
     swiftAssert(false, "TODO");

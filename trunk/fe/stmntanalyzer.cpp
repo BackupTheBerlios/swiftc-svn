@@ -169,7 +169,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         TypeNode* left = s->tuple_->getTypeNode(0);
         std::string str, name;
 
-        if ( dynamic_cast<Decl*>(left) )
+        if ( dynamic<Decl>(left) )
         {
             str = "create";
             name = "contructor";
@@ -262,7 +262,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             std::string str, name;
             bool isCreate;
 
-            if ( dynamic_cast<Decl*>(tn) )
+            if ( dynamic<Decl>(tn) )
             {
                 // is this a copy create and the caller initializes this value?
                 if ( s->exprList_->isInit(i) && lhs[i]->check(rhs[i], module) )
@@ -302,11 +302,11 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                     continue;
                 }
 
-                if ( dynamic_cast<const ScalarType*>(bt) )
+                if ( dynamic<ScalarType>(bt) )
                     s->calls_.push_back( ASCall(ASCall::COPY) );
                 else
                 {
-                    swiftAssert( dynamic_cast<const UserType*>(bt), 
+                    swiftAssert( dynamic<UserType>(bt), 
                             "must be castable to BaseType" );
 
                     if (isCreate)

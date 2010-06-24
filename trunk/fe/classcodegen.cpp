@@ -6,6 +6,8 @@
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/cast.h"
+
 #include "fe/context.h"
 #include "fe/scope.h"
 #include "fe/stmntcodegen.h"
@@ -92,7 +94,7 @@ void ClassCodeGen::codeGen(MemberFct* m)
     llvm::Function::arg_iterator iter = fct->arg_begin();
 
     // initialize 'self' alloca
-    if ( Method* method = dynamic_cast<Method*>(m) )
+    if ( Method* method = dynamic<Method>(m) )
     {
         // create alloca and store the initial
         method->selfValue_ = builder_.CreateAlloca( m->params_[0], 0, "self" );
