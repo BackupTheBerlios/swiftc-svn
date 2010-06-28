@@ -21,6 +21,8 @@ namespace llvm {
     template<bool preserveNames, typename T, typename Inserter> class IRBuilder;
 }
 
+class Place;
+
 //----------------------------------------------------------------------
 
 typedef llvm::IRBuilder <true, llvm::ConstantFolder, 
@@ -56,5 +58,9 @@ llvm::AllocaInst* createEntryAlloca(LLVMBuilder& builder, const llvm::Type* type
 
 //----------------------------------------------------------------------
 
+void createCopy(LLVMBuilder& builder, Place* src, llvm::Value* dst);
+void createCopy(LLVMBuilder& builder, llvm::Value* src, llvm::Value* dst);
+
+//----------------------------------------------------------------------
 
 #endif // UTILS_LLVM_HELPER_H

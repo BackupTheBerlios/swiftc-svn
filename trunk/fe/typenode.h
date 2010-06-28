@@ -266,6 +266,25 @@ public:
 
 //------------------------------------------------------------------------------
 
+class CreateCall : public StaticMethodCall
+{
+public:
+
+    CreateCall(location loc, std::string* classId, TNList* exprList);
+    virtual ~CreateCall();
+
+    virtual void accept(TypeNodeVisitorBase* t);
+    virtual const char* qualifierStr() const;
+
+protected:
+
+    std::string* classId_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
 class RoutineCall : public StaticMethodCall
 {
 public:
@@ -433,8 +452,9 @@ public:
     virtual void visit(WriterCall* w) = 0;
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
-    virtual void visit(BinExpr* b) = 0;
+    virtual void visit(CreateCall* c) = 0;
     virtual void visit(RoutineCall* r) = 0;
+    virtual void visit(BinExpr* b) = 0;
     virtual void visit(UnExpr* u) = 0;
 
 protected:

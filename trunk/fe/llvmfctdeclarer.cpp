@@ -187,6 +187,18 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         fct->setCallingConv(llvm::CallingConv::Fast);
     else
         fct->addFnAttr(llvm::Attribute::NoUnwind);
+
+    // add noalias for all pointer args
+    unsigned index = 1;
+    llvm::Function::arg_iterator iter = fct->arg_begin();
+    while ( iter != fct->arg_end() )
+    {
+        if ( dynamic<llvm::PointerType>(iter->getType()) )
+            fct->addAttribute(index, llvm::Attribute::NoAlias);
+
+        ++iter;
+        ++index;
+    }
 }
 
 } // namespace swift

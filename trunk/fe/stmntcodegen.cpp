@@ -303,6 +303,10 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     builder_.CreateStore(rvalue, lvalue);
                     lPlace->writeBack(builder_);
 
+                    //Value* lvalue = lPlace->getAddr(builder_);
+                    //createCopy(builder_, s->exprList_->getPlace(0), lvalue);
+                    //lPlace->writeBack(builder_);
+
                     return;
                 }
                 default:
@@ -356,6 +360,11 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         Value* rvalue = rPlace->getScalar(builder_);
                         builder_.CreateStore(rvalue, lvalue);
                         lPlace->writeBack(builder_);
+
+                        //Value* lvalue = lPlace->getAddr(builder_);
+                        //createCopy(builder_, rPlace, lvalue);
+                        //lPlace->writeBack(builder_);
+
                         continue;
                     }
                     case ASCall::USER:

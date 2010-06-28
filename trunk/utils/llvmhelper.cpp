@@ -7,44 +7,49 @@
 #include <llvm/Support/TypeBuilder.h>
 #include <llvm/Support/IRBuilder.h>
 
-using llvm::Value;
+#include "utils/assert.h"
+#include "utils/cast.h"
+#include "utils/llvmplace.h"
 
-Value* createInt8(llvm::LLVMContext& lctxt, uint64_t val /*= 0*/)
+
+using namespace llvm;
+
+Value* createInt8(LLVMContext& lctxt, uint64_t val /*= 0*/)
 {
-    return llvm::ConstantInt::get( llvm::IntegerType::getInt8Ty(lctxt), val );
+    return ConstantInt::get( IntegerType::getInt8Ty(lctxt), val );
 }
 
-Value* createInt16(llvm::LLVMContext& lctxt, uint64_t val /*= 0*/)
+Value* createInt16(LLVMContext& lctxt, uint64_t val /*= 0*/)
 {
-    return llvm::ConstantInt::get( llvm::IntegerType::getInt16Ty(lctxt), val );
+    return ConstantInt::get( IntegerType::getInt16Ty(lctxt), val );
 }
 
-Value* createInt32(llvm::LLVMContext& lctxt, uint64_t val /*= 0*/)
+Value* createInt32(LLVMContext& lctxt, uint64_t val /*= 0*/)
 {
-    return llvm::ConstantInt::get( llvm::IntegerType::getInt32Ty(lctxt), val );
+    return ConstantInt::get( IntegerType::getInt32Ty(lctxt), val );
 }
 
-Value* createInt64(llvm::LLVMContext& lctxt, uint64_t val /*= 0*/)
+Value* createInt64(LLVMContext& lctxt, uint64_t val /*= 0*/)
 {
-    return llvm::ConstantInt::get( llvm::IntegerType::getInt64Ty(lctxt), val );
+    return ConstantInt::get( IntegerType::getInt64Ty(lctxt), val );
 }
 
-const llvm::Type* createVoid(llvm::LLVMContext& lctxt)
+const Type* createVoid(LLVMContext& lctxt)
 {
-    return llvm::TypeBuilder<void, true>::get(lctxt);
+    return TypeBuilder<void, true>::get(lctxt);
 }
 
-Value* createFloat(llvm::LLVMContext& lctxt, float val)
+Value* createFloat(LLVMContext& lctxt, float val)
 {
-    return llvm::ConstantFP::get(lctxt, llvm::APFloat(val) );
+    return ConstantFP::get(lctxt, APFloat(val) );
 }
 
-Value* createDouble(llvm::LLVMContext& lctxt, double val)
+Value* createDouble(LLVMContext& lctxt, double val)
 {
-    return llvm::ConstantFP::get(lctxt, llvm::APFloat(val) );
+    return ConstantFP::get(lctxt, APFloat(val) );
 }
 
-Value* createInBoundsGEP_0_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createInBoundsGEP_0_x(LLVMContext& lctxt, LLVMBuilder& builder, 
                              Value* ptr, Value* x,
                              const std::string& name /*= ""*/)
 {
@@ -54,7 +59,7 @@ Value* createInBoundsGEP_0_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder,
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
 
-Value* createInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createInBoundsGEP_0_i32(LLVMContext& lctxt, LLVMBuilder& builder, 
                                Value* ptr, uint64_t i,
                                const std::string& name /*= ""*/)
 {
@@ -64,7 +69,7 @@ Value* createInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder,
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
 
-Value* createInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createInBoundsGEP_0_i64(LLVMContext& lctxt, LLVMBuilder& builder, 
                                Value* ptr, uint64_t i,
                                const std::string& name /*= ""*/)
 {
@@ -74,15 +79,15 @@ Value* createInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder,
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
 
-llvm::Value* createLoadInBoundsGEP_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
-                                     llvm::Value* ptr, llvm::Value* x, 
-                                     const std::string& name /*= ""*/)
+Value* createLoadInBoundsGEP_x(LLVMContext& lctxt, LLVMBuilder& builder, 
+                               Value* ptr, Value* x, 
+                               const std::string& name /*= ""*/)
 {
     return builder.CreateLoad(
             builder.CreateInBoundsGEP(ptr, x, name), name);
 }
 
-Value* createLoadInBoundsGEP_0_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createLoadInBoundsGEP_0_x(LLVMContext& lctxt, LLVMBuilder& builder, 
                                  Value* ptr, Value* x,
                                  const std::string& name /*= ""*/)
 {
@@ -90,7 +95,7 @@ Value* createLoadInBoundsGEP_0_x(llvm::LLVMContext& lctxt, LLVMBuilder& builder,
             createInBoundsGEP_0_x(lctxt, builder, ptr, x, name), name );
 }
 
-Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createLoadInBoundsGEP_0_i32(LLVMContext& lctxt, LLVMBuilder& builder, 
                                    Value* ptr, uint64_t i,
                                    const std::string& name /*= ""*/)
 {
@@ -98,7 +103,7 @@ Value* createLoadInBoundsGEP_0_i32(llvm::LLVMContext& lctxt, LLVMBuilder& builde
         createInBoundsGEP_0_i32(lctxt, builder, ptr, i, name), name );
 }
 
-Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builder, 
+Value* createLoadInBoundsGEP_0_i64(LLVMContext& lctxt, LLVMBuilder& builder, 
                                    Value* ptr, uint64_t i,
                                    const std::string& name /*= ""*/)
 {
@@ -106,11 +111,45 @@ Value* createLoadInBoundsGEP_0_i64(llvm::LLVMContext& lctxt, LLVMBuilder& builde
         createInBoundsGEP_0_i64(lctxt, builder, ptr, i, name), name );
 }
 
-llvm::AllocaInst* createEntryAlloca(LLVMBuilder& builder, const llvm::Type* type, 
-                                    const std::string& name /*= ""*/)
+AllocaInst* createEntryAlloca(LLVMBuilder& builder, const Type* type, 
+                              const std::string& name /*= ""*/)
 {
-    llvm::BasicBlock* entry = &builder.GetInsertBlock()->getParent()->getEntryBlock();
+    BasicBlock* entry = &builder.GetInsertBlock()->getParent()->getEntryBlock();
     LLVMBuilder tmpBuilder( entry, entry->begin() );
 
     return tmpBuilder.CreateAlloca(type, 0, name);
 }
+
+//void createCopy(LLVMBuilder& builder, Place* src, Value* dst)
+//{
+    //if ( Addr* addr = dynamic<Addr>(src) )
+        //createCopy(builder, addr->getAddr(builder), dst);
+    //else
+        //builder.CreateStore( src->getScalar(builder), dst );
+//}
+
+//void createCopy(LLVMBuilder& builder, Value* src, Value* dst)
+//{
+    //swiftAssert(src->getType() == dst->getType(), "types must match");
+    //LLVMContext& lctxt = src->getContext();
+
+    //const PointerType* ptrType = cast<PointerType>( src->getType() );
+    //const Type* type = ptrType->getContainedType(0);
+    
+    //if ( const StructType* st = dynamic<StructType>(type) )
+    //{
+        //size_t i = 0;
+        //StructType::element_iterator iter = st->element_begin();
+        //while (iter != st->element_end())
+        //{
+            //Value* srcMemPtr = createInBoundsGEP_0_i32(lctxt, builder, src, i);
+            //Value* dstMemPtr = createInBoundsGEP_0_i32(lctxt, builder, dst, i);
+            //createCopy(builder, srcMemPtr, dstMemPtr);
+
+            //++iter;
+            //++i;
+        //}
+    //}
+    //else
+        //builder.CreateStore( builder.CreateLoad(src), dst );
+//}

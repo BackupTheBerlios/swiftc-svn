@@ -496,6 +496,11 @@ postfix_expr
     | postfix_expr '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, ctxt_->popExprList()); }
     |              ':' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new ReaderCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
     |              '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
+
+    /*
+        other calls
+    */
+    | ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CreateCall(@$, $1, ctxt_->popExprList()); }
     ;
 
 primary_expr

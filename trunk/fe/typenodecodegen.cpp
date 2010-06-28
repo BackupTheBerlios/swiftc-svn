@@ -274,6 +274,45 @@ void TypeNodeCodeGen::visit(WriterCall* w)
     emitCall( w, getPlace() );
 }
 
+void TypeNodeCodeGen::visit(CreateCall* r)
+{
+    //emitCall(r, 0);
+    // TODO
+    //
+}
+
+void TypeNodeCodeGen::visit(RoutineCall* r)
+{
+    emitCall(r, 0);
+}
+
+void TypeNodeCodeGen::visit(UnExpr* u)
+{
+    if ( u->builtin_ )
+    {
+        u->op1_->accept(this);
+        Value* val = getPlace()->getScalar(builder_);
+        const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
+
+        switch (u->token_)
+        {
+            case Token::ADD: 
+                // nothing to do
+                break;
+            case Token::SUB:
+                val = builder_.CreateSub( llvm::Constant::getNullValue( 
+                            scalar->getLLVMType(ctxt_->module_)), val );
+                break;
+            default:
+                swiftAssert(false, "TODO");
+        }
+
+        setResult( new Scalar(val) );
+    }
+    else
+        emitCall(u, 0);
+}
+
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
     if ( b->builtin_ )
@@ -354,38 +393,6 @@ void TypeNodeCodeGen::visit(BinExpr* b)
     }
     else
         emitCall(b, 0);
-}
-
-void TypeNodeCodeGen::visit(UnExpr* u)
-{
-    if ( u->builtin_ )
-    {
-        u->op1_->accept(this);
-        Value* val = getPlace()->getScalar(builder_);
-        const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
-
-        switch (u->token_)
-        {
-            case Token::ADD: 
-                // nothing to do
-                break;
-            case Token::SUB:
-                val = builder_.CreateSub( llvm::Constant::getNullValue( 
-                            scalar->getLLVMType(ctxt_->module_)), val );
-                break;
-            default:
-                swiftAssert(false, "TODO");
-        }
-
-        setResult( new Scalar(val) );
-    }
-    else
-        emitCall(u, 0);
-}
-
-void TypeNodeCodeGen::visit(RoutineCall* r)
-{
-    emitCall(r, 0);
 }
 
 void TypeNodeCodeGen::getSelf(MethodCall* m)

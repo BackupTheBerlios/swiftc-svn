@@ -28,6 +28,7 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/StandardPasses.h>
+#include <llvm/Target/TargetData.h>
 
 #include "utils/memmgr.h"
 #include "utils/stringhelper.h"
@@ -124,6 +125,10 @@ static int start(int argc, char** argv)
         module->verify();
 
         llvm::PassManager pm;
+
+        llvm::TargetData* td = new llvm::TargetData( module->getLLVMModule()->getDataLayout() );
+        pm.add(td);
+
         llvm::createStandardModulePasses(
                 &pm,                    // PassManager
                 clp.optLevel(),         // optimization level

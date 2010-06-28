@@ -45,9 +45,10 @@ public:
     virtual void visit(WriterCall* w);
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
-    virtual void visit(BinExpr* b);
-    virtual void visit(UnExpr* u);
+    virtual void visit(CreateCall* c);
     virtual void visit(RoutineCall* r);
+    virtual void visit(UnExpr* u);
+    virtual void visit(BinExpr* b);
 
     Place* getPlace(size_t i = 0) const;
 

@@ -256,6 +256,29 @@ StaticMethodCall::StaticMethodCall(location loc, std::string* id, TNList* exprLi
 
 //------------------------------------------------------------------------------
 
+CreateCall::CreateCall(location loc, std::string* classId, TNList* exprList)
+    : StaticMethodCall( loc, new std::string("create"), exprList )
+    , classId_(classId)
+{}
+
+CreateCall::~CreateCall()
+{
+    delete classId_;
+}
+
+void CreateCall::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
+
+const char* CreateCall::qualifierStr() const
+{
+    static const char* str = "create";
+    return str;
+}
+
+//------------------------------------------------------------------------------
+
 RoutineCall::RoutineCall(location loc, std::string* classId, std::string* id, TNList* exprList)
     : StaticMethodCall(loc, id, exprList)
     , classId_(classId)

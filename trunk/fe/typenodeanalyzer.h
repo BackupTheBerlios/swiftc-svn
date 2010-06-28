@@ -34,9 +34,10 @@ public:
     virtual void visit(WriterCall* w);
 
     // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
-    virtual void visit(BinExpr* b);
+    virtual void visit(CreateCall* r);
     virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
+    virtual void visit(BinExpr* b);
 
     bool isLValue(size_t i) const;
 

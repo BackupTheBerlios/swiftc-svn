@@ -90,7 +90,7 @@ Value* Context::createMalloc(Value* size, const llvm::PointerType* ptrType)
     Value* mallocSize = builder_.CreateMul(size, allocSize, "malloc-size");
 
     llvm::CallInst* call = llvm::CallInst::Create(malloc_, mallocSize, "malloc-ptr");
-    call->setTailCall();
+    //call->setTailCall();
     call->addAttribute(0, llvm::Attribute::NoAlias);
     call->addAttribute(~0, llvm::Attribute::NoUnwind);
     builder_.Insert(call);

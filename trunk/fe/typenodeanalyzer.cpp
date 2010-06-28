@@ -301,19 +301,17 @@ void TypeNodeAnalyzer::visit(WriterCall* w)
         analyzeMemberFctCall(w);
 }
 
+void TypeNodeAnalyzer::visit(CreateCall* c)
+{
+    //if ( setClass(r) )
+        //analyzeMemberFctCall(r);
+    // TODO
+}
+
 void TypeNodeAnalyzer::visit(RoutineCall* r)
 {
     if ( setClass(r) )
         analyzeMemberFctCall(r);
-}
-
-void TypeNodeAnalyzer::visit(BinExpr* b)
-{
-    if ( setClass(b) )
-        analyzeMemberFctCall(b);
-
-    if ( !b->op1_->getType()->cast<ScalarType>() )
-        b->builtin_ = false;
 }
 
 void TypeNodeAnalyzer::visit(UnExpr* u)
@@ -323,6 +321,15 @@ void TypeNodeAnalyzer::visit(UnExpr* u)
 
     if ( !u->op1_->getType()->cast<ScalarType>() )
         u->builtin_ = false;
+}
+
+void TypeNodeAnalyzer::visit(BinExpr* b)
+{
+    if ( setClass(b) )
+        analyzeMemberFctCall(b);
+
+    if ( !b->op1_->getType()->cast<ScalarType>() )
+        b->builtin_ = false;
 }
 
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
