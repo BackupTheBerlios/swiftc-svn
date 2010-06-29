@@ -1,8 +1,6 @@
 #ifndef SWIFT_STMNTANALYZER_H
 #define SWIFT_STMNTANALYZER_H
 
-#include <memory>
-
 #include "fe/stmnt.h"
 
 namespace swift {
@@ -33,10 +31,6 @@ public:
     // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
-
-private:
-
-    std::auto_ptr<TypeNodeAnalyzer> tna_;
 };
 
 typedef StmntVisitor<class Analyzer> StmntAnalyzer;

@@ -118,21 +118,22 @@ void ClassCodeGen::codeGen(MemberFct* m)
     }
 
     // enter scope and gen code
-    m->scope_->accept( scg_.get(), ctxt_ );
+    StmntCodeGen scg(ctxt_);
+    m->scope_->accept(&scg);
 
     /*
      * build epilogue
      */
 
+    // connect last bb with return bb
+    builder_.CreateBr(m->returnBB_);
+    fct->getBasicBlockList().push_back(m->returnBB_);
+    builder_.SetInsertPoint(m->returnBB_);
+
     if ( m->realOut_.empty() )
         builder_.CreateRetVoid();
     else 
     {
-        // connect last bb with return bb
-        builder_.CreateBr(m->returnBB_);
-        fct->getBasicBlockList().push_back(m->returnBB_);
-        builder_.SetInsertPoint(m->returnBB_);
-
         if (m->main_)
         {
             RetVal* retval = m->sig_.out_[0];

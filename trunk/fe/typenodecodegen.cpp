@@ -26,9 +26,20 @@ TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
     , lctxt_( ctxt->lctxt() )
 {}
 
+TypeNodeCodeGen::~TypeNodeVisitor()
+{
+    for (size_t i = 0; i < places_.size(); ++i)
+        delete places_[i];
+}
+
+TypeNodeCodeGen* TypeNodeCodeGen::spawnNew() const
+{
+    return new TypeNodeCodeGen(ctxt_);
+}
+
 void TypeNodeCodeGen::visit(Decl* d)
 {
-    // has it already been inited via a return value?
+    // has it already been initialized via a return value?
     if (d->alloca_)
     {
         d->local_->setAlloca(d->alloca_);
@@ -116,8 +127,9 @@ void TypeNodeCodeGen::visit(Self* n)
 Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
 {
     // get address of the prefix expr
-    a->prefixExpr_->accept(this);
-    Value* addr = getPlace()->getAddr(builder_);
+    TypeNodeCodeGen tncg(ctxt_);
+    a->prefixExpr_->accept(&tncg);
+    Value* addr = tncg.getPlace()->getAddr(builder_);
 
     if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
         addr = ptr->recDerefAddr(builder_, addr);
@@ -129,8 +141,9 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
 {
     Value* addr = resolvePrefixExpr(i);
 
-    i->indexExpr_->accept(this);
-    Value* idx = getPlace()->getScalar(builder_);
+    TypeNodeCodeGen tncg(ctxt_);
+    i->indexExpr_->accept(&tncg);
+    Value* idx = tncg.getPlace()->getScalar(builder_);
 
     std::ostringstream oss;
     oss << addr->getNameStr() << ".ptr";
@@ -173,7 +186,8 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
 
 void TypeNodeCodeGen::visit(CCall* c)
 {
-    c->exprList_->accept(this);
+    TypeNodeCodeGen tncg(ctxt_);
+    c->exprList_->accept(tncg);
     const TypeList& inTypes = c->exprList_->typeList();
 
     /*
@@ -215,7 +229,7 @@ void TypeNodeCodeGen::visit(CCall* c)
 
 void TypeNodeCodeGen::visit(ReaderCall* r)
 {
-    getSelf(r);
+    std::auto_ptr<TypeNodeCodeGen> selfTNCG( getSelf(r) );
 
     if ( const ScalarType* from = r->expr_->getType()->cast<ScalarType>() )
     {
@@ -228,7 +242,7 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         if ( llvmTo == llvmFrom )
             return; // value_ and isAddr_ are still correct, so nothing to do
 
-        Value* val = getPlace()->getScalar(builder_);
+        Value* val = selfTNCG->getPlace()->getScalar(builder_);
         llvm::StringRef name = val->getName();
 
         if ( from->isInteger() && to->isInteger() )
@@ -265,13 +279,13 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
         setResult( new Scalar(val) );
     }
     else
-        emitCall( r, getPlace() );
+        emitCall( r, selfTNCG->getPlace() );
 }
 
 void TypeNodeCodeGen::visit(WriterCall* w)
 {
-    getSelf(w);
-    emitCall( w, getPlace() );
+    std::auto_ptr<TypeNodeCodeGen> selfTNCG( getSelf(w) );
+    emitCall( w, selfTNCG->getPlace() );
 }
 
 void TypeNodeCodeGen::visit(CreateCall* r)
@@ -290,8 +304,9 @@ void TypeNodeCodeGen::visit(UnExpr* u)
 {
     if ( u->builtin_ )
     {
-        u->op1_->accept(this);
-        Value* val = getPlace()->getScalar(builder_);
+        TypeNodeCodeGen opTNCG(ctxt_);
+        u->op1_->accept(&opTNCG);
+        Value* val = opTNCG.getPlace()->getScalar(builder_);
         const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
 
         switch (u->token_)
@@ -317,10 +332,13 @@ void TypeNodeCodeGen::visit(BinExpr* b)
 {
     if ( b->builtin_ )
     {
-        b->op1_->accept(this);
-        Value* v1 = getPlace()->getScalar(builder_);
-        b->op2_->accept(this);
-        Value* v2 = getPlace()->getScalar(builder_);
+        TypeNodeCodeGen op1TNCG(ctxt_);
+        b->op1_->accept(&op1TNCG);
+        Value* v1 = op1TNCG.getPlace()->getScalar(builder_);
+
+        TypeNodeCodeGen op2TNCG(ctxt_);
+        b->op2_->accept(&op2TNCG);
+        Value* v2 = op2TNCG.getPlace()->getScalar(builder_);
 
         const ScalarType* scalar = cast<ScalarType>( b->op1_->getType() );
 
@@ -395,17 +413,22 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         emitCall(b, 0);
 }
 
-void TypeNodeCodeGen::getSelf(MethodCall* m)
+TypeNodeCodeGen* TypeNodeCodeGen::getSelf(MethodCall* m)
 {
-    m->expr_->accept(this);
-    Value* addr = getPlace()->getAddr(builder_);
+    TypeNodeCodeGen* selfTNCG = new TypeNodeCodeGen(ctxt_);
+    m->expr_->accept(selfTNCG);
 
-    swiftAssert(places_.size() == 1, "must exactly have one item");
+    Value* addr = selfTNCG->getPlace()->getAddr(builder_);
 
     if ( const Ptr* ptr = m->expr_->getType()->cast<Ptr>() )
         addr = ptr->recDerefAddr(ctxt_->builder_, addr);
 
-    places_[0] = new Addr(addr);
+    // replace result;
+    swiftAssert(selfTNCG->places_.size() == 1, "must exactly have one item");
+    delete selfTNCG->places_[0];
+    selfTNCG->places_[0] = new Addr(addr);
+
+    return selfTNCG;
 }
 
 void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
@@ -413,7 +436,8 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     Values args;
     MemberFct* fct = call->getMemberFct();
 
-    call->exprList_->accept(this);
+    TypeNodeCodeGen argTNCG(ctxt_);
+    call->exprList_->accept(argTNCG);
     TypeList& out = fct->sig_.outTypes_;
 
     /* 
@@ -453,7 +477,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
      * write results back
      */
 
-    places_.clear();
+    swiftAssert( places_.empty(), "must still be empty" );
 
     size_t idxRetType = 0;
     size_t idxPerRef = 0;

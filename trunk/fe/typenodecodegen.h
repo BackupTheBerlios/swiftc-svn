@@ -1,8 +1,6 @@
 #ifndef SWIFT_TYPENODE_CODE_GEN_H
 #define SWIFT_TYPENODE_CODE_GEN_H
 
-#include <memory>
-
 #include "utils/llvmhelper.h"
 #include "utils/llvmplace.h"
 
@@ -22,6 +20,9 @@ class TypeNodeVisitor<class CodeGen> : public TypeNodeVisitorBase
 public:
 
     TypeNodeVisitor(Context* ctxt);
+    virtual ~TypeNodeVisitor();
+
+    virtual TypeNodeVisitor<class CodeGen>* spawnNew() const;
 
     virtual void visit(Decl* d);
 
@@ -53,7 +54,7 @@ public:
     Place* getPlace(size_t i = 0) const;
 
     void emitCall(MemberFctCall* call, Place* self);
-    void getSelf(MethodCall* m);
+    TypeNodeVisitor<class CodeGen>* getSelf(MethodCall* m);
 
 private:
 

@@ -22,7 +22,6 @@ namespace swift {
 
 StmntCodeGen::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
-    , tncg_( new TypeNodeCodeGen(ctxt) )
     , builder_(ctxt->builder_)
     , lctxt_( ctxt->lctxt() )
 {}
@@ -57,15 +56,17 @@ void StmntCodeGen::visit(CFStmnt* s)
 
 void StmntCodeGen::visit(DeclStmnt* s)
 {
-    s->decl_->accept( tncg_.get() );
+    TypeNodeCodeGen tncg(ctxt_);
+    s->decl_->accept(&tncg);
 }
 
 void StmntCodeGen::visit(IfElStmnt* s)
 {
     llvm::Function* llvmFct = ctxt_->llvmFct_;
 
-    s->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getPlace()->getScalar(builder_);
+    TypeNodeCodeGen tncg(ctxt_);
+    s->expr_->accept(&tncg);
+    Value* cond = tncg.getPlace()->getScalar(builder_);
 
     /*
      * create new basic blocks
@@ -91,7 +92,8 @@ void StmntCodeGen::visit(IfElStmnt* s)
 
     llvmFct->getBasicBlockList().push_back(thenBB);
     builder_.SetInsertPoint(thenBB);
-    s->ifScope_->accept(this, ctxt_);
+    StmntCodeGen scg(ctxt_);
+    s->ifScope_->accept(&scg);
     builder_.CreateBr(mergeBB);
 
     /*
@@ -102,7 +104,8 @@ void StmntCodeGen::visit(IfElStmnt* s)
     {
         llvmFct->getBasicBlockList().push_back(elseBB);
         builder_.SetInsertPoint(elseBB);
-        s->elScope_->accept(this, ctxt_);
+        StmntCodeGen scg(ctxt_);
+        s->elScope_->accept(&scg);
         builder_.CreateBr(mergeBB);
     }
 
@@ -134,9 +137,11 @@ void StmntCodeGen::visit(RepeatUntilLoop* l)
 
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder_.SetInsertPoint(loopBB);
-    l->scope_->accept(this, ctxt_);
-    l->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getPlace()->getScalar(builder_);
+    StmntCodeGen scg(ctxt_);
+    l->scope_->accept(&scg);
+    TypeNodeCodeGen tncg(ctxt_);
+    l->expr_->accept(&tncg);
+    Value* cond = tncg.getPlace()->getScalar(builder_);
     builder_.CreateCondBr(cond, outBB, loopBB);
 
     /*
@@ -172,8 +177,9 @@ void StmntCodeGen::visit(WhileLoop* l)
 
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder_.SetInsertPoint(headerBB);
-    l->expr_->accept( tncg_.get() );
-    Value* cond = tncg_->getPlace()->getScalar(builder_);
+    TypeNodeCodeGen tncg(ctxt_);
+    l->expr_->accept(&tncg);
+    Value* cond = tncg.getPlace()->getScalar(builder_);
     builder_.CreateCondBr(cond, loopBB, outBB);
 
     /*
@@ -182,7 +188,8 @@ void StmntCodeGen::visit(WhileLoop* l)
 
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder_.SetInsertPoint(loopBB);
-    l->scope_->accept(this, ctxt_);
+    StmntCodeGen scg(ctxt_);
+    l->scope_->accept(&scg);
     builder_.CreateBr(headerBB);
 
     /*
@@ -210,6 +217,19 @@ void StmntCodeGen::visit(SimdLoop* l)
      * close current bb
      */
 
+    // init loop index
+    ctxt_->simdIndex_ = createEntryAlloca( 
+            builder_, llvm::IntegerType::getInt64Ty(lctxt_) );
+
+    TypeNodeCodeGen lTncg(ctxt_);
+    l->lExpr_->accept(&lTncg);
+    builder_.CreateStore( lTncg.getPlace()->getScalar(builder_), ctxt_->simdIndex_ );
+
+    TypeNodeCodeGen rTncg(ctxt_);
+    l->rExpr_->accept(&rTncg);
+    Value* upper = rTncg.getPlace()->getScalar(builder_);
+
+
     builder_.CreateBr(headerBB);
 
     /*
@@ -219,10 +239,7 @@ void StmntCodeGen::visit(SimdLoop* l)
     llvmFct->getBasicBlockList().push_back(headerBB);
     builder_.SetInsertPoint(headerBB);
 
-    l->lExpr_->accept( tncg_.get() );
-    Value* lower = tncg_->getPlace()->getScalar(builder_);
-    l->rExpr_->accept( tncg_.get() );
-    Value* upper = tncg_->getPlace()->getScalar(builder_);
+    Value* lower = builder_.CreateLoad(ctxt_->simdIndex_);
 
     Value* cond = builder_.CreateICmpULT(lower, upper);
     builder_.CreateCondBr(cond, loopBB, outBB);
@@ -233,7 +250,8 @@ void StmntCodeGen::visit(SimdLoop* l)
 
     llvmFct->getBasicBlockList().push_back(loopBB);
     builder_.SetInsertPoint(loopBB);
-    l->scope_->accept(this, ctxt_);
+    StmntCodeGen scg(ctxt_);
+    l->scope_->accept(&scg);
     builder_.CreateBr(headerBB);
 
     /*
@@ -246,14 +264,16 @@ void StmntCodeGen::visit(SimdLoop* l)
 
 void StmntCodeGen::visit(ScopeStmnt* s) 
 {
-    s->scope_->accept(this, ctxt_);
+    StmntCodeGen scg(ctxt_);
+    s->scope_->accept(&scg);
 }
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
     typedef AssignStmnt::Call ASCall;
 
-    s->exprList_->accept( tncg_.get() );
+    TypeNodeCodeGen rTncg(ctxt_);
+    s->exprList_->accept(rTncg);
     size_t numLhs = s->tuple_->numItems();
 
     switch (s->kind_)
@@ -261,14 +281,15 @@ void StmntCodeGen::visit(AssignStmnt* s)
         case AssignStmnt::CREATE:
         case AssignStmnt::ASSIGN:
         {
-            s->tuple_->accept( tncg_.get() );
+            TypeNodeCodeGen lTncg(ctxt_);
+            s->tuple_->accept(lTncg);
             swiftAssert(s->tuple_->numRetValues() == 1 && numLhs == 1, 
                     "there must be exactly one item and "
                     "exactly one return value on the lhs");
             Place* lPlace = s->tuple_->getPlace(0);
             ASCall& call = s->calls_[0];
 
-            swiftAssert(call.kind_ == ASCall::USER, "only possibility"); // TODO
+            swiftAssert(call.kind_ == ASCall::USER, "sole possibility"); // TODO
             switch (call.kind_)
             {
                 case ASCall::EMPTY:
@@ -303,10 +324,6 @@ void StmntCodeGen::visit(AssignStmnt* s)
                     builder_.CreateStore(rvalue, lvalue);
                     lPlace->writeBack(builder_);
 
-                    //Value* lvalue = lPlace->getAddr(builder_);
-                    //createCopy(builder_, s->exprList_->getPlace(0), lvalue);
-                    //lPlace->writeBack(builder_);
-
                     return;
                 }
                 default:
@@ -335,7 +352,8 @@ void StmntCodeGen::visit(AssignStmnt* s)
             }
 
             // now emit code for the lhs
-            s->tuple_->accept( tncg_.get() );
+            TypeNodeCodeGen lTncg(ctxt_);
+            s->tuple_->accept(lTncg);
             swiftAssert( s->tuple_->numRetValues() == numLhs, "sizes must match" );
             swiftAssert( s->calls_.size() == numLhs, "sizes must match" );
             size_t& num = numLhs;
@@ -360,10 +378,6 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         Value* rvalue = rPlace->getScalar(builder_);
                         builder_.CreateStore(rvalue, lvalue);
                         lPlace->writeBack(builder_);
-
-                        //Value* lvalue = lPlace->getAddr(builder_);
-                        //createCopy(builder_, rPlace, lvalue);
-                        //lPlace->writeBack(builder_);
 
                         continue;
                     }
@@ -405,14 +419,15 @@ void StmntCodeGen::visit(AssignStmnt* s)
                         continue;
                     }
                 }
-            } // fo each lhs/rhs pair
+            } // for each lhs/rhs pair
         } // case ASCall::PAIRWISE
     } // switch (s->kind_)
 }
 
 void StmntCodeGen::visit(ExprStmnt* s)
 {
-    s->expr_->accept( tncg_.get() );
+    TypeNodeCodeGen tncg(ctxt_);
+    s->expr_->accept(&tncg);
 }
 
 } // namespace swift

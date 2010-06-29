@@ -13,7 +13,6 @@ namespace swift {
 
 ClassAnalyzer::ClassVisitor(Context* ctxt)
     : ClassVisitorBase(ctxt)
-    , sa_( new StmntAnalyzer(ctxt) )
 {}
 
 ClassAnalyzer::~ClassVisitor()
@@ -174,7 +173,7 @@ void ClassAnalyzer::checkSig(MemberFct* m)
 
 void ClassAnalyzer::checkStmnts(MemberFct* m)
 {
-    m->scope_->accept( sa_.get() , ctxt_ );
+    m->scope_->accept( &StmntAnalyzer(ctxt_) );
 }
 
 } // namespace swift

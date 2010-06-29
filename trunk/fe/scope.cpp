@@ -70,14 +70,14 @@ void Scope::appendStmnt(Stmnt* stmnt)
     stmnts_.push_back(stmnt);
 }
 
-void Scope::accept(StmntVisitorBase* s, Context* ctxt)
+void Scope::accept(StmntVisitorBase* s)
 {
-    ctxt->enterScope(this);
+    s->getCtxt()->enterScope(this);
 
     for (size_t i = 0; i < stmnts_.size(); ++i)
         stmnts_[i]->accept(s);
 
-    ctxt->leaveScope();
+    s->getCtxt()->leaveScope();
 }
 
 bool Scope::isEmpty() const

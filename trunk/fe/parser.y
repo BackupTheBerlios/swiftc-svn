@@ -376,14 +376,14 @@ stmnt
             ctxt_->leaveScope();
             $$ = new RepeatUntilLoop(@$, $<scope_>3, $6);
         }
-    | SIMD '[' expr ',' expr ']' EOL
+    | SIMD expr ',' expr EOL
         {
             $<scope_>$ = ctxt_->enterScope();
         }
         stmnt_list END EOL
         {
             ctxt_->leaveScope();
-            $$ = new SimdLoop(@$, $<scope_>8, $3, $5);
+            $$ = new SimdLoop(@$, $<scope_>6, $2, $4);
         }
     | SCOPE EOL 
         { 

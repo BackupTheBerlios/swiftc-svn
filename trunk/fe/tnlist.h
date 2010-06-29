@@ -29,8 +29,8 @@ public:
     ~TNList();
 
     void append(TypeNode* typeNode);
-    void accept(TypeNodeAnalyzer* tna);
-    void accept(TypeNodeCodeGen* tncg);
+    void accept(TypeNodeAnalyzer& tna);
+    void accept(TypeNodeCodeGen& tncg);
 
     TypeNode* getTypeNode(size_t i) const;
     bool isLValue(size_t i) const;

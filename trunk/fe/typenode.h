@@ -431,6 +431,8 @@ public:
     TypeNodeVisitorBase(Context* ctxt);
     virtual ~TypeNodeVisitorBase() {}
 
+    virtual TypeNodeVisitorBase* spawnNew() const = 0;
+
     virtual void visit(Decl* d) = 0;
     virtual void visit(ErrorExpr* e) = 0;
 

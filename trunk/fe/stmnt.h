@@ -313,6 +313,8 @@ public:
     friend void ScopeStmnt::accept(StmntVisitorBase* s);
     friend void WhileLoop::accept(StmntVisitorBase* s);
 
+    Context* getCtxt() const { return ctxt_; }
+
 protected:
     
     Context* ctxt_;

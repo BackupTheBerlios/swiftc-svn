@@ -15,6 +15,11 @@ TypeNodeAnalyzer::TypeNodeVisitor(Context* ctxt)
     : TypeNodeVisitorBase(ctxt)
 {}
 
+TypeNodeAnalyzer* TypeNodeAnalyzer::spawnNew() const
+{
+    return new TypeNodeAnalyzer(ctxt_);
+}
+
 void TypeNodeAnalyzer::visit(Decl* d)
 {
     // check whether this type exists
@@ -175,7 +180,8 @@ void TypeNodeAnalyzer::visit(Self* s)
 bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)
 {
     // examine prefix expr
-    a->prefixExpr_->accept(this);
+    TypeNodeAnalyzer tna(ctxt_);
+    a->prefixExpr_->accept(&tna);
 
     if ( a->prefixExpr_->size() != 1 )
     {
@@ -190,7 +196,8 @@ bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)
 
 void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
-    i->indexExpr_->accept(this);
+    TypeNodeAnalyzer indexTNA(ctxt_);
+    i->indexExpr_->accept(&indexTNA);
 
     if ( i->indexExpr_->size() != 1 )
     {
@@ -270,7 +277,8 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
 void TypeNodeAnalyzer::visit(CCall* c)
 {
-    c->exprList_->accept(this);
+    TypeNodeAnalyzer tna(ctxt_);
+    c->exprList_->accept(tna);
 
     if ( c->retType_ )
     {
@@ -335,7 +343,8 @@ void TypeNodeAnalyzer::visit(BinExpr* b)
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
 {
     bool result = true;
-    m->expr_->accept(this);
+    TypeNodeAnalyzer exprTNA(ctxt_);
+    m->expr_->accept(&exprTNA);
 
     if (m->expr_->size() != 1)
     {
@@ -345,7 +354,8 @@ bool TypeNodeAnalyzer::setClass(MethodCall* m)
     }
 
     // check the arg list even on error
-    m->exprList_->accept(this);
+    TypeNodeAnalyzer argTNA(ctxt_);
+    m->exprList_->accept(argTNA);
 
     if (result)
     {
@@ -365,7 +375,8 @@ bool TypeNodeAnalyzer::setClass(MethodCall* m)
 bool TypeNodeAnalyzer::setClass(OperatorCall* o)
 {
     bool result = true;
-    o->exprList_->accept(this);
+    TypeNodeAnalyzer tna(ctxt_);
+    o->exprList_->accept(tna);
 
     for (size_t i = 0; i < o->exprList_->numItems(); ++i)
     {
@@ -394,7 +405,8 @@ bool TypeNodeAnalyzer::setClass(OperatorCall* o)
 
 bool TypeNodeAnalyzer::setClass(RoutineCall* r)
 {
-    r->exprList_->accept(this);
+    TypeNodeAnalyzer tna(ctxt_);
+    r->exprList_->accept(tna);
     r->class_ = ctxt_->module_->lookupClass(r->classId_);
 
     if (!r->class_)

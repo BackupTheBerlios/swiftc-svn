@@ -16,6 +16,8 @@ public:
     {}
     virtual ~Place() {}
 
+    virtual Place* clone() const = 0;
+
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const = 0;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
     virtual void writeBack(LLVMBuilder& builder) const = 0;
@@ -36,6 +38,8 @@ public:
     {}
     virtual ~Scalar() {}
 
+    Scalar* clone() const;
+
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
     virtual void writeBack(LLVMBuilder& builder) const;
@@ -51,6 +55,8 @@ public:
         : Place(ptr)
     {}
     virtual ~Addr() {}
+
+    Addr* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
@@ -68,6 +74,8 @@ public:
              const llvm::Type* scalarType,
              LLVMBuilder& builder);
     virtual ~SimdAddr() {}
+
+    SimdAddr* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;

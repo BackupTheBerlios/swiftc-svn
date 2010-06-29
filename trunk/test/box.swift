@@ -46,8 +46,8 @@ class Foo
         end
 
         scope 
-            Box box = boxes[77x]
-            box:print()
+           Box box = boxes[77x]
+           box:print()
         end
     end
 end

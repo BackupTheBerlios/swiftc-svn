@@ -16,24 +16,25 @@ namespace swift {
 
 StmntAnalyzer::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
-    , tna_( new TypeNodeAnalyzer(ctxt) )
 {}
 
 void StmntAnalyzer::visit(ErrorStmnt* s) {}
 
 void StmntAnalyzer::visit(CFStmnt* s) 
 {
-    // todo
+    // TODO
 }
 
 void StmntAnalyzer::visit(DeclStmnt* s)
 {
-    s->decl_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    s->decl_->accept(&tna);
 }
 
 void StmntAnalyzer::visit(IfElStmnt* s)
 {
-    s->expr_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    s->expr_->accept(&tna);
 
     if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
     {
@@ -42,15 +43,16 @@ void StmntAnalyzer::visit(IfElStmnt* s)
         ctxt_->result_ = false;
     }
 
-    s->ifScope_->accept(this, ctxt_);
+    s->ifScope_->accept(this);
 
     if (s->elScope_)
-        s->elScope_->accept(this, ctxt_);
+        s->elScope_->accept(this);
 }
 
 void StmntAnalyzer::visit(RepeatUntilLoop* l)
 {
-    l->expr_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    l->expr_->accept(&tna);
 
     if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
     {
@@ -59,12 +61,13 @@ void StmntAnalyzer::visit(RepeatUntilLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->scope_->accept(this, ctxt_);
+    l->scope_->accept(this);
 }
 
 void StmntAnalyzer::visit(WhileLoop* l)
 {
-    l->expr_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    l->expr_->accept(&tna);
 
     if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
     {
@@ -73,12 +76,15 @@ void StmntAnalyzer::visit(WhileLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->scope_->accept(this, ctxt_);
+    l->scope_->accept(this);
 }
 
 void StmntAnalyzer::visit(SimdLoop* l)
 {
-    l->lExpr_->accept( tna_.get() );
+    TypeNodeAnalyzer lTna(ctxt_);
+    TypeNodeAnalyzer rTna(ctxt_);
+
+    l->lExpr_->accept(&lTna);
 
     if ( l->lExpr_->size() != 1 || !l->lExpr_->getType()->isIndex() )
     {
@@ -87,7 +93,7 @@ void StmntAnalyzer::visit(SimdLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->rExpr_->accept( tna_.get() );
+    l->rExpr_->accept(&rTna);
 
     if ( l->rExpr_->size() != 1 || !l->rExpr_->getType()->isIndex() )
     {
@@ -96,13 +102,15 @@ void StmntAnalyzer::visit(SimdLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->scope_->accept(this, ctxt_);
+    ctxt_->simdLoop_ = true;
+    l->scope_->accept(this);
+    ctxt_->simdLoop_ = false;
 }
 
 
 void StmntAnalyzer::visit(ScopeStmnt* s) 
 {
-    s->scope_->accept(this, ctxt_);
+    s->scope_->accept(this);
 }
 
 
@@ -144,8 +152,9 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             "and one on the right-hand side" );
 
     // analyze args and tuple
-    s->exprList_->accept( tna_.get() );
-    s->tuple_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    s->exprList_->accept(tna);
+    s->tuple_->accept(tna);
 
     const TypeList& rhs = s->exprList_->typeList();
     const TypeList& lhs = s->tuple_->typeList();
@@ -379,7 +388,8 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 
 void StmntAnalyzer::visit(ExprStmnt* s)
 {
-    s->expr_->accept( tna_.get() );
+    TypeNodeAnalyzer tna(ctxt_);
+    s->expr_->accept(&tna);
 }
 
 } // namespace swift

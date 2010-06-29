@@ -38,8 +38,6 @@ public:
 
 private:
 
-    std::auto_ptr<TypeNodeCodeGen> tncg_;
-
     LLVMBuilder& builder_;
     llvm::LLVMContext& lctxt_;
 };

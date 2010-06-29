@@ -12,6 +12,8 @@ public:
 
     TypeNodeVisitor(Context* ctxt);
 
+    virtual TypeNodeVisitor<class Analyzer>* spawnNew() const;
+
     virtual void visit(Decl* d);
 
     // TypeNode -> Expr 

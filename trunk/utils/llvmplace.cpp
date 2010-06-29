@@ -12,6 +12,11 @@ using namespace llvm;
 
 //----------------------------------------------------------------------
 
+Scalar* Scalar::clone() const
+{
+    return new Scalar(val_);
+}
+
 Value* Scalar::getScalar(LLVMBuilder& builder) const
 {
     return val_;
@@ -31,6 +36,11 @@ void Scalar::writeBack(LLVMBuilder& builder) const
 
 //----------------------------------------------------------------------
 
+Addr* Addr::clone() const
+{
+    return new Addr(val_);
+}
+
 Value* Addr::getScalar(LLVMBuilder& builder) const
 {
     return builder.CreateLoad(val_, val_->getName() );
@@ -46,6 +56,11 @@ void Addr::writeBack(LLVMBuilder& builder) const
 }
 
 //----------------------------------------------------------------------
+
+SimdAddr* SimdAddr::clone() const
+{
+    return new SimdAddr(*this);
+}
 
 SimdAddr::SimdAddr(Value* ptr, Value* mod, const Type* sType, LLVMBuilder& builder)
     : Addr(ptr)

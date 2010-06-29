@@ -24,31 +24,35 @@ void TNList::append(TypeNode* typeNode)
     typeNodes_.push_back(typeNode);
 }
 
-void TNList::accept(TypeNodeAnalyzer* tna)
+void TNList::accept(TypeNodeAnalyzer& tna)
 {
     for (size_t i = 0; i < typeNodes_.size(); ++i)
     {
         TypeNode* tn = typeNodes_[i];
-        tn->accept(tna);
+
+        std::auto_ptr<TypeNodeAnalyzer> newTna( tna.spawnNew() );
+        tn->accept( newTna.get() );
 
         for (size_t j = 0; j < tn->size(); ++j)
         {
             types_.push_back( tn->getType(j) );
             inits_.push_back( tn->isInit(j) );
-            lvalues_.push_back( tna->isLValue(j) );
+            lvalues_.push_back( ((TypeNodeAnalyzer*) newTna.get())->isLValue(j) );
         }
     }
 }
 
-void TNList::accept(TypeNodeCodeGen* tncg)
+void TNList::accept(TypeNodeCodeGen& tncg)
 {
     for (size_t i = 0; i < typeNodes_.size(); ++i)
     {
         TypeNode* tn = typeNodes_[i];
-        tn->accept(tncg);
+
+        std::auto_ptr<TypeNodeCodeGen> newTncg( tncg.spawnNew() );
+        tn->accept( newTncg.get() );
 
         for (size_t j = 0; j < tn->size(); ++j)
-            places_.push_back( tncg->getPlace(j) );
+            places_.push_back( newTncg->getPlace(j)->clone() );
     }
 }
 

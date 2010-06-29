@@ -1,8 +1,6 @@
 #ifndef SWIFT_CLASSANALYZER_H
 #define SWIFT_CLASSANALYZER_H
 
-#include <memory>
-
 #include "fe/class.h"
 
 namespace swift {
@@ -41,8 +39,6 @@ private:
 
     void checkSig(MemberFct* m);
     void checkStmnts(MemberFct* m);
-
-    std::auto_ptr<StmntAnalyzer> sa_;
 };
 
 typedef ClassVisitor<class Analyzer> ClassAnalyzer;

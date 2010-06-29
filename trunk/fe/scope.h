@@ -48,7 +48,7 @@ public:
 
     void insert(Var* var);
     void appendStmnt(Stmnt* stmnt);
-    void accept(StmntVisitorBase* s, Context* ctxt);
+    void accept(StmntVisitorBase* s);
     bool isEmpty() const;
 
 private:
