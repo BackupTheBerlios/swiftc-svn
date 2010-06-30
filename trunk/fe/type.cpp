@@ -79,6 +79,16 @@ const llvm::Type* Type::getLLVMType(Module* m) const
         return llvmType;
 }
 
+const llvm::Type* Type::getVecLLVMType(Module* m, int& simdLength) const
+{
+    const llvm::Type* llvmType = getRawVecLLVMType(m, simdLength);
+
+    if (isRef_)
+        return llvm::PointerType::getUnqual(llvmType);
+    else
+        return llvmType;
+}
+
 //------------------------------------------------------------------------------
 
 ErrorType::ErrorType()
@@ -129,7 +139,7 @@ const llvm::Type* ErrorType::defineLLVMType(
     return 0;
 }
 
-const llvm::Type* ErrorType::getVecLLVMType(Module* m, int& simdLength) const 
+const llvm::Type* ErrorType::getRawVecLLVMType(Module* m, int& simdLength) const 
 {
     swiftAssert(false, "unreachable");
     return 0;
@@ -314,7 +324,7 @@ const llvm::Type* ScalarType::defineLLVMType(
     return getLLVMType(m);
 }
 
-const llvm::Type* ScalarType::getVecLLVMType(Module* m, int& simdLength) const 
+const llvm::Type* ScalarType::getRawVecLLVMType(Module* m, int& simdLength) const 
 {
     const llvm::Type* llvmType = getLLVMType(m);
     simdLength = vec::TypeVectorizer::lengthOfScalar(llvmType, Context::SIMD_WIDTH);
@@ -411,7 +421,7 @@ const llvm::Type* UserType::defineLLVMType(
     return llvmType;
 }
 
-const llvm::Type* UserType::getVecLLVMType(Module* m, int& simdLength) const 
+const llvm::Type* UserType::getRawVecLLVMType(Module* m, int& simdLength) const 
 {
     Class* c = lookupClass(m);
     swiftAssert( c->isSimd(), "not declared as simd type" );
@@ -470,7 +480,7 @@ const Type* NestedType::getInnerType() const
     return innerType_;
 }
 
-const llvm::Type* NestedType::getVecLLVMType(Module* m, int& simdLength) const
+const llvm::Type* NestedType::getRawVecLLVMType(Module* m, int& simdLength) const
 {
     swiftAssert(false, "unreachable"); 
     return 0;
@@ -687,7 +697,7 @@ const llvm::Type* Simd::getRawLLVMType(Module* m) const
     LLVMTypes llvmTypes(2);
     int simdLength;
     llvmTypes[POINTER] = llvm::PointerType::getUnqual( 
-            innerType_->getVecLLVMType(m, simdLength) );
+            innerType_->getRawVecLLVMType(m, simdLength) );
     llvmTypes[SIZE] = llvm::IntegerType::getInt64Ty(lctxt);
 
     const llvm::StructType* st = llvm::StructType::get(lctxt, llvmTypes);
@@ -699,7 +709,7 @@ const llvm::Type* Simd::getRawLLVMType(Module* m) const
 void Simd::emitCreate(Context* ctxt, Value* aggPtr, Value* size) const
 {
     int simdLength;
-    const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
+    const llvm::Type* vecType = innerType_->getRawVecLLVMType(ctxt->module_, simdLength);
 
     Container::emitCreate(ctxt, vecType, aggPtr, size, simdLength);
 }
@@ -707,7 +717,7 @@ void Simd::emitCreate(Context* ctxt, Value* aggPtr, Value* size) const
 void Simd::emitCopy(Context* ctxt, Value* dst, Value* src) const
 {
     int simdLength;
-    const llvm::Type* vecType = innerType_->getVecLLVMType(ctxt->module_, simdLength);
+    const llvm::Type* vecType = innerType_->getRawVecLLVMType(ctxt->module_, simdLength);
 
     Container::emitCopy(ctxt, vecType, dst, src, simdLength);
 }

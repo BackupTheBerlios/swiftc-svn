@@ -67,7 +67,8 @@ public:
             Module* m) const = 0;
 
     typedef std::pair<const llvm::Type*, int> VecType;
-    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const = 0;
+    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
+    virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const = 0;
 
     TokenType getModifier() const;
     bool isVar() const;
@@ -106,7 +107,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
-    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
+    virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const;
 };
 
 //------------------------------------------------------------------------------
@@ -165,7 +166,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
-    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
+    virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const;
 
     bool isFloat() const;
     bool isInteger() const;
@@ -192,7 +193,7 @@ public:
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
-    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
+    virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const;
 };
 
 //------------------------------------------------------------------------------
@@ -207,7 +208,7 @@ public:
     virtual bool validate(Module* m) const;
     virtual bool check(const Type* t, Module* m) const;
     virtual bool perRef() const;
-    virtual const llvm::Type* getVecLLVMType(Module* m, int& simdLength) const;
+    virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const;
 
     Type* getInnerType();
     const Type* getInnerType() const;

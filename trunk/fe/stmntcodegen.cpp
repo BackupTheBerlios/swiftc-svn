@@ -219,7 +219,7 @@ void StmntCodeGen::visit(SimdLoop* l)
 
     // init loop index
     ctxt_->simdIndex_ = createEntryAlloca( 
-            builder_, llvm::IntegerType::getInt64Ty(lctxt_) );
+            builder_, llvm::IntegerType::getInt64Ty(lctxt_), "simdindex" );
 
     TypeNodeCodeGen lTncg(ctxt_);
     l->lExpr_->accept(&lTncg);
@@ -252,6 +252,8 @@ void StmntCodeGen::visit(SimdLoop* l)
     builder_.SetInsertPoint(loopBB);
     StmntCodeGen scg(ctxt_);
     l->scope_->accept(&scg);
+
+    builder_.CreateStore( builder_.CreateAdd( builder_.CreateLoad(ctxt_->simdIndex_), ::createInt64(lctxt_, 1) ), ctxt_->simdIndex_ );
     builder_.CreateBr(headerBB);
 
     /*

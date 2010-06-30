@@ -177,6 +177,7 @@ const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
     oss << "simd." << module_->getTypeName(st);
     module_->addTypeName( oss.str().c_str(), vt );
 
+
     return vt;
 }
 

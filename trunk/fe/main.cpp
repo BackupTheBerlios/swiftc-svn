@@ -115,6 +115,7 @@ static int start(int argc, char** argv)
     {
         module->declareFcts();
         module->codeGen();
+        module->vectorizeFcts();
     }
 
     if ( clp.cleanDump() )

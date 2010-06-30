@@ -10,6 +10,7 @@
 #include "fe/classcodegen.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/fctvectorizer.h"
 #include "fe/llvmfctdeclarer.h"
 #include "fe/llvmtypebuilder.h"
 #include "fe/typenode.h"
@@ -44,7 +45,8 @@ Def::~Def()
 Module::Module(location loc, std::string* id)
     : Node(loc)
     , id_(id)
-    , lctxt_( new llvm::LLVMContext() )
+    //, lctxt_( new llvm::LLVMContext() )
+    , lctxt_( &llvm::getGlobalContext() )
     , llvmModule_( new llvm::Module( llvm::StringRef("default"), *lctxt_) )
     , ctxt_( new Context(this) )
 {
@@ -127,6 +129,11 @@ void Module::buildLLVMTypes()
 void Module::declareFcts()
 {
     LLVMFctDeclarer llvmFctDeclarer(ctxt_);
+}
+
+void Module::vectorizeFcts()
+{
+    FctVectorizer fv(ctxt_);
 }
 
 void Module::codeGen()

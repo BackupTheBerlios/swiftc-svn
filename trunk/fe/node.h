@@ -68,6 +68,7 @@ public:
     void analyze();
     void buildLLVMTypes();
     void declareFcts();
+    void vectorizeFcts();
     void codeGen();
     void verify();
     llvm::Module* getLLVMModule() const;

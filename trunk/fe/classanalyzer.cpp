@@ -173,7 +173,8 @@ void ClassAnalyzer::checkSig(MemberFct* m)
 
 void ClassAnalyzer::checkStmnts(MemberFct* m)
 {
-    m->scope_->accept( &StmntAnalyzer(ctxt_) );
+    StmntAnalyzer sa(ctxt_);
+    m->scope_->accept(&sa);
 }
 
 } // namespace swift

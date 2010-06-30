@@ -28,7 +28,7 @@ ELSE (BUILD_RELEASE)
 ENDIF (BUILD_RELEASE)
 
 # add . as include path
-INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES(. ../packetizer/build/include)
 
 #-------------------------------------------------------------------------------
 
@@ -93,6 +93,7 @@ ADD_EXECUTABLE (swift
     fe/classcodegen.cpp
     fe/context.cpp
     fe/error.cpp
+    fe/fctvectorizer.cpp
     fe/tnlist.cpp
     fe/llvmtypebuilder.cpp
     fe/llvmfctdeclarer.cpp
@@ -143,4 +144,4 @@ EXECUTE_PROCESS(
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-TARGET_LINK_LIBRARIES(swift ${llvm_libs} ${llvm_flags})
+TARGET_LINK_LIBRARIES(swift -L../packetizer/build/lib -lPacketizer ${llvm_libs} ${llvm_flags})

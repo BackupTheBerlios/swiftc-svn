@@ -3,6 +3,8 @@
 #include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
 
+#include "Packetizer/api.h"
+
 #include "utils/cast.h"
 #include "utils/llvmhelper.h"
 
@@ -107,6 +109,8 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         m->main_ = true;
     }
 
+    bool simd = m->isSimd();
+    LLVMTypes simdParams;
 
     /*
      * create llvm function type
@@ -114,40 +118,74 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 
     // push hidden 'self' param first if necessary
     if ( dynamic<Method>(m) )
-        m->params_.push_back( llvm::PointerType::getUnqual( c->getLLVMType()) );
+    {
+        m->params_.push_back( llvm::PointerType::getUnqual(c->getLLVMType()) );
+
+        if (simd)
+            simdParams.push_back( llvm::PointerType::getUnqual(c->getVecType()) );
+    }
+
+    const llvm::Type* simdRetType;
 
     // build return type
     if (m->main_)
     {
         m->retType_ = llvm::IntegerType::getInt32Ty(lctxt);
         m->realOut_.push_back( m->sig_.out_[0] );
+
+        swiftAssert(!simd, "main routine may not be a simd routine");
     }
     else if ( out.empty() )
+    {
         m->retType_ = createVoid(lctxt);
+
+        if (simd)
+            simdRetType = createVoid(lctxt);
+    }
     else
     {
         LLVMTypes retTypes;
+        LLVMTypes simdRetTypes;
+
         for (size_t i = 0; i < out.size(); ++i)
         {
+            int simdLength;
             RetVal* retval = m->sig_.out_[i];
             const llvm::Type* llvmType = retval->getType()->getLLVMType(module);
+            const llvm::Type* simdType = retval->getType()->getVecLLVMType(module, simdLength);
 
             if ( retval->getType()->perRef() )
             {
                 m->params_.push_back(llvmType);
                 m->realIn_.push_back(retval);
+
+                if (simd)
+                    simdParams.push_back(simdType);
             }
             else
             {
                 retTypes.push_back(llvmType);
                 m->realOut_.push_back(retval);
+
+                if (simd)
+                    simdRetTypes.push_back(simdType);
             }
         }
 
         if ( m->realOut_.empty() )
+        {
             m->retType_ = createVoid(lctxt);
+
+            if (simd)
+                simdRetType = createVoid(lctxt);
+        }
         else
+        {
             m->retType_ = llvm::StructType::get(lctxt, retTypes);
+
+            if (simd)
+                simdRetType = llvm::StructType::get(lctxt, simdRetTypes);
+        }
     }
 
     // now push the rest
@@ -156,14 +194,28 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         InOut* io = m->sig_.in_[i];
         m->params_.push_back(io->getType()->getLLVMType(module));
         m->realIn_.push_back(io);
+
+        if (simd)
+        {
+            int simdLength;
+            simdParams.push_back( io->getType()->getVecLLVMType(module, simdLength) );
+        }
     }
 
     const llvm::FunctionType* fctType = llvm::FunctionType::get(
             m->retType_, m->params_, false);
 
+
+    const llvm::FunctionType* simdFctType;
+
+    if (simd)
+        simdFctType = llvm::FunctionType::get(simdRetType, simdParams, false);
+
     /*
      * create function
      */
+
+    std::string simdName;
 
     // create llvm name
     if (m->main_)
@@ -174,17 +226,32 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
         std::ostringstream oss;
         oss << c->cid() << '.' << m->cid() << counter++;
         m->setLLVMName( oss.str() );
+
+        if (simd)
+        {
+            oss << ".simd";
+            simdName = oss.str();
+        }
     }
 
     llvm::Function* fct = cast<llvm::Function>( 
             llvmModule->getOrInsertFunction(m->getLLVMName().c_str(), fctType) );
+
+    if (simd)
+        m->simdFct_ = cast<llvm::Function>( llvmModule->getOrInsertFunction(simdName, simdFctType) );
+        //m->simdFct_ = cast<llvm::Function>( llvmModule->getOrInsertFunction(simdName, fctType) );
 
     ctxt_->llvmFct_ = fct;
     m->llvmFct_     = fct;
 
     // set calling convention
     if (!m->main_)
+    {
         fct->setCallingConv(llvm::CallingConv::Fast);
+
+        if (simd)
+            m->simdFct_->addFnAttr(llvm::Attribute::NoUnwind);
+    }
     else
         fct->addFnAttr(llvm::Attribute::NoUnwind);
 
@@ -194,7 +261,12 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
     while ( iter != fct->arg_end() )
     {
         if ( dynamic<llvm::PointerType>(iter->getType()) )
+        {
             fct->addAttribute(index, llvm::Attribute::NoAlias);
+
+            if (simd)
+                m->simdFct_->addAttribute(index, llvm::Attribute::NoAlias);
+        }
 
         ++iter;
         ++index;
