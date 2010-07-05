@@ -45,13 +45,22 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Type::Type(location loc, TokenType modifier, bool isRef)
+Type::Type(location loc, TokenType modifier, bool isRef, bool isSimd /*= false*/)
     : Node(loc) 
     , modifier_(modifier)
     , isRef_(isRef)
+    , isSimd_(isSimd)
 {
     swiftAssert(modifier != Token::VAR || modifier != Token::CONST,
             "illegal modifier value");
+}
+
+Type* Type::simdClone() const
+{
+    Type* result = clone();
+    result->isSimd_ = true;
+
+    return result;
 }
 
 TokenType Type::getModifier() const
@@ -91,8 +100,8 @@ const llvm::Type* Type::getVecLLVMType(Module* m, int& simdLength) const
 
 //------------------------------------------------------------------------------
 
-ErrorType::ErrorType()
-    : Type( location(), Token::VAR, false )
+ErrorType::ErrorType(bool isSimd /*= false*/)
+    : Type( location(), Token::VAR, false, isSimd )
 {}
 
 Type* ErrorType::clone() const
@@ -150,8 +159,8 @@ const llvm::Type* ErrorType::getRawVecLLVMType(Module* m, int& simdLength) const
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 BaseType::SizeMap* BaseType::sizeMap_ = 0;
 
-BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInOut)
-    : Type(loc, modifier, isInOut)
+BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd /*= false*/)
+    : Type(loc, modifier, isInOut, isSimd)
     , id_(id)
 {}
 
@@ -159,7 +168,7 @@ BaseType* BaseType::create(
         location loc, 
         TokenType modifier, 
         std::string* id, 
-        bool isInOut /*= false*/)
+        bool isInOut)
 {
     if ( typeMap_->find(*id) == typeMap_->end() )
         return new UserType(loc, modifier, id, isInOut); // a user defined type
@@ -273,8 +282,8 @@ void BaseType::destroyTypeMap()
 
 //------------------------------------------------------------------------------
 
-ScalarType::ScalarType(location loc, TokenType modifier, std::string* id)
-    : BaseType(loc, modifier, id, false)
+ScalarType::ScalarType(location loc, TokenType modifier, std::string* id, bool isSimd /*= false*/)
+    : BaseType(loc, modifier, id, false, isSimd)
 {
     swiftAssert( typeMap_->find(*this->id()) != typeMap_->end(), "must be found" );
 }
@@ -372,8 +381,8 @@ bool ScalarType::isScalar(const std::string* id)
 
 //------------------------------------------------------------------------------
 
-UserType::UserType(location loc, TokenType modifier, std::string* id, bool isInOut /*= false*/)
-    : BaseType(loc, modifier, id, isInOut)
+UserType::UserType(location loc, TokenType modifier, std::string* id, bool isInOut /*= false*/, bool isSimd /*= false*/)
+    : BaseType(loc, modifier, id, isInOut, isSimd)
 {}
 
 UserType* UserType::clone() const
@@ -438,7 +447,7 @@ const llvm::Type* UserType::getRawVecLLVMType(Module* m, int& simdLength) const
 //------------------------------------------------------------------------------
 
 NestedType::NestedType(location loc, TokenType modifier, bool isRef, Type* innerType)
-    : Type(loc, modifier, isRef)
+    : Type(loc, modifier, isRef, false /*no simd type in all cases*/)
     , innerType_(innerType)
 {}
 

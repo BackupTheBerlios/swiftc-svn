@@ -102,11 +102,10 @@ void StmntAnalyzer::visit(SimdLoop* l)
         ctxt_->result_ = false;
     }
 
-    ctxt_->simdLoop_ = true;
+    ctxt_->simdIndex_ = (llvm::Value*) 1;
     l->scope_->accept(this);
-    ctxt_->simdLoop_ = false;
+    ctxt_->simdIndex_ = 0;
 }
-
 
 void StmntAnalyzer::visit(ScopeStmnt* s) 
 {

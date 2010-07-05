@@ -104,6 +104,23 @@ void ErrorExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
+Broadcast::Broadcast(location loc, Expr* expr)
+    : Expr(loc)
+    , expr_(expr)
+{}
+
+Broadcast::~Broadcast()
+{
+    delete expr_;
+}
+
+void Broadcast::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
+
+//----------------------------------------------------------------------
+
 Id::Id(location loc, std::string* id)
     : Expr(loc)
     , id_(id)
@@ -436,6 +453,17 @@ Self::Self(location loc)
 {}
 
 void Self::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
+
+//------------------------------------------------------------------------------
+
+SimdIndex::SimdIndex(location loc)
+    : Expr(loc)
+{}
+
+void SimdIndex::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }

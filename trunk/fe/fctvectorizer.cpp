@@ -13,7 +13,7 @@ namespace swift {
 
 FctVectorizer::FctVectorizer(Context* ctxt)
     : ctxt_(ctxt)
-    , packetizer_( Packetizer::getPacketizer(true) )
+    , packetizer_( Packetizer::getPacketizer(false, true) ) // TODO use cmdline switch for sse 4.1 selection
 {
     typedef Module::ClassMap::const_iterator CIter;
     const Module::ClassMap& classes = ctxt_->module_->classes();
@@ -42,7 +42,8 @@ FctVectorizer::FctVectorizer(Context* ctxt)
 
 void FctVectorizer::process(Class* c, MemberFct* m)
 {
-    Packetizer::addFunctionToPacketizer(packetizer_, m->llvmFct_->getNameStr(), m->simdFct_->getNameStr(), 4);
+    std::cout << "--- simd: " << m->simdFct_->getType()->getDescription() << std::endl;
+    Packetizer::addFunctionToPacketizer(packetizer_, 4, m->llvmFct_->getNameStr(), m->simdFct_->getNameStr());
 }
 
 } // namespace swift

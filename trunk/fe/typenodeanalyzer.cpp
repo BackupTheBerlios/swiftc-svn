@@ -9,6 +9,9 @@
 #include "fe/scope.h"
 #include "fe/type.h"
 
+#define SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS(loc) errorf((loc), "a simd index may only be used within simd loops");
+
+
 namespace swift {
 
 TypeNodeAnalyzer::TypeNodeVisitor(Context* ctxt)
@@ -72,26 +75,42 @@ void TypeNodeAnalyzer::visit(Decl* d)
         goto ok_out;
 
 error_out:
-        // substiture decl's type with an error type and set error
-        delete d->types_[0];
-        setError(d, true);
-        return;
+    // substiture decl's type with an error type and set error
+    delete d->types_[0];
+    setError(d, true);
+    return;
 
 ok_out:
-        // everything fine - so register the local
-        d->local_ = new Local( 
-                d->loc(), d->getType()->clone(), new std::string(*d->id()) );
-        ctxt_->scope()->insert(d->local_);
+    // everything fine - so register the local
+    d->local_ = new Local( 
+            d->loc(), d->getType()->clone(), new std::string(*d->id()) );
+    ctxt_->scope()->insert(d->local_);
 
-        lvalues_.resize(1);
-        d->inits_.resize(1);
-        lvalues_[0] = true;
-        d->inits_[0] = false;
+    lvalues_.resize(1);
+    d->inits_.resize(1);
+    lvalues_[0] = true;
+    d->inits_[0] = false;
 }
 
 void TypeNodeAnalyzer::visit(ErrorExpr* e)
 {
     setError(e, false);
+}
+
+void TypeNodeAnalyzer::visit(Broadcast* b)
+{
+    TypeNodeAnalyzer exprTNA(ctxt_);
+    b->expr_->accept(&exprTNA);
+
+    if (!ctxt_->simdIndex_)
+    {
+        SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS( b->loc() );
+        setError(b, false);
+        return;
+    }
+
+    // this expresion is valid
+    setResult(b, b->expr_->getType()->simdClone(), false);
 }
 
 void TypeNodeAnalyzer::visit(Id* id)
@@ -106,6 +125,16 @@ void TypeNodeAnalyzer::visit(Id* id)
 
         setError(id, true);
         return;
+    }
+
+    if (ctxt_->simdIndex_)
+    {
+        if ( const Simd* simd = dynamic<Simd>(var->getType()) )
+        {
+            // this container gets implicitly indexed by the simd index
+            setResult(id, simd->getInnerType()->simdClone(), true);
+            return;
+        }
     }
 
     // this expresion is valid
@@ -175,6 +204,18 @@ void TypeNodeAnalyzer::visit(Self* s)
                 "the 'self' keyword may only be used within non-static methods" );
         setError(s, false);
     }
+}
+
+void TypeNodeAnalyzer::visit(SimdIndex* s)
+{
+    if (!ctxt_->simdIndex_)
+    {
+        SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS( s->loc() );
+        setError(s, false);
+        return;
+    }
+
+    setResult( s, new ScalarType(location(), Token::CONST, new std::string("index"), false), false );
 }
 
 bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)

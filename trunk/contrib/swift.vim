@@ -9,7 +9,7 @@ syn keyword swiftOperator	and div downto in mod not of or packed with
 syn keyword swiftRepeat	        for while repeat until
 syn keyword swiftStatement	routine function reader writer operator create assign scope c_call vc_call stream
 syn keyword swiftStruct	        class end inherits
-syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16 const index
+syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16 const index broadcast
 "syn keyword swiftType		string text variant
 
 syn keyword swiftTodo contained	TODO FIXME XXX DEBUG NOTE

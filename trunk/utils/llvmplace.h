@@ -83,9 +83,6 @@ public:
 
 protected:
 
-    llvm::Value* extract(llvm::Value* vVec, const llvm::Type* scalarType, LLVMBuilder& builder);
-    llvm::Value* pack(llvm::Value* sVal, llvm::Value* vVal, const llvm::Type* sType, LLVMBuilder& builder) const;
-
     llvm::Value* mod_;
     llvm::Value* alloca_;
 };

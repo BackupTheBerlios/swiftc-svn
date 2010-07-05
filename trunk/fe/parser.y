@@ -75,7 +75,7 @@ using namespace swift;
 %token NIL
 
 // types
-%token PTR ARRAY SIMD
+%token PTR ARRAY SIMD SIMD_INDEX BROADCAST
 
 // type modifiers
 %token VAR CONST REF CONST_REF
@@ -463,6 +463,7 @@ un_expr
     | XOR   un_expr { $$ = new UnExpr(@$, Token::XOR, $2); }
     | NOT   un_expr { $$ = new UnExpr(@$, Token::NOT, $2); }
     | L_NOT un_expr { $$ = new UnExpr(@$, Token::L_NOT, $2); }
+    | BROADCAST un_expr { $$ = new Broadcast(@$, $2); }
     ;
 
 postfix_expr
@@ -507,6 +508,7 @@ primary_expr
     : ID               { $$ = new  Id(@$, $1); }
     | NIL '{' type '}' { $$ = new Nil(@$, $3); }
     | SELF             { $$ = new Self(@$); }
+    | SIMD_INDEX       { $$ = new SimdIndex(@$); }
     | L_INDEX          { $$ = $1; }
     | L_INT            { $$ = $1; }
     | L_INT8           { $$ = $1; }

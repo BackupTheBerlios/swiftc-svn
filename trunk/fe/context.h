@@ -62,7 +62,6 @@ public:
     llvm::LLVMContext& lctxt();
     llvm::Module* lmodule();
 
-    bool simdLoop_;
     llvm::Value* simdIndex_;
 
 private:

@@ -373,6 +373,24 @@ protected:
 
 //------------------------------------------------------------------------------
 
+class Broadcast : public Expr
+{
+public:
+
+    Broadcast(location loc, Expr* expr);
+    ~Broadcast();
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
+
+    Expr* expr_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
 class Id : public Expr
 {
 public:
@@ -422,6 +440,17 @@ public:
     virtual void accept(TypeNodeVisitorBase* t);
 };
 
+//----------------------------------------------------------------------
+
+class SimdIndex : public Expr
+{
+public:
+
+    SimdIndex(location loc);
+
+    virtual void accept(TypeNodeVisitorBase* t);
+};
+
 //------------------------------------------------------------------------------
 
 class TypeNodeVisitorBase
@@ -433,14 +462,16 @@ public:
 
     virtual TypeNodeVisitorBase* spawnNew() const = 0;
 
-    virtual void visit(Decl* d) = 0;
     virtual void visit(ErrorExpr* e) = 0;
+    virtual void visit(Decl* d) = 0;
 
     // TypeNode -> Expr 
+    virtual void visit(Broadcast* u) = 0;
     virtual void visit(Id* id) = 0;
     virtual void visit(Literal* l) = 0;
     virtual void visit(Nil* n) = 0;
     virtual void visit(Self* n) = 0;
+    virtual void visit(SimdIndex* s) = 0;
 
     // TypeNode -> Expr -> Access
     virtual void visit(IndexExpr* i) = 0;

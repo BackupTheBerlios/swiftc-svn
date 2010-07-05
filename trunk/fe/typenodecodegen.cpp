@@ -56,10 +56,40 @@ void TypeNodeCodeGen::visit(ErrorExpr* d)
     swiftAssert(false, "unreachable");
 }
 
+void TypeNodeCodeGen::visit(Broadcast* b)
+{
+    TypeNodeCodeGen tncg(ctxt_);
+    b->expr_->accept(&tncg);
+
+    int simdLength;
+    const llvm::Type* vType = b->getType()->getVecLLVMType(ctxt_->module_, simdLength);
+
+    Value* sVal = tncg.getPlace()->getScalar(builder_);
+    Value* vVal = simdBroadcast(sVal, vType, builder_);
+
+    setResult( new Scalar(vVal) );
+}
+
 void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
+
+    if (ctxt_->simdIndex_)
+    {
+        if ( const Simd* simd = dynamic<Simd>(var->getType()) )
+        {
+            // this container gets implicitly indexed by the simd index
+            Value* addr = var->getAddr(builder_);
+
+            std::ostringstream oss;
+            oss << addr->getNameStr() << ".ptr";
+            Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, Container::POINTER, oss.str() );
+
+            setResult( new Addr(builder_.CreateInBoundsGEP(ptr, ctxt_->simdIndex_)) );
+            return;
+        }
+    }
 
     setResult( new Addr(var->getAddr(builder_)) );
 }
@@ -121,6 +151,11 @@ void TypeNodeCodeGen::visit(Self* n)
 {
     Method* m = cast<Method>(ctxt_->memberFct_);
     setResult( new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
+}
+
+void TypeNodeCodeGen::visit(SimdIndex* s)
+{
+    setResult( new Scalar(ctxt_->simdIndex_) );
 }
 
 // TODO writeback?
@@ -292,7 +327,6 @@ void TypeNodeCodeGen::visit(CreateCall* r)
 {
     //emitCall(r, 0);
     // TODO
-    //
 }
 
 void TypeNodeCodeGen::visit(RoutineCall* r)
@@ -307,19 +341,12 @@ void TypeNodeCodeGen::visit(UnExpr* u)
         TypeNodeCodeGen opTNCG(ctxt_);
         u->op1_->accept(&opTNCG);
         Value* val = opTNCG.getPlace()->getScalar(builder_);
-        const ScalarType* scalar = cast<ScalarType>( u->op1_->getType() );
 
         switch (u->token_)
         {
-            case Token::ADD: 
-                // nothing to do
-                break;
-            case Token::SUB:
-                val = builder_.CreateSub( llvm::Constant::getNullValue( 
-                            scalar->getLLVMType(ctxt_->module_)), val );
-                break;
-            default:
-                swiftAssert(false, "TODO");
+            case Token::ADD: break; // nothing to do
+            case Token::SUB: val = builder_.CreateNeg(val); break;
+            default:         swiftAssert(false, "TODO");
         }
 
         setResult( new Scalar(val) );

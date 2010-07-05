@@ -90,6 +90,7 @@ not { SET_LOC; return Token::L_NOT; }
 >=  { SET_LOC; return Token::GE; }
 inc { SET_LOC; return Token::INC; }
 dec { SET_LOC; return Token::DEC; }
+@i  { SET_LOC; return Token::SIMD_INDEX; }
 
 =   { SET_LOC; return Token::ASGN; }
 ::  { SET_LOC; return Token::DOUBLE_COLON; }
@@ -144,6 +145,7 @@ const { SET_LOC; return Token::CONST; }
 ptr   { SET_LOC; return Token::PTR; }
 array { SET_LOC; return Token::ARRAY; }
 simd  { SET_LOC; return Token::SIMD; }
+broadcast  { SET_LOC; return Token::BROADCAST; }
 
 public      { SET_LOC; return Token::PUBLIC; }
 protected   { SET_LOC; return Token::PROTECTED; }

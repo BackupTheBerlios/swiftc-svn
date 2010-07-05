@@ -24,14 +24,16 @@ public:
 
     virtual TypeNodeVisitor<class CodeGen>* spawnNew() const;
 
+    virtual void visit(ErrorExpr* e);
     virtual void visit(Decl* d);
 
     // TypeNode -> Expr 
-    virtual void visit(ErrorExpr* e);
+    virtual void visit(Broadcast* u);
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
     virtual void visit(Self* n);
+    virtual void visit(SimdIndex* s);
 
     // TypeNode -> Expr -> Access
     llvm::Value* resolvePrefixExpr(Access* a);

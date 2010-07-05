@@ -10,32 +10,30 @@
 //----------------------------------------------------------------------
 
 namespace llvm {
-
     class AllocaInst;
+    class ConstantInt;
+    class ConstantFP;
     class LLVMContext;
     class Type;
     class Value;
 
     class ConstantFolder;
     template <bool preserveNames> class IRBuilderDefaultInserter;
-    template<bool preserveNames, typename T, typename Inserter> class IRBuilder;
+    template <bool preserveNames, typename T, typename Inserter> class IRBuilder;
 }
+
+typedef llvm::IRBuilder <true, llvm::ConstantFolder, llvm::IRBuilderDefaultInserter<true> > LLVMBuilder;
 
 class Place;
 
 //----------------------------------------------------------------------
 
-typedef llvm::IRBuilder <true, llvm::ConstantFolder, 
-        llvm::IRBuilderDefaultInserter<true> > LLVMBuilder;
-
-//----------------------------------------------------------------------
-
-llvm::Value* createInt8 (llvm::LLVMContext& lctxt, uint64_t val = 0);
-llvm::Value* createInt16(llvm::LLVMContext& lctxt, uint64_t val = 0);
-llvm::Value* createInt32(llvm::LLVMContext& lctxt, uint64_t val = 0);
-llvm::Value* createInt64(llvm::LLVMContext& lctxt, uint64_t val = 0);
-llvm::Value* createFloat(llvm::LLVMContext& lctxt, float val);
-llvm::Value* createDouble(llvm::LLVMContext& lctxt, double val);
+llvm::ConstantInt* createInt8 (llvm::LLVMContext& lctxt, uint64_t val);
+llvm::ConstantInt* createInt16(llvm::LLVMContext& lctxt, uint64_t val);
+llvm::ConstantInt* createInt32(llvm::LLVMContext& lctxt, uint64_t val);
+llvm::ConstantInt* createInt64(llvm::LLVMContext& lctxt, uint64_t val);
+llvm::ConstantFP*  createFloat(llvm::LLVMContext& lctxt, float val);
+llvm::ConstantFP*  createDouble(llvm::LLVMContext& lctxt, double val);
 
 //----------------------------------------------------------------------
 
@@ -58,8 +56,9 @@ llvm::AllocaInst* createEntryAlloca(LLVMBuilder& builder, const llvm::Type* type
 
 //----------------------------------------------------------------------
 
-void createCopy(LLVMBuilder& builder, Place* src, llvm::Value* dst);
-void createCopy(LLVMBuilder& builder, llvm::Value* src, llvm::Value* dst);
+llvm::Value* simdExtract(llvm::Value* vVec, llvm::Value* mod, const llvm::Type* scalarType, LLVMBuilder& builder);
+llvm::Value* simdPack(llvm::Value* sVal, llvm::Value* vVal, llvm::Value* mod, LLVMBuilder& builder);
+llvm::Value* simdBroadcast(llvm::Value* sVal, const llvm::Type* vType, LLVMBuilder& builder);
 
 //----------------------------------------------------------------------
 

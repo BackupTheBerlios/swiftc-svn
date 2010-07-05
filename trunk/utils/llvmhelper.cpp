@@ -14,22 +14,22 @@
 
 using namespace llvm;
 
-Value* createInt8(LLVMContext& lctxt, uint64_t val /*= 0*/)
+ConstantInt* createInt8(LLVMContext& lctxt, uint64_t val)
 {
     return ConstantInt::get( IntegerType::getInt8Ty(lctxt), val );
 }
 
-Value* createInt16(LLVMContext& lctxt, uint64_t val /*= 0*/)
+ConstantInt* createInt16(LLVMContext& lctxt, uint64_t val)
 {
     return ConstantInt::get( IntegerType::getInt16Ty(lctxt), val );
 }
 
-Value* createInt32(LLVMContext& lctxt, uint64_t val /*= 0*/)
+ConstantInt* createInt32(LLVMContext& lctxt, uint64_t val)
 {
     return ConstantInt::get( IntegerType::getInt32Ty(lctxt), val );
 }
 
-Value* createInt64(LLVMContext& lctxt, uint64_t val /*= 0*/)
+ConstantInt* createInt64(LLVMContext& lctxt, uint64_t val)
 {
     return ConstantInt::get( IntegerType::getInt64Ty(lctxt), val );
 }
@@ -39,12 +39,12 @@ const Type* createVoid(LLVMContext& lctxt)
     return TypeBuilder<void, true>::get(lctxt);
 }
 
-Value* createFloat(LLVMContext& lctxt, float val)
+ConstantFP* createFloat(LLVMContext& lctxt, float val)
 {
     return ConstantFP::get(lctxt, APFloat(val) );
 }
 
-Value* createDouble(LLVMContext& lctxt, double val)
+ConstantFP* createDouble(LLVMContext& lctxt, double val)
 {
     return ConstantFP::get(lctxt, APFloat(val) );
 }
@@ -54,7 +54,7 @@ Value* createInBoundsGEP_0_x(LLVMContext& lctxt, LLVMBuilder& builder,
                              const std::string& name /*= ""*/)
 {
     Value* input[2];
-    input[0] = createInt64(lctxt);
+    input[0] = createInt64(lctxt, 0);
     input[1] = x;
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
@@ -64,7 +64,7 @@ Value* createInBoundsGEP_0_i32(LLVMContext& lctxt, LLVMBuilder& builder,
                                const std::string& name /*= ""*/)
 {
     Value* input[2];
-    input[0] = createInt64(lctxt);
+    input[0] = createInt64(lctxt, 0);
     input[1] = createInt32(lctxt, i);
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
@@ -74,7 +74,7 @@ Value* createInBoundsGEP_0_i64(LLVMContext& lctxt, LLVMBuilder& builder,
                                const std::string& name /*= ""*/)
 {
     Value* input[2];
-    input[0] = createInt64(lctxt);
+    input[0] = createInt64(lctxt, 0);
     input[1] = createInt64(lctxt, i);
     return builder.CreateInBoundsGEP(ptr, input, input+2, name);
 }
@@ -120,36 +120,106 @@ AllocaInst* createEntryAlloca(LLVMBuilder& builder, const Type* type,
     return tmpBuilder.CreateAlloca(type, 0, name);
 }
 
-//void createCopy(LLVMBuilder& builder, Place* src, Value* dst)
-//{
-    //if ( Addr* addr = dynamic<Addr>(src) )
-        //createCopy(builder, addr->getAddr(builder), dst);
-    //else
-        //builder.CreateStore( src->getScalar(builder), dst );
-//}
+Value* simdExtract(Value* vVal, Value* mod, const Type* sType, LLVMBuilder& builder)
+{
+    if ( const StructType* vStruct = dynamic<StructType>(vVal->getType()) )
+    {
+        const StructType* sStruct = cast<StructType>(sType);
+        Value* sVal = UndefValue::get(sStruct);
 
-//void createCopy(LLVMBuilder& builder, Value* src, Value* dst)
-//{
-    //swiftAssert(src->getType() == dst->getType(), "types must match");
-    //LLVMContext& lctxt = src->getContext();
+        int memIdx = 0;
+        StructType::element_iterator iter = vStruct->element_begin();
+        while ( iter != vStruct->element_end() )
+        {
+            const Type* sElemType = (sStruct->element_begin() + memIdx)->get();
 
-    //const PointerType* ptrType = cast<PointerType>( src->getType() );
-    //const Type* type = ptrType->getContainedType(0);
-    
-    //if ( const StructType* st = dynamic<StructType>(type) )
-    //{
-        //size_t i = 0;
-        //StructType::element_iterator iter = st->element_begin();
-        //while (iter != st->element_end())
-        //{
-            //Value* srcMemPtr = createInBoundsGEP_0_i32(lctxt, builder, src, i);
-            //Value* dstMemPtr = createInBoundsGEP_0_i32(lctxt, builder, dst, i);
-            //createCopy(builder, srcMemPtr, dstMemPtr);
+            Value* vElem = builder.CreateExtractValue(vVal, memIdx);
+            Value* sElem = simdExtract(vElem, mod, sElemType, builder);
+            sVal = builder.CreateInsertValue(sVal, sElem, memIdx);
 
-            //++iter;
-            //++i;
-        //}
-    //}
-    //else
-        //builder.CreateStore( builder.CreateLoad(src), dst );
-//}
+            ++iter;
+            ++memIdx;
+        }
+
+        return sVal;
+    }
+    else
+        return builder.CreateExtractElement(vVal, mod);
+}
+
+Value* simdPack(Value* sVal, Value* vVal, Value* mod, LLVMBuilder& builder)
+{
+    if ( const StructType* vStruct = dyn_cast<StructType>(vVal->getType()) )
+    {
+        int memIdx = 0;
+        StructType::element_iterator iter = vStruct->element_begin();
+        while ( iter != vStruct->element_end() )
+        {
+            // get attributes
+            Value* vElem = builder.CreateExtractValue(vVal, memIdx);
+            Value* sElem = builder.CreateExtractValue(sVal, memIdx);
+
+            // update
+            vElem = simdPack(sElem, vElem, mod, builder);
+            vVal = builder.CreateInsertValue(vVal, vElem, memIdx);
+
+            // iterate
+            ++iter;
+            ++memIdx;
+        }
+
+        return vVal;
+    }
+    else
+        return builder.CreateInsertElement(vVal, sVal, mod);
+}
+
+Value* simdBroadcast(Value* sVal, const Type* vType, LLVMBuilder& builder)
+{
+    LLVMContext& lctxt = sVal->getContext();
+    const Type* sType = sVal->getType();
+
+    Value* vVal = UndefValue::get(vType);
+
+    if ( const StructType* sStruct = dyn_cast<StructType>(sType) )
+    {
+        const StructType* vStruct = ::cast<StructType>(vType);
+        int memIdx = 0;
+        StructType::element_iterator iter = sStruct->element_begin();
+        while ( iter != sStruct->element_end() )
+        {
+            // get attributes
+            Value* sElem = builder.CreateExtractValue(sVal, memIdx);
+
+            // update
+            Value* vElem = simdBroadcast( sElem, vStruct->getElementType(memIdx), builder );
+            vVal = builder.CreateInsertValue(vVal, vElem, memIdx);
+
+            // iterate
+            ++iter;
+            ++memIdx;
+        }
+
+        return vVal;
+    }
+    else
+    {
+        const VectorType* vecType = ::cast<VectorType>(vType);
+        size_t numElems = vecType->getNumElements();
+
+
+        // put sVal into the first element of vVal
+        vVal = builder.CreateInsertElement( vVal, sVal, createInt32(lctxt, 0) );
+
+        std::vector<Constant*> elems(numElems);
+        for (size_t i = 0; i < numElems; ++i)
+            elems[i] = createInt32(lctxt, 0); // select first element in all cases
+
+        Value* vSelect = ConstantVector::get( VectorType::get( IntegerType::getInt32Ty(lctxt), numElems), elems );
+        Value* vUndef = UndefValue::get(vecType);
+
+        vVal = builder.CreateShuffleVector(vVal, vUndef, vSelect);
+
+        return vVal;
+    }
+}
