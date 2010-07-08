@@ -40,6 +40,7 @@ private:
 
     LLVMBuilder& builder_;
     llvm::LLVMContext& lctxt_;
+    TypeNodeCodeGen* tncg_;
 };
 
 typedef StmntVisitor<class CodeGen> StmntCodeGen;

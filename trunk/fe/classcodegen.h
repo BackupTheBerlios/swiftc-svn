@@ -30,8 +30,6 @@ public:
     virtual void visit(Writer* w);
 
     // ClassMember -> MemberFct -> StaticMethod
-    virtual void visit(Assign* a);
-    virtual void visit(Operator* o);
     virtual void visit(Routine* r);
 
     // ClassMember -> MemberVar

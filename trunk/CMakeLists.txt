@@ -100,10 +100,10 @@ ADD_EXECUTABLE (swift
     fe/node.cpp
     fe/scope.cpp
     fe/sig.cpp
+    #fe/simdloopanalyzer.cpp
     fe/stmnt.cpp
     fe/stmntanalyzer.cpp
     fe/stmntcodegen.cpp
-    fe/token2str.cpp
     fe/type.cpp
     fe/typelist.cpp
     fe/typenode.cpp

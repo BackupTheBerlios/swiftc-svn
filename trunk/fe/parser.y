@@ -83,7 +83,7 @@ using namespace swift;
 %token SELF
 
 // method qualifier
-%token READER WRITER ROUTINE OPERATOR ASSIGN
+%token READER WRITER ROUTINE
 
 %token ARROW
 %token DOUBLE_COLON
@@ -94,21 +94,14 @@ using namespace swift;
 // built-in functions
 %token SHL SHR ROL ROR
 
-// arithmetic operators
-%token ADD SUB MUL DIV MOD
-// comparision operators
-%token EQ NE LT LE GT GE
-// bitwise operators
-%token AND OR XOR NOT
-// logical operators
-%token L_AND L_OR L_XOR L_NOT
+// operators in precedence order
+%token <id_> MUL ADD EQ REL AND XOR OR
+%token <id_> ASGN
 
 %token INC DEC
 %token MOVE SWAP
 
 %token C_CALL VC_CALL
-
-%token ASGN ASGN_ADD ASGN_SUB ASGN_MUL ASGN_DIV ASGN_MOD ASGN_AND ASGN_OR ASGN_XOR
 
 // control flow
 %token IF ELSE ELIF FOR WHILE REPEAT UNTIL
@@ -120,16 +113,17 @@ using namespace swift;
 // miscellaneous
 %token SCOPE CLASS END EOL
 
-%token <id_> ID
+%token <id_> VAR_ID
 
 /*
     types
 */
 
+%type <id_> fct_id op_id
 %type <bool_> simd_modifier
 %type <decl_> decl
-%type <expr_> expr rel_expr mul_expr add_expr postfix_expr un_expr primary_expr
-%type <int_> method_qualifier operator assign
+%type <expr_> primary_expr postfix_expr un_expr mul_expr add_expr eq_expr rel_expr and_expr xor_expr or_expr expr
+%type <int_> method_qualifier
 %type <memberFct_> member_function
 %type <memberVar_> member_var
 %type <scope_> if_head
@@ -175,7 +169,7 @@ simd_modifier
     ;
 
 class
-    : simd_modifier CLASS ID EOL
+    : simd_modifier CLASS VAR_ID EOL
         {
             $<class_>$ = new Class(@$, $1, $3);
             ctxt_->module_->insert($<class_>$);
@@ -203,13 +197,13 @@ class_member
 */
 
 method_qualifier
-    : READER  { $$ = Token::READER; }
+    : READER  { $$ = Token::WRITER; }
     | WRITER  { $$ = Token::WRITER; }
     | ROUTINE { $$ = Token::ROUTINE; }
     ;
 
 member_function
-    : simd_modifier method_qualifier ID
+    : simd_modifier method_qualifier fct_id
         {
             Scope* scope = ctxt_->enterScope();
 
@@ -229,30 +223,6 @@ member_function
             $$->sig_.buildTypeLists();
             ctxt_->leaveScope();
         }
-    | simd_modifier OPERATOR operator
-        {
-            Scope* scope = ctxt_->enterScope();
-            $<memberFct_>$ = new Operator(@$,  $1, $3, scope);
-            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-        }
-        '(' param_list ')' ret_list stmnt_list END EOL
-        {
-            $$ = $<memberFct_>4;
-            $$->sig_.buildTypeLists();
-            ctxt_->leaveScope();
-        }
-    | simd_modifier ASSIGN assign
-        {
-            Scope* scope = ctxt_->enterScope();
-            $<memberFct_>$ = new Assign(@$,  $1, $3, scope);
-            ctxt_->class_->insert(ctxt_, $<memberFct_>$);
-        }
-        '(' param_list ')' EOL stmnt_list END EOL
-        {
-            $$ = $<memberFct_>4;
-            $$->sig_.buildTypeLists();
-            ctxt_->leaveScope();
-        }
     | simd_modifier CREATE
         {
             Scope* scope = ctxt_->enterScope();
@@ -267,32 +237,6 @@ member_function
         }
     ;
 
-operator
-    :   ADD    { $$ = Token::ADD; }
-    |   SUB    { $$ = Token::SUB; }
-    |   MUL    { $$ = Token::MUL; }
-    |   DIV    { $$ = Token::DIV; }
-    |   MOD    { $$ = Token::MOD; }
-    |   EQ     { $$ = Token::EQ;  }
-    |   NE     { $$ = Token::NE;  }
-    |   LT     { $$ = Token::LT;  }
-    |   LE     { $$ = Token::LE;  }
-    |   GT     { $$ = Token::GT;  }
-    |   GE     { $$ = Token::GE;  }
-    |   AND    { $$ = Token::AND; }
-    |   OR     { $$ = Token::OR;  }
-    |   XOR    { $$ = Token::XOR; }
-    |   NOT    { $$ = Token::NOT; }
-    |   L_AND  { $$ = Token::L_AND; }
-    |   L_OR   { $$ = Token::L_OR;  }
-    |   L_XOR  { $$ = Token::L_XOR; }
-    |   L_NOT  { $$ = Token::L_NOT; }
-    ;
-
-assign
-    : ASGN  { $$ = Token::ASGN; }
-    ;
-
 param_list
     : /* emtpy */
     | param_list_not_empty
@@ -304,7 +248,7 @@ param_list_not_empty
     ;
 
 param
-    : const_type ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
+    : const_type VAR_ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
     ;
 
 ret_list
@@ -318,7 +262,7 @@ retval_list_not_empty
     ;
 
 retval
-    : var_type ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
+    : var_type VAR_ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
     ;
 
 /*
@@ -328,7 +272,7 @@ retval
 */
 
 member_var
-    : type ID EOL
+    : type VAR_ID EOL
         {
             $$ = new MemberVar(@$, $1, $2);
             ctxt_->class_->insert(ctxt_, $$);
@@ -353,7 +297,7 @@ stmnt
     */
     : decl EOL { $$ = new DeclStmnt(@$, $1); }
     | expr EOL { $$ = new ExprStmnt(@$, $1); }
-    | tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, Token::ASGN, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
+    | tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $2, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
 
     /*
         control flow stmnts
@@ -364,8 +308,8 @@ stmnt
         } 
         expr EOL stmnt_list END EOL 
         { 
-            ctxt_->leaveScope();
             $$ = new WhileLoop(@$, $<scope_>2, $3);
+            ctxt_->leaveScope();
         }
     | REPEAT EOL 
         { 
@@ -373,17 +317,17 @@ stmnt
         } 
         stmnt_list UNTIL expr EOL 
         { 
-            ctxt_->leaveScope();
             $$ = new RepeatUntilLoop(@$, $<scope_>3, $6);
+            ctxt_->leaveScope();
         }
-    | SIMD expr ',' expr EOL
+    | SIMD VAR_ID ':' expr ',' expr EOL
         {
             $<scope_>$ = ctxt_->enterScope();
         }
         stmnt_list END EOL
         {
+            $$ = new SimdLoop(@$, $<scope_>8, $2, $4, $6);
             ctxt_->leaveScope();
-            $$ = new SimdLoop(@$, $<scope_>6, $2, $4);
         }
     | SCOPE EOL 
         { 
@@ -391,8 +335,8 @@ stmnt
         } 
         stmnt_list END EOL 
         { 
-            ctxt_->leaveScope();
             $$ = new ScopeStmnt(@$, $<scope_>3);
+            ctxt_->leaveScope();
         }
 
     | if_head expr EOL stmnt_list END EOL 
@@ -407,8 +351,8 @@ stmnt
         } 
         stmnt_list END EOL 
         { 
-            ctxt_->leaveScope();
             $$ = new IfElStmnt(@$, $2, $1, $<scope_>7); 
+            ctxt_->leaveScope();
         }
 
     /* 
@@ -431,39 +375,49 @@ if_head
 */
 
 expr
-    : rel_expr           { $$ = $1; }
-    | expr EQ add_expr   { $$ = new BinExpr(@$, Token::EQ, $1, $3); }
-    | expr NE add_expr   { $$ = new BinExpr(@$, Token::NE, $1, $3); }
+    : or_expr { $$ = $1; }
+    ;
+
+or_expr
+    : xor_expr             { $$ = $1; }
+    | or_expr OR xor_expr  { $$ = new BinExpr(@$, $2, $1, $3); }
+    ;
+
+xor_expr
+    : and_expr              { $$ = $1; }
+    | xor_expr XOR and_expr { $$ = new BinExpr(@$, $2, $1, $3); }
+    ;
+
+and_expr
+    : rel_expr               { $$ = $1; }
+    | and_expr AND rel_expr  { $$ = new BinExpr(@$, $2, $1, $3); }
     ;
 
 rel_expr
-    : add_expr           { $$ = $1; }
-    | expr LT add_expr   { $$ = new BinExpr(@$, Token::LT, $1, $3); }
-    | expr LE add_expr   { $$ = new BinExpr(@$, Token::LE, $1, $3); }
-    | expr GT add_expr   { $$ = new BinExpr(@$, Token::GT, $1, $3); }
-    | expr GE add_expr   { $$ = new BinExpr(@$, Token::GE, $1, $3); }
+    : eq_expr              { $$ = $1; }
+    | rel_expr REL eq_expr { $$ = new BinExpr(@$, $2, $1, $3); }
+    ;
+
+eq_expr
+    : add_expr              { $$ = $1; }
+    | eq_expr EQ add_expr   { $$ = new BinExpr(@$, $2, $1, $3); }
     ;
 
 add_expr
     : mul_expr              { $$ = $1; }
-    | add_expr ADD mul_expr { $$ = new BinExpr(@$, Token::ADD, $1, $3); }
-    | add_expr SUB mul_expr { $$ = new BinExpr(@$, Token::SUB, $1, $3); }
+    | add_expr ADD mul_expr { $$ = new BinExpr(@$, $2, $1, $3); }
     ;
 
 mul_expr
     : un_expr               { $$ = $1; }
-    | mul_expr MUL un_expr  { $$ = new BinExpr(@$, Token::MUL, $1, $3); }
-    | mul_expr DIV un_expr  { $$ = new BinExpr(@$, Token::DIV, $1, $3); }
+    | mul_expr MUL un_expr  { $$ = new BinExpr(@$, $2, $1, $3); }
     ;
 
 un_expr
-    : postfix_expr  { $$ = $1; }
-    | SUB   un_expr { $$ = new UnExpr(@$, Token::SUB, $2); }
-    | ADD   un_expr { $$ = new UnExpr(@$, Token::ADD, $2); }
-    | XOR   un_expr { $$ = new UnExpr(@$, Token::XOR, $2); }
-    | NOT   un_expr { $$ = new UnExpr(@$, Token::NOT, $2); }
-    | L_NOT un_expr { $$ = new UnExpr(@$, Token::L_NOT, $2); }
+    : postfix_expr      { $$ = $1; }
+    | ADD un_expr     { $$ = new UnExpr(@$, $1, $2); }
     | BROADCAST un_expr { $$ = new Broadcast(@$, $2); }
+    /*| '@' un_expr { $$ = new Range(@$, $2); }*/
     ;
 
 postfix_expr
@@ -472,43 +426,40 @@ postfix_expr
     /* 
         accesses
     */
-    | postfix_expr '.' ID       { $$ = new MemberAccess(@$,           $1, $3); }
-    | '.' ID                    { $$ = new MemberAccess(@$, new Self(@$), $2); }
+    | postfix_expr '.' VAR_ID   { $$ = new MemberAccess(@$,           $1, $3); }
+    | '.' VAR_ID                { $$ = new MemberAccess(@$, new Self(@$), $2); }
     | postfix_expr '[' expr ']' { $$ = new IndexExpr(@$, $1, $3); }
 
     /* 
         c_call 
     */
-    |  C_CALL type ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token:: C_CALL, $3, ctxt_->popExprList()); }
-    | VC_CALL type ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token::VC_CALL, $3, ctxt_->popExprList()); }
-    |  C_CALL      ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token:: C_CALL, $2, ctxt_->popExprList()); }
-    | VC_CALL      ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token::VC_CALL, $2, ctxt_->popExprList()); }
+    |  C_CALL type VAR_ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token:: C_CALL, $3, ctxt_->popExprList()); }
+    | VC_CALL type VAR_ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$, $2, Token::VC_CALL, $3, ctxt_->popExprList()); }
+    |  C_CALL      VAR_ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token:: C_CALL, $2, ctxt_->popExprList()); }
+    | VC_CALL      VAR_ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CCall(@$,  0, Token::VC_CALL, $2, ctxt_->popExprList()); }
 
     /* 
         routines 
     */
-    |    DOUBLE_COLON ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->popExprList()); }
-    | ID DOUBLE_COLON ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->popExprList()); }
+    |    DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->popExprList()); }
+    | VAR_ID DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->popExprList()); }
 
     /* 
         methods 
     */
-    | postfix_expr ':' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new ReaderCall(@$,           $1, $3, ctxt_->popExprList()); }
-    | postfix_expr '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$,           $1, $3, ctxt_->popExprList()); }
-    |              ':' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new ReaderCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
-    |              '.' ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new WriterCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
+    | postfix_expr '.' fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new MethodCall(@$,           $1, $3, ctxt_->popExprList()); }
+    |              '.' fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new MethodCall(@$, new Self(@$), $2, ctxt_->popExprList()); }
 
     /*
         other calls
     */
-    | ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CreateCall(@$, $1, ctxt_->popExprList()); }
+    | VAR_ID { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new CreateCall(@$, $1, ctxt_->popExprList()); }
     ;
 
 primary_expr
-    : ID               { $$ = new  Id(@$, $1); }
+    : VAR_ID           { $$ = new  Id(@$, $1); }
     | NIL '{' type '}' { $$ = new Nil(@$, $3); }
     | SELF             { $$ = new Self(@$); }
-    | SIMD_INDEX       { $$ = new SimdIndex(@$); }
     | L_INDEX          { $$ = $1; }
     | L_INT            { $$ = $1; }
     | L_INT8           { $$ = $1; }
@@ -533,6 +484,23 @@ primary_expr
     | '(' error ')'    { $$ = new ErrorExpr(@$); }
     ;
 
+op_id
+    : MUL { $$ = $1; }
+    | ADD { $$ = $1; }
+    | EQ  { $$ = $1; }
+    | REL { $$ = $1; }
+    | AND { $$ = $1; }
+    | XOR { $$ = $1; }
+    | OR  { $$ = $1; }
+    ; 
+
+fct_id
+    : op_id  { $$ = $1; }
+    | ASGN   { $$ = $1; }
+    | VAR_ID { $$ = $1; }
+    ;
+
+
 expr_list
     : /* empty */
     | expr_list_not_empty
@@ -544,7 +512,7 @@ expr_list_not_empty
     ;
 
 decl
-    : type ID { $$ = new Decl(@$, $1, $2); }
+    : type VAR_ID { $$ = new Decl(@$, $1, $2); }
     ;
 
 tuple
@@ -555,22 +523,22 @@ tuple
     ;
 
 var_type
-    : ID                 { $$ = BaseType::create(@$, Token::VAR, $1, true); }
+    : VAR_ID             { $$ = BaseType::create(@$, Token::VAR, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::VAR, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::VAR, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::VAR, $3); }
     ;
 
 const_type
-    : ID                 { $$ = BaseType::create(@$, Token::CONST, $1, true); }
+    : VAR_ID             { $$ = BaseType::create(@$, Token::CONST, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::CONST, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::CONST, $3); }
     ;
 
 type
-    : ID                       { $$ = BaseType::create(@$, Token::  VAR, $1); }
-    | CONST ID                 { $$ = BaseType::create(@$, Token::CONST, $2); }
+    : VAR_ID                   { $$ = BaseType::create(@$, Token::  VAR, $1); }
+    | CONST VAR_ID             { $$ = BaseType::create(@$, Token::CONST, $2); }
     | PTR         '{' type '}' { $$ = new      Ptr(@$, Token::  VAR, $3); }
     | CONST PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $4); }
     | ARRAY       '{' type '}' { $$ = new    Array(@$, Token::  VAR, $3); }

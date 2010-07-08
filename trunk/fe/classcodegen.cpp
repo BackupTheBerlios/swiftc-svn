@@ -42,24 +42,12 @@ void ClassCodeGen::visit(Writer* w)
     codeGen(w);
 }
 
-void ClassCodeGen::visit(Assign* a)
-{
-    codeGen(a);
-}
-
-void ClassCodeGen::visit(Operator* o)
-{
-    codeGen(o);
-}
-
 void ClassCodeGen::visit(Routine* r)
 {
     codeGen(r);
 }
 
-void ClassCodeGen::visit(MemberVar* m)
-{
-}
+void ClassCodeGen::visit(MemberVar* m) {}
 
 void ClassCodeGen::codeGen(MemberFct* m)
 {

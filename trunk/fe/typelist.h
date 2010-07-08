@@ -23,14 +23,6 @@
 #include <string>
 #include <vector>
 
-namespace llvm {
-    class Type;
-    class Value;
-}
-
-typedef std::vector<llvm::Value*> Values;
-typedef std::vector<const llvm::Type*> LLVMTypes;
-
 namespace swift {
 
 class Module;
@@ -45,10 +37,6 @@ public:
     std::string toString() const;
     bool check(Module* m, const TypeList& t) const;
 }; 
-
-//------------------------------------------------------------------------------
-
-typedef std::vector<bool> BoolVec;
 
 //------------------------------------------------------------------------------
 

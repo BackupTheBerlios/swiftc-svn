@@ -12,8 +12,6 @@ public:
 
     TypeNodeVisitor(Context* ctxt);
 
-    virtual TypeNodeVisitor<class Analyzer>* spawnNew() const;
-
     virtual void visit(ErrorExpr* e);
     virtual void visit(Decl* d);
 
@@ -22,6 +20,7 @@ public:
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
+    virtual void visit(Range* n);
     virtual void visit(Self* n);
     virtual void visit(SimdIndex* s);
 
@@ -30,14 +29,9 @@ public:
     virtual void visit(IndexExpr* i);
     virtual void visit(MemberAccess* m);
 
-    // TypeNode -> Expr -> FctCall -> CCall
+    // TypeNode -> Expr -> FctCall
     virtual void visit(CCall* c);
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> MethodCall
-    virtual void visit(ReaderCall* r);
-    virtual void visit(WriterCall* w);
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
+    virtual void visit(MethodCall* m);
     virtual void visit(CreateCall* r);
     virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
@@ -49,13 +43,10 @@ private:
 
     void analyzeMemberFctCall(MemberFctCall* m);
     bool setClass(MethodCall* m);
-    bool setClass(OperatorCall* r);
     bool setClass(RoutineCall* r);
 
     void setResult(TypeNode* tn, Type* type, bool lvalue);
     void setError(TypeNode* tn, bool lvalue);
-
-    BoolVec lvalues_;
 };
 
 typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;

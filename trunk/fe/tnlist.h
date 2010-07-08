@@ -1,12 +1,10 @@
 #ifndef SWIFT_TNLIST_H
 #define SWIFT_TNLIST_H
 
+#include <memory>
 #include <vector>
 
 #include "utils/llvmhelper.h"
-#include "utils/llvmplace.h"
-
-#include "fe/typelist.h"
 
 namespace llvm {
     class Value;
@@ -15,10 +13,10 @@ namespace llvm {
 namespace swift {
 
 class Context;
-class TypeNode;
-template <class T> class TypeNodeVisitor;
-typedef TypeNodeVisitor<class Analyzer> TypeNodeAnalyzer;
-typedef TypeNodeVisitor<class  CodeGen> TypeNodeCodeGen;
+class TNResult;
+class TypeNode; 
+class TypeNodeVisitorBase;
+class TypeList;
 
 //------------------------------------------------------------------------------
 
@@ -26,32 +24,37 @@ class TNList
 {
 public:
 
+    TNList();
     ~TNList();
 
     void append(TypeNode* typeNode);
-    void accept(TypeNodeAnalyzer& tna);
-    void accept(TypeNodeCodeGen& tncg);
+    void accept(TypeNodeVisitorBase* visitor);
 
-    TypeNode* getTypeNode(size_t i) const;
-    bool isLValue(size_t i) const;
-    bool isInit(size_t i) const;
-    Place* getPlace(size_t i) const;
-    const TypeList& typeList() const;
-    size_t numItems() const;
-    size_t numRetValues() const;
+    size_t numTypeNodes() const { return typeNodes_.size(); }
+    size_t numResults() const   { return indexMap_.size(); }
+
     void getArgs(Values& args, LLVMBuilder& builder) const;
     llvm::Value* getArg(size_t i, LLVMBuilder& builder) const;
 
+    TypeNode* getTypeNode(size_t i) const { return typeNodes_[i]; }
+    const TNResult& getResult(size_t i) const;
+
+    const TypeList& typeList();
+
 private:
 
-    typedef std::vector<TypeNode*> TypeNodeVec;
+    void buildIndexMap();
 
-    TypeNodeVec typeNodes_;
-    BoolVec lvalues_;
-    BoolVec inits_;
-    TypeList types_;
-    Places places_;
+    TypeList* typeList_;
+    bool indexMapBuilt_;
+
+    typedef std::vector<TypeNode*> TypeNodes;
+    TypeNodes typeNodes_;
+
+    typedef std::vector< std::pair<size_t, size_t> > IndexMap;
+    IndexMap indexMap_;
 };
+
 
 //------------------------------------------------------------------------------
 

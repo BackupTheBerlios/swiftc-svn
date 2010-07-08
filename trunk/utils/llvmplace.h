@@ -16,7 +16,7 @@ public:
     {}
     virtual ~Place() {}
 
-    virtual Place* clone() const = 0;
+    //virtual Place* clone() const = 0;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const = 0;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
@@ -38,7 +38,7 @@ public:
     {}
     virtual ~Scalar() {}
 
-    Scalar* clone() const;
+    //Scalar* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
@@ -56,7 +56,7 @@ public:
     {}
     virtual ~Addr() {}
 
-    Addr* clone() const;
+    //Addr* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
@@ -75,7 +75,7 @@ public:
              LLVMBuilder& builder);
     virtual ~SimdAddr() {}
 
-    SimdAddr* clone() const;
+    //SimdAddr* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;

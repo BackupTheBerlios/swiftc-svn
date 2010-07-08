@@ -45,14 +45,19 @@ using namespace swift;
 #define YY_DECL int swift_lex (Parser::semantic_type* val, Parser::location_type* loc)
 #define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = g_lexer_line; loc->step()
 #define SET_VAL val->expr_ = l
+#define SET_STR val->id_ = new std::string(yytext)
 
 %}
 
-ID          [_a-zA-Z][a-zA-Z0-9_]*
-DIGIT       [0-9]
+VAR_ITEM [_a-zA-Z][_a-zA-Z0-9]
+VAR_ID   [_a-zA-Z][_a-zA-Z0-9]*
 
-FLOAT       {DIGIT}+\.{DIGIT}*|{DIGIT}*\.{DIGIT}+
-INTEGER     {DIGIT}+
+OP_ITEM  [*/%+\-!=<>&^|]
+OP       {OP_ITEM}*
+DIGIT    [0-9]
+
+FLOAT    {DIGIT}+\.{DIGIT}*|{DIGIT}*\.{DIGIT}+
+INTEGER  {DIGIT}+
 
 /*
 %x CHAR_STATE
@@ -64,52 +69,46 @@ INTEGER     {DIGIT}+
 
 %%
 
-[()\[\]{},.;:@] { // single character tokens
+\/\*            { BEGIN COMMENT; }
+<COMMENT>\*\/   { BEGIN INITIAL; }
+<COMMENT>\n     { ++g_lexer_line; /* count line number */ }
+<COMMENT>.      { /*skip*/  }
+
+\/\+                    { BEGIN NESTED_COMMENT; ++g_lexer_comment_level; }
+<NESTED_COMMENT>\/\+    { ++g_lexer_comment_level;  }
+<NESTED_COMMENT>\+\/    { --g_lexer_comment_level; if (g_lexer_comment_level == 0) BEGIN INITIAL; }
+<NESTED_COMMENT>\n      { ++g_lexer_line; }
+<NESTED_COMMENT>.       { /*skip*/ }
+
+[()\[\]{},.;:] { // single character tokens
     SET_LOC; return yytext[0];
 }
 
-\+  { SET_LOC; return Token::ADD; }
--   { SET_LOC; return Token::SUB; }
-\*  { SET_LOC; return Token::MUL; }
-\/  { SET_LOC; return Token::DIV; }
-%   { SET_LOC; return Token::MOD; }
-&   { SET_LOC; return Token::AND; }
-\|  { SET_LOC; return Token::OR; }
-\^  { SET_LOC; return Token::XOR; }
-!   { SET_LOC; return Token::NOT; }
-and { SET_LOC; return Token::L_AND; }
-or  { SET_LOC; return Token::L_OR; }
-xor { SET_LOC; return Token::L_XOR; }
-not { SET_LOC; return Token::L_NOT; }
-==  { SET_LOC; return Token::EQ; }
-\<> { SET_LOC; return Token::NE; }
-!=  { SET_LOC; return Token::NE; /* TODO which variant should be final? */ }
-\<  { SET_LOC; return Token::LT; }
-\<= { SET_LOC; return Token::LE; }
->   { SET_LOC; return Token::GT; }
->=  { SET_LOC; return Token::GE; }
-inc { SET_LOC; return Token::INC; }
-dec { SET_LOC; return Token::DEC; }
-@i  { SET_LOC; return Token::SIMD_INDEX; }
+->      { SET_LOC; return Token::ARROW; }
+\<-     { SET_LOC; return Token::MOVE; }
+\<->    { SET_LOC; return Token::SWAP; }
 
-=   { SET_LOC; return Token::ASGN; }
+
+\<=         { SET_LOC; SET_STR; return Token::REL; }
+\>=         { SET_LOC; SET_STR; return Token::REL; }
+
+\==         { SET_LOC; SET_STR; return Token::EQ; }
+!=          { SET_LOC; SET_STR; return Token::EQ; }
+
+{OP}=       { SET_LOC; SET_STR; return Token::ASGN; }
+
+[*/%]{OP}   { SET_LOC; SET_STR; return Token::MUL; }
+[+\-]{OP}   { SET_LOC; SET_STR; return Token::ADD; }
+[<>]{OP}    { SET_LOC; SET_STR; return Token::REL; }
+[=!]{OP}    { SET_LOC; SET_STR; return Token::EQ; }
+&{OP}       { SET_LOC; SET_STR; return Token::AND; }
+\^{OP}      { SET_LOC; SET_STR; return Token::XOR; }
+\|{OP}      { SET_LOC; SET_STR; return Token::OR; }
+
 ::  { SET_LOC; return Token::DOUBLE_COLON; }
 
 c_call  { SET_LOC; return Token:: C_CALL; }
 vc_call { SET_LOC; return Token::VC_CALL; }
-
-\+=  { SET_LOC; return Token::ASGN_ADD; }
-\-=  { SET_LOC; return Token::ASGN_SUB; }
-\*=  { SET_LOC; return Token::ASGN_MUL; }
-\/=  { SET_LOC; return Token::ASGN_DIV; }
-mod= { SET_LOC; return Token::ASGN_MOD; }
-and= { SET_LOC; return Token::ASGN_AND; }
-or=  { SET_LOC; return Token::ASGN_OR; }
-xor= { SET_LOC; return Token::ASGN_XOR; }
-
-\<-     { SET_LOC; return Token::MOVE; }
-\<->    { SET_LOC; return Token::SWAP; }
-->      { SET_LOC; return Token::ARROW; }
 
 if      { SET_LOC; return Token::IF; }
 else    { SET_LOC; return Token::ELSE; }
@@ -129,23 +128,17 @@ end      { SET_LOC; return Token::END; }
 create   { SET_LOC; return Token::CREATE; }
 destroy  { SET_LOC; return Token::DESTROY; }
 reader   { SET_LOC; return Token::READER; }
-assign   { SET_LOC; return Token::ASSIGN; }
 writer   { SET_LOC; return Token::WRITER; }
 routine  { SET_LOC; return Token::ROUTINE; }
-operator { SET_LOC; return Token::OPERATOR; }
 
+var       { SET_LOC; return Token::VAR; }
+const     { SET_LOC; return Token::CONST; }
+ptr       { SET_LOC; return Token::PTR; }
+array     { SET_LOC; return Token::ARRAY; }
+simd      { SET_LOC; return Token::SIMD; }
 
-shl     { SET_LOC; return Token::SHL; }
-shr     { SET_LOC; return Token::SHR; }
-rol     { SET_LOC; return Token::ROL; }
-ror     { SET_LOC; return Token::ROR; }
-
-var   { SET_LOC; return Token::VAR; }
-const { SET_LOC; return Token::CONST; }
-ptr   { SET_LOC; return Token::PTR; }
-array { SET_LOC; return Token::ARRAY; }
-simd  { SET_LOC; return Token::SIMD; }
-broadcast  { SET_LOC; return Token::BROADCAST; }
+broadcast { SET_LOC; return Token::BROADCAST; }
+range { SET_LOC; return Token::BROADCAST; }
 
 public      { SET_LOC; return Token::PUBLIC; }
 protected   { SET_LOC; return Token::PROTECTED; }
@@ -180,7 +173,7 @@ self  { SET_LOC; return Token::SELF; }
 true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_TRUE  ); return Token::L_TRUE; }
 false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_FALSE ); return Token::L_TRUE; }
 
-{ID} { SET_LOC; val->id_ = new std::string(yytext); return Token::ID; }
+{VAR_ID} { SET_LOC; SET_STR; return Token::VAR_ID; }
 
 
 #[^\n]* { /* end of line commment */ }
@@ -203,17 +196,6 @@ false           { SET_LOC; Box b; b.bool_   = false;                   val->expr
 <EOL_STATE>#[^\n]*  { /* end of line commment */ }
 <EOL_STATE>\n       { ++g_lexer_line; /* count line number */ }
 <EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
-
-\/\*            { BEGIN COMMENT; }
-<COMMENT>\*\/   { BEGIN INITIAL; }
-<COMMENT>\n     { ++g_lexer_line; /* count line number */ }
-<COMMENT>.      { /*skip*/  }
-
-\/\+                    { BEGIN NESTED_COMMENT; ++g_lexer_comment_level; }
-<NESTED_COMMENT>\/\+    { ++g_lexer_comment_level;  }
-<NESTED_COMMENT>\+\/    { --g_lexer_comment_level; if (g_lexer_comment_level == 0) BEGIN INITIAL; }
-<NESTED_COMMENT>\n      { ++g_lexer_line; }
-<NESTED_COMMENT>.       { /*skip*/ }
 
 %%
 

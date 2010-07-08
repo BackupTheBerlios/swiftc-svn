@@ -190,13 +190,14 @@ class SimdLoop : public LoopStmnt
 {
 public:
 
-    SimdLoop(location loc, Scope* scope, Expr* lExpr, Expr* rExpr);
+    SimdLoop(location loc, Scope* scope, std::string* id, Expr* lExpr, Expr* rExpr);
     virtual ~SimdLoop();
 
     virtual void accept(StmntVisitorBase* s);
 
 protected:
 
+    std::string* id_;
     Expr* lExpr_;
     Expr* rExpr_;
 
@@ -237,14 +238,14 @@ class AssignStmnt : public ActionStmnt
 {
 public:
 
-    AssignStmnt(location loc, TokenType token, TNList* tuple, TNList* exprList);
+    AssignStmnt(location loc, std::string* id, TNList* tuple, TNList* exprList);
     virtual ~AssignStmnt();
 
     virtual void accept(StmntVisitorBase* s);
 
 protected:
 
-    TokenType token_;
+    std::string* id_;
 
     TNList* tuple_;    ///< The lvalues.
     TNList* exprList_; ///< The rvalues.

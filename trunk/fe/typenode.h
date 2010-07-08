@@ -9,6 +9,8 @@
 #include "fe/node.h"
 #include "fe/typelist.h"
 
+class Place;
+
 namespace llvm {
     class Type;
     class AllocaInst;
@@ -24,6 +26,15 @@ class Var;
 
 //------------------------------------------------------------------------------
 
+struct TNResult
+{
+    const Type* type_;
+    Place* place_;
+    int simdLength_;
+    bool inits_;
+    bool lvalue_;
+};
+
 class TypeNode : public Node
 {
 public:
@@ -33,14 +44,15 @@ public:
 
     virtual void accept(TypeNodeVisitorBase* t) = 0;
 
-    size_t size() const;
-    bool isInit(size_t i = 0) const;
-    const Type* getType(size_t i = 0) const;
+    const TNResult& get(size_t i = 0) const { return results_[i]; }
+    size_t numResults() const { return results_.size(); }
 
 protected:
 
-    TypeList types_;
-    BoolVec inits_;
+    TNResult& set(size_t i = 0) { return results_[i]; }
+
+    typedef std::vector<TNResult> Results;
+    Results results_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -224,6 +236,9 @@ public:
     MethodCall(location loc, Expr* expr, std::string* id, TNList* exprList);
     virtual ~MethodCall();
 
+    virtual void accept(TypeNodeVisitorBase* t);
+    virtual const char* qualifierStr() const;
+
 protected:
 
     Expr* expr_;
@@ -233,23 +248,45 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class ReaderCall : public MethodCall
+class OperatorCall : public MethodCall
 {
 public:
 
-    ReaderCall(location loc, Expr* expr, std::string* id, TNList* exprList);
+    OperatorCall(location loc, std::string* id, Expr* op1);
 
-    virtual void accept(TypeNodeVisitorBase* t);
-    virtual const char* qualifierStr() const;
+protected:
+
+    Expr* op1_;
+    bool builtin_;
+
+    template<class T> friend class TypeNodeVisitor;
 };
 
 //------------------------------------------------------------------------------
 
-class WriterCall : public MethodCall
+class BinExpr : public OperatorCall
 {
 public:
 
-    WriterCall(location loc, Expr* expr, std::string* id, TNList* exprList);
+    BinExpr(location loc, std::string* id, Expr* op1, Expr* op2);
+
+    virtual void accept(TypeNodeVisitorBase* t);
+    virtual const char* qualifierStr() const;
+
+protected:
+
+    Expr* op2_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
+class UnExpr : public OperatorCall
+{
+public:
+
+    UnExpr(location loc, std::string* id, Expr* op);
 
     virtual void accept(TypeNodeVisitorBase* t);
     virtual const char* qualifierStr() const;
@@ -300,53 +337,6 @@ protected:
     std::string* classId_;
 
     template<class T> friend class TypeNodeVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class OperatorCall : public StaticMethodCall
-{
-public:
-
-    OperatorCall(location loc, TokenType token, Expr* op1);
-
-protected:
-
-    TokenType token_;
-    Expr* op1_;
-    bool builtin_;
-
-    template<class T> friend class TypeNodeVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class BinExpr : public OperatorCall
-{
-public:
-
-    BinExpr(location loc, TokenType token, Expr* op1, Expr* op2);
-
-    virtual void accept(TypeNodeVisitorBase* t);
-    virtual const char* qualifierStr() const;
-
-protected:
-
-    Expr* op2_;
-
-    template<class T> friend class TypeNodeVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class UnExpr : public OperatorCall
-{
-public:
-
-    UnExpr(location loc, TokenType token, Expr* op);
-
-    virtual void accept(TypeNodeVisitorBase* t);
-    virtual const char* qualifierStr() const;
 };
 
 //------------------------------------------------------------------------------
@@ -431,6 +421,24 @@ protected:
 
 //------------------------------------------------------------------------------
 
+class Range : public Expr
+{
+public:
+
+    Range(location loc, Expr* expr);
+    ~Range();
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
+
+    Expr* expr_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
 class Self : public Expr
 {
 public:
@@ -460,8 +468,6 @@ public:
     TypeNodeVisitorBase(Context* ctxt);
     virtual ~TypeNodeVisitorBase() {}
 
-    virtual TypeNodeVisitorBase* spawnNew() const = 0;
-
     virtual void visit(ErrorExpr* e) = 0;
     virtual void visit(Decl* d) = 0;
 
@@ -470,6 +476,7 @@ public:
     virtual void visit(Id* id) = 0;
     virtual void visit(Literal* l) = 0;
     virtual void visit(Nil* n) = 0;
+    virtual void visit(Range* r) = 0;
     virtual void visit(Self* n) = 0;
     virtual void visit(SimdIndex* s) = 0;
 
@@ -477,14 +484,9 @@ public:
     virtual void visit(IndexExpr* i) = 0;
     virtual void visit(MemberAccess* m) = 0;
 
-    // TypeNode -> Expr -> FctCall -> CCall
+    // TypeNode -> Expr -> FctCall
     virtual void visit(CCall* c) = 0;
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> MethodCall
-    virtual void visit(ReaderCall* r) = 0;
-    virtual void visit(WriterCall* w) = 0;
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
+    virtual void visit(MethodCall* m) = 0;
     virtual void visit(CreateCall* c) = 0;
     virtual void visit(RoutineCall* r) = 0;
     virtual void visit(BinExpr* b) = 0;

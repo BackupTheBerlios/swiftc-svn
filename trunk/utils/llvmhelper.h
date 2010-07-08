@@ -2,6 +2,7 @@
 #define UTILS_LLVM_HELPER_H
 
 #include <string>
+#include <vector>
 
 #include <llvm/Value.h>
 
@@ -21,6 +22,9 @@ namespace llvm {
     template <bool preserveNames> class IRBuilderDefaultInserter;
     template <bool preserveNames, typename T, typename Inserter> class IRBuilder;
 }
+
+typedef std::vector<llvm::Value*> Values;
+typedef std::vector<const llvm::Type*> LLVMTypes;
 
 typedef llvm::IRBuilder <true, llvm::ConstantFolder, llvm::IRBuilderDefaultInserter<true> > LLVMBuilder;
 

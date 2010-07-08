@@ -106,10 +106,10 @@ static int start(int argc, char** argv)
 
     fclose(file);
 
-    module->analyze();
-
     if (module->ctxt_->result_)
         module->buildLLVMTypes();
+
+    module->analyze();
 
     if (module->ctxt_->result_)
     {

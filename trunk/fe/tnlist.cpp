@@ -11,96 +11,94 @@ using llvm::Value;
 
 namespace swift {
 
+
+TNList::TNList()
+    : typeList_(0)
+    , indexMapBuilt_(false)
+{}
+
 TNList::~TNList()
 {
-    for (size_t i = 0; i < typeNodes_.size(); ++i)
-        delete typeNodes_[i];
-    for (size_t i = 0; i < places_.size(); ++i)
-        delete places_[i];
+    delete typeList_;
 }
 
 void TNList::append(TypeNode* typeNode)
 {
+    swiftAssert( indexMap_.empty(), "indexMap_ has already been built" );
     typeNodes_.push_back(typeNode);
 }
 
-void TNList::accept(TypeNodeAnalyzer& tna)
+void TNList::buildIndexMap()
+{
+    if ( !indexMap_.empty() )
+        return; // has already been built
+
+#ifdef SWIFT_DEBUG
+    size_t numAllResults = 0;
+#endif
+
+    for (size_t first = 0; first < typeNodes_.size(); ++first)
+    {
+        TypeNode* tn = typeNodes_[first];
+        size_t numResults = tn->numResults();
+
+#ifdef SWIFT_DEBUG
+        numAllResults += numResults;
+#endif
+
+        for (size_t second = 0; second < numResults; ++second)
+            indexMap_.push_back( std::make_pair(first, second) );
+    }
+
+    swiftAssert(numAllResults == indexMap_.size(), "sizes must match");
+}
+
+const TNResult& TNList::getResult(size_t i) const
+{
+    size_t first  = indexMap_[i].first;
+    size_t second = indexMap_[i].second;
+
+    return typeNodes_[first]->get(second);
+}
+
+void TNList::accept(TypeNodeVisitorBase* visitor)
 {
     for (size_t i = 0; i < typeNodes_.size(); ++i)
-    {
-        TypeNode* tn = typeNodes_[i];
+        typeNodes_[i]->accept(visitor);
 
-        std::auto_ptr<TypeNodeAnalyzer> newTna( tna.spawnNew() );
-        tn->accept( newTna.get() );
-
-        for (size_t j = 0; j < tn->size(); ++j)
-        {
-            types_.push_back( tn->getType(j) );
-            inits_.push_back( tn->isInit(j) );
-            lvalues_.push_back( ((TypeNodeAnalyzer*) newTna.get())->isLValue(j) );
-        }
-    }
-}
-
-void TNList::accept(TypeNodeCodeGen& tncg)
-{
-    for (size_t i = 0; i < typeNodes_.size(); ++i)
-    {
-        TypeNode* tn = typeNodes_[i];
-
-        std::auto_ptr<TypeNodeCodeGen> newTncg( tncg.spawnNew() );
-        tn->accept( newTncg.get() );
-
-        for (size_t j = 0; j < tn->size(); ++j)
-            places_.push_back( newTncg->getPlace(j)->clone() );
-    }
-}
-
-TypeNode* TNList::getTypeNode(size_t i) const
-{
-    return typeNodes_[i];
-}
-
-bool TNList::isLValue(size_t i) const
-{
-    return lvalues_[i];
-}
-
-bool TNList::isInit(size_t i) const
-{
-    return inits_[i];
-}
-
-Place* TNList::getPlace(size_t i) const
-{
-    return places_[i];
-}
-
-const TypeList& TNList::typeList() const
-{
-    return types_;
-}
-
-size_t TNList::numItems() const
-{
-    return typeNodes_.size();
-}
-
-size_t TNList::numRetValues() const
-{
-    return types_.size();
+    buildIndexMap();
 }
 
 Value* TNList::getArg(size_t i, LLVMBuilder& builder) const
 {
-    Place* p = places_[i];
-    return types_[i]->perRef() ? p->getAddr(builder) : p->getScalar(builder);
+    const TNResult& result = getResult(i);
+    Place* p = result.place_;
+
+    return result.type_->perRef() ? p->getAddr(builder) : p->getScalar(builder);
 }
 
 void TNList::getArgs(Values& args, LLVMBuilder& builder) const
 {
-    for (size_t i = 0; i < places_.size(); ++i)
+    for (size_t i = 0; i < numResults(); ++i)
         args.push_back( getArg(i, builder) );
+}
+
+const TypeList& TNList::typeList()
+{
+    if (!typeList_)
+    {
+        typeList_ = new TypeList();
+
+        for (size_t first = 0; first < typeNodes_.size(); ++first)
+        {
+            TypeNode* tn = typeNodes_[first];
+
+            for (size_t second = 0; second < tn->numResults(); ++second)
+                typeList_->push_back( tn->get(second).type_ );
+        }
+    }
+
+    return *typeList_;
 }
 
 } // namespace swift

@@ -4,6 +4,8 @@
 
 #include <llvm/Support/TypeBuilder.h>
 
+#include "utils/llvmplace.h"
+
 #include "fe/context.h"
 #include "fe/tnlist.h"
 #include "fe/token2str.h"
@@ -19,35 +21,19 @@ TypeNode::TypeNode(location loc, Type* type /*= 0*/)
 {
     if (type)
     {
-        types_.resize(1);
-        inits_.resize(1);
-        types_[0] = type;
-        inits_[0] = false;
+        results_.resize(1);
+        results_[0].type_ = type;
+        results_[0].inits_ = false;
     }
 }
 
 TypeNode::~TypeNode()
 {
-    for (size_t i = 0; i < types_.size(); ++i)
-        delete types_[i];
-}
-
-size_t TypeNode::size() const
-{
-    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
-    return types_.size();
-}
-
-bool TypeNode::isInit(size_t i /*= 0*/) const
-{
-    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
-    return inits_[i];
-}
-
-const Type* TypeNode::getType(size_t i /*= 0*/) const
-{
-    swiftAssert( inits_.size() == types_.size(), "sizes must match" );
-    return types_[i];
+    for (size_t i = 0; i < results_.size(); ++i)
+    {
+        delete results_[i].place_;
+        delete results_[i].type_;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -319,19 +305,18 @@ const char* RoutineCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-OperatorCall::OperatorCall(location loc, TokenType token, Expr* op1)
-    : StaticMethodCall(loc, token2str(token), new TNList() ) 
-    , token_(token)
-    , op1_(op1)
+OperatorCall::OperatorCall(location loc, std::string* id, Expr* op1)
+    : MethodCall(loc, op1, id, new TNList() ) 
+    , op1_(op1) // alias
     , builtin_(true)
 {
-    exprList_->append(op1);
+    //exprList_->append(op1);
 }
 
 //------------------------------------------------------------------------------
 
-BinExpr::BinExpr(location loc, TokenType token, Expr* op1, Expr* op2)
-    : OperatorCall(loc, token, op1)
+BinExpr::BinExpr(location loc, std::string* id, Expr* op1, Expr* op2)
+    : OperatorCall(loc, id, op1)
     , op2_(op2)
 {
     exprList_->append(op2);
@@ -344,14 +329,14 @@ void BinExpr::accept(TypeNodeVisitorBase* t)
 
 const char* BinExpr::qualifierStr() const
 {
-    static const char* str = "operator";
+    static const char* str = "TODO";
     return str;
 }
 
 //------------------------------------------------------------------------------
 
-UnExpr::UnExpr(location loc, TokenType token, Expr* op)
-    : OperatorCall(loc, token, op)
+UnExpr::UnExpr(location loc, std::string* id, Expr* op)
+    : OperatorCall(loc, id, op)
 {}
 
 void UnExpr::accept(TypeNodeVisitorBase* t)
@@ -361,7 +346,7 @@ void UnExpr::accept(TypeNodeVisitorBase* t)
 
 const char* UnExpr::qualifierStr() const
 {
-    static const char* str = "operator";
+    static const char* str = "TODO";
     return str;
 }
 
@@ -377,37 +362,14 @@ MethodCall::~MethodCall()
     delete expr_;
 }
 
-//------------------------------------------------------------------------------
-
-ReaderCall::ReaderCall(location loc, Expr* expr, std::string* id, TNList* exprList)
-    : MethodCall(loc, expr, id, exprList)
-{}
-
-void ReaderCall::accept(TypeNodeVisitorBase* t)
+void MethodCall::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
 
-const char* ReaderCall::qualifierStr() const
+const char* MethodCall::qualifierStr() const
 {
     static const char* str = "reader";
-    return str;
-}
-
-//------------------------------------------------------------------------------
-
-WriterCall::WriterCall(location loc, Expr* expr, std::string* id, TNList* exprList)
-    : MethodCall(loc, expr, id, exprList)
-{}
-
-void WriterCall::accept(TypeNodeVisitorBase* t)
-{
-    t->visit(this);
-}
-
-const char* WriterCall::qualifierStr() const
-{
-    static const char* str = "writer";
     return str;
 }
 
@@ -447,6 +409,23 @@ void Nil::accept(TypeNodeVisitorBase* t)
 }
 
 //------------------------------------------------------------------------------
+
+Range::Range(location loc, Expr* expr)
+    : Expr(loc)
+    , expr_(expr)
+{}
+
+Range::~Range()
+{
+    delete expr_;
+}
+
+void Range::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
+
+//----------------------------------------------------------------------
 
 Self::Self(location loc)
     : Expr(loc)

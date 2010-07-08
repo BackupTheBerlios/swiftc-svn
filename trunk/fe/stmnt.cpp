@@ -100,17 +100,18 @@ void ExprStmnt::accept(StmntVisitorBase* s)
 
 AssignStmnt::AssignStmnt(
         location loc,
-        TokenType token,
+        std::string* id,
         TNList* tuple, 
         TNList* exprList)
     : ActionStmnt(loc)
-    , token_(token)
+    , id_(id)
     , tuple_(tuple)
     , exprList_(exprList)
 {}
 
 AssignStmnt::~AssignStmnt()
 {
+    delete id_;
     delete tuple_;
     delete exprList_;
 }
@@ -168,14 +169,16 @@ void RepeatUntilLoop::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-SimdLoop::SimdLoop(location loc, Scope* scope, Expr* lExpr, Expr* rExpr)
+SimdLoop::SimdLoop(location loc, Scope* scope, std::string* id, Expr* lExpr, Expr* rExpr)
     : LoopStmnt(loc, scope)
+    , id_(id)
     , lExpr_(lExpr)
     , rExpr_(rExpr)
 {}
 
 SimdLoop::~SimdLoop()
 {
+    delete id_;
     delete lExpr_;
     delete rExpr_;
 }

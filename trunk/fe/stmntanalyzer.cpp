@@ -16,7 +16,13 @@ namespace swift {
 
 StmntAnalyzer::StmntVisitor(Context* ctxt)
     : StmntVisitorBase(ctxt)
+    , tna_( new TypeNodeAnalyzer(ctxt) )
 {}
+
+StmntAnalyzer::~StmntVisitor()
+{
+    delete tna_;
+}
 
 void StmntAnalyzer::visit(ErrorStmnt* s) {}
 
@@ -27,16 +33,14 @@ void StmntAnalyzer::visit(CFStmnt* s)
 
 void StmntAnalyzer::visit(DeclStmnt* s)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    s->decl_->accept(&tna);
+    s->decl_->accept(tna_);
 }
 
 void StmntAnalyzer::visit(IfElStmnt* s)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    s->expr_->accept(&tna);
+    s->expr_->accept(tna_);
 
-    if ( s->expr_->size() != 1 || !s->expr_->getType()->isBool() )
+    if ( s->expr_->numResults() != 1 || !s->expr_->get().type_->isBool() )
     {
         errorf(s->expr_->loc(), 
                 "the check condition of an if-clause must return a 'bool'");
@@ -51,10 +55,9 @@ void StmntAnalyzer::visit(IfElStmnt* s)
 
 void StmntAnalyzer::visit(RepeatUntilLoop* l)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    l->expr_->accept(&tna);
+    l->expr_->accept(tna_);
 
-    if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
+    if ( l->expr_->numResults() != 1 || !l->expr_->get().type_->isBool() )
     {
         errorf(l->expr_->loc(), 
                 "the exit condition of a repeat-unitl statement must return a 'bool'");
@@ -66,10 +69,9 @@ void StmntAnalyzer::visit(RepeatUntilLoop* l)
 
 void StmntAnalyzer::visit(WhileLoop* l)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    l->expr_->accept(&tna);
+    l->expr_->accept(tna_);
 
-    if ( l->expr_->size() != 1 || !l->expr_->getType()->isBool() )
+    if ( l->expr_->numResults() != 1 || !l->expr_->get().type_->isBool() )
     {
         errorf(l->expr_->loc(), 
                 "the exit condition of a while statement must return a 'bool'");
@@ -81,21 +83,18 @@ void StmntAnalyzer::visit(WhileLoop* l)
 
 void StmntAnalyzer::visit(SimdLoop* l)
 {
-    TypeNodeAnalyzer lTna(ctxt_);
-    TypeNodeAnalyzer rTna(ctxt_);
+    l->lExpr_->accept(tna_);
 
-    l->lExpr_->accept(&lTna);
-
-    if ( l->lExpr_->size() != 1 || !l->lExpr_->getType()->isIndex() )
+    if ( l->lExpr_->numResults() != 1 || !l->lExpr_->get().type_->isIndex() )
     {
         errorf(l->lExpr_->loc(), 
                 "the lower bound of an simd loop header must return an 'index'");
         ctxt_->result_ = false;
     }
 
-    l->rExpr_->accept(&rTna);
+    l->rExpr_->accept(tna_);
 
-    if ( l->rExpr_->size() != 1 || !l->rExpr_->getType()->isIndex() )
+    if ( l->rExpr_->numResults() != 1 || !l->rExpr_->get().type_->isIndex() )
     {
         errorf(l->rExpr_->loc(), 
                 "the upper bound of an simd loop header must return an 'index'");
@@ -144,37 +143,36 @@ void StmntAnalyzer::visit(AssignStmnt* s)
     typedef AssignStmnt::Call ASCall;
 
     Module* module = ctxt_->module_;
-    size_t numLhs = s->tuple_->numItems();
 
-    swiftAssert( numLhs != 0 && s->exprList_->numItems() != 0,
-            "there must be at least one item on the left- "
-            "and one on the right-hand side" );
+    TNList& lhs = *s->tuple_;
+    TNList& rhs = *s->exprList_;
 
     // analyze args and tuple
-    TypeNodeAnalyzer tna(ctxt_);
-    s->exprList_->accept(tna);
-    s->tuple_->accept(tna);
+    rhs.accept(tna_);
+    lhs.accept(tna_);
 
-    const TypeList& rhs = s->exprList_->typeList();
-    const TypeList& lhs = s->tuple_->typeList();
-
-    swiftAssert(numLhs == lhs.size(), 
+    swiftAssert( lhs.numTypeNodes() != 0 && rhs.numTypeNodes() != 0,
+            "there must be at least one item on the left- "
+            "and one on the right-hand side" );
+    swiftAssert( lhs.numTypeNodes() == lhs.numResults(),
             "the tuple may not introduce additional nodes");
 
-    if ( rhs.empty() )
+    size_t numLhs = lhs.numTypeNodes();
+
+    if ( rhs.numResults() == 0 )
     {
         errorf( s->loc(), "right-hand side does not return anything" );
         ctxt_->result_ = false;
         return;
     }
 
-    if ( numLhs == 1 && rhs.size() > 1 )
+    if ( numLhs == 1 && rhs.numResults() > 1 )
     {
         /*
          * do we have case 1 or 2?
          */
 
-        TypeNode* left = s->tuple_->getTypeNode(0);
+        const TypeNode* left = lhs.getTypeNode(0);
         std::string str, name;
 
         if ( dynamic<Decl>(left) )
@@ -185,22 +183,22 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         }
         else
         {
-            str = "=";
+            str = *s->id_;
             name = "assignment";
             s->kind_ = AssignStmnt::ASSIGN;
         }
 
-        if ( const BaseType* bt = left->getType()->cast<BaseType>() )
+        if ( const BaseType* bt = left->get().type_->cast<BaseType>() )
         {
             Class* _class = bt->lookupClass(module);
-            MemberFct* fct = _class->lookupMemberFct(module, &str, rhs);
+            MemberFct* fct = _class->lookupMemberFct( module, &str, rhs.typeList() );
 
             if (!fct)
             {
                 errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                         name.c_str(), 
                         str.c_str(), 
-                        rhs.toString().c_str(), 
+                        rhs.typeList().toString().c_str(), 
                         _class->cid() );
 
                 ctxt_->result_ = false;
@@ -209,26 +207,26 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 
             s->calls_.push_back( ASCall(ASCall::USER, fct) );
         }
-        else if ( const Ptr* ptr = left->getType()->cast<Ptr>() )
+        else if ( const Ptr* ptr = left->get().type_->cast<Ptr>() )
         {
             // ptr only suports a copy create and assign
             errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                     name.c_str(), 
                     str.c_str(), 
-                    rhs.toString().c_str(), 
+                    rhs.typeList().toString().c_str(), 
                     ptr->toString().c_str() );
 
             ctxt_->result_ = false;
             return;
         }
-        else if ( const Container* c = left->getType()->cast<Container>() )
+        else if ( const Container* c = left->get().type_->cast<Container>() )
         {
             // array and simd only suport a copy create and assign, 
             // and an constructor taking an index value
             errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                     name.c_str(), 
                     str.c_str(), 
-                    rhs.toString().c_str(), 
+                    rhs.typeList().toString().c_str(), 
                     c->toString().c_str() );
 
             ctxt_->result_ = false;
@@ -243,14 +241,14 @@ void StmntAnalyzer::visit(AssignStmnt* s)
          * we have case 3
          */
 
-        if ( s->exprList_->numItems() > 1 )
+        if ( rhs.numTypeNodes() > 1 )
         {
             errorf(s->loc(), "todo");
             ctxt_->result_ = false;
             return;
         }
 
-        if ( numLhs != rhs.size() )
+        if ( numLhs != rhs.numResults() )
         {
             errorf( s->loc(), "the number of left-hand side items must match "
                     "the number of returned values on the right-hand side here" );
@@ -266,14 +264,17 @@ void StmntAnalyzer::visit(AssignStmnt* s)
         // check each lhs/rhs pair
         for (size_t i = 0; i < numLhs; ++i)
         {
-            TypeNode* tn = s->tuple_->getTypeNode(i);
+            const TypeNode* tn = lhs.getTypeNode(i);
             std::string str, name;
             bool isCreate;
+
+            const Type* lType  = lhs.typeList()[i];
+            const Type* rType  = rhs.typeList()[i];
 
             if ( dynamic<Decl>(tn) )
             {
                 // is this a copy create and the caller initializes this value?
-                if ( s->exprList_->isInit(i) && lhs[i]->check(rhs[i], module) )
+                if ( rhs.getResult(i).inits_ && lType->check(rType, module) )
                 {
                     s->calls_.push_back( ASCall(ASCall::GETS_INITIALIZED_BY_CALLER) );
                     continue;
@@ -290,19 +291,19 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                 isCreate = false;
             }
 
-            tmp[0] = rhs[i];
+            tmp[0] = rhs.typeList()[i];
 
-            if ( const BaseType* bt = lhs[i]->cast<BaseType>() )
+            if ( const BaseType* bt = lType->cast<BaseType>() )
             {
                 Class* _class = bt->lookupClass(module);
-                MemberFct* fct = _class->lookupMemberFct(module, &str, tmp);
+                Method* fct = cast<Method>( _class->lookupMemberFct(module, &str, tmp) );
 
                 if (!fct)
                 {
                     errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                             name.c_str(), 
                             str.c_str(), 
-                            rhs.toString().c_str(), 
+                            rType->toString().c_str(), 
                             _class->cid() );
 
                     ctxt_->result_ = false;
@@ -317,33 +318,21 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                     swiftAssert( dynamic<UserType>(bt), 
                             "must be castable to BaseType" );
 
-                    if (isCreate)
-                    {
-                        Create* create = cast<Create>(fct);
-                        if ( create->isAutoCopy() )
-                            s->calls_.push_back( ASCall(ASCall::COPY) );
-                        else
-                            s->calls_.push_back( ASCall(ASCall::USER, fct) );
-                    }
+                    if ( fct->isAutoGenerated() )
+                        s->calls_.push_back( ASCall(ASCall::COPY) );
                     else
-                    {
-                        Assign* assign = cast<Assign>(fct);
-                        if ( assign->isAutoCopy() )
-                            s->calls_.push_back( ASCall(ASCall::COPY) );
-                        else
-                            s->calls_.push_back( ASCall(ASCall::USER, fct) );
-                    }
+                        s->calls_.push_back( ASCall(ASCall::USER, fct) );
                 }
             }
-            else if ( const Ptr* ptr = lhs[i]->cast<Ptr>() )
+            else if ( const Ptr* ptr = lType->cast<Ptr>() )
             {
-                if ( !ptr->check(rhs[i], module) )
+                if ( !ptr->check(rType, module) )
                 {
                     // ptr only suports a copy create and assign
                     errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                             name.c_str(), 
                             str.c_str(), 
-                            rhs[i]->toString().c_str(),
+                            rType->toString().c_str(),
                             ptr->toString().c_str() );
 
                     ctxt_->result_ = false;
@@ -352,11 +341,11 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                 // use a simple copy
                 s->calls_.push_back( ASCall(ASCall::COPY) );
             }
-            else if ( const Container* c = lhs[i]->cast<Container>() )
+            else if ( const Container* c = lType->cast<Container>() )
             {
-                if ( c->check(rhs[i], module) )
+                if ( c->check(rType, module) )
                     s->calls_.push_back( ASCall(ASCall::CONTAINER_COPY) );
-                else if ( rhs[i]->isIndex() && isCreate )
+                else if ( rType->isIndex() /*&& isCreate*/ )
                     s->calls_.push_back( ASCall(ASCall::CONTAINER_CREATE) );
                 else
                 {
@@ -365,7 +354,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
                     errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
                             name.c_str(), 
                             str.c_str(), 
-                            rhs[i]->toString().c_str(),
+                            rType->toString().c_str(),
                             c->toString().c_str() );
 
                     ctxt_->result_ = false;
@@ -373,13 +362,13 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             }
             else
             {
-                swiftAssert( lhs[i]->cast<ErrorType>(), "unreachable" );
+                swiftAssert( lType->cast<ErrorType>(), "unreachable" );
             }
         } // for each lhs/rhs pair
 
         if (ctxt_->result_)
         {
-            swiftAssert( s->calls_.size() == s->exprList_->numRetValues(), 
+            swiftAssert( s->calls_.size() == rhs.numResults(), 
                     "sizes must match" );
         }
     }
@@ -387,8 +376,7 @@ void StmntAnalyzer::visit(AssignStmnt* s)
 
 void StmntAnalyzer::visit(ExprStmnt* s)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    s->expr_->accept(&tna);
+    s->expr_->accept(tna_);
 }
 
 } // namespace swift

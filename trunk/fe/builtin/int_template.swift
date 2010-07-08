@@ -19,32 +19,32 @@ simd class INT
 
     # operators for calculating
 
-    operator + (INT i1, INT i2) -> INT res
+    reader + (INT i) -> INT res
     end
-    operator - (INT i1, INT i2) -> INT res
+    reader - (INT i) -> INT res
     end
-    operator * (INT i1, INT i2) -> INT res
+    reader * (INT i) -> INT res
     end
-    operator / (INT i1, INT i2) -> INT res
+    reader / (INT i) -> INT res
     end
 
     # operators for comparisons
 
-    operator == (INT i1, INT i2) -> bool res
+    reader == (INT i) -> bool res
     end
-    operator <> (INT i1, INT i2) -> bool res
+    reader != (INT i) -> bool res
     end
-    operator <  (INT i1, INT i2) -> bool res
+    reader <  (INT i) -> bool res
     end
-    operator >  (INT i1, INT i2) -> bool res
+    reader >  (INT i) -> bool res
     end
-    operator <= (INT i1, INT i2) -> bool res
+    reader <= (INT i) -> bool res
     end
-    operator >= (INT i1, INT i2) -> bool res
+    reader >= (INT i) -> bool res
     end
 
     # unary minus
-    operator - (INT i) -> INT res
+    reader - () -> INT res
     end
 
     # normal casts

@@ -26,17 +26,6 @@ TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
     , lctxt_( ctxt->lctxt() )
 {}
 
-TypeNodeCodeGen::~TypeNodeVisitor()
-{
-    for (size_t i = 0; i < places_.size(); ++i)
-        delete places_[i];
-}
-
-TypeNodeCodeGen* TypeNodeCodeGen::spawnNew() const
-{
-    return new TypeNodeCodeGen(ctxt_);
-}
-
 void TypeNodeCodeGen::visit(Decl* d)
 {
     // has it already been initialized via a return value?
@@ -48,7 +37,7 @@ void TypeNodeCodeGen::visit(Decl* d)
     else
         d->local_->createEntryAlloca(ctxt_);
 
-    setResult( new Addr(d->local_->getAddr(builder_)) );
+    setResult( d, new Addr(d->local_->getAddr(builder_)) );
 }
 
 void TypeNodeCodeGen::visit(ErrorExpr* d)
@@ -58,16 +47,15 @@ void TypeNodeCodeGen::visit(ErrorExpr* d)
 
 void TypeNodeCodeGen::visit(Broadcast* b)
 {
-    TypeNodeCodeGen tncg(ctxt_);
-    b->expr_->accept(&tncg);
+    b->expr_->accept(this);
 
     int simdLength;
-    const llvm::Type* vType = b->getType()->getVecLLVMType(ctxt_->module_, simdLength);
+    const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
 
-    Value* sVal = tncg.getPlace()->getScalar(builder_);
+    Value* sVal = b->expr_->get().place_->getScalar(builder_);
     Value* vVal = simdBroadcast(sVal, vType, builder_);
 
-    setResult( new Scalar(vVal) );
+    setResult( b, new Scalar(vVal) );
 }
 
 void TypeNodeCodeGen::visit(Id* id)
@@ -77,7 +65,7 @@ void TypeNodeCodeGen::visit(Id* id)
 
     if (ctxt_->simdIndex_)
     {
-        if ( const Simd* simd = dynamic<Simd>(var->getType()) )
+        if ( dynamic<Simd>(var->getType()) )
         {
             // this container gets implicitly indexed by the simd index
             Value* addr = var->getAddr(builder_);
@@ -86,12 +74,12 @@ void TypeNodeCodeGen::visit(Id* id)
             oss << addr->getNameStr() << ".ptr";
             Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, Container::POINTER, oss.str() );
 
-            setResult( new Addr(builder_.CreateInBoundsGEP(ptr, ctxt_->simdIndex_)) );
+            setResult( id, new Addr(builder_.CreateInBoundsGEP(ptr, ctxt_->simdIndex_)) );
             return;
         }
     }
 
-    setResult( new Addr(var->getAddr(builder_)) );
+    setResult( id, new Addr(var->getAddr(builder_)) );
 }
 
 void TypeNodeCodeGen::visit(Literal* l)
@@ -139,7 +127,7 @@ void TypeNodeCodeGen::visit(Literal* l)
             swiftAssert(false, "illegal switch-case-value");
     }
 
-    setResult( new Scalar(val) );
+    setResult( l, new Scalar(val) );
 }
 
 void TypeNodeCodeGen::visit(Nil* n)
@@ -147,26 +135,48 @@ void TypeNodeCodeGen::visit(Nil* n)
     // TODO
 }
 
+void TypeNodeCodeGen::visit(Range* r)
+{
+    r->expr_->accept(this);
+
+    const Type* type = r->expr_->get().type_;
+
+    if ( type->isSimd() )
+    {
+    }
+    else
+    {
+
+    }
+
+    //int simdLength;
+    //const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
+
+    //Value* sVal = tncg.getPlace()->getScalar(builder_);
+    //Value* vVal = simdBroadcast(sVal, vType, builder_);
+
+    //setResult( new Scalar(vVal) );
+}
+
 void TypeNodeCodeGen::visit(Self* n)
 {
     Method* m = cast<Method>(ctxt_->memberFct_);
-    setResult( new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
+    setResult( n, new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
 }
 
 void TypeNodeCodeGen::visit(SimdIndex* s)
 {
-    setResult( new Scalar(ctxt_->simdIndex_) );
+    setResult( s, new Scalar(ctxt_->simdIndex_) );
 }
 
 // TODO writeback?
 Value* TypeNodeCodeGen::resolvePrefixExpr(Access* a)
 {
     // get address of the prefix expr
-    TypeNodeCodeGen tncg(ctxt_);
-    a->prefixExpr_->accept(&tncg);
-    Value* addr = tncg.getPlace()->getAddr(builder_);
+    a->prefixExpr_->accept(this);
+    Value* addr = a->prefixExpr_->get().place_->getAddr(builder_);
 
-    if ( const Ptr* ptr = a->prefixExpr_->getType()->cast<Ptr>() )
+    if ( const Ptr* ptr = a->prefixExpr_->get().type_->cast<Ptr>() )
         addr = ptr->recDerefAddr(builder_, addr);
 
     return addr;
@@ -176,17 +186,16 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
 {
     Value* addr = resolvePrefixExpr(i);
 
-    TypeNodeCodeGen tncg(ctxt_);
-    i->indexExpr_->accept(&tncg);
-    Value* idx = tncg.getPlace()->getScalar(builder_);
+    i->indexExpr_->accept(this);
+    Value* idx = i->indexExpr_->get().place_->getScalar(builder_);
 
     std::ostringstream oss;
     oss << addr->getNameStr() << ".ptr";
     Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, Container::POINTER, oss.str() );
 
-    const Type* prefixType = i->prefixExpr_->getType();
+    const Type* prefixType = i->prefixExpr_->get().type_;
     if ( dynamic<Array>(prefixType) )
-        setResult( new Addr(builder_.CreateInBoundsGEP(ptr, idx)) );
+        setResult( i, new Addr(builder_.CreateInBoundsGEP(ptr, idx)) );
     else
     {
         const Simd* simd = cast<Simd>(prefixType);
@@ -202,7 +211,7 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
         Value* mod = builder_.CreateTrunc( rem , llvm::IntegerType::getInt32Ty(lctxt_) );
         Value* aggPtr = builder_.CreateInBoundsGEP(ptr, div, addr->getNameStr() + ".idx");
 
-        setResult( new SimdAddr(aggPtr, mod, inner->getLLVMType(ctxt_->module_), builder_) );
+        setResult( i, new SimdAddr(aggPtr, mod, inner->getLLVMType(ctxt_->module_), builder_) );
     }
 }
 
@@ -212,18 +221,18 @@ void TypeNodeCodeGen::visit(MemberAccess* m)
 
     // build and get value
     std::ostringstream oss;
-    oss << m->prefixExpr_->getType()->toString() << '.' << m->cid();
+    oss << m->prefixExpr_->get().type_->toString() << '.' << m->cid();
     int index = m->memberVar_->getIndex();
     Value* result = createInBoundsGEP_0_i32( lctxt_, builder_, addr, index, oss.str() );
 
-    setResult( new Addr(result) );
+    setResult( m, new Addr(result) );
 }
 
 void TypeNodeCodeGen::visit(CCall* c)
 {
-    TypeNodeCodeGen tncg(ctxt_);
-    c->exprList_->accept(tncg);
-    const TypeList& inTypes = c->exprList_->typeList();
+    TNList& args = *c->exprList_;
+    args.accept(this);
+    const TypeList& inTypes = args.typeList();
 
     /*
      * build function type
@@ -246,38 +255,40 @@ void TypeNodeCodeGen::visit(CCall* c)
         ctxt_->module_->getLLVMModule()->getOrInsertFunction( c->cid(), fctType) );
 
     // copy over values
-    Values args( c->exprList_->numRetValues() );
-    for (size_t i = 0; i < args.size(); ++i)
-        args[i] = c->exprList_->getPlace(i)->getScalar(builder_);
+    Values values( args.numResults() );
+    for (size_t i = 0; i < values.size(); ++i)
+        values[i] = args.getResult(i).place_->getScalar(builder_);
 
     fct->setCallingConv(llvm::CallingConv::C);
     fct->setLinkage(llvm::Function::ExternalLinkage);
     //fct->addFnAttr(llvm::Attribute::NoUnwind);
     swiftAssert( fct->isDeclaration(), "may only be a declaration" );
 
-    llvm::CallInst* call = llvm::CallInst::Create( fct, args.begin(), args.end() );
+    llvm::CallInst* call = llvm::CallInst::Create( fct, values.begin(), values.end() );
     call->setTailCall();
     call->addAttribute(~0, llvm::Attribute::NoUnwind);
+    Value* retVal = builder_.Insert(call);
 
-    setResult( new Scalar(builder_.Insert(call)) );
+    if (c->retType_)
+        setResult( c, new Scalar(retVal) );
 }
 
-void TypeNodeCodeGen::visit(ReaderCall* r)
+void TypeNodeCodeGen::visit(MethodCall* m)
 {
-    std::auto_ptr<TypeNodeCodeGen> selfTNCG( getSelf(r) );
+    Place* self = getSelf(m);
 
-    if ( const ScalarType* from = r->expr_->getType()->cast<ScalarType>() )
+    if ( const ScalarType* from = m->expr_->get().type_->cast<ScalarType>() )
     {
         // -> assumes that r is a cast
 
-        const ScalarType* to = cast<ScalarType>( r->memberFct_->sig_.out_[0]->getType() );
+        const ScalarType* to = cast<ScalarType>( m->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
         if ( llvmTo == llvmFrom )
             return; // value_ and isAddr_ are still correct, so nothing to do
 
-        Value* val = selfTNCG->getPlace()->getScalar(builder_);
+        Value* val = self->getScalar(builder_);
         llvm::StringRef name = val->getName();
 
         if ( from->isInteger() && to->isInteger() )
@@ -311,16 +322,10 @@ void TypeNodeCodeGen::visit(ReaderCall* r)
                 val = builder_.CreateFPExt(val, llvmTo, name);
         }
 
-        setResult( new Scalar(val) );
+        setResult( m, new Scalar(val) );
     }
     else
-        emitCall( r, selfTNCG->getPlace() );
-}
-
-void TypeNodeCodeGen::visit(WriterCall* w)
-{
-    std::auto_ptr<TypeNodeCodeGen> selfTNCG( getSelf(w) );
-    emitCall( w, selfTNCG->getPlace() );
+        emitCall(m, self);
 }
 
 void TypeNodeCodeGen::visit(CreateCall* r)
@@ -338,49 +343,57 @@ void TypeNodeCodeGen::visit(UnExpr* u)
 {
     if ( u->builtin_ )
     {
-        TypeNodeCodeGen opTNCG(ctxt_);
-        u->op1_->accept(&opTNCG);
-        Value* val = opTNCG.getPlace()->getScalar(builder_);
+        u->op1_->accept(this);
+        Value* val = u->op1_->get().place_->getScalar(builder_);
 
-        switch (u->token_)
+        switch ( (*u->id_)[0] )
         {
-            case Token::ADD: break; // nothing to do
-            case Token::SUB: val = builder_.CreateNeg(val); break;
+            case '+': break; // nothing to do
+            case '-': val = builder_.CreateNeg(val); break;
             default:         swiftAssert(false, "TODO");
         }
 
-        setResult( new Scalar(val) );
+        setResult( u, new Scalar(val) );
     }
     else
         emitCall(u, 0);
 }
 
+static inline int tok2val(const char* str)
+{
+    return str[0] + ((str + 1 != 0) ? str[1] * 0x100 : 0);
+}
+
+#define TOK2VAL(c1, c2) (c1) + ((c2) * 0x100)
+
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
     if ( b->builtin_ )
     {
-        TypeNodeCodeGen op1TNCG(ctxt_);
-        b->op1_->accept(&op1TNCG);
-        Value* v1 = op1TNCG.getPlace()->getScalar(builder_);
+        b->op1_->accept(this);
+        b->op2_->accept(this);
 
-        TypeNodeCodeGen op2TNCG(ctxt_);
-        b->op2_->accept(&op2TNCG);
-        Value* v2 = op2TNCG.getPlace()->getScalar(builder_);
+        Value* v1 = b->op1_->get().place_->getScalar(builder_);
+        Value* v2 = b->op2_->get().place_->getScalar(builder_);
 
-        const ScalarType* scalar = cast<ScalarType>( b->op1_->getType() );
+        const ScalarType* scalar = cast<ScalarType>( b->op1_->get().type_ );
 
         Value* val;
 
-        switch (b->token_)
+        // calc unique value
+        std::string& id = *b->id_;
+        int token = id[0] + ((id.size() > 1) ? id[1] * 0x100 : 0 );
+
+        switch (token)
         {
             /*
              * arithmetic operators
              */
 
-            case Token::ADD: val = builder_.CreateAdd(v1, v2); break;
-            case Token::SUB: val = builder_.CreateSub(v1, v2); break;
-            case Token::MUL: val = builder_.CreateMul(v1, v2); break;
-            case Token::DIV:
+            case '+': val = builder_.CreateAdd(v1, v2); break;
+            case '-': val = builder_.CreateSub(v1, v2); break;
+            case '*': val = builder_.CreateMul(v1, v2); break;
+            case '/':
                 if ( scalar->isFloat() )
                     val = builder_.CreateFDiv(v1, v2);
                 else
@@ -396,13 +409,13 @@ void TypeNodeCodeGen::visit(BinExpr* b)
              * comparisons
              */
 
-            case Token::EQ:
+            case TOK2VAL('=', '='):
                 if ( scalar->isFloat() )
                     val = builder_.CreateFCmpOEQ(v1, v2);
                 else
                     val = builder_.CreateICmpEQ(v1, v2);
                 break;
-            case Token::NE:
+            case TOK2VAL('!', '='):
                 if ( scalar->isFloat() )
                     val = builder_.CreateFCmpONE(v1, v2);
                 else
@@ -410,7 +423,7 @@ void TypeNodeCodeGen::visit(BinExpr* b)
                 break;
 
 #define SWIFT_EMIT_CMP(token, fcmp, scmp, ucmp) \
-    case Token:: token : \
+    case token : \
         if ( scalar->isFloat() ) \
             val = builder_. fcmp (v1, v2); \
         else \
@@ -422,10 +435,10 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         } \
         break;
 
-            SWIFT_EMIT_CMP(LT, CreateFCmpOLT, CreateICmpSLT, CreateICmpULT);
-            SWIFT_EMIT_CMP(LE, CreateFCmpOLE, CreateICmpSLE, CreateICmpULE);
-            SWIFT_EMIT_CMP(GT, CreateFCmpOGT, CreateICmpSGT, CreateICmpUGT);
-            SWIFT_EMIT_CMP(GE, CreateFCmpOGE, CreateICmpSGE, CreateICmpUGE);
+            SWIFT_EMIT_CMP('<', CreateFCmpOLT, CreateICmpSLT, CreateICmpULT);
+            SWIFT_EMIT_CMP('>', CreateFCmpOGT, CreateICmpSGT, CreateICmpUGT);
+            SWIFT_EMIT_CMP(TOK2VAL('<', '='), CreateFCmpOLE, CreateICmpSLE, CreateICmpULE);
+            SWIFT_EMIT_CMP(TOK2VAL('>', '='), CreateFCmpOGE, CreateICmpSGE, CreateICmpUGE);
 
 #undef SWIFT_EMIT_CMP
 
@@ -434,28 +447,29 @@ void TypeNodeCodeGen::visit(BinExpr* b)
                 swiftAssert(false, "TODO");
         }
 
-        setResult( new Scalar(val) );
+        setResult( b, new Scalar(val) );
     }
     else
         emitCall(b, 0);
 }
 
-TypeNodeCodeGen* TypeNodeCodeGen::getSelf(MethodCall* m)
+Place* TypeNodeCodeGen::getSelf(MethodCall* m)
 {
-    TypeNodeCodeGen* selfTNCG = new TypeNodeCodeGen(ctxt_);
-    m->expr_->accept(selfTNCG);
+    swiftAssert(m->expr_->numResults() == 1, "must exactly have one result" );
 
-    Value* addr = selfTNCG->getPlace()->getAddr(builder_);
+    m->expr_->accept(this);
+    Place*& self = m->expr_->set().place_;
 
-    if ( const Ptr* ptr = m->expr_->getType()->cast<Ptr>() )
+    Value* addr = self->getAddr(builder_);
+
+    if ( const Ptr* ptr = m->expr_->get().type_->cast<Ptr>() )
         addr = ptr->recDerefAddr(ctxt_->builder_, addr);
 
     // replace result;
-    swiftAssert(selfTNCG->places_.size() == 1, "must exactly have one item");
-    delete selfTNCG->places_[0];
-    selfTNCG->places_[0] = new Addr(addr);
+    delete self;
+    self = new Addr(addr);
 
-    return selfTNCG;
+    return self;
 }
 
 void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
@@ -463,8 +477,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     Values args;
     MemberFct* fct = call->getMemberFct();
 
-    TypeNodeCodeGen argTNCG(ctxt_);
-    call->exprList_->accept(argTNCG);
+    call->exprList_->accept(this);
     TypeList& out = fct->sig_.outTypes_;
 
     /* 
@@ -504,32 +517,22 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
      * write results back
      */
 
-    swiftAssert( places_.empty(), "must still be empty" );
+    swiftAssert( call->numResults() == out.size(), "sizes must match" );
 
     size_t idxRetType = 0;
     size_t idxPerRef = 0;
     for (size_t i = 0; i < out.size(); ++i)
     {
-        const Type* type = out[i];
-
-        if ( type->perRef() )
-            places_.push_back( new Addr(perRefRetValues[idxPerRef]) );
-        else
-            places_.push_back( new Scalar(builder_.CreateExtractValue(retValue, idxRetType)) );
-
-        ++idxPerRef;
+        call->set(i).place_ = out[i]->perRef() 
+            ? (Place*) new Addr( perRefRetValues[idxPerRef++] )
+            : (Place*) new Scalar( builder_.CreateExtractValue(retValue, idxRetType++) );
     }
 }
 
-Place* TypeNodeCodeGen::getPlace(size_t i /*= 0*/) const
+void TypeNodeCodeGen::setResult(TypeNode* tn, Place* place)
 {
-    return places_[i];
-}
-
-void TypeNodeCodeGen::setResult(Place* place)
-{
-    places_.resize(1);
-    places_[0] = place;
+    swiftAssert( tn->numResults() == 1, "must exactly have one result" );
+    tn->set().place_ = place;
 }
 
 } // namespace swift

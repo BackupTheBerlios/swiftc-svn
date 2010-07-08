@@ -20,9 +20,6 @@ class TypeNodeVisitor<class CodeGen> : public TypeNodeVisitorBase
 public:
 
     TypeNodeVisitor(Context* ctxt);
-    virtual ~TypeNodeVisitor();
-
-    virtual TypeNodeVisitor<class CodeGen>* spawnNew() const;
 
     virtual void visit(ErrorExpr* e);
     virtual void visit(Decl* d);
@@ -32,6 +29,7 @@ public:
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
+    virtual void visit(Range* r);
     virtual void visit(Self* n);
     virtual void visit(SimdIndex* s);
 
@@ -40,29 +38,21 @@ public:
     virtual void visit(IndexExpr* i);
     virtual void visit(MemberAccess* m);
 
-    // TypeNode -> Expr -> FctCall -> CCall
+    // TypeNode -> Expr -> FctCall
     virtual void visit(CCall* c);
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> MethodCall
-    virtual void visit(ReaderCall* r);
-    virtual void visit(WriterCall* w);
-
-    // TypeNode -> Expr -> FctCall -> MemberFctCall -> StaticMethodCall
+    virtual void visit(MethodCall* m);
     virtual void visit(CreateCall* c);
     virtual void visit(RoutineCall* r);
     virtual void visit(UnExpr* u);
     virtual void visit(BinExpr* b);
 
-    Place* getPlace(size_t i = 0) const;
-
-    void emitCall(MemberFctCall* call, Place* self);
-    TypeNodeVisitor<class CodeGen>* getSelf(MethodCall* m);
-
 private:
 
-    void setResult(Place* place);
+    void emitCall(MemberFctCall* call, Place* self);
+    Place* getSelf(MethodCall* m);
 
-    Places places_;
+    void setResult(TypeNode* tn, Place* place);
+
     LLVMBuilder& builder_;
     llvm::LLVMContext& lctxt_;
 };

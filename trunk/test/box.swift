@@ -19,11 +19,6 @@ simd class Box
         .llb = llb
     end
 
-    assign = (Vec3 urf, Vec3 llb)
-        .urf = urf
-        .llb = llb
-    end
-
     reader print()
         c_call print_float(.urf.x)
         c_call print_float(.urf.y)
@@ -47,7 +42,9 @@ class Foo
 
         scope 
            Box box = boxes[77x]
-           box:print()
+           box.print()
         end
+
+        result = 0
     end
 end

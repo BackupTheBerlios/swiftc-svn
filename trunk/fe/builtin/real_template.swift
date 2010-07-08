@@ -19,32 +19,32 @@ simd class REAL
 
     # operators for calculating
 
-    operator + (REAL r1, REAL r2) -> REAL result
+    reader + (REAL r) -> REAL result
     end
-    operator - (REAL r1, REAL r2) -> REAL result
+    reader - (REAL r) -> REAL result
     end
-    operator * (REAL r1, REAL r2) -> REAL result
+    reader * (REAL r) -> REAL result
     end
-    operator / (REAL r1, REAL r2) -> REAL result
+    reader / (REAL r) -> REAL result
     end
 
     # operators for comparisons
 
-    operator == (REAL r1, REAL r2) -> bool result
+    reader == (REAL r) -> bool result
     end
-    operator <> (REAL r1, REAL r2) -> bool result
+    reader != (REAL r) -> bool result
     end
-    operator <  (REAL r1, REAL r2) -> bool result
+    reader <  (REAL r) -> bool result
     end
-    operator >  (REAL r1, REAL r2) -> bool result
+    reader >  (REAL r) -> bool result
     end
-    operator <= (REAL r1, REAL r2) -> bool result
+    reader <= (REAL r) -> bool result
     end
-    operator >= (REAL r1, REAL r2) -> bool result
+    reader >= (REAL r) -> bool result
     end
 
     # unary minus
-    operator - (REAL i) -> REAL res
+    reader - () -> REAL res
     end
 
     # normal casts

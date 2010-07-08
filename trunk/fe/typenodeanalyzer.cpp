@@ -18,15 +18,10 @@ TypeNodeAnalyzer::TypeNodeVisitor(Context* ctxt)
     : TypeNodeVisitorBase(ctxt)
 {}
 
-TypeNodeAnalyzer* TypeNodeAnalyzer::spawnNew() const
-{
-    return new TypeNodeAnalyzer(ctxt_);
-}
-
 void TypeNodeAnalyzer::visit(Decl* d)
 {
     // check whether this type exists
-    ctxt_->result_ &= d->getType()->validate(ctxt_->module_);
+    ctxt_->result_ &= d->get().type_->validate(ctxt_->module_);
 
     // is here a name clash in this scope?
     if ( Var* var = ctxt_->scope()->lookupVarOneLevelOnly(d->id()) )
@@ -44,7 +39,7 @@ void TypeNodeAnalyzer::visit(Decl* d)
 
         goto error_out;
     }
-    else if ( const Simd* simd = d->getType()->cast<Simd>() )
+    else if ( const Simd* simd = d->get().type_->cast<Simd>() )
     {
         const Type* inner = simd->getInnerType();
 
@@ -76,20 +71,19 @@ void TypeNodeAnalyzer::visit(Decl* d)
 
 error_out:
     // substiture decl's type with an error type and set error
-    delete d->types_[0];
+    delete d->get().type_;
     setError(d, true);
     return;
 
 ok_out:
     // everything fine - so register the local
     d->local_ = new Local( 
-            d->loc(), d->getType()->clone(), new std::string(*d->id()) );
+            d->loc(), d->get().type_->clone(), new std::string(*d->id()) );
     ctxt_->scope()->insert(d->local_);
 
-    lvalues_.resize(1);
-    d->inits_.resize(1);
-    lvalues_[0] = true;
-    d->inits_[0] = false;
+    d->results_.resize(1);
+    d->set().inits_ = false;
+    d->set().lvalue_ = true;
 }
 
 void TypeNodeAnalyzer::visit(ErrorExpr* e)
@@ -99,8 +93,7 @@ void TypeNodeAnalyzer::visit(ErrorExpr* e)
 
 void TypeNodeAnalyzer::visit(Broadcast* b)
 {
-    TypeNodeAnalyzer exprTNA(ctxt_);
-    b->expr_->accept(&exprTNA);
+    b->expr_->accept(this);
 
     if (!ctxt_->simdIndex_)
     {
@@ -110,7 +103,7 @@ void TypeNodeAnalyzer::visit(Broadcast* b)
     }
 
     // this expresion is valid
-    setResult(b, b->expr_->getType()->simdClone(), false);
+    setResult(b, b->expr_->get().type_->simdClone(), false);
 }
 
 void TypeNodeAnalyzer::visit(Id* id)
@@ -188,6 +181,21 @@ void TypeNodeAnalyzer::visit(Nil* n)
         setResult(n, new Ptr(n->loc(), Token::CONST, n->innerType_->clone() ), false);
 }
 
+void TypeNodeAnalyzer::visit(Range* r)
+{
+    r->expr_->accept(this);
+
+    if (!ctxt_->simdIndex_)
+    {
+        SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS( r->loc() );
+        setError(r, false);
+        return;
+    }
+
+    // this expresion is valid
+    setResult(r, r->expr_->get().type_->simdClone(), false);
+}
+
 void TypeNodeAnalyzer::visit(Self* s)
 {
     if ( Method* m = dynamic<Method>(ctxt_->memberFct_) )
@@ -221,10 +229,9 @@ void TypeNodeAnalyzer::visit(SimdIndex* s)
 bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)
 {
     // examine prefix expr
-    TypeNodeAnalyzer tna(ctxt_);
-    a->prefixExpr_->accept(&tna);
+    a->prefixExpr_->accept(this);
 
-    if ( a->prefixExpr_->size() != 1 )
+    if ( a->prefixExpr_->numResults() != 1 )
     {
         errorf( a->loc(), "the prefix expression of a member access "
                 "must exactly return one element" );
@@ -237,17 +244,16 @@ bool TypeNodeAnalyzer::examinePrefixExpr(Access* a)
 
 void TypeNodeAnalyzer::visit(IndexExpr* i)
 {
-    TypeNodeAnalyzer indexTNA(ctxt_);
-    i->indexExpr_->accept(&indexTNA);
+    i->indexExpr_->accept(this);
 
-    if ( i->indexExpr_->size() != 1 )
+    if ( i->indexExpr_->numResults() != 1 )
     {
         errorf( i->loc(), "an indexing expression must exactly return one element" );
         setError(i, true);
         return;
     }
 
-    const Type* indexType = i->indexExpr_->getType();
+    const Type* indexType = i->indexExpr_->get().type_;
     if ( indexType->isIndex() != 1 )
     {
         errorf( i->loc(), 
@@ -261,7 +267,7 @@ void TypeNodeAnalyzer::visit(IndexExpr* i)
     if ( !examinePrefixExpr(i) )
         return;
 
-    const Type* prefixType = i->prefixExpr_->getType()->derefPtr();
+    const Type* prefixType = i->prefixExpr_->get().type_->derefPtr();
     if ( const Container* container = prefixType->derefPtr()->cast<Container>() )
         setResult(i, container->getInnerType()->clone(), true);
     else
@@ -279,7 +285,7 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
     if ( !examinePrefixExpr(m) )
         return;
 
-    const Type* prefixType = m->prefixExpr_->getType();
+    const Type* prefixType = m->prefixExpr_->get().type_;
 
     if ( const UserType* user = prefixType->derefPtr()->cast<UserType>() )
     {
@@ -318,8 +324,7 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
 
 void TypeNodeAnalyzer::visit(CCall* c)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    c->exprList_->accept(tna);
+    c->exprList_->accept(this);
 
     if ( c->retType_ )
     {
@@ -331,23 +336,13 @@ void TypeNodeAnalyzer::visit(CCall* c)
             setResult( c, c->retType_->clone(), false );
     }
     else
-    {
-        c->types_.clear();
-        c->inits_.clear();
-        lvalues_.clear();
-    }
+        c->results_.clear();
 }
 
-void TypeNodeAnalyzer::visit(ReaderCall* r)
+void TypeNodeAnalyzer::visit(MethodCall* m)
 {
-    if ( setClass(r) )
-        analyzeMemberFctCall(r);
-}
-
-void TypeNodeAnalyzer::visit(WriterCall* w)
-{
-    if ( setClass(w) )
-        analyzeMemberFctCall(w);
+    if ( setClass(m) )
+        analyzeMemberFctCall(m);
 }
 
 void TypeNodeAnalyzer::visit(CreateCall* c)
@@ -368,7 +363,7 @@ void TypeNodeAnalyzer::visit(UnExpr* u)
     if ( setClass(u) )
         analyzeMemberFctCall(u);
 
-    if ( !u->op1_->getType()->cast<ScalarType>() )
+    if ( !u->op1_->get().type_->cast<ScalarType>() )
         u->builtin_ = false;
 }
 
@@ -377,17 +372,16 @@ void TypeNodeAnalyzer::visit(BinExpr* b)
     if ( setClass(b) )
         analyzeMemberFctCall(b);
 
-    if ( !b->op1_->getType()->cast<ScalarType>() )
+    if ( !b->op1_->get().type_->cast<ScalarType>() )
         b->builtin_ = false;
 }
 
 bool TypeNodeAnalyzer::setClass(MethodCall* m)
 {
     bool result = true;
-    TypeNodeAnalyzer exprTNA(ctxt_);
-    m->expr_->accept(&exprTNA);
+    m->expr_->accept(this);
 
-    if (m->expr_->size() != 1)
+    if (m->expr_->numResults() != 1)
     {
         errorf( m->loc(), "the prefix expression of a method call "
                 "must exactly return one element" );
@@ -395,12 +389,11 @@ bool TypeNodeAnalyzer::setClass(MethodCall* m)
     }
 
     // check the arg list even on error
-    TypeNodeAnalyzer argTNA(ctxt_);
-    m->exprList_->accept(argTNA);
+    m->exprList_->accept(this);
 
     if (result)
     {
-        if ( const BaseType* bt = m->expr_->getType()->derefPtr()->cast<BaseType>() )
+        if ( const BaseType* bt = m->expr_->get().type_->derefPtr()->cast<BaseType>() )
         {
             m->class_ = bt->lookupClass(ctxt_->module_);
             return true;
@@ -413,41 +406,9 @@ bool TypeNodeAnalyzer::setClass(MethodCall* m)
     return false;
 }
 
-bool TypeNodeAnalyzer::setClass(OperatorCall* o)
-{
-    bool result = true;
-    TypeNodeAnalyzer tna(ctxt_);
-    o->exprList_->accept(tna);
-
-    for (size_t i = 0; i < o->exprList_->numItems(); ++i)
-    {
-        if ( o->exprList_->getTypeNode(i)->types_.size() != 1)
-        {
-            errorf( o->loc(), "an argument of an operator call "
-                    "must exactly return one element" );
-            result = false;
-        }
-    }
-
-    if (result)
-    {
-        if ( const BaseType* bt = o->op1_->getType()->cast<BaseType>() )
-        {
-            o->class_ = bt->lookupClass(ctxt_->module_);
-            return true;
-        }
-
-        errorf( o->loc(), "TODO" );
-    }
-
-    setError(o, false);
-    return false;
-}
-
 bool TypeNodeAnalyzer::setClass(RoutineCall* r)
 {
-    TypeNodeAnalyzer tna(ctxt_);
-    r->exprList_->accept(tna);
+    r->exprList_->accept(this);
     r->class_ = ctxt_->module_->lookupClass(r->classId_);
 
     if (!r->class_)
@@ -482,47 +443,34 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 
     const TypeList& out = m->memberFct_->sig_.outTypes_;
 
-    m->types_.clear();
-    m->inits_.clear();
-    lvalues_.clear();
+    m->results_.clear();
 
     for (size_t i = 0; i < out.size(); ++i)
     {
-        m->types_.push_back( out[i]->clone() );
-        lvalues_.push_back(false);
+        m->results_.push_back( TNResult() );
 
-        if ( out[i]->perRef() ) // TODO orignal: out[0] - bug?
-            m->inits_.push_back(true);
-        else
-            m->inits_.push_back(false);
+        m->set(i).lvalue_ = false;
+        m->set(i).type_   = out[i]->clone();
+        m->set(i).inits_  = out[i]->perRef();
     }
-}
-
-bool TypeNodeAnalyzer::isLValue(size_t i) const
-{
-    return lvalues_[i];
 }
 
 void TypeNodeAnalyzer::setResult(TypeNode* tn, Type* type, bool lvalue)
 {
-    tn->types_.resize(1);
-    tn->inits_.resize(1);
-    lvalues_.resize(1);
+    tn->results_.resize(1);
 
-    tn->types_[0] = type;
-    tn->inits_[0] = false;
-    lvalues_[0] = lvalue;
+    tn->set().type_   = type; 
+    tn->set().inits_  = false;
+    tn->set().lvalue_ = lvalue;
 }
 
 void TypeNodeAnalyzer::setError(TypeNode* tn, bool lvalue)
 {
-    tn->types_.resize(1);
-    tn->inits_.resize(1);
-    lvalues_.resize(1);
+    tn->results_.resize(1);
 
-    tn->types_[0] = new ErrorType();
-    tn->inits_[0] = false;
-    lvalues_[0] = lvalue;
+    tn->set().type_   = new ErrorType();
+    tn->set().inits_  = false;
+    tn->set().lvalue_ = lvalue;
 
     ctxt_->result_ = false;
 }

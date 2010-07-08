@@ -18,6 +18,7 @@ class StmntVisitor<class Analyzer> : public StmntVisitorBase
 public:
 
     StmntVisitor(Context* ctxt);
+    ~StmntVisitor();
 
     virtual void visit(ErrorStmnt* s);
     virtual void visit(CFStmnt* s);
@@ -31,6 +32,10 @@ public:
     // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
+
+private:
+
+    TypeNodeAnalyzer* tna_;
 };
 
 typedef StmntVisitor<class Analyzer> StmntAnalyzer;
