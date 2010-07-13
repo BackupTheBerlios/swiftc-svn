@@ -7,6 +7,7 @@
 #include "fe/class.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/fct.h"
 #include "fe/tnlist.h"
 #include "fe/scope.h"
 #include "fe/type.h"
@@ -101,6 +102,19 @@ void StmntAnalyzer::visit(SimdLoop* l)
         ctxt_->result_ = false;
     }
 
+
+    // register counter if applicable
+    if (l->id_)
+    {
+        l->index_ = new Local(
+                l->loc(), 
+                new ScalarType(l->loc(), Token::CONST, new std::string("index")),
+                new std::string(*l->id_) );
+
+        l->scope_->insert(l->index_);
+    }
+
+    // mark context as "within simd loop"
     ctxt_->simdIndex_ = (llvm::Value*) 1;
     l->scope_->accept(this);
     ctxt_->simdIndex_ = 0;
@@ -110,7 +124,6 @@ void StmntAnalyzer::visit(ScopeStmnt* s)
 {
     s->scope_->accept(this);
 }
-
 
 void StmntAnalyzer::visit(AssignStmnt* s)
 {
@@ -140,115 +153,49 @@ void StmntAnalyzer::visit(AssignStmnt* s)
      *      order set l.
      */
 
-    typedef AssignStmnt::Call ASCall;
-
-    Module* module = ctxt_->module_;
-
-    TNList& lhs = *s->tuple_;
-    TNList& rhs = *s->exprList_;
+    TNList* lhs = s->tuple_;
+    TNList* rhs = s->exprList_;
 
     // analyze args and tuple
-    rhs.accept(tna_);
-    lhs.accept(tna_);
+    rhs->accept(tna_);
+    lhs->accept(tna_);
 
-    swiftAssert( lhs.numTypeNodes() != 0 && rhs.numTypeNodes() != 0,
+    swiftAssert( lhs->numTypeNodes() != 0 && rhs->numTypeNodes() != 0,
             "there must be at least one item on the left- "
             "and one on the right-hand side" );
-    swiftAssert( lhs.numTypeNodes() == lhs.numResults(),
+    swiftAssert( lhs->numTypeNodes() == lhs->numResults(),
             "the tuple may not introduce additional nodes");
 
-    size_t numLhs = lhs.numTypeNodes();
+    size_t numLhs = lhs->numTypeNodes();
 
-    if ( rhs.numResults() == 0 )
+    if ( rhs->numResults() == 0 )
     {
         errorf( s->loc(), "right-hand side does not return anything" );
         ctxt_->result_ = false;
         return;
     }
 
-    if ( numLhs == 1 && rhs.numResults() > 1 )
+    if ( numLhs == 1 && rhs->numResults() > 1 )
     {
-        /*
-         * do we have case 1 or 2?
-         */
+        // -> case 1 or 2
+        s->kind_ = AssignStmnt::SINGLE;
 
-        const TypeNode* left = lhs.getTypeNode(0);
-        std::string str, name;
-
-        if ( dynamic<Decl>(left) )
-        {
-            str = "create";
-            name = "contructor";
-            s->kind_ = AssignStmnt::CREATE;
-        }
-        else
-        {
-            str = *s->id_;
-            name = "assignment";
-            s->kind_ = AssignStmnt::ASSIGN;
-        }
-
-        if ( const BaseType* bt = left->get().type_->cast<BaseType>() )
-        {
-            Class* _class = bt->lookupClass(module);
-            MemberFct* fct = _class->lookupMemberFct( module, &str, rhs.typeList() );
-
-            if (!fct)
-            {
-                errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                        name.c_str(), 
-                        str.c_str(), 
-                        rhs.typeList().toString().c_str(), 
-                        _class->cid() );
-
-                ctxt_->result_ = false;
-                return;
-            }
-
-            s->calls_.push_back( ASCall(ASCall::USER, fct) );
-        }
-        else if ( const Ptr* ptr = left->get().type_->cast<Ptr>() )
-        {
-            // ptr only suports a copy create and assign
-            errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                    name.c_str(), 
-                    str.c_str(), 
-                    rhs.typeList().toString().c_str(), 
-                    ptr->toString().c_str() );
-
-            ctxt_->result_ = false;
-            return;
-        }
-        else if ( const Container* c = left->get().type_->cast<Container>() )
-        {
-            // array and simd only suport a copy create and assign, 
-            // and an constructor taking an index value
-            errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                    name.c_str(), 
-                    str.c_str(), 
-                    rhs.typeList().toString().c_str(), 
-                    c->toString().c_str() );
-
-            ctxt_->result_ = false;
-            return;
-        }
-        else
-            swiftAssert(false, "unreachable");
+        TypeNode* left = lhs->getTypeNode(0);
+        s->acs_.resize(1);
+        s->acs_[0] = AssignCreate( ctxt_, s->loc(), s->id_, left, rhs );
     }
     else
     {
-        /*
-         * we have case 3
-         */
+        // -> case 3
 
-        if ( rhs.numTypeNodes() > 1 )
+        if ( rhs->numTypeNodes() > 1 )
         {
             errorf(s->loc(), "todo");
             ctxt_->result_ = false;
             return;
         }
 
-        if ( numLhs != rhs.numResults() )
+        if ( numLhs != rhs->numResults() )
         {
             errorf( s->loc(), "the number of left-hand side items must match "
                     "the number of returned values on the right-hand side here" );
@@ -256,122 +203,25 @@ void StmntAnalyzer::visit(AssignStmnt* s)
             return;
         }
 
+        // -> case 3
         s->kind_ = AssignStmnt::PAIRWISE;
 
-        TypeList tmp;
-        tmp.resize(1);
-
-        // check each lhs/rhs pair
+        // fill for each lhs/rhs pair s->acs_
         for (size_t i = 0; i < numLhs; ++i)
         {
-            const TypeNode* tn = lhs.getTypeNode(i);
-            std::string str, name;
-            bool isCreate;
+            TypeNode* left = lhs->getTypeNode(i);
+            s->acs_.push_back( AssignCreate(ctxt_, s->loc(), s->id_, left, rhs, i, i+1) );
 
-            const Type* lType  = lhs.typeList()[i];
-            const Type* rType  = rhs.typeList()[i];
-
-            if ( dynamic<Decl>(tn) )
-            {
-                // is this a copy create and the caller initializes this value?
-                if ( rhs.getResult(i).inits_ && lType->check(rType, module) )
-                {
-                    s->calls_.push_back( ASCall(ASCall::GETS_INITIALIZED_BY_CALLER) );
-                    continue;
-                }
-
-                str = "create";
-                name = "contructor";
-                isCreate = true;
-            }
-            else
-            {
-                str = "=";
-                name = "assignment";
-                isCreate = false;
-            }
-
-            tmp[0] = rhs.typeList()[i];
-
-            if ( const BaseType* bt = lType->cast<BaseType>() )
-            {
-                Class* _class = bt->lookupClass(module);
-                Method* fct = cast<Method>( _class->lookupMemberFct(module, &str, tmp) );
-
-                if (!fct)
-                {
-                    errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                            name.c_str(), 
-                            str.c_str(), 
-                            rType->toString().c_str(), 
-                            _class->cid() );
-
-                    ctxt_->result_ = false;
-                    s->calls_.push_back( ASCall(ASCall::EMPTY) );
-                    continue;
-                }
-
-                if ( dynamic<ScalarType>(bt) )
-                    s->calls_.push_back( ASCall(ASCall::COPY) );
-                else
-                {
-                    swiftAssert( dynamic<UserType>(bt), 
-                            "must be castable to BaseType" );
-
-                    if ( fct->isAutoGenerated() )
-                        s->calls_.push_back( ASCall(ASCall::COPY) );
-                    else
-                        s->calls_.push_back( ASCall(ASCall::USER, fct) );
-                }
-            }
-            else if ( const Ptr* ptr = lType->cast<Ptr>() )
-            {
-                if ( !ptr->check(rType, module) )
-                {
-                    // ptr only suports a copy create and assign
-                    errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                            name.c_str(), 
-                            str.c_str(), 
-                            rType->toString().c_str(),
-                            ptr->toString().c_str() );
-
-                    ctxt_->result_ = false;
-                }
-
-                // use a simple copy
-                s->calls_.push_back( ASCall(ASCall::COPY) );
-            }
-            else if ( const Container* c = lType->cast<Container>() )
-            {
-                if ( c->check(rType, module) )
-                    s->calls_.push_back( ASCall(ASCall::CONTAINER_COPY) );
-                else if ( rType->isIndex() /*&& isCreate*/ )
-                    s->calls_.push_back( ASCall(ASCall::CONTAINER_CREATE) );
-                else
-                {
-                    // array and simd only suport a copy create and assign, 
-                    // and an constructor taking an index value
-                    errorf( s->loc(), "there is no %s '%s(%s)' defined in class '%s'",
-                            name.c_str(), 
-                            str.c_str(), 
-                            rType->toString().c_str(),
-                            c->toString().c_str() );
-
-                    ctxt_->result_ = false;
-                }
-            }
-            else
-            {
-                swiftAssert( lType->cast<ErrorType>(), "unreachable" );
-            }
         } // for each lhs/rhs pair
 
         if (ctxt_->result_)
-        {
-            swiftAssert( s->calls_.size() == rhs.numResults(), 
-                    "sizes must match" );
-        }
+            swiftAssert( s->acs_.size() == rhs->numResults(), "sizes must match" );
+
     }
+
+    // finally check each constructor/assign call
+    for (size_t i = 0; i < s->acs_.size(); ++i)
+        s->acs_[i].check();
 }
 
 void StmntAnalyzer::visit(ExprStmnt* s)

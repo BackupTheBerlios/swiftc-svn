@@ -16,13 +16,11 @@ public:
     {}
     virtual ~Place() {}
 
-    //virtual Place* clone() const = 0;
-
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const = 0;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
     virtual void writeBack(LLVMBuilder& builder) const = 0;
 
-protected:
+//protected:
 
     llvm::Value* val_;
 };
@@ -37,8 +35,6 @@ public:
         : Place(scalar)
     {}
     virtual ~Scalar() {}
-
-    //Scalar* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
@@ -55,8 +51,6 @@ public:
         : Place(ptr)
     {}
     virtual ~Addr() {}
-
-    //Addr* clone() const;
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
@@ -75,7 +69,27 @@ public:
              LLVMBuilder& builder);
     virtual ~SimdAddr() {}
 
-    //SimdAddr* clone() const;
+    virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
+    virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
+    virtual void writeBack(LLVMBuilder& builder) const;
+
+protected:
+
+    llvm::Value* mod_;
+    llvm::Value* alloca_;
+};
+
+//----------------------------------------------------------------------
+
+class ScalarAddr : public Addr
+{
+public:
+
+    ScalarAddr(llvm::Value* ptr, 
+             llvm::Value* mod, 
+             const llvm::Type* scalarType,
+             LLVMBuilder& builder);
+    virtual ~ScalarAddr() {}
 
     virtual llvm::Value* getScalar(LLVMBuilder& builder) const;
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;

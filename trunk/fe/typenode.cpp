@@ -8,7 +8,6 @@
 
 #include "fe/context.h"
 #include "fe/tnlist.h"
-#include "fe/token2str.h"
 #include "fe/type.h"
 #include "fe/var.h"
 
@@ -38,12 +37,14 @@ TypeNode::~TypeNode()
 
 //------------------------------------------------------------------------------
 
-Decl::Decl(location loc, Type* type, std::string* id)
-    : TypeNode(loc, type)
+Decl::Decl(location loc, bool simd, Type* type, std::string* id)
+    : TypeNode( loc, simd ? type->simdClone() : type->clone() )
     , id_(id)
     , local_(0)
     , alloca_(0)
-{}
+{
+    delete type;
+}
 
 Decl::~Decl()
 {
@@ -56,6 +57,7 @@ void Decl::accept(TypeNodeVisitorBase* t)
     t->visit(this);
 }
 
+
 const std::string* Decl::id() const
 {
     return id_;
@@ -64,11 +66,6 @@ const std::string* Decl::id() const
 const char* Decl::cid() const
 {
     return id_->c_str();
-}
-
-void Decl::setAlloca(llvm::AllocaInst* alloca)
-{
-    alloca_ = alloca;
 }
 
 //------------------------------------------------------------------------------
@@ -104,6 +101,7 @@ void Broadcast::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
+
 
 //----------------------------------------------------------------------
 
@@ -159,6 +157,17 @@ IndexExpr::~IndexExpr()
 }
 
 void IndexExpr::accept(TypeNodeVisitorBase* t)
+{
+    t->visit(this);
+}
+
+//------------------------------------------------------------------------------
+
+SimdIndexExpr::SimdIndexExpr(location loc, Expr* prefixExpr)
+    : Access(loc, prefixExpr)
+{}
+
+void SimdIndexExpr::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }
@@ -232,6 +241,7 @@ void CCall::accept(TypeNodeVisitorBase* t)
     t->visit(this);
 }
 
+
 const char* CCall::qualifierStr() const
 {
     static const char* str = "c_call";
@@ -244,6 +254,8 @@ MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , class_(0)
     , memberFct_(0)
+    , simd_(false)
+    , initPlaces_(0)
 {}
 
 MemberFct* MemberFctCall::getMemberFct() const
@@ -329,7 +341,7 @@ void BinExpr::accept(TypeNodeVisitorBase* t)
 
 const char* BinExpr::qualifierStr() const
 {
-    static const char* str = "TODO";
+    static const char* str = "binary method";
     return str;
 }
 
@@ -346,7 +358,7 @@ void UnExpr::accept(TypeNodeVisitorBase* t)
 
 const char* UnExpr::qualifierStr() const
 {
-    static const char* str = "TODO";
+    static const char* str = "unary method";
     return str;
 }
 
@@ -393,14 +405,14 @@ TokenType Literal::getToken() const
 
 //------------------------------------------------------------------------------
 
-Nil::Nil(location loc, Type* innerType)
+Nil::Nil(location loc, Type* type)
     : Expr(loc)
-    , innerType_(innerType)
+    , type_(type)
 {}
 
 Nil::~Nil()
 {
-    delete innerType_;
+    delete type_;
 }
 
 void Nil::accept(TypeNodeVisitorBase* t)
@@ -410,14 +422,14 @@ void Nil::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-Range::Range(location loc, Expr* expr)
+Range::Range(location loc, Type* type)
     : Expr(loc)
-    , expr_(expr)
+    , type_(type)
 {}
 
 Range::~Range()
 {
-    delete expr_;
+    delete type_;
 }
 
 void Range::accept(TypeNodeVisitorBase* t)
@@ -432,17 +444,6 @@ Self::Self(location loc)
 {}
 
 void Self::accept(TypeNodeVisitorBase* t)
-{
-    t->visit(this);
-}
-
-//------------------------------------------------------------------------------
-
-SimdIndex::SimdIndex(location loc)
-    : Expr(loc)
-{}
-
-void SimdIndex::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }

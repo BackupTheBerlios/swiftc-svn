@@ -10,6 +10,7 @@
 #include "fe/typelist.h"
 
 class Place;
+typedef std::vector<Place*> Places;
 
 namespace llvm {
     class Type;
@@ -35,6 +36,8 @@ struct TNResult
     bool lvalue_;
 };
 
+typedef std::vector<TNResult> TNResults;
+
 class TypeNode : public Node
 {
 public:
@@ -51,9 +54,10 @@ protected:
 
     TNResult& set(size_t i = 0) { return results_[i]; }
 
-    typedef std::vector<TNResult> Results;
-    Results results_;
+    TNResults results_;
 
+    friend class TNList;       // TODO clean up this
+    friend class AssignCreate; // TODO clean up this
     template<class T> friend class TypeNodeVisitor;
 };
 
@@ -63,14 +67,12 @@ class Decl : public TypeNode
 {
 public:
 
-    Decl(location loc, Type* type, std::string* id);
+    Decl(location loc, bool simd, Type* type, std::string* id);
     virtual ~Decl();
 
     virtual void accept(TypeNodeVisitorBase* t);
     const std::string* id() const;
     const char* cid() const;
-
-    void setAlloca(llvm::AllocaInst* alloca);
 
 protected:
 
@@ -141,6 +143,21 @@ public:
 protected:
 
     Expr* indexExpr_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
+class SimdIndexExpr : public Access
+{
+public:
+
+    SimdIndexExpr(location loc, Expr* prefixExpr);
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -223,7 +240,10 @@ protected:
 
     Class* class_;
     MemberFct* memberFct_;
+    bool simd_;
+    Places* initPlaces_;
 
+    template<class T> friend class StmntVisitor; // HACK
     template<class T> friend class TypeNodeVisitor;
 };
 
@@ -407,14 +427,14 @@ class Nil : public Expr
 {
 public:
 
-    Nil(location loc, Type* innerType);
+    Nil(location loc, Type* type);
     virtual ~Nil();
 
     virtual void accept(TypeNodeVisitorBase* t);
 
 protected:
 
-    Type* innerType_;
+    Type* type_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -425,14 +445,14 @@ class Range : public Expr
 {
 public:
 
-    Range(location loc, Expr* expr);
+    Range(location loc, Type* type);
     ~Range();
 
     virtual void accept(TypeNodeVisitorBase* t);
 
 protected:
 
-    Expr* expr_;
+    Type* type_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -449,17 +469,6 @@ public:
 };
 
 //----------------------------------------------------------------------
-
-class SimdIndex : public Expr
-{
-public:
-
-    SimdIndex(location loc);
-
-    virtual void accept(TypeNodeVisitorBase* t);
-};
-
-//------------------------------------------------------------------------------
 
 class TypeNodeVisitorBase
 {
@@ -478,10 +487,10 @@ public:
     virtual void visit(Nil* n) = 0;
     virtual void visit(Range* r) = 0;
     virtual void visit(Self* n) = 0;
-    virtual void visit(SimdIndex* s) = 0;
 
     // TypeNode -> Expr -> Access
     virtual void visit(IndexExpr* i) = 0;
+    virtual void visit(SimdIndexExpr* i) = 0;
     virtual void visit(MemberAccess* m) = 0;
 
     // TypeNode -> Expr -> FctCall

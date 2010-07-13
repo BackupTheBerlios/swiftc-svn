@@ -75,7 +75,7 @@ using namespace swift;
 %token NIL
 
 // types
-%token PTR ARRAY SIMD SIMD_INDEX BROADCAST
+%token PTR ARRAY SIMD SIMD_RANGE BROADCAST
 
 // type modifiers
 %token VAR CONST REF CONST_REF
@@ -329,6 +329,15 @@ stmnt
             $$ = new SimdLoop(@$, $<scope_>8, $2, $4, $6);
             ctxt_->leaveScope();
         }
+    | SIMD ':' expr ',' expr EOL
+        {
+            $<scope_>$ = ctxt_->enterScope();
+        }
+        stmnt_list END EOL
+        {
+            $$ = new SimdLoop(@$, $<scope_>7, 0, $3, $5);
+            ctxt_->leaveScope();
+        }
     | SCOPE EOL 
         { 
             $<scope_>$ = ctxt_->enterScope(); 
@@ -416,8 +425,7 @@ mul_expr
 un_expr
     : postfix_expr      { $$ = $1; }
     | ADD un_expr     { $$ = new UnExpr(@$, $1, $2); }
-    | BROADCAST un_expr { $$ = new Broadcast(@$, $2); }
-    /*| '@' un_expr { $$ = new Range(@$, $2); }*/
+    | SIMD un_expr { $$ = new Broadcast(@$, $2); }
     ;
 
 postfix_expr
@@ -429,6 +437,7 @@ postfix_expr
     | postfix_expr '.' VAR_ID   { $$ = new MemberAccess(@$,           $1, $3); }
     | '.' VAR_ID                { $$ = new MemberAccess(@$, new Self(@$), $2); }
     | postfix_expr '[' expr ']' { $$ = new IndexExpr(@$, $1, $3); }
+    | postfix_expr '@'          { $$ = new SimdIndexExpr(@$, $1); }
 
     /* 
         c_call 
@@ -457,31 +466,33 @@ postfix_expr
     ;
 
 primary_expr
-    : VAR_ID           { $$ = new  Id(@$, $1); }
-    | NIL '{' type '}' { $$ = new Nil(@$, $3); }
-    | SELF             { $$ = new Self(@$); }
-    | L_INDEX          { $$ = $1; }
-    | L_INT            { $$ = $1; }
-    | L_INT8           { $$ = $1; }
-    | L_INT16          { $$ = $1; }
-    | L_INT32          { $$ = $1; }
-    | L_INT64          { $$ = $1; }
-    | L_SAT8           { $$ = $1; }
-    | L_SAT16          { $$ = $1; }
-    | L_UINT           { $$ = $1; }
-    | L_UINT8          { $$ = $1; }
-    | L_UINT16         { $$ = $1; }
-    | L_UINT32         { $$ = $1; }
-    | L_UINT64         { $$ = $1; }
-    | L_USAT8          { $$ = $1; }
-    | L_USAT16         { $$ = $1; }
-    | L_REAL           { $$ = $1; }
-    | L_REAL32         { $$ = $1; }
-    | L_REAL64         { $$ = $1; }
-    | L_TRUE           { $$ = $1; }
-    | L_FALSE          { $$ = $1; }
-    | '(' expr ')'     { $$ = $2; }
-    | '(' error ')'    { $$ = new ErrorExpr(@$); }
+    : VAR_ID                  { $$ = new Id(@$, $1); }
+    | CREATE VAR_ID                  { $$ = new Id(@$, $2); }
+    | SELF                    { $$ = new Self(@$); }
+    | L_INDEX                 { $$ = $1; }
+    | L_INT                   { $$ = $1; }
+    | L_INT8                  { $$ = $1; }
+    | L_INT16                 { $$ = $1; }
+    | L_INT32                 { $$ = $1; }
+    | L_INT64                 { $$ = $1; }
+    | L_SAT8                  { $$ = $1; }
+    | L_SAT16                 { $$ = $1; }
+    | L_UINT                  { $$ = $1; }
+    | L_UINT8                 { $$ = $1; }
+    | L_UINT16                { $$ = $1; }
+    | L_UINT32                { $$ = $1; }
+    | L_UINT64                { $$ = $1; }
+    | L_USAT8                 { $$ = $1; }
+    | L_USAT16                { $$ = $1; }
+    | L_REAL                  { $$ = $1; }
+    | L_REAL32                { $$ = $1; }
+    | L_REAL64                { $$ = $1; }
+    | L_TRUE                  { $$ = $1; }
+    | L_FALSE                 { $$ = $1; }
+    | NIL        '{' type '}' { $$ = new Nil(@$, $3); }
+    | SIMD_RANGE '{' type '}' { $$ = new Range(@$, $3); }
+    | '(' expr ')'            { $$ = $2; }
+    | '(' error ')'           { $$ = new ErrorExpr(@$); }
     ;
 
 op_id
@@ -512,7 +523,8 @@ expr_list_not_empty
     ;
 
 decl
-    : type VAR_ID { $$ = new Decl(@$, $1, $2); }
+    :      type VAR_ID { $$ = new Decl(@$, false, $1, $2); }
+    | SIMD type VAR_ID { $$ = new Decl(@$, true,  $2, $3); }
     ;
 
 tuple

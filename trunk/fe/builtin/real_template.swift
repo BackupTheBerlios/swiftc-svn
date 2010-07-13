@@ -19,78 +19,78 @@ simd class REAL
 
     # operators for calculating
 
-    reader + (REAL r) -> REAL result
+    simd reader + (REAL r) -> REAL result
     end
-    reader - (REAL r) -> REAL result
+    simd reader - (REAL r) -> REAL result
     end
-    reader * (REAL r) -> REAL result
+    simd reader * (REAL r) -> REAL result
     end
-    reader / (REAL r) -> REAL result
+    simd reader / (REAL r) -> REAL result
     end
 
     # operators for comparisons
 
-    reader == (REAL r) -> bool result
+    simd reader == (REAL r) -> bool result
     end
-    reader != (REAL r) -> bool result
+    simd reader != (REAL r) -> bool result
     end
-    reader <  (REAL r) -> bool result
+    simd reader <  (REAL r) -> bool result
     end
-    reader >  (REAL r) -> bool result
+    simd reader >  (REAL r) -> bool result
     end
-    reader <= (REAL r) -> bool result
+    simd reader <= (REAL r) -> bool result
     end
-    reader >= (REAL r) -> bool result
+    simd reader >= (REAL r) -> bool result
     end
 
     # unary minus
-    reader - () -> REAL res
+    simd reader - () -> REAL res
     end
 
     # normal casts
 
-    reader to_int()   -> int result
+    simd reader to_int()   -> int result
     end
-    reader to_int8()  -> int8 result
+    simd reader to_int8()  -> int8 result
     end
-    reader to_int16() -> int16 result
+    simd reader to_int16() -> int16 result
     end
-    reader to_int32() -> int32 result
+    simd reader to_int32() -> int32 result
     end
-    reader to_int64() -> int64 result
-    end
-
-    reader to_uint()   -> uint result
-    end
-    reader to_uint8()  -> uint8 result
-    end
-    reader to_uint16() -> uint16 result
-    end
-    reader to_uint32() -> uint32 result
-    end
-    reader to_uint64() -> uint64 result
+    simd reader to_int64() -> int64 result
     end
 
-    reader to_sat8()  -> sat8 result
+    simd reader to_uint()   -> uint result
     end
-    reader to_sat16() -> sat16 result
+    simd reader to_uint8()  -> uint8 result
+    end
+    simd reader to_uint16() -> uint16 result
+    end
+    simd reader to_uint32() -> uint32 result
+    end
+    simd reader to_uint64() -> uint64 result
+    end
+
+    simd reader to_sat8()  -> sat8 result
+    end
+    simd reader to_sat16() -> sat16 result
     end
     
-    reader to_usat8()  -> usat8 result
+    simd reader to_usat8()  -> usat8 result
     end
-    reader to_usat16() -> usat16 result
-    end
-
-    reader to_real() -> real result
-    end
-    reader to_real32() -> real32 result
-    end
-    reader to_real64() -> real64 result
+    simd reader to_usat16() -> usat16 result
     end
 
-    reader to_bool() -> bool result
+    simd reader to_real() -> real result
     end
-    reader to_index() -> index result
+    simd reader to_real32() -> real32 result
+    end
+    simd reader to_real64() -> real64 result
+    end
+
+    simd reader to_bool() -> bool result
+    end
+    simd reader to_index() -> index result
     end
 
 #    iterator real each(real begin, real ending, real step = 1)

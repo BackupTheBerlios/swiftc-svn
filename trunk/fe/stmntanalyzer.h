@@ -35,6 +35,13 @@ public:
 
 private:
 
+    void checkAssignCreate(const location& loc, 
+                           TypeNode* left, 
+                           TNList& right, 
+                           const std::string* id, 
+                           size_t r_begin, 
+                           size_t r_end);
+
     TypeNodeAnalyzer* tna_;
 };
 

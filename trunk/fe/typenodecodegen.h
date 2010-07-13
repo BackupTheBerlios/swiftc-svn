@@ -31,10 +31,9 @@ public:
     virtual void visit(Nil* n);
     virtual void visit(Range* r);
     virtual void visit(Self* n);
-    virtual void visit(SimdIndex* s);
 
     // TypeNode -> Expr -> Access
-    llvm::Value* resolvePrefixExpr(Access* a);
+    virtual void visit(SimdIndexExpr* s);
     virtual void visit(IndexExpr* i);
     virtual void visit(MemberAccess* m);
 
@@ -48,6 +47,7 @@ public:
 
 private:
 
+    llvm::Value* resolvePrefixExpr(Access* a);
     void emitCall(MemberFctCall* call, Place* self);
     Place* getSelf(MethodCall* m);
 

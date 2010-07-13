@@ -36,6 +36,10 @@ public:
 
     std::string toString() const;
     bool check(Module* m, const TypeList& t) const;
+
+    TypeList();
+    TypeList(size_t size);
+    TypeList(const_iterator begin, const_iterator end);
 }; 
 
 //------------------------------------------------------------------------------

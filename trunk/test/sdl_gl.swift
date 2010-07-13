@@ -63,7 +63,7 @@ class App
         c_call glLoadIdentity()
 
         # set our perspective 
-        real64 ratio = width:to_real64() / height:to_real64()
+        real64 ratio = width.to_real64() / height.to_real64()
         c_call gluPerspective(45.0q, ratio, 0.1q, 100.0q)
 
         # make sure we're chaning the model view and not the projection 
@@ -190,7 +190,7 @@ class App
         c_call glVertex3f( 1.0,  1.0,  1.0) # Top Left Of The Quad (Right)    
         c_call glVertex3f( 1.0, -1.0,  1.0) # Bottom Left Of The Quad (Right) 
         c_call glVertex3f( 1.0, -1.0, -1.0) # Bottom Right Of The Quad (Right)
-        c_call glEnd( )                     # Done Drawing The Quad           
+        c_call glEnd()                      # Done Drawing The Quad           
 
         # Draw it to the screen 
         c_call SDL_GL_SwapBuffers()

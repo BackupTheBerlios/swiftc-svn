@@ -14,7 +14,6 @@ namespace swift {
 
 TNList::TNList()
     : typeList_(0)
-    , indexMapBuilt_(false)
 {}
 
 TNList::~TNList()
@@ -31,7 +30,7 @@ void TNList::append(TypeNode* typeNode)
 void TNList::buildIndexMap()
 {
     if ( !indexMap_.empty() )
-        return; // has already been built
+        return; // has already been built or building is not necessary at all
 
 #ifdef SWIFT_DEBUG
     size_t numAllResults = 0;
@@ -61,6 +60,14 @@ const TNResult& TNList::getResult(size_t i) const
     return typeNodes_[first]->get(second);
 }
 
+TNResult& TNList::setResult(size_t i)
+{
+    size_t first  = indexMap_[i].first;
+    size_t second = indexMap_[i].second;
+
+    return typeNodes_[first]->set(second);
+}
+
 void TNList::accept(TypeNodeVisitorBase* visitor)
 {
     for (size_t i = 0; i < typeNodes_.size(); ++i)
@@ -69,7 +76,7 @@ void TNList::accept(TypeNodeVisitorBase* visitor)
     buildIndexMap();
 }
 
-Value* TNList::getArg(size_t i, LLVMBuilder& builder) const
+Value* TNList::getArg(LLVMBuilder& builder, size_t i) const
 {
     const TNResult& result = getResult(i);
     Place* p = result.place_;
@@ -77,13 +84,15 @@ Value* TNList::getArg(size_t i, LLVMBuilder& builder) const
     return result.type_->perRef() ? p->getAddr(builder) : p->getScalar(builder);
 }
 
-void TNList::getArgs(Values& args, LLVMBuilder& builder) const
+void TNList::getArgs(LLVMBuilder& builder, Values& args, size_t begin /*= 0*/, size_t end /*= INTPTR_MAX*/) const
 {
-    for (size_t i = 0; i < numResults(); ++i)
-        args.push_back( getArg(i, builder) );
+    end = (end == INTPTR_MAX) ? numResults() : end;
+
+    for (size_t i = begin; i < end; ++i)
+        args.push_back( getArg(builder, i) );
 }
 
-const TypeList& TNList::typeList()
+const TypeList& TNList::typeList() const
 {
     if (!typeList_)
     {

@@ -80,7 +80,7 @@ INTEGER  {DIGIT}+
 <NESTED_COMMENT>\n      { ++g_lexer_line; }
 <NESTED_COMMENT>.       { /*skip*/ }
 
-[()\[\]{},.;:] { // single character tokens
+[@()\[\]{},.;:] { // single character tokens
     SET_LOC; return yytext[0];
 }
 
@@ -137,8 +137,8 @@ ptr       { SET_LOC; return Token::PTR; }
 array     { SET_LOC; return Token::ARRAY; }
 simd      { SET_LOC; return Token::SIMD; }
 
-broadcast { SET_LOC; return Token::BROADCAST; }
-range { SET_LOC; return Token::BROADCAST; }
+broadcast  { SET_LOC; return Token::BROADCAST; }
+simd_range { SET_LOC; return Token::SIMD_RANGE; }
 
 public      { SET_LOC; return Token::PUBLIC; }
 protected   { SET_LOC; return Token::PROTECTED; }

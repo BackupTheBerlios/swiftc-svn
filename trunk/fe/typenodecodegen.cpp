@@ -63,22 +63,6 @@ void TypeNodeCodeGen::visit(Id* id)
     Var* var = ctxt_->scope()->lookupVar( id->id() );
     swiftAssert(var, "must be found");
 
-    if (ctxt_->simdIndex_)
-    {
-        if ( dynamic<Simd>(var->getType()) )
-        {
-            // this container gets implicitly indexed by the simd index
-            Value* addr = var->getAddr(builder_);
-
-            std::ostringstream oss;
-            oss << addr->getNameStr() << ".ptr";
-            Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, Container::POINTER, oss.str() );
-
-            setResult( id, new Addr(builder_.CreateInBoundsGEP(ptr, ctxt_->simdIndex_)) );
-            return;
-        }
-    }
-
     setResult( id, new Addr(var->getAddr(builder_)) );
 }
 
@@ -137,17 +121,8 @@ void TypeNodeCodeGen::visit(Nil* n)
 
 void TypeNodeCodeGen::visit(Range* r)
 {
-    r->expr_->accept(this);
-
-    const Type* type = r->expr_->get().type_;
-
-    if ( type->isSimd() )
-    {
-    }
-    else
-    {
-
-    }
+    //const Type* type = r->expr_->get().type_;
+    // TODO
 
     //int simdLength;
     //const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
@@ -162,11 +137,6 @@ void TypeNodeCodeGen::visit(Self* n)
 {
     Method* m = cast<Method>(ctxt_->memberFct_);
     setResult( n, new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
-}
-
-void TypeNodeCodeGen::visit(SimdIndex* s)
-{
-    setResult( s, new Scalar(ctxt_->simdIndex_) );
 }
 
 // TODO writeback?
@@ -189,9 +159,8 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
     i->indexExpr_->accept(this);
     Value* idx = i->indexExpr_->get().place_->getScalar(builder_);
 
-    std::ostringstream oss;
-    oss << addr->getNameStr() << ".ptr";
-    Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, Container::POINTER, oss.str() );
+    Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, 
+            Container::POINTER, addr->getNameStr() + ".ptr" );
 
     const Type* prefixType = i->prefixExpr_->get().type_;
     if ( dynamic<Array>(prefixType) )
@@ -212,6 +181,34 @@ void TypeNodeCodeGen::visit(IndexExpr* i)
         Value* aggPtr = builder_.CreateInBoundsGEP(ptr, div, addr->getNameStr() + ".idx");
 
         setResult( i, new SimdAddr(aggPtr, mod, inner->getLLVMType(ctxt_->module_), builder_) );
+    }
+}
+
+void TypeNodeCodeGen::visit(SimdIndexExpr* s)
+{
+    swiftAssert(ctxt_->simdIndex_, "can only be valid within simd loops");
+
+    Value* addr = resolvePrefixExpr(s);
+    Value* ptr = createLoadInBoundsGEP_0_i32( lctxt_, builder_, addr, 
+            Container::POINTER, addr->getNameStr() + ".ptr" );
+    const Type* prefixType = s->prefixExpr_->get().type_;
+
+    if ( dynamic<Simd>(prefixType) )
+    {
+        Value* index = builder_.CreateUDiv( 
+                builder_.CreateLoad(ctxt_->simdIndex_),
+                createInt64(lctxt_, 4) ); // HACK
+        setResult( s, new Addr(builder_.CreateInBoundsGEP(ptr, index)) );
+        //Value* val = createInt64(lctxt_, 7);
+        //setResult( s, new Addr( abuilder_.CreateInBoundsGEP(ptr, val)) );
+        return;
+    }
+    else
+    {
+        swiftAssert( dynamic<Array>(prefixType), "must be an array" );
+        //setResult( i, new ScalarAddr(builder_.CreateInBoundsGEP(ptr, ctxt_->simdIndex_)) );
+        swiftAssert(false, "TODO");
+        return;
     }
 }
 
@@ -341,9 +338,10 @@ void TypeNodeCodeGen::visit(RoutineCall* r)
 
 void TypeNodeCodeGen::visit(UnExpr* u)
 {
+    u->op1_->accept(this);
+
     if ( u->builtin_ )
     {
-        u->op1_->accept(this);
         Value* val = u->op1_->get().place_->getScalar(builder_);
 
         switch ( (*u->id_)[0] )
@@ -356,7 +354,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
         setResult( u, new Scalar(val) );
     }
     else
-        emitCall(u, 0);
+        emitCall(u, u->op1_->set().place_);
 }
 
 static inline int tok2val(const char* str)
@@ -368,9 +366,11 @@ static inline int tok2val(const char* str)
 
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
+    // accept self value in all cases
+    b->op1_->accept(this);
+
     if ( b->builtin_ )
     {
-        b->op1_->accept(this);
         b->op2_->accept(this);
 
         Value* v1 = b->op1_->get().place_->getScalar(builder_);
@@ -450,7 +450,7 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         setResult( b, new Scalar(val) );
     }
     else
-        emitCall(b, 0);
+        emitCall(b, b->op1_->set().place_);
 }
 
 Place* TypeNodeCodeGen::getSelf(MethodCall* m)
@@ -496,20 +496,33 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
 
         if ( type->perRef() )
         {
-            const llvm::Type* llvmType = type->getRawLLVMType( ctxt_->module_);
-            llvm::AllocaInst* alloca = createEntryAlloca(builder_, llvmType);
+            int simdLength = call->simd_ ? 4 : 0; // HACK
+            const llvm::Type* llvmType = type->getRawLLVMType(ctxt_->module_, simdLength);
 
-            args.push_back(alloca);
-            perRefRetValues.push_back(alloca);
+            // do return value optimization or create temporary
+            Place* place = 0;
+
+            if ( call->initPlaces_ && (*call->initPlaces_)[i] )
+                place = (*call->initPlaces_)[i];
+
+            Value* arg = place 
+                       ? place->getAddr(builder_) 
+                       : createEntryAlloca(builder_, llvmType);
+
+            args.push_back(arg);
+            perRefRetValues.push_back(arg);
         }
     }
 
     // append regular arguments
-    call->exprList_->getArgs(args, builder_);
+    call->exprList_->getArgs(builder_, args);
+
+    llvm::Function* llvmFct = call->simd_ ? fct->simdFct_ : fct->llvmFct_;
+    swiftAssert(llvmFct, "must exist");
 
     // create actual call
     llvm::CallInst* callInst = llvm::CallInst::Create( 
-            fct->llvmFct_, args.begin(), args.end() );
+            llvmFct, args.begin(), args.end() );
     callInst->setCallingConv(llvm::CallingConv::Fast);
     Value* retValue = builder_.Insert(callInst);
 

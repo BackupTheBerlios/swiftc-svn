@@ -29,7 +29,6 @@
 #include "fe/error.h"
 #include "fe/scope.h"
 #include "fe/sig.h"
-#include "fe/token2str.h"
 #include "fe/stmnt.h"
 #include "fe/type.h"
 
@@ -202,7 +201,7 @@ void Class::addAssignCreate(Context* ctxt)
     {
         // add default create
         Scope* scope = ctxt->enterScope();
-        Create* create = new Create(loc_, false, scope);
+        Create* create = new Create(loc_, simd_, scope);
         ctxt->leaveScope();
 
         memberFcts_.push_back(create);
@@ -216,7 +215,7 @@ void Class::addAssignCreate(Context* ctxt)
     {
         // add copy create
         Scope* scope = ctxt->enterScope();
-        Create* create = new Create(loc_, false, scope);
+        Create* create = new Create(loc_, simd_, scope);
         ctxt->memberFct_ = create;
         create->sig_.in_.push_back( new Param(loc_, bt->clone(), new std::string("arg")) );
         create->sig_.buildTypeLists();
@@ -233,7 +232,7 @@ void Class::addAssignCreate(Context* ctxt)
     {
         // add copy assign
         Scope* scope = ctxt->enterScope();
-        Writer* assign = new Writer( loc_, false, new std::string("="), scope );
+        Writer* assign = new Writer( loc_, simd_, new std::string("="), scope );
         ctxt->memberFct_ = assign;
         assign->sig_.in_.push_back( new Param(loc_, bt->clone(), new std::string("arg")) );
         assign->sig_.buildTypeLists();

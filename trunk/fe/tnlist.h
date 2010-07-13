@@ -33,28 +33,30 @@ public:
     size_t numTypeNodes() const { return typeNodes_.size(); }
     size_t numResults() const   { return indexMap_.size(); }
 
-    void getArgs(Values& args, LLVMBuilder& builder) const;
-    llvm::Value* getArg(size_t i, LLVMBuilder& builder) const;
+    void getArgs(LLVMBuilder& builder, Values& args, size_t begin = 0, size_t end = INTPTR_MAX) const;
+    llvm::Value* getArg(LLVMBuilder& builder, size_t i) const;
 
     TypeNode* getTypeNode(size_t i) const { return typeNodes_[i]; }
     const TNResult& getResult(size_t i) const;
 
-    const TypeList& typeList();
+    const TypeList& typeList() const;
 
 private:
 
+    TNResult& setResult(size_t i);
+
     void buildIndexMap();
 
-    TypeList* typeList_;
-    bool indexMapBuilt_;
+    mutable TypeList* typeList_;
 
     typedef std::vector<TypeNode*> TypeNodes;
     TypeNodes typeNodes_;
 
     typedef std::vector< std::pair<size_t, size_t> > IndexMap;
     IndexMap indexMap_;
-};
 
+    friend class AssignCreate;
+};
 
 //------------------------------------------------------------------------------
 

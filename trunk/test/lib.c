@@ -1,5 +1,10 @@
 #include <stdio.h>
 
+void println()
+{
+    printf("\n");
+}
+
 void print_int(int n)
 {
     printf("%i\n", n);

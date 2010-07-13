@@ -25,7 +25,7 @@ simd class Vec3
     real y
     real z
 
-    assign = (real x, real y, real z)
+    writer = (real x, real y, real z)
         .x = x
         .y = y
         .z = z
@@ -54,19 +54,17 @@ class Test
 
         i = 0x
         while i < 20x
-            c_call print_int( b[i]:to_int() )
+            c_call print_int( b[i].to_int() )
             i = i + 1x
         end
-
-        c_call print_int(1111111111)
 
         array{Foo} af = 20x
 
         # and backwards
         i = 19x
         while i <= 19x
-            af[19x - i].i = i:to_int() # fill increasingly
-            af[i].r = i:to_real()      # fill decreasingly
+            af[19x - i].i = i.to_int() # fill increasingly
+            af[i].r = i.to_real()      # fill decreasingly
             i = i - 1x
         end
 

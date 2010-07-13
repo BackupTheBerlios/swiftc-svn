@@ -152,7 +152,9 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
             int simdLength;
             RetVal* retval = m->sig_.out_[i];
             const llvm::Type* llvmType = retval->getType()->getLLVMType(module);
-            const llvm::Type* simdType = retval->getType()->getVecLLVMType(module, simdLength);
+            const llvm::Type* simdType; 
+            if (simd)
+                simdType = retval->getType()->getVecLLVMType(module, simdLength);
 
             if ( retval->getType()->perRef() )
             {
@@ -239,7 +241,6 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
 
     if (simd)
         m->simdFct_ = cast<llvm::Function>( llvmModule->getOrInsertFunction(simdName, simdFctType) );
-        //m->simdFct_ = cast<llvm::Function>( llvmModule->getOrInsertFunction(simdName, fctType) );
 
     ctxt_->llvmFct_ = fct;
     m->llvmFct_     = fct;

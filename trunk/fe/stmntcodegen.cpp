@@ -212,7 +212,10 @@ void StmntCodeGen::visit(SimdLoop* l)
 
     // init loop index
     ctxt_->simdIndex_ = createEntryAlloca( 
-            builder_, llvm::IntegerType::getInt64Ty(lctxt_), "simdindex" );
+            builder_, 
+            llvm::IntegerType::getInt64Ty(lctxt_), 
+            l->id_ ? l->id_->c_str() : "simdindex" );
+    l->index_->setAlloca( cast<llvm::AllocaInst>(ctxt_->simdIndex_) );
 
     l->lExpr_->accept(tncg_);
     builder_.CreateStore( l->lExpr_->get().place_->getScalar(builder_), ctxt_->simdIndex_ );
@@ -243,7 +246,9 @@ void StmntCodeGen::visit(SimdLoop* l)
     builder_.SetInsertPoint(loopBB);
     l->scope_->accept(this);
 
-    builder_.CreateStore( builder_.CreateAdd( builder_.CreateLoad(ctxt_->simdIndex_), ::createInt64(lctxt_, 1) ), ctxt_->simdIndex_ );
+    builder_.CreateStore( 
+            builder_.CreateAdd( builder_.CreateLoad(ctxt_->simdIndex_), 
+            ::createInt64(lctxt_, 4) ), ctxt_->simdIndex_ ); // HACK
     builder_.CreateBr(headerBB);
 
     /*
@@ -261,160 +266,48 @@ void StmntCodeGen::visit(ScopeStmnt* s)
 
 void StmntCodeGen::visit(AssignStmnt* s)
 {
-    typedef AssignStmnt::Call ASCall;
-
-    TNList& lhs = *s->tuple_;
-    TNList& rhs = *s->exprList_;
-
-    size_t numLhs = s->tuple_->numTypeNodes();
-
-    rhs.accept(tncg_);
+    s->tuple_->accept(tncg_);
 
     switch (s->kind_)
     {
-        case AssignStmnt::CREATE:
-        case AssignStmnt::ASSIGN:
+        case AssignStmnt::SINGLE:
         {
-            lhs.accept(tncg_);
-            swiftAssert(lhs.numResults() == 1 && numLhs == 1, 
-                    "there must be exactly one item and "
-                    "exactly one return value on the lhs");
-
-            const TNResult& lRes = lhs.getResult(0);
-            ASCall& call = s->calls_[0];
-
-            swiftAssert(call.kind_ == ASCall::USER, "sole possibility"); // TODO
-            switch (call.kind_)
-            {
-                case ASCall::EMPTY:
-                    return; // do nothing
-                case ASCall::USER:
-                {
-                    llvm::Function* llvmFct = call.fct_->llvmFct_;
-                    swiftAssert(llvmFct, "must be valid");
-
-                    Values args;
-                    // push self arg
-                    args.push_back( lRes.place_->getAddr(builder_) );
-                    // push the rest
-                    rhs.getArgs(args, builder_);
-
-                    // create call
-                    llvm::CallInst* call = 
-                        llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
-                    call->setCallingConv(llvm::CallingConv::Fast);
-                    builder_.Insert(call);
-                    lRes.place_->writeBack(builder_);
-
-                    return;
-                }
-                case ASCall::COPY:
-                {
-                    swiftAssert(rhs.numResults() == 1, 
-                            "only a copy constructor/assignment is in question here");
-                    const TNResult& rRes = rhs.getResult(0);
-
-                    Value* rvalue = rRes.place_->getScalar(builder_);
-                    Value* lvalue = lRes.place_->getAddr(builder_);
-                    builder_.CreateStore(rvalue, lvalue);
-                    lRes.place_->writeBack(builder_);
-
-                    return;
-                }
-                default:
-                    swiftAssert(false, "unreachable"); 
-            }
+            s->exprList_->accept(tncg_);
+            s->acs_[0].genCode();
+            return;
         }
-
         case AssignStmnt::PAIRWISE:
         {
-            swiftAssert( rhs.numResults() == numLhs, "sizes must match" );
-
-            // set initial value for created decls
-            // TODO do this the other way round and pass these values to the constructors
-            for (size_t i = 0; i < numLhs; ++i)
+            // propagate inits for return value optimization
+            size_t left = 0; // iterates over rTN's corresponding lhs items
+            // for each rhs TypeNode
+            for (size_t i = 0; i < s->exprList_->numTypeNodes(); ++i)
             {
-                if ( !rhs.getResult(i).inits_ )
-                    continue;
+                TypeNode* rTN = s->exprList_->getTypeNode(i);
 
-                if ( Decl* decl = dynamic<Decl>(lhs.getTypeNode(i)) )
+
+                Places places;
+                // for each result of rTN
+                for (size_t j = 0; j < rTN->numResults(); ++j, ++left)
                 {
-                    Place* rPlace = rhs.getResult(i).place_;
-                    swiftAssert( typeid(*rPlace) == typeid(Addr), "must be an Addr" );
-                    llvm::AllocaInst* alloca = 
-                        cast<llvm::AllocaInst>( rPlace->getAddr(builder_) );
-                    decl->setAlloca(alloca);
+                    TypeNode* lTN = s->tuple_->getTypeNode(left);
+
+                    Place* place = s->acs_[left].initsRhs() ? lTN->get().place_ : 0;
+                    places.push_back(place);
                 }
+
+                if ( MemberFctCall* call = dynamic<MemberFctCall>(rTN) )
+                    call->initPlaces_ = &places;
+                    
+                rTN->accept(tncg_);
             }
 
-            // now emit code for the lhs
-            lhs.accept(tncg_);
-            swiftAssert( lhs.numResults() == numLhs, "sizes must match" );
-            swiftAssert( s->calls_.size() == numLhs, "sizes must match" );
-            size_t& num = numLhs;
+            for (size_t i = 0; i < s->acs_.size(); ++i)
+                s->acs_[i].genCode();
 
-            Values args(2);
-            for (size_t i = 0; i < num; ++i)
-            {
-                ASCall& call = s->calls_[i];
-                const TNResult& lRes = lhs.getResult(i);
-                const TNResult& rRes = rhs.getResult(i);
-
-                switch (call.kind_)
-                {
-                    case ASCall::EMPTY:
-                    case ASCall::GETS_INITIALIZED_BY_CALLER:
-                        continue;
-
-                    case ASCall::COPY:
-                    {
-                        // create store
-                        Value* lvalue = lRes.place_->getAddr(builder_);
-                        Value* rvalue = rRes.place_->getScalar(builder_);
-                        builder_.CreateStore(rvalue, lvalue);
-                        lRes.place_->writeBack(builder_);
-
-                        continue;
-                    }
-                    case ASCall::USER:
-                    {
-                        llvm::Function* llvmFct = call.fct_->llvmFct_;
-                        swiftAssert(llvmFct, "must be valid");
-
-                        // set arg
-                        args[0] = lhs.getArg(i, builder_);
-                        args[1] = rhs.getArg(i, builder_);
-
-                        // create call
-                        llvm::CallInst* call = 
-                            llvm::CallInst::Create( llvmFct, args.begin(), args.end() );
-                        call->setCallingConv(llvm::CallingConv::Fast);
-                        builder_.Insert(call);
-                        lRes.place_->writeBack(builder_);
-                        continue;
-                    }
-                    case ASCall::CONTAINER_COPY:
-                    {
-                        const Container* c = cast<Container>( lRes.type_ );
-
-                        Value* dst = lRes.place_->getAddr(builder_);
-                        Value* src = rRes.place_->getAddr(builder_);
-                        c->emitCopy(ctxt_, dst, src);
-                        continue;
-                    }
-                    case ASCall::CONTAINER_CREATE:
-                    {
-                        const Container* c = cast<Container>( lRes.type_ );
-
-                        Value* lvalue = lRes.place_->getAddr(builder_);
-                        Value* size = rRes.place_->getScalar(builder_);
-                        c->emitCreate(ctxt_, lvalue, size);
-                        continue;
-                    }
-                }
-            } // for each lhs/rhs pair
-        } // case ASCall::PAIRWISE
-    } // switch (s->kind_)
+            return;
+        }
+    }
 }
 
 void StmntCodeGen::visit(ExprStmnt* s)

@@ -25,6 +25,18 @@
 
 namespace swift {
 
+TypeList::TypeList()
+    : std::vector<const Type*>()
+{}
+
+TypeList::TypeList(size_t size)
+    : std::vector<const Type*>(size)
+{}
+
+TypeList::TypeList(const_iterator begin, const_iterator end)
+    : std::vector<const Type*>(begin, end)
+{}
+
 std::string TypeList::toString() const
 {
     std::string result;

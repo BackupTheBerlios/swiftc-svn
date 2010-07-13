@@ -43,6 +43,31 @@ class UserType;
 
 //------------------------------------------------------------------------------
 
+struct MemberFctInfo
+{
+    enum Kind
+    {
+        FALSE,
+        COPY,
+        USER,
+        CONTAINER_COPY,
+        CONTAINER_CREATE
+    };
+
+    MemberFct* fct_;
+    Kind kind_;
+    bool simd_;
+
+    MemberFctInfo() {}
+    MemberFctInfo(Kind kind, bool simd = false, MemberFct* fct = 0)
+        : fct_(fct)
+        , kind_(kind)
+        , simd_(simd)
+    {}
+};
+
+//------------------------------------------------------------------------------
+
 class Type : public Node
 {
 public:
@@ -58,10 +83,11 @@ public:
     virtual bool isIndex() const { return false; }
     virtual bool isInt() const { return false; }
     virtual bool perRef() const = 0;
+    virtual bool isValid() const { return true; }
     virtual bool validate(Module* m) const = 0;
     virtual std::string toString() const = 0;
     const llvm::Type* getLLVMType(Module* m) const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const = 0;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const = 0;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -81,13 +107,16 @@ public:
         return dynamic_cast<const T*>(this);
     }
 
-    bool isSimd() const { return isSimd_; }
+    bool isSimd() const { return simd_; }
+
+    virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const = 0;
+    MemberFctInfo hasMemberFct(const std::string& id, const TypeList& in, Module* m) const;
 
 protected:
 
     TokenType modifier_;
     bool isRef_;
-    bool isSimd_;
+    bool simd_;
 };
 
 //------------------------------------------------------------------------------
@@ -103,15 +132,17 @@ public:
     virtual bool isBool() const { return true; }
     virtual bool isIndex() const { return true; }
     virtual bool isInt() const { return true; }
+    virtual bool isValid() const { return false; }
     virtual bool validate(Module* m) const;
     virtual std::string toString() const;
     virtual bool perRef() const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
     virtual const llvm::Type* getRawVecLLVMType(Module* m, int& simdLength) const;
+    virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const;
 };
 
 //------------------------------------------------------------------------------
@@ -131,6 +162,7 @@ public:
 
     virtual bool check(const Type* t, Module* m) const;
     virtual std::string toString() const;
+    virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const;
 
     Class* lookupClass(Module* m) const;
     const std::string* id() const;
@@ -165,7 +197,7 @@ public:
     virtual bool isInt() const;
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -192,7 +224,7 @@ public:
     virtual UserType* clone() const;
     virtual bool perRef() const;
     virtual bool validate(Module* m) const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
@@ -232,11 +264,12 @@ public:
 
     virtual Ptr* clone() const;
     virtual std::string toString() const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 
             const UserType*& missing,
             Module* m) const;
+    virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const;
 
     const Type* derefPtr() const;
     llvm::Value* recDeref(llvm::IRBuilder<>& builder, llvm::Value* value) const;
@@ -267,6 +300,7 @@ public:
 
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const = 0;
     virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const = 0;
+    virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const;
 
     static void emitCreate(Context* ctxt, 
                            const llvm::Type* allocType, 
@@ -294,7 +328,7 @@ public:
 
     virtual Array* clone() const;
     virtual std::string containerStr() const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
     virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const;
 };
@@ -309,7 +343,7 @@ public:
 
     virtual Simd* clone() const;
     virtual std::string containerStr() const;
-    virtual const llvm::Type* getRawLLVMType(Module* m) const;
+    virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const;
     virtual void emitCreate(Context* ctxt, llvm::Value* aggPtr, llvm::Value* size) const;
     virtual void emitCopy(Context* ctxt, llvm::Value* dst, llvm::Value* src) const;
 };

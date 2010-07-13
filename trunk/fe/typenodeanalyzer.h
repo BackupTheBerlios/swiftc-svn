@@ -22,11 +22,11 @@ public:
     virtual void visit(Nil* n);
     virtual void visit(Range* n);
     virtual void visit(Self* n);
-    virtual void visit(SimdIndex* s);
 
     // TypeNode -> Expr -> Access
     bool examinePrefixExpr(Access* a);
     virtual void visit(IndexExpr* i);
+    virtual void visit(SimdIndexExpr* s);
     virtual void visit(MemberAccess* m);
 
     // TypeNode -> Expr -> FctCall

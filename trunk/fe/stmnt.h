@@ -23,6 +23,7 @@
 #include "utils/assert.h"
 
 #include "fe/auto.h"
+#include "fe/fct.h"
 #include "fe/node.h"
 #include "fe/typelist.h"
 
@@ -36,6 +37,7 @@ namespace swift {
 
 class Decl;
 class Expr;
+class Local;
 class TNList;
 class StmntVisitorBase;
 
@@ -200,6 +202,7 @@ protected:
     std::string* id_;
     Expr* lExpr_;
     Expr* rExpr_;
+    Local* index_;
 
     template<class T> friend class StmntVisitor;
 };
@@ -252,36 +255,13 @@ protected:
 
     enum Kind
     {
-        CREATE,
-        ASSIGN,
+        SINGLE,
         PAIRWISE
     };
 
     Kind kind_;
 
-    struct Call
-    {
-        enum Kind
-        {
-            EMPTY,
-            COPY,
-            USER,
-            CONTAINER_COPY,
-            CONTAINER_CREATE,
-            GETS_INITIALIZED_BY_CALLER
-        };
-
-        Call(Kind kind, MemberFct* fct = 0)
-            : kind_(kind)
-            , fct_(fct)
-        {}
-
-        Kind kind_;
-        MemberFct* fct_;
-    };
-
-    typedef std::vector<Call> Calls;
-    Calls calls_;
+    std::vector<AssignCreate> acs_;
 
     template<class T> friend class StmntVisitor;
 };
