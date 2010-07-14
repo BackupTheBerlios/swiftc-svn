@@ -104,7 +104,7 @@ using namespace swift;
 
 // control flow
 %token IF ELSE ELIF FOR WHILE REPEAT UNTIL
-%token RETURN RESULT BREAK CONTINUE
+%token RETURN BREAK CONTINUE
 
 // protection
 %token PUBLIC PROTECTED PACKAGE PRIVATE

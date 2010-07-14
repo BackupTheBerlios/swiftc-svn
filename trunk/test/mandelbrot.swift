@@ -27,11 +27,11 @@ simd class Complex
         result.i = .r*c.i + .i*c.r
     end
 
-    simd reader / (Complex c) -> Complex result
-        real den = c.r*c.r + c.i*c.i
-        result.r = (.r*c.r + .i*c.i) / den
-        result.i = (.i*c.r - .r*c.i) / den
-    end
+    #simd reader / (Complex c) -> Complex result
+    #    real den = c.r*c.r + c.i*c.i
+    #    result.r = (.r*c.r + .i*c.i) / den
+    #    result.i = (.i*c.r - .r*c.i) / den
+    #end
 
     simd writer sq() -> Complex result
         result.r = .r*.r - .i*.i
@@ -46,19 +46,24 @@ end
 
 
 class Mandelbrot
-    routine iterate (Complex c) -> int num_iters
-        #real square = 0.0
-        #real max_square = 100.0
+    simd routine iterate (Complex c) -> int num_iters
+        real square = 0.0
+        real max_square = 100.0
 
         int iter = 0
         int max_iter = 10
 
         Complex z = 0.0, 0.0
         
-        while iter < max_iter
+        while iter < max_iter 
             z.sq()
             z = z + c
             iter = iter + 1
+            square = z.r*z.r + z.i*z.i
+
+            if square < max_square
+                break
+            end
         end
         
         num_iters = iter
@@ -68,8 +73,8 @@ class Mandelbrot
         Complex c1 = 2.0, 5.0
         Complex c2 = 3.0, 7.0
 
-        #(c1 * c2).print()
-        (c1 / c2).print()
+        (c1 * c2).print()
+        #(c1 / c2).print()
 
         result = 0
     end

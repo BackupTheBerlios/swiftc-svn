@@ -22,6 +22,7 @@ Context::Context(Module* module)
     , tuple_( new TNList() )
     , builder_( LLVMBuilder(*module->lctxt_) )
     , simdIndex_(0)
+    , currentLoop_(0)
 {}
 
 Context::~Context()

@@ -1,5 +1,5 @@
-#ifndef SWIFt_STMNT_CODE_GEN_H
-#define SWIFt_STMNT_CODE_GEN_H
+#ifndef SWIFT_STMNT_CODE_GEN_H
+#define SWIFT_STMNT_CODE_GEN_H
 
 #include <memory>
 
@@ -47,4 +47,4 @@ typedef StmntVisitor<class CodeGen> StmntCodeGen;
 
 } // namespace swift
 
-#endif // SWIFt_STMNT_CODE_GEN_H
+#endif // SWIFT_STMNT_CODE_GEN_H

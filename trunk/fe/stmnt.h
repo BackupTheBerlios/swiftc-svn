@@ -28,6 +28,7 @@
 #include "fe/typelist.h"
 
 namespace llvm {
+    class BasicBlock;
     class Function;
 }
 
@@ -145,9 +146,14 @@ public:
     LoopStmnt(location loc, Scope* scope);
     virtual ~LoopStmnt();
 
+    llvm::BasicBlock* getLoopBB() const { return loopBB_; }
+    llvm::BasicBlock* getOutBB() const { return outBB_; }
+
 protected:
 
     Scope* scope_;
+    llvm::BasicBlock* loopBB_;
+    llvm::BasicBlock* outBB_;
 };
 
 //------------------------------------------------------------------------------
@@ -300,6 +306,13 @@ protected:
     
     Context* ctxt_;
 };
+
+
+#define SWIFT_ENTER_LOOP \
+    LoopStmnt* oldLoop = ctxt_->currentLoop_; \
+    ctxt_->currentLoop_ = l; \
+    l->scope_->accept(this); \
+    ctxt_->currentLoop_ = oldLoop;
 
 //------------------------------------------------------------------------------
 

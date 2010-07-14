@@ -16,6 +16,7 @@ namespace swift {
 
 class Class;
 class InOut;
+class LoopStmnt;
 class MemberFct;
 class Module;
 class Scope;
@@ -63,6 +64,8 @@ public:
     llvm::Module* lmodule();
 
     llvm::Value* simdIndex_;
+
+    LoopStmnt* currentLoop_;
 
 private:
 

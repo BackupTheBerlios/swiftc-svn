@@ -38,21 +38,35 @@ void StmntCodeGen::visit(CFStmnt* s)
 {
     MemberFct* memberFct = ctxt_->memberFct_;
 
-    if (s->token_ == Token::RETURN)
+    switch (s->token_)
     {
-        if ( memberFct->sig_.out_.empty() )
-            builder_.CreateRetVoid();
-        else
-            builder_.CreateBr(ctxt_->memberFct_->returnBB_);
+        case Token::RETURN:
+        {
+            if ( memberFct->sig_.out_.empty() )
+                builder_.CreateRetVoid();
+            else
+                builder_.CreateBr(ctxt_->memberFct_->returnBB_);
+            break;
 
-        llvm::BasicBlock* bb = llvm::BasicBlock::Create(lctxt_, "unreachable");
-        ctxt_->llvmFct_->getBasicBlockList().push_back(bb);
-        builder_.SetInsertPoint(bb);
-
-        return;
+            return;
+        }
+        case Token::BREAK:
+        {
+            builder_.CreateBr( ctxt_->currentLoop_->getOutBB() );
+            break;
+        }
+        case Token::CONTINUE:
+        {
+            builder_.CreateBr( ctxt_->currentLoop_->getLoopBB() );
+            break;
+        }
+        default:
+            swiftAssert(false, "unreachable");
     }
 
-    swiftAssert(false, "TODO");
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(lctxt_, "unreachable");
+    ctxt_->llvmFct_->getBasicBlockList().push_back(bb);
+    builder_.SetInsertPoint(bb);
 }
 
 void StmntCodeGen::visit(DeclStmnt* s)
@@ -118,33 +132,33 @@ void StmntCodeGen::visit(RepeatUntilLoop* l)
      * create new basic blocks
      */
 
-    typedef llvm::BasicBlock BB;
-    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "rep");
-    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "rep-out");
+    l->loopBB_ = llvm::BasicBlock::Create(lctxt_, "rep");
+    l->outBB_  = llvm::BasicBlock::Create(lctxt_, "rep-out");
 
     /*
      * close current bb
      */
 
-    builder_.CreateBr(loopBB);
+    builder_.CreateBr(l->loopBB_);
 
     /*
-     * emit code for loopBB
+     * emit code for l->loopBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(loopBB);
-    builder_.SetInsertPoint(loopBB);
-    l->scope_->accept(this);
+    llvmFct->getBasicBlockList().push_back(l->loopBB_);
+    builder_.SetInsertPoint(l->loopBB_);
+    //l->scope_->accept(this);
+    SWIFT_ENTER_LOOP;
     l->expr_->accept(tncg_);
     Value* cond = l->expr_->get().place_->getScalar(builder_);
-    builder_.CreateCondBr(cond, outBB, loopBB);
+    builder_.CreateCondBr(cond, l->outBB_, l->loopBB_);
 
     /*
-     * emit code for outBB
+     * emit code for l->outBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(outBB);
-    builder_.SetInsertPoint(outBB);
+    llvmFct->getBasicBlockList().push_back(l->outBB_);
+    builder_.SetInsertPoint(l->outBB_);
 }
 
 void StmntCodeGen::visit(WhileLoop* l)
@@ -155,10 +169,9 @@ void StmntCodeGen::visit(WhileLoop* l)
      * create new basic blocks
      */
 
-    typedef llvm::BasicBlock BB;
-    BB* headerBB = llvm::BasicBlock::Create(lctxt_, "while-header");
-    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "while");
-    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "while-out");
+    llvm::BasicBlock* headerBB = llvm::BasicBlock::Create(lctxt_, "while-header");
+    l->loopBB_ = llvm::BasicBlock::Create(lctxt_, "while");
+    l->outBB_  = llvm::BasicBlock::Create(lctxt_, "while-out");
 
     /*
      * close current bb
@@ -174,23 +187,24 @@ void StmntCodeGen::visit(WhileLoop* l)
     builder_.SetInsertPoint(headerBB);
     l->expr_->accept(tncg_);
     Value* cond = l->expr_->get().place_->getScalar(builder_);
-    builder_.CreateCondBr(cond, loopBB, outBB);
+    builder_.CreateCondBr(cond, l->loopBB_, l->outBB_);
 
     /*
-     * emit code for loopBB
+     * emit code for l->loopBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(loopBB);
-    builder_.SetInsertPoint(loopBB);
-    l->scope_->accept(this);
+    llvmFct->getBasicBlockList().push_back(l->loopBB_);
+    builder_.SetInsertPoint(l->loopBB_);
+    //l->scope_->accept(this);
+    SWIFT_ENTER_LOOP;
     builder_.CreateBr(headerBB);
 
     /*
-     * emit code for outBB
+     * emit code for l->outBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(outBB);
-    builder_.SetInsertPoint(outBB);
+    llvmFct->getBasicBlockList().push_back(l->outBB_);
+    builder_.SetInsertPoint(l->outBB_);
 }
 
 void StmntCodeGen::visit(SimdLoop* l)
@@ -201,10 +215,9 @@ void StmntCodeGen::visit(SimdLoop* l)
      * create new basic blocks
      */
 
-    typedef llvm::BasicBlock BB;
-    BB* headerBB = llvm::BasicBlock::Create(lctxt_, "simd-header");
-    BB* loopBB   = llvm::BasicBlock::Create(lctxt_, "simd");
-    BB*  outBB   = llvm::BasicBlock::Create(lctxt_, "simd-out");
+    llvm::BasicBlock* headerBB = llvm::BasicBlock::Create(lctxt_, "simd-header");
+    l->loopBB_ = llvm::BasicBlock::Create(lctxt_, "simd");
+    l->outBB_  = llvm::BasicBlock::Create(lctxt_, "simd-out");
 
     /*
      * close current bb
@@ -236,14 +249,14 @@ void StmntCodeGen::visit(SimdLoop* l)
     Value* lower = builder_.CreateLoad(ctxt_->simdIndex_);
 
     Value* cond = builder_.CreateICmpULT(lower, upper);
-    builder_.CreateCondBr(cond, loopBB, outBB);
+    builder_.CreateCondBr(cond, l->loopBB_, l->outBB_);
 
     /*
-     * emit code for loopBB
+     * emit code for l->loopBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(loopBB);
-    builder_.SetInsertPoint(loopBB);
+    llvmFct->getBasicBlockList().push_back(l->loopBB_);
+    builder_.SetInsertPoint(l->loopBB_);
     l->scope_->accept(this);
 
     builder_.CreateStore( 
@@ -252,11 +265,11 @@ void StmntCodeGen::visit(SimdLoop* l)
     builder_.CreateBr(headerBB);
 
     /*
-     * emit code for outBB
+     * emit code for l->outBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(outBB);
-    builder_.SetInsertPoint(outBB);
+    llvmFct->getBasicBlockList().push_back(l->outBB_);
+    builder_.SetInsertPoint(l->outBB_);
 }
 
 void StmntCodeGen::visit(ScopeStmnt* s) 

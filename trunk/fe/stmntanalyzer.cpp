@@ -29,7 +29,16 @@ void StmntAnalyzer::visit(ErrorStmnt* s) {}
 
 void StmntAnalyzer::visit(CFStmnt* s) 
 {
-    // TODO
+    if (!ctxt_->currentLoop_ && s->token_ == Token::BREAK)
+    {
+        errorf(s->loc(), "'break' may only be used within loops");
+        ctxt_->result_ = false;
+    }
+    else if (!ctxt_->currentLoop_ && s->token_ == Token::CONTINUE)
+    {
+        errorf(s->loc(), "'continue' may only be used within loops");
+        ctxt_->result_ = false;
+    }
 }
 
 void StmntAnalyzer::visit(DeclStmnt* s)
@@ -65,7 +74,8 @@ void StmntAnalyzer::visit(RepeatUntilLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->scope_->accept(this);
+    //l->scope_->accept(this);
+    SWIFT_ENTER_LOOP;
 }
 
 void StmntAnalyzer::visit(WhileLoop* l)
@@ -79,7 +89,8 @@ void StmntAnalyzer::visit(WhileLoop* l)
         ctxt_->result_ = false;
     }
 
-    l->scope_->accept(this);
+    //l->scope_->accept(this);
+    SWIFT_ENTER_LOOP;
 }
 
 void StmntAnalyzer::visit(SimdLoop* l)
