@@ -1,5 +1,5 @@
 # convert with:
-# convert -depth 8 -size 400x400 gray:log mandelbrot.png
+# convert -depth 8 -size 6000x4000 gray:log mandelbrot.png
 
 simd class Vec2
     real x
@@ -10,19 +10,9 @@ simd class Vec2
         .y = y
     end
 
-    simd writer = (real x, real y)
-        .x = x
-        .y = y
-    end
-
     simd reader + (Vec2 v) -> Vec2 result
         result.x = .x + v.x
         result.y = .y + v.y
-    end
-
-    simd reader - (Vec2 v) -> Vec2 result
-        result.x = .x - v.x
-        result.y = .y - v.y
     end
 
     simd reader * (Vec2 v) -> Vec2 result
@@ -30,19 +20,9 @@ simd class Vec2
         result.y = .y * v.y
     end
 
-    #simd reader / (Vec2 v) -> Vec2 result
-        #result.x = .x / v.x
-        #result.y = .y / v.y
-    #end
-
     simd reader toComplex() -> Complex result
         result.r = .x
         result.i = .y
-    end
-
-    reader print()
-        c_call print_float(.x)
-        c_call print_float(.y)
     end
 end
 
@@ -55,61 +35,30 @@ simd class Complex
         .i = i
     end
 
-    simd writer = (real r, real i)
-        .r = r
-        .i = i
-    end
-
     simd reader + (Complex c) -> Complex result
         result.r = .r + c.r
         result.i = .i + c.i
     end
-
-    simd reader - (Complex c) -> Complex result
-        result.r = .r - c.r
-        result.i = .i - c.i
-    end
-
-    simd reader * (Complex c) -> Complex result
-        result.r = .r*c.r - .i*c.i
-        result.i = .r*c.i + .i*c.r
-    end
-
-    #simd reader / (Complex c) -> Complex result
-    #    real den = c.r*c.r + c.i*c.i
-    #    result.r = (.r*c.r + .i*c.i) / den
-    #    result.i = (.i*c.r - .r*c.i) / den
-    #end
 
     simd reader sq() -> Complex result
         result.r = .r*.r - .i*.i
         result.i = 2.0 * .r*.i
     end
 
+    simd reader abs_sq() -> real result
+        result = .r*.r + .i*.i
+    end
+
     simd reader toVec2() -> Vec2 result
         result.x = .r
         result.y = .i
     end
-
-    reader print()
-        c_call print_float(.r)
-        c_call print_float(.i)
-    end
 end
 
 class Mandelbrot
-    simd routine iterate (Complex c, scalar int max_iter) -> int num_iters
+    simd routine iterate (Complex c) -> int num_iters
         real square = 0.0
         real max_square = 4.0
-
-        # circle
-        #square = c.r*c.r + c.i*c.i
-        #if square < 1.0
-            #num_iters = 255
-        #else
-            #num_iters = 0
-        #end
-        #return
 
         int iter = 0
         int max_iter = 100
@@ -119,7 +68,7 @@ class Mandelbrot
         while iter < max_iter 
             z = z.sq() + c
 
-            square = z.r*z.r + z.i*z.i
+            square = z.abs_sq()
             if square >= max_square
                 break
             end
@@ -132,11 +81,11 @@ class Mandelbrot
 
     routine compute_mandelbrot()
         # constants
-        index max_x = 400x
-        index max_y = 400x
+        index max_x = 6000x
+        index max_y = 4000x
         Vec2 max = max_x.to_real(), max_y.to_real()
-        Vec2 min = -1.0, -1.0
-        Vec2 pix_dist = 0.005, 0.005
+        Vec2 min = -2.0, -1.0
+        Vec2 pix_dist = 3.0/max_x.to_real(), 2.0/max_y.to_real()
 
         # result for one pixel row
         simd{int} res = max_x
