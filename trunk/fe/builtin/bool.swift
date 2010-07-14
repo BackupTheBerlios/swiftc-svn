@@ -23,6 +23,15 @@ class bool
 #    operator and= or= (int i1)
 #    end
 
-    simd reader ! (bool b) -> bool res
+    simd reader ! () -> bool res
+    end
+
+    simd reader & (bool b) -> bool res
+    end
+
+    simd reader | (bool b) -> bool res
+    end
+
+    simd reader ^ (bool b) -> bool res
     end
 end

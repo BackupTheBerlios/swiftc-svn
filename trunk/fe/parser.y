@@ -66,11 +66,10 @@ using namespace swift;
 */
 
 // literals
-%token <expr_>  L_INDEX
-%token <expr_>  L_INT  L_INT8   L_INT16  L_INT32  L_INT64  L_SAT8  L_SAT16
+%token <expr_> L_INT  L_INT8   L_INT16  L_INT32  L_INT64  L_SAT8  L_SAT16
 %token <expr_> L_UINT L_UINT8  L_UINT16 L_UINT32 L_UINT64 L_USAT8 L_USAT16
 %token <expr_> L_REAL L_REAL32 L_REAL64
-%token <expr_> L_TRUE L_FALSE
+%token <expr_> L_INDEX L_BOOL 
 
 %token NIL
 
@@ -423,8 +422,9 @@ mul_expr
     ;
 
 un_expr
-    : postfix_expr      { $$ = $1; }
-    | ADD un_expr     { $$ = new UnExpr(@$, $1, $2); }
+    : postfix_expr { $$ = $1; }
+    | ADD un_expr  { $$ = new UnExpr(@$, $1, $2); }
+    | EQ  un_expr  { $$ = new UnExpr(@$, $1, $2); }
     | SIMD un_expr { $$ = new Broadcast(@$, $2); }
     ;
 
@@ -487,8 +487,7 @@ primary_expr
     | L_REAL                  { $$ = $1; }
     | L_REAL32                { $$ = $1; }
     | L_REAL64                { $$ = $1; }
-    | L_TRUE                  { $$ = $1; }
-    | L_FALSE                 { $$ = $1; }
+    | L_BOOL                  { $$ = $1; }
     | NIL        '{' type '}' { $$ = new Nil(@$, $3); }
     | SIMD_RANGE '{' type '}' { $$ = new Range(@$, $3); }
     | '(' expr ')'            { $$ = $2; }

@@ -170,8 +170,8 @@ self  { SET_LOC; return Token::SELF; }
 {FLOAT}d        { SET_LOC; Box b; b.float_  = strtod(yytext, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL32); return Token::L_REAL32; }
 {FLOAT}q        { SET_LOC; Box b; b.double_ = strtod(yytext, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL64); return Token::L_REAL64; }
                                                                                   
-true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_TRUE  ); return Token::L_TRUE; }
-false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_FALSE ); return Token::L_TRUE; }
+true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
+false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 
 {VAR_ID} { SET_LOC; SET_STR; return Token::VAR_ID; }
 

@@ -14,6 +14,11 @@
 
 using namespace llvm;
 
+ConstantInt* createInt1(LLVMContext& lctxt, uint64_t val)
+{
+    return ConstantInt::get( IntegerType::getInt1Ty(lctxt), val );
+}
+
 ConstantInt* createInt8(LLVMContext& lctxt, uint64_t val)
 {
     return ConstantInt::get( IntegerType::getInt8Ty(lctxt), val );

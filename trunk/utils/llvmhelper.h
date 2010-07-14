@@ -32,6 +32,7 @@ class Place;
 
 //----------------------------------------------------------------------
 
+llvm::ConstantInt* createInt1 (llvm::LLVMContext& lctxt, uint64_t val);
 llvm::ConstantInt* createInt8 (llvm::LLVMContext& lctxt, uint64_t val);
 llvm::ConstantInt* createInt16(llvm::LLVMContext& lctxt, uint64_t val);
 llvm::ConstantInt* createInt32(llvm::LLVMContext& lctxt, uint64_t val);

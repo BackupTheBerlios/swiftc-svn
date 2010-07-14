@@ -95,9 +95,7 @@ void TypeNodeCodeGen::visit(Literal* l)
         case Token::L_INT64: 
         case Token::L_UINT64: val = createInt64(lctxt_, l->box_.uint64_); break;
 
-        case Token::L_TRUE:
-        case Token::L_FALSE:
-            //val = new BaseType(l->loc(), Token::CONST, new std::string("bool")  ); return;
+        case Token::L_BOOL:   val = createInt1 (lctxt_, l->box_.bool_);   break;
 
         /*
          * floats
@@ -348,6 +346,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
         {
             case '+': break; // nothing to do
             case '-': val = builder_.CreateNeg(val); break;
+            case '!': val = builder_.CreateNot(val); break;
             default:         swiftAssert(false, "TODO");
         }
 
@@ -404,6 +403,14 @@ void TypeNodeCodeGen::visit(BinExpr* b)
                         val = builder_.CreateUDiv(v1, v2);
                 }
                 break;
+
+            /*
+             * bitwise operators
+             */
+
+            case '&': val = builder_.CreateAnd(v1, v2); break;
+            case '|': val = builder_.CreateOr (v1, v2); break;
+            case '^': val = builder_.CreateXor(v1, v2); break;
 
             /*
              * comparisons

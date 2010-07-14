@@ -166,8 +166,7 @@ void TypeNodeAnalyzer::visit(Literal* l)
         case Token::L_REAL32: type = new ScalarType(l->loc(), Token::CONST, new std::string("real32")); break;
         case Token::L_REAL64: type = new ScalarType(l->loc(), Token::CONST, new std::string("real64")); break;
 
-        case Token::L_TRUE:
-        case Token::L_FALSE:  type = new ScalarType(l->loc(), Token::CONST, new std::string("bool")  ); break;
+        case Token::L_BOOL:   type = new ScalarType(l->loc(), Token::CONST, new std::string("bool")  ); break;
 
         default:
             type = 0;
