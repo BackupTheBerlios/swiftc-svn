@@ -15,9 +15,7 @@ ClassAnalyzer::ClassVisitor(Context* ctxt)
     : ClassVisitorBase(ctxt)
 {}
 
-ClassAnalyzer::~ClassVisitor()
-{
-}
+ClassAnalyzer::~ClassVisitor() {}
 
 void ClassAnalyzer::visit(Class* c) 
 {

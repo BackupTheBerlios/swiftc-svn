@@ -86,7 +86,7 @@ public:
     virtual bool isValid() const { return true; }
     virtual bool validate(Module* m) const = 0;
     virtual std::string toString() const = 0;
-    const llvm::Type* getLLVMType(Module* m) const;
+    const llvm::Type* getLLVMType(Module* m, int simdLength = 0) const;
     virtual const llvm::Type* getRawLLVMType(Module* m, int simdLength = 0) const = 0;
     virtual const llvm::Type* defineLLVMType(
             llvm::OpaqueType*& opaque, 

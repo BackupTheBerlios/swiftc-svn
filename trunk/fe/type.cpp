@@ -78,9 +78,9 @@ bool Type::isRef() const
     return isRef_;
 }
 
-const llvm::Type* Type::getLLVMType(Module* m) const
+const llvm::Type* Type::getLLVMType(Module* m, int simdLength /*= 0*/) const
 {
-    const llvm::Type* llvmType = getRawLLVMType(m);
+    const llvm::Type* llvmType = getRawLLVMType(m, simdLength);
 
     if (isRef_)
         return llvm::PointerType::getUnqual(llvmType);

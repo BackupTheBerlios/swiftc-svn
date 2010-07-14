@@ -28,15 +28,7 @@ TypeNodeCodeGen::TypeNodeVisitor(Context* ctxt)
 
 void TypeNodeCodeGen::visit(Decl* d)
 {
-    // has it already been initialized via a return value?
-    if (d->alloca_)
-    {
-        d->local_->setAlloca(d->alloca_);
-        d->alloca_->setName( d->cid() );
-    }
-    else
-        d->local_->createEntryAlloca(ctxt_);
-
+    d->local_->createEntryAlloca(ctxt_);
     setResult( d, new Addr(d->local_->getAddr(builder_)) );
 }
 
@@ -119,16 +111,39 @@ void TypeNodeCodeGen::visit(Nil* n)
 
 void TypeNodeCodeGen::visit(Range* r)
 {
-    //const Type* type = r->expr_->get().type_;
-    // TODO
+    int simdLength;
+    const llvm::VectorType* vType = cast<llvm::VectorType>( r->type_->getVecLLVMType(ctxt_->module_, simdLength) );
+    std::cout << vType->getDescription() << std::endl;
 
-    //int simdLength;
-    //const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
+    std::vector<llvm::Constant*> constants(4); // HACK
 
-    //Value* sVal = tncg.getPlace()->getScalar(builder_);
-    //Value* vVal = simdBroadcast(sVal, vType, builder_);
+#define SWIFT_BUILD_VCONST(type_check, const_builder) \
+    else if ( vType->getElementType()-> type_check ) \
+    { \
+        for (size_t i = 0; i < constants.size(); ++i) \
+            constants[i] = const_builder(lctxt_, i); \
+    }
+#define SWIFT_VCONST_INT(int_size) SWIFT_BUILD_VCONST(isIntegerTy(int_size), createInt##int_size)
+#define SWIFT_VCONST_FLOAT()       SWIFT_BUILD_VCONST(isFloatTy(),  createFloat)
+#define SWIFT_VCONST_DOUBLE()      SWIFT_BUILD_VCONST(isDoubleTy(), createDouble)
 
-    //setResult( new Scalar(vVal) );
+    if (false) {}
+    SWIFT_VCONST_INT(8)
+    SWIFT_VCONST_INT(16)
+    SWIFT_VCONST_INT(32)
+    SWIFT_VCONST_INT(64)
+    SWIFT_VCONST_FLOAT()
+    SWIFT_VCONST_DOUBLE()
+    else
+    {
+        swiftAssert(false, "unreachable");
+    }
+
+#undef SWIFT_VCONST_INT
+#undef SWIFT_VCONST_FLOAT
+#undef SWIFT_VCONST_DOUBLE
+
+    setResult( r, new Scalar(llvm::ConstantVector::get(vType, constants)) );
 }
 
 void TypeNodeCodeGen::visit(Self* n)

@@ -81,7 +81,7 @@ void AssignCreate::check()
 
     if ( info_.kind_ == MemberFctInfo::FALSE )
     {
-        missingMemberFctError(loc_, kind, name, rTypes_, "TODO");
+        missingMemberFctError( loc_, kind, name, rTypes_, lType_->toString().c_str() );
         ctxt_->result_ = false;
         return;
     }
@@ -89,7 +89,7 @@ void AssignCreate::check()
     if (isPairwise() && rhs_->getResult(rBegin_).inits_ && isDecl_)
         initsRhs_ = true;
 
-    if (ctxt_->simdIndex_)
+    if ( lType_->isSimd() )
     {
         bool allSimd = lType_->isSimd();
         bool noneSimd = !allSimd;
@@ -103,14 +103,15 @@ void AssignCreate::check()
 
         bool error = false;
 
-        if (info_.simd_)
+        if (!info_.simd_)
         {
             errorf( loc_,
                     "%s '%s(%s)' in class '%s' is not declared as "
                     "simd function but is used within a simd loop",
                     kind.c_str(), 
                     name.c_str(), 
-                    rTypes_.toString().c_str(), "TODO" /*class name*/ );
+                    rTypes_.toString().c_str(),  
+                    lType_->toString().c_str() );
 
             error = true;
         }
@@ -184,7 +185,12 @@ void AssignCreate::genCode()
         }
         case MemberFctInfo::USER:
         {
-            llvm::Function* llvmFct = info_.fct_->llvmFct_;
+            MemberFct* memFct = info_.fct_;
+
+            llvm::Function* llvmFct = lType_->isSimd() 
+                                    ? memFct->simdFct_ 
+                                    : memFct->llvmFct_; 
+
             swiftAssert(llvmFct, "must be valid");
 
             // prepare args
