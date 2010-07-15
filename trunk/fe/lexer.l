@@ -177,6 +177,7 @@ false           { SET_LOC; Box b; b.bool_   = false;                   val->expr
 
 {VAR_ID} { SET_LOC; SET_STR; return Token::VAR_ID; }
 
+\\\n {}
 
 #[^\n]* { /* end of line commment */ }
 [\n;][\n; \t]* { SET_LOC; return Token::EOL; }
