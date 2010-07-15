@@ -21,9 +21,7 @@ class Foo
 end
 
 simd class Vec3
-    real x
-    real y
-    real z
+    real x; real y; real z
 
     writer = (real x, real y, real z)
         .x = x

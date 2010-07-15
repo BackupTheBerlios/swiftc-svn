@@ -41,6 +41,7 @@ namespace swift {
 class ClassVisitorBase;
 class Context;
 class InOut;
+class MemberVar;
 class RetVal;
 class Scope;
 class Type;

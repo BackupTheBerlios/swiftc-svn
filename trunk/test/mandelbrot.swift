@@ -88,7 +88,7 @@ class Mandelbrot
         Vec2 pix_dist = 3.0/max_x.to_real(), 2.0/max_y.to_real()
 
         # result for one pixel row
-        simd{int} res = max_x
+        simd{int} result_data = max_x
 
         index pix_y = 0x
         while pix_y < max_y
@@ -96,15 +96,15 @@ class Mandelbrot
             simd pix_x: 0x, max_x
                 simd Vec2 pix = (simd pix_x.to_real()) + simd_range{real}, simd pix_y.to_real()
                 simd Complex c = ((simd min) + pix * (simd pix_dist)).toComplex()
-                res@ = ::iterate(c)
+                result_data@ = ::iterate(c)
             end
 
             # print result
-            index tmp = 0x
-            while tmp < max_x
-                c_call print_byte(res[tmp])
-                tmp = tmp + 1x
-            end
+            #index tmp = 0x
+            #while tmp < max_x
+                #c_call print_byte(result_data[tmp])
+                #tmp = tmp + 1x
+            #end
 
             pix_y = pix_y + 1x
         end

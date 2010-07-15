@@ -113,7 +113,7 @@ void TypeNodeCodeGen::visit(Range* r)
 {
     int simdLength;
     const llvm::VectorType* vType = cast<llvm::VectorType>( r->type_->getVecLLVMType(ctxt_->module_, simdLength) );
-    std::cout << vType->getDescription() << std::endl;
+    //std::cout << vType->getDescription() << std::endl;
 
     std::vector<llvm::Constant*> constants(4); // HACK
 

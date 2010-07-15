@@ -20,6 +20,7 @@ namespace llvm {
 namespace swift {
 
 class Local;
+class MemberVar;
 class TNList;
 class Type;
 class TypeNodeVisitorBase;

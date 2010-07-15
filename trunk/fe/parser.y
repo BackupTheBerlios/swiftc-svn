@@ -22,6 +22,7 @@
 %define namespace "swift"
 %define parser_class_name "Parser"
 %parse-param {Context* ctxt_}
+%expect 6
 
 %{
 
@@ -53,7 +54,6 @@ using namespace swift;
     Decl*        decl_;
     Def*         def_;
     Expr*        expr_;
-    MemberVar*   memberVar_;
     MemberFct*   memberFct_;
     Module*      module_;
     Scope*       scope_;
@@ -112,7 +112,7 @@ using namespace swift;
 // miscellaneous
 %token SCOPE CLASS END EOL
 
-%token <id_> VAR_ID
+%token <id_> VAR_ID TYPE_ID
 
 /*
     types
@@ -121,10 +121,9 @@ using namespace swift;
 %type <id_> fct_id op_id
 %type <bool_> simd_modifier
 %type <decl_> decl
-%type <expr_> primary_expr postfix_expr un_expr mul_expr add_expr eq_expr rel_expr and_expr xor_expr or_expr expr
+%type <expr_> primary_expr postfix_expr un_expr mul_expr add_expr eq_expr rel_expr and_expr xor_expr or_expr usr_expr expr
 %type <int_> method_qualifier
 %type <memberFct_> member_function
-%type <memberVar_> member_var
 %type <scope_> if_head
 %type <stmnt_> stmnt
 %type <type_> type var_type const_type
@@ -137,9 +136,14 @@ using namespace swift;
 
 %%
 
+eol
+    : EOL
+    | eol EOL
+    ;
+
 file
     : module
-    | EOL module
+    | eol module
     ;
 
 module
@@ -153,7 +157,7 @@ definitions
 
 definition
     : class
-    | error EOL
+    | error eol
     ;
 
 /*
@@ -168,12 +172,12 @@ simd_modifier
     ;
 
 class
-    : simd_modifier CLASS VAR_ID EOL
+    : simd_modifier CLASS TYPE_ID eol
         {
             $<class_>$ = new Class(@$, $1, $3);
             ctxt_->module_->insert($<class_>$);
         }
-        class_body END EOL 
+        class_body END eol 
         {
             $<class_>5->addAssignCreate(ctxt_);
         }
@@ -182,8 +186,8 @@ class
 class_body
     : /* empty */
     | class_body class_member 
-    | class_body EOL 
-    | error EOL 
+    | class_body eol 
+    | error eol 
     ;
 
 class_member
@@ -216,7 +220,7 @@ member_function
 
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
         }
-        '(' param_list ')' ret_list stmnt_list END EOL
+        '(' param_list ')' ret_list stmnt_list END eol
         {
             $$ = $<memberFct_>4;
             $$->sig_.buildTypeLists();
@@ -228,7 +232,7 @@ member_function
             $<memberFct_>$ = new Create(@$, $1, scope);
             ctxt_->class_->insert(ctxt_, $<memberFct_>$);
         }
-        '(' param_list')' EOL stmnt_list END EOL
+        '(' param_list')' eol stmnt_list END eol
         {
             $$ = $<memberFct_>3;
             $$->sig_.buildTypeLists();
@@ -251,8 +255,8 @@ param
     ;
 
 ret_list
-    : EOL
-    | ARROW retval_list_not_empty EOL 
+    : eol
+    | ARROW retval_list_not_empty eol 
     ;
 
 retval_list_not_empty
@@ -271,10 +275,9 @@ retval
 */
 
 member_var
-    : type VAR_ID EOL
+    : type VAR_ID eol
         {
-            $$ = new MemberVar(@$, $1, $2);
-            ctxt_->class_->insert(ctxt_, $$);
+            ctxt_->class_->insert(ctxt_, new MemberVar(@$, $1, $2));
         }
     ;
 
@@ -287,16 +290,16 @@ member_var
 stmnt_list
     : /* empty */
     | stmnt_list stmnt { ctxt_->scope()->appendStmnt($2); }
-    | stmnt_list error EOL
+    | stmnt_list error eol
     ;
 
 stmnt
     /*
         basic stmnts
     */
-    : decl EOL { $$ = new DeclStmnt(@$, $1); }
-    | expr EOL { $$ = new ExprStmnt(@$, $1); }
-    | tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty EOL { $$ = new AssignStmnt(@$, $2, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
+    : decl eol { $$ = new DeclStmnt(@$, $1); }
+    | expr eol { $$ = new ExprStmnt(@$, $1); }
+    | tuple ASGN { ctxt_->pushExprList(); } expr_list_not_empty eol { $$ = new AssignStmnt(@$, $2, ctxt_->tuple_, ctxt_->popExprList()); ctxt_->newTuple(); }
 
     /*
         control flow stmnts
@@ -305,59 +308,59 @@ stmnt
         { 
             $<scope_>$ = ctxt_->enterScope(); 
         } 
-        expr EOL stmnt_list END EOL 
+        expr eol stmnt_list END eol 
         { 
             $$ = new WhileLoop(@$, $<scope_>2, $3);
             ctxt_->leaveScope();
         }
-    | REPEAT EOL 
+    | REPEAT eol 
         { 
             $<scope_>$ = ctxt_->enterScope(); 
         } 
-        stmnt_list UNTIL expr EOL 
+        stmnt_list UNTIL expr eol 
         { 
             $$ = new RepeatUntilLoop(@$, $<scope_>3, $6);
             ctxt_->leaveScope();
         }
-    | SIMD VAR_ID ':' expr ',' expr EOL
+    | SIMD VAR_ID ':' expr ',' expr eol
         {
             $<scope_>$ = ctxt_->enterScope();
         }
-        stmnt_list END EOL
+        stmnt_list END eol
         {
             $$ = new SimdLoop(@$, $<scope_>8, $2, $4, $6);
             ctxt_->leaveScope();
         }
-    | SIMD ':' expr ',' expr EOL
+    | SIMD ':' expr ',' expr eol
         {
             $<scope_>$ = ctxt_->enterScope();
         }
-        stmnt_list END EOL
+        stmnt_list END eol
         {
             $$ = new SimdLoop(@$, $<scope_>7, 0, $3, $5);
             ctxt_->leaveScope();
         }
-    | SCOPE EOL 
+    | SCOPE eol 
         { 
             $<scope_>$ = ctxt_->enterScope(); 
         } 
-        stmnt_list END EOL 
+        stmnt_list END eol 
         { 
             $$ = new ScopeStmnt(@$, $<scope_>3);
             ctxt_->leaveScope();
         }
 
-    | if_head expr EOL stmnt_list END EOL 
+    | if_head expr eol stmnt_list END eol 
         { 
             ctxt_->leaveScope();
             $$ = new IfElStmnt(@$, $2, $1, 0); 
         }
-    | if_head expr EOL stmnt_list ELSE EOL 
+    | if_head expr eol stmnt_list ELSE eol 
         { 
             ctxt_->leaveScope(); 
             $<scope_>$ = ctxt_->enterScope(); 
         } 
-        stmnt_list END EOL 
+        stmnt_list END eol 
         { 
             $$ = new IfElStmnt(@$, $2, $1, $<scope_>7); 
             ctxt_->leaveScope();
@@ -366,9 +369,9 @@ stmnt
     /* 
         jump stmnts
     */
-    | RETURN   EOL { $$ = new CFStmnt(@$, Token::RETURN);   }
-    | BREAK    EOL { $$ = new CFStmnt(@$, Token::BREAK);    }
-    | CONTINUE EOL { $$ = new CFStmnt(@$, Token::CONTINUE); }
+    | RETURN   eol { $$ = new CFStmnt(@$, Token::RETURN);   }
+    | BREAK    eol { $$ = new CFStmnt(@$, Token::BREAK);    }
+    | CONTINUE eol { $$ = new CFStmnt(@$, Token::CONTINUE); }
     ;
 
 
@@ -383,7 +386,12 @@ if_head
 */
 
 expr
-    : or_expr { $$ = $1; }
+    : usr_expr { $$ = $1; }
+    ;
+
+usr_expr
+    : or_expr               { $$ = $1; }
+    | usr_expr VAR_ID or_expr { $$ = new BinExpr(@$, $2, $1, $3); }
     ;
 
 or_expr
@@ -534,21 +542,21 @@ tuple
     ;
 
 var_type
-    : VAR_ID             { $$ = BaseType::create(@$, Token::VAR, $1, true); }
+    : TYPE_ID            { $$ = BaseType::create(@$, Token::VAR, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::VAR, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::VAR, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::VAR, $3); }
     ;
 
 const_type
-    : VAR_ID             { $$ = BaseType::create(@$, Token::CONST, $1, true); }
+    : TYPE_ID            { $$ = BaseType::create(@$, Token::CONST, $1, true); }
     | PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $3); }
     | ARRAY '{' type '}' { $$ = new    Array(@$, Token::CONST, $3); }
     | SIMD  '{' type '}' { $$ = new     Simd(@$, Token::CONST, $3); }
     ;
 
 type
-    : VAR_ID                   { $$ = BaseType::create(@$, Token::  VAR, $1); }
+    : TYPE_ID                  { $$ = BaseType::create(@$, Token::  VAR, $1); }
     | CONST VAR_ID             { $$ = BaseType::create(@$, Token::CONST, $2); }
     | PTR         '{' type '}' { $$ = new      Ptr(@$, Token::  VAR, $3); }
     | CONST PTR   '{' type '}' { $$ = new      Ptr(@$, Token::CONST, $4); }

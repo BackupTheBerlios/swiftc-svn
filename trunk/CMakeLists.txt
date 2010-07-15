@@ -36,13 +36,13 @@ INCLUDE_DIRECTORIES(. ../packetizer/build/include)
 IF (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
         OUTPUT  fe/parser.cpp fe/parser.inner.h fe/location.hh fe/position.hh fe/stack.hh
-        COMMAND bison -Wall --language=C++ --locations -p swift_ --defines=fe/parser.inner.h -o fe/parser.cpp fe/parser.y
+        COMMAND bison -Wall --language=C++ --locations -p swift_stream_ --defines=fe/parser.inner.h -o fe/parser.cpp fe/parser.y
         DEPENDS fe/parser.y
     )
 ELSE (BUILD_RELEASE)
     ADD_CUSTOM_COMMAND (
         OUTPUT  fe/parser.cpp fe/parser.inner.h fe/parser.output fe/location.hh fe/position.hh fe/stack.hh
-        COMMAND bison -Wall --language=C++ --locations -p swift_ --defines=fe/parser.inner.h -t -v -o fe/parser.cpp fe/parser.y && ./repair_position.sh
+        COMMAND bison -Wall --language=C++ --locations -p swift_stream_ --defines=fe/parser.inner.h -t -v -o fe/parser.cpp fe/parser.y && ./repair_position.sh
         DEPENDS fe/parser.y
     )
 ENDIF (BUILD_RELEASE)

@@ -35,7 +35,6 @@ class ExprList;
 class InOut;
 class Lexer;
 class MemberFct;
-class MemberVar;
 class Module;
 class Scope;
 class Stmnt;
@@ -53,13 +52,14 @@ namespace swift {
 typedef Parser::token Token;
 typedef Parser::token_type TokenType;
 
-extern int g_lexer_line;
 extern std::string* g_lexer_filename;
 
 FILE* lexer_init(const char* filename);
 
-}
+} // namespace swift
 
+
+int swift_stream_lex(swift::Parser::semantic_type* val, swift::Parser::location_type* loc);
 int swift_lex(swift::Parser::semantic_type* val, swift::Parser::location_type* loc);
 
 #endif // SWIFT_AUTO_H

@@ -18,11 +18,13 @@
  */
 
 %option noyywrap
+%option yylineno
 
 %{
 
 #include <string>
 #include <iostream>
+#include <set>
 
 #include <cstdio>
 
@@ -33,9 +35,7 @@
 #include "fe/error.h"
 #include "fe/typenode.h"
 
-
 namespace swift {
-    int g_lexer_line = 0;
     int g_lexer_comment_level;
     std::string* g_lexer_filename = 0;
 }
@@ -43,9 +43,11 @@ namespace swift {
 using namespace swift;
 
 #define YY_DECL int swift_lex (Parser::semantic_type* val, Parser::location_type* loc)
-#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = g_lexer_line; loc->step()
+#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = yylineno; loc->step()
 #define SET_VAL val->expr_ = l
 #define SET_STR val->id_ = new std::string(yytext)
+
+// not needed so omit warning
 
 %}
 
@@ -69,18 +71,18 @@ INTEGER  {DIGIT}+
 
 %%
 
-\/\*            { BEGIN COMMENT; }
-<COMMENT>\*\/   { BEGIN INITIAL; }
-<COMMENT>\n     { ++g_lexer_line; /* count line number */ }
-<COMMENT>.      { /*skip*/  }
+\/\*          { BEGIN COMMENT; }
+<COMMENT>\*\/ { BEGIN INITIAL; }
+<COMMENT>\n   { /*skip*/  }
+<COMMENT>.    { /*skip*/  }
 
-\/\+                    { BEGIN NESTED_COMMENT; ++g_lexer_comment_level; }
-<NESTED_COMMENT>\/\+    { ++g_lexer_comment_level;  }
-<NESTED_COMMENT>\+\/    { --g_lexer_comment_level; if (g_lexer_comment_level == 0) BEGIN INITIAL; }
-<NESTED_COMMENT>\n      { ++g_lexer_line; }
-<NESTED_COMMENT>.       { /*skip*/ }
+\/\+                 { BEGIN NESTED_COMMENT; ++g_lexer_comment_level; }
+<NESTED_COMMENT>\/\+ { ++g_lexer_comment_level;  }
+<NESTED_COMMENT>\+\/ { --g_lexer_comment_level; if (g_lexer_comment_level == 0) BEGIN INITIAL; }
+<NESTED_COMMENT>\n   { /*skip*/  }
+<NESTED_COMMENT>.    { /*skip*/ }
 
-[@()\[\]{},.;:] { // single character tokens
+[@()\[\]{},.:] { // single character tokens
     SET_LOC; return yytext[0];
 }
 
@@ -177,25 +179,11 @@ false           { SET_LOC; Box b; b.bool_   = false;                   val->expr
 
 
 #[^\n]* { /* end of line commment */ }
+[\n;][\n; \t]* { SET_LOC; return Token::EOL; }
 
 [ \t]   { /* skip whitespaces */ }
 
-\\\n { ++g_lexer_line; }
-
-\n {
-    BEGIN EOL_STATE;
-    SET_LOC;
-    ++g_lexer_line; // count line number
-    return Token::EOL;
-}
-
-. { printf("%i: error: invalid input character '%c'\n", g_lexer_line, yytext[0]); }
-
-
-<EOL_STATE>[ \t]    { /* skip whitespaces */ }
-<EOL_STATE>#[^\n]*  { /* end of line commment */ }
-<EOL_STATE>\n       { ++g_lexer_line; /* count line number */ }
-<EOL_STATE>.        { unput(yytext[0]); BEGIN INITIAL; }
+. { printf("%i: error: invalid input character '%c'\n", yylineno, yytext[0]); }
 
 %%
 
@@ -205,9 +193,13 @@ FILE* lexer_init(const char* filename)
 {
     delete g_lexer_filename;
     g_lexer_filename = new std::string(filename);
-    g_lexer_line = 1;
+    yylineno = 1;
     yyin = fopen(filename, "r");
     return yyin;
+
+    // HACK: omit warning
+    if (false)
+        yyunput(0, 0);
 }
 
 }
