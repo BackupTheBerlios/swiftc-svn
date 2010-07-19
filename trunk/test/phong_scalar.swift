@@ -75,6 +75,12 @@ simd class vec3
         result = .x*v.x + .y*v.y + .z*v.z
     end
 
+    writer rand()
+        .x = c_call real rand_float()
+        .y = c_call real rand_float()
+        .z = c_call real rand_float()
+    end
+
     reader print()
         c_call print_float(.x)
         c_call print_float(.y)
@@ -145,20 +151,34 @@ class Phong
     end
 
     routine main() -> int result
-        array{ivec3} res = 40000000x
-        array{vec3} n    = 40000000x
-        array{vec3} l    = 40000000x
-        array{vec3} v    = 40000000x
-        array{vec3} a    = 40000000x
-        array{vec3} d    = 40000000x
-        array{real} s    = 40000000x
+        array{ivec3} res = 10000000x
+        array{vec3} n    = 10000000x
+        array{vec3} l    = 10000000x
+        array{vec3} v    = 10000000x
+        array{vec3} a    = 10000000x
+        array{vec3} d    = 10000000x
+        array{real} s    = 10000000x
         #array{real} sh   = 40000000x
 
         index i = 0x
-        while i < 40000000x
+        while  i < 10000000x
+            n[i].rand()
+            l[i].rand()
+            v[i].rand()
+            a[i].rand()
+            d[i].rand()
+            s[i] = c_call real rand_float()
+
+            i = i + 1x
+        end
+
+        c_call start_timer()
+        i = 0x
+        while i < 10000000x
             res[i] = ::illuminate(n[i], l[i], v[i], a[i], d[i], s[i], 3.0)
             i = i + 1x
         end
+        c_call stop_timer()
 
         result = 0
     end

@@ -90,6 +90,7 @@ class Mandelbrot
         # result for one pixel row
         simd{int} result_data = max_x
 
+        c_call start_timer()
         index pix_y = 0x
         while pix_y < max_y
 
@@ -108,6 +109,7 @@ class Mandelbrot
 
             pix_y = pix_y + 1x
         end
+        c_call stop_timer()
     end
 
     routine main() -> int result

@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <llvm/Intrinsics.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
 #include <llvm/Support/TypeBuilder.h>
@@ -426,6 +427,26 @@ void TypeNodeCodeGen::visit(BinExpr* b)
             case '&': val = builder_.CreateAnd(v1, v2); break;
             case '|': val = builder_.CreateOr (v1, v2); break;
             case '^': val = builder_.CreateXor(v1, v2); break;
+
+            // power
+            case TOK2VAL('*', '*'):
+            {
+                using namespace llvm::Intrinsic;
+
+                const llvm::Type* llvmTypes[2];
+                llvmTypes[0] = scalar->getLLVMType(ctxt_->module_);
+                llvmTypes[1] = b->op2_->get().type_->getLLVMType(ctxt_->module_);
+                llvm::Function* powFct = getDeclaration(ctxt_->lmodule(), llvm::Intrinsic::pow, llvmTypes);
+
+                Value* args[2];
+                args[0] = v1;
+                args[1] = v2;
+                // TODO causes undefined reference ATM
+                val = builder_.CreateCall(powFct, args, args + 2);
+
+                break;
+            }
+
 
             /*
              * comparisons

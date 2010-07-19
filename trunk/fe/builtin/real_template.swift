@@ -27,6 +27,8 @@ simd class REAL
     end
     simd reader / (REAL r) -> REAL result
     end
+    simd reader ** (REAL r) -> REAL result
+    end
 
     # operators for comparisons
 

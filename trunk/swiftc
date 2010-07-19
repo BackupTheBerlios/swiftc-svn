@@ -45,7 +45,7 @@ if [ ! -e 'test/lib.o' ]; then
 fi
 
 if [ $? -ne 0 ]; then 
-    echo "error: internal compiler error"
+    echo "error: compilation of support lib failed"
     exit -1 # something went wrong
 fi
 
@@ -53,6 +53,11 @@ fi
 llvm-ld -native test/lib.o $bc $* -o $out
 
 if [ $? -ne 0 ]; then 
-    echo "error: internal compiler error"
+    echo "error: linker error"
     exit -1 # something went wrong
 fi
+
+# generate native assembly file
+llc $bc
+# generate llvm file
+llvm-dis $bc

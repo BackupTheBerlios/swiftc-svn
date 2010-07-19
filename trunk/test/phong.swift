@@ -75,6 +75,12 @@ simd class vec3
         result = .x*v.x + .y*v.y + .z*v.z
     end
 
+    writer rand()
+        .x = c_call real rand_float()
+        .y = c_call real rand_float()
+        .z = c_call real rand_float()
+    end
+
     reader print()
         c_call print_float(.x)
         c_call print_float(.y)
@@ -94,9 +100,9 @@ simd class ivec3
     end
 
     reader print()
-        c_call print_int(.x)
-        c_call print_int(.y)
-        c_call print_int(.z)
+        c_call real print_int(.x)
+        c_call real print_int(.y)
+        c_call real print_int(.z)
     end
 end
 
@@ -145,18 +151,32 @@ class Phong
     end
 
     routine main() -> int result
-        simd{ivec3} res = 40000000x
-        simd{vec3} n    = 40000000x
-        simd{vec3} l    = 40000000x
-        simd{vec3} v    = 40000000x
-        simd{vec3} a    = 40000000x
-        simd{vec3} d    = 40000000x
-        simd{real} s    = 40000000x
+        simd{ivec3} res = 10000000x
+        simd{vec3} n    = 10000000x
+        simd{vec3} l    = 10000000x
+        simd{vec3} v    = 10000000x
+        simd{vec3} a    = 10000000x
+        simd{vec3} d    = 10000000x
+        simd{real} s    = 10000000x
         #simd{real} sh   = 40000000x
 
-        simd i: 0x, 40000000x
+        index i = 0x
+        while  i < 10000000x
+            n[i].rand()
+            l[i].rand()
+            v[i].rand()
+            a[i].rand()
+            d[i].rand()
+            s[i] = c_call real rand_float()
+
+            i = i + 1x
+        end
+
+        c_call start_timer()
+        simd i: 0x, 10000000x
             res@ = ::illuminate(n@, l@, v@, a@, d@, s@, simd 3.0)
         end
+        c_call stop_timer()
 
         result = 0
     end
