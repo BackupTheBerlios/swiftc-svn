@@ -102,8 +102,8 @@ class Mandelbrot
             # print result
             #index tmp = 0x
             #while tmp < max_x
-                #c_call print_byte(result_data[tmp])
-                #tmp = tmp + 1x
+            #    c_call print_byte(result_data[tmp])
+            #    tmp = tmp + 1x
             #end
 
             pix_y = pix_y + 1x

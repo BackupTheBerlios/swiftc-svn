@@ -63,10 +63,14 @@ class test
                    0.0, 0.0, 1.0, 7.0, \
                    0.0, 0.0, 0.0, 1.0;
 
-        simd{Vec3} vecs = 40000000x
-        simd i: 0x, 40000000x
-            vecs@ = (simd m) x vecs@
+        array{Vec3} vecs = 40000000x
+
+        index i = 0x
+        while i < 40000000x
+            vecs[i] = m x vecs[i]
+            i = i + 1x
         end
     end
 end
+
 
