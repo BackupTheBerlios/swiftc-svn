@@ -24,7 +24,7 @@ OPTION (BUILD_RELEASE "Should I build the release (on) or debug version (off)?" 
 IF (BUILD_RELEASE)
     ADD_DEFINITIONS (-DNDEBUG -O3 -fomit-frame-pointer -pipe `llvm-config --cxxflags`)
 ELSE (BUILD_RELEASE)
-    ADD_DEFINITIONS (-ggdb -Wall -DSWIFT_DEBUG -DDEBUG -D_GNU_SOURCE -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -Woverloaded-virtual) 
+    ADD_DEFINITIONS (-ggdb -Wall `llvm-config --cxxflags` -DSWIFT_DEBUG) 
 ENDIF (BUILD_RELEASE)
 
 # add . as include path
@@ -132,7 +132,7 @@ ADD_CUSTOM_COMMAND (
 #-------------------------------------------------------------------------------
 
 EXECUTE_PROCESS(
-    COMMAND sh -c "llvm-config --libs all"
+    COMMAND sh -c "llvm-config --libs core support bitwriter ipo scalaropts jit linker instrumentation x86"
     RESULT_VARIABLE res_llvm_libs
     OUTPUT_VARIABLE llvm_libs
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -146,3 +146,4 @@ EXECUTE_PROCESS(
     )
 
 TARGET_LINK_LIBRARIES(swift -L../packetizer/build/lib -lPacketizer ${llvm_libs} ${llvm_flags})
+#TARGET_LINK_LIBRARIES(swift ${llvm_libs} ${llvm_flags})

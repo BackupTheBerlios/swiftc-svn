@@ -54,22 +54,43 @@ simd class Mat4x4
         result.y = (.e10*v.x + .e11*v.y + .e12*v.z + .e13) / w
         result.z = (.e20*v.x + .e21*v.y + .e22*v.z + .e23) / w
     end
+
+    writer rand()
+        .e00 = c_call real rand_float()
+        .e01 = c_call real rand_float()
+        .e02 = c_call real rand_float()
+        .e03 = c_call real rand_float()
+
+        .e10 = c_call real rand_float()
+        .e11 = c_call real rand_float()
+        .e12 = c_call real rand_float()
+        .e13 = c_call real rand_float()
+
+        .e20 = c_call real rand_float()
+        .e21 = c_call real rand_float()
+        .e22 = c_call real rand_float()
+        .e23 = c_call real rand_float()
+
+        .e30 = c_call real rand_float()
+        .e31 = c_call real rand_float()
+        .e32 = c_call real rand_float()
+        .e33 = c_call real rand_float()
+    end
 end
 
 class test
     routine main() -> int result
-        Mat4x4 m = 1.0, 0.0, 0.0, 3.0, \
-                   0.0, 1.0, 0.0, 4.0, \
-                   0.0, 0.0, 1.0, 7.0, \
-                   0.0, 0.0, 0.0, 1.0;
-
+        Mat4x4 m
+        m.rand()
         array{Vec3} vecs = 40000000x
 
+        c_call start_timer()
         index i = 0x
         while i < 40000000x
             vecs[i] = m x vecs[i]
             i = i + 1x
         end
+        c_call stop_timer()
     end
 end
 

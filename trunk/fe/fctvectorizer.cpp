@@ -13,7 +13,7 @@ namespace swift {
 
 FctVectorizer::FctVectorizer(Context* ctxt)
     : ctxt_(ctxt)
-    , packetizer_( Packetizer::getPacketizer(true, false) ) // TODO use cmdline switch for sse 4.1 selection
+    , packetizer_( Packetizer::getPacketizer(true, true) ) // TODO use cmdline switch for sse 4.1 selection
 {
     typedef Module::ClassMap::const_iterator CIter;
     const Module::ClassMap& classes = ctxt_->module_->classes();
@@ -28,7 +28,7 @@ FctVectorizer::FctVectorizer(Context* ctxt)
             continue;
 
         // for each member fct
-        for (size_t i = 0; i < c->memberFcts().size(); ++i)
+        for (size_t i = 0, end = c->memberFcts().size(); i < end; ++i)
         {
             MemberFct* m = c->memberFcts()[i];
 

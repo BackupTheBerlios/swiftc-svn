@@ -160,6 +160,7 @@ class Phong
         simd{real} s    = 10000000x
         #simd{real} sh   = 40000000x
 
+        # init with random stuff
         index i = 0x
         while  i < 10000000x
             n[i].rand()
@@ -172,6 +173,7 @@ class Phong
             i = i + 1x
         end
 
+        # start phong
         c_call start_timer()
         simd i: 0x, 10000000x
             res@ = ::illuminate(n@, l@, v@, a@, d@, s@, simd 3.0)
@@ -180,4 +182,3 @@ class Phong
 
         result = 0
     end
-end

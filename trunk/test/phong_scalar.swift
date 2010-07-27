@@ -160,6 +160,7 @@ class Phong
         array{real} s    = 10000000x
         #array{real} sh   = 40000000x
 
+        # init with random stuff
         index i = 0x
         while  i < 10000000x
             n[i].rand()
@@ -172,6 +173,7 @@ class Phong
             i = i + 1x
         end
 
+        # start phong
         c_call start_timer()
         i = 0x
         while i < 10000000x

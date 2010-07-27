@@ -212,7 +212,6 @@ Value* simdBroadcast(Value* sVal, const Type* vType, LLVMBuilder& builder)
         const VectorType* vecType = ::cast<VectorType>(vType);
         size_t numElems = vecType->getNumElements();
 
-
         // put sVal into the first element of vVal
         vVal = builder.CreateInsertElement( vVal, sVal, createInt32(lctxt, 0) );
 
