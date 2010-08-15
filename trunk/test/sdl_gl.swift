@@ -209,7 +209,7 @@ class App
         c_call int SDL_Init(SDL_INIT_VIDEO)
 
         # Fetch the video info 
-        ptr{const SDL_VideoInfo} videoInfo = c_call ptr{SDL_VideoInfo} SDL_GetVideoInfo()
+        ptr{SDL_VideoInfo} videoInfo = c_call ptr{SDL_VideoInfo} SDL_GetVideoInfo()
 
         # Sets up OpenGL double buffering 
         int SDL_GL_DOUBLEBUFFER = 5

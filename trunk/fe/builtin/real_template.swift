@@ -95,6 +95,9 @@ simd class REAL
     simd reader to_index() -> index result
     end
 
+    simd reader bitcast_to_INT() -> INT result
+    end
+
 #    iterator real each(real begin, real ending, real step = 1)
 #    end
 

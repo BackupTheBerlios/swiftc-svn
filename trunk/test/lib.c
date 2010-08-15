@@ -57,6 +57,11 @@ void print_int(int n)
     printf("%i\n", n);
 }
 
+void print_uint(int n)
+{
+    printf("%u\n", n);
+}
+
 void print_byte(int n)
 {
     printf("%c", n);

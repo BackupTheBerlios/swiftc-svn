@@ -1,6 +1,8 @@
 #include "fe/fctvectorizer.h"
 
 #include <llvm/Function.h>
+#include <llvm/Intrinsics.h>
+#include <llvm/Support/TypeBuilder.h>
 
 #include "fe/class.h"
 #include "fe/context.h"
@@ -36,6 +38,18 @@ FctVectorizer::FctVectorizer(Context* ctxt)
                 process(c, m);
         }
     }
+
+
+    using namespace llvm::Intrinsic;
+    const llvm::Type* llvmTypes[1];
+    llvmTypes[0] = llvm::VectorType::get(
+        llvm::TypeBuilder<llvm::types::ieee_float,  true>::get(ctxt_->lctxt()), 4); // HACK
+
+    llvm::Function* powFct = getDeclaration(
+            ctxt_->lmodule(), llvm::Intrinsic::pow, llvmTypes, 1);
+
+    Packetizer::addNativeFunctionToPacketizer(
+            packetizer_, "llvm.pow.f32", -1, powFct, false);
 
     Packetizer::runPacketizer( packetizer_, ctxt_->lmodule() );
 }

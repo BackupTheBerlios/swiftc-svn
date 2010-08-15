@@ -40,6 +40,11 @@ simd class Complex
         result.i = .i + c.i
     end
 
+    simd reader + (Vec2 v) -> Complex result
+        result.r = .r + v.x
+        result.i = .i + v.y
+    end
+
     simd reader sq() -> Complex result
         result.r = .r*.r - .i*.i
         result.i = 2.0 * .r*.i
@@ -65,13 +70,9 @@ class Mandelbrot
 
         Complex z = 0.0, 0.0
         
-        while iter < max_iter 
+        while (iter < max_iter) & (square < max_square)
             z = z.sq() + c
-
             square = z.abs_sq()
-            if square >= max_square
-                break
-            end
 
             iter = iter + 1
         end
@@ -103,8 +104,8 @@ class Mandelbrot
             # print result
             #index tmp = 0x
             #while tmp < max_x
-            #    c_call print_byte(result_data[tmp])
-            #    tmp = tmp + 1x
+                #c_call print_byte(result_data[tmp])
+                #tmp = tmp + 1x
             #end
 
             pix_y = pix_y + 1x

@@ -28,6 +28,13 @@ simd class INT
     simd reader / (INT i) -> INT res
     end
 
+    simd reader & (INT i) -> INT res
+    end
+    simd reader | (INT i) -> INT res
+    end
+    simd reader ^ (INT i) -> INT res
+    end
+
     # operators for comparisons
 
     simd reader == (INT i) -> bool res
@@ -92,6 +99,8 @@ simd class INT
     end
     simd reader to_index() -> index result
     end
+
+    BITCAST
 
 #    iterator int each(int begin, int ending, int step = 1)
 #    end

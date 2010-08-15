@@ -290,47 +290,52 @@ void TypeNodeCodeGen::visit(MethodCall* m)
 
     if ( const ScalarType* from = m->expr_->get().type_->cast<ScalarType>() )
     {
-        // -> assumes that r is a cast
-
+        Value* val = self->getScalar(builder_);
         const ScalarType* to = cast<ScalarType>( m->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
-        if ( llvmTo == llvmFrom )
-            return; // value_ and isAddr_ are still correct, so nothing to do
-
-        Value* val = self->getScalar(builder_);
-        llvm::StringRef name = val->getName();
-
-        if ( from->isInteger() && to->isInteger() )
+        if ( m->id()->find("bitcast") != std::string::npos )
         {
-            if ( from->sizeOf() > to->sizeOf() )
-                val = builder_.CreateTrunc(val, llvmTo, name);
+            val = builder_.CreateBitCast(val, llvmTo);
+        }
+        else // -> assumes that r is a normal cast
+        {
+            if ( llvmTo == llvmFrom )
+                return; // value_ and isAddr_ are still correct, so nothing to do
+
+            llvm::StringRef name = val->getName();
+
+            if ( from->isInteger() && to->isInteger() )
+            {
+                if ( from->sizeOf() > to->sizeOf() )
+                    val = builder_.CreateTrunc(val, llvmTo, name);
+                else
+                {
+                    // -> sizeof(from) < sizeof(to)
+                    if ( from->isUnsigned() )
+                        val = builder_.CreateZExt(val, llvmTo, name);
+                    else
+                        val = builder_.CreateSExt(val, llvmTo, name);
+                }
+            }
+            else if ( from->isFloat() && to->isSigned() )   // fp -> si
+                val = builder_.CreateFPToSI(val, llvmTo, name);
+            else if ( from->isFloat() && to->isUnsigned() ) // fp -> ui
+                val = builder_.CreateFPToUI(val, llvmTo, name);
+            else if ( from->isSigned() && to->isFloat() )   // si -> fp
+                val = builder_.CreateSIToFP(val, llvmTo, name);
+            else if ( from->isUnsigned() && to->isFloat() ) // ui -> fp
+                val = builder_.CreateUIToFP(val, llvmTo, name);
             else
             {
-                // -> sizeof(from) < sizeof(to)
-                if ( from->isUnsigned() )
-                    val = builder_.CreateZExt(val, llvmTo, name);
-                else
-                    val = builder_.CreateSExt(val, llvmTo, name);
-            }
-        }
-        else if ( from->isFloat() && to->isSigned() )   // fp -> si
-            val = builder_.CreateFPToSI(val, llvmTo, name);
-        else if ( from->isFloat() && to->isUnsigned() ) // fp -> ui
-            val = builder_.CreateFPToUI(val, llvmTo, name);
-        else if ( from->isSigned() && to->isFloat() )   // si -> fp
-            val = builder_.CreateSIToFP(val, llvmTo, name);
-        else if ( from->isUnsigned() && to->isFloat() ) // ui -> fp
-            val = builder_.CreateUIToFP(val, llvmTo, name);
-        else
-        {
-            swiftAssert( from->isFloat() && to->isFloat(), "must both be floats" );
+                swiftAssert( from->isFloat() && to->isFloat(), "must both be floats" );
 
-            if ( from->sizeOf() > to->sizeOf() )
-                val = builder_.CreateFPTrunc(val, llvmTo, name);
-            else // -> sizeof(from) < sizeof(to)
-                val = builder_.CreateFPExt(val, llvmTo, name);
+                if ( from->sizeOf() > to->sizeOf() )
+                    val = builder_.CreateFPTrunc(val, llvmTo, name);
+                else // -> sizeof(from) < sizeof(to)
+                    val = builder_.CreateFPExt(val, llvmTo, name);
+            }
         }
 
         setResult( m, new Scalar(val) );
@@ -404,7 +409,6 @@ void TypeNodeCodeGen::visit(BinExpr* b)
             /*
              * arithmetic operators
              */
-
             case '+': val = builder_.CreateAdd(v1, v2); break;
             case '-': val = builder_.CreateSub(v1, v2); break;
             case '*': val = builder_.CreateMul(v1, v2); break;
@@ -423,35 +427,33 @@ void TypeNodeCodeGen::visit(BinExpr* b)
             /*
              * bitwise operators
              */
-
             case '&': val = builder_.CreateAnd(v1, v2); break;
             case '|': val = builder_.CreateOr (v1, v2); break;
             case '^': val = builder_.CreateXor(v1, v2); break;
 
-            // power
+            /*
+             * power
+             */
             case TOK2VAL('*', '*'):
             {
                 using namespace llvm::Intrinsic;
 
-                const llvm::Type* llvmTypes[2];
+                const llvm::Type* llvmTypes[1];
                 llvmTypes[0] = scalar->getLLVMType(ctxt_->module_);
-                llvmTypes[1] = b->op2_->get().type_->getLLVMType(ctxt_->module_);
-                llvm::Function* powFct = getDeclaration(ctxt_->lmodule(), llvm::Intrinsic::pow, llvmTypes);
+                llvm::Function* powFct = getDeclaration(
+                        ctxt_->lmodule(), llvm::Intrinsic::pow, llvmTypes, 1);
 
                 Value* args[2];
                 args[0] = v1;
                 args[1] = v2;
-                // TODO causes undefined reference ATM
                 val = builder_.CreateCall(powFct, args, args + 2);
 
                 break;
             }
 
-
             /*
              * comparisons
              */
-
             case TOK2VAL('=', '='):
                 if ( scalar->isFloat() )
                     val = builder_.CreateFCmpOEQ(v1, v2);
