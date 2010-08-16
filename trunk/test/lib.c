@@ -72,6 +72,11 @@ void print_float(float f)
     printf("%f\n", (float) f);
 }
 
+void print_hexfloat(float f)
+{
+    printf("%A\n", (float) f);
+}
+
 void print_double(double d)
 {
     printf("%f\n", d);

@@ -34,6 +34,12 @@ class Math
            x = exp_lo
         end
 
+        real exp_hi =  88.3762626647949 # less yields inf
+        # clamp to this value
+        if x > exp_hi
+           x = exp_hi
+        end
+
         # exp(x) = exp(g + n log 2) 
         #        = exp(g) * exp(n log 2)
         #        = exp(g) * exp(log 2^n)
@@ -67,18 +73,24 @@ class Math
     end
 
     routine main() -> int result
-        simd{real} a = 40000000x
-        index i = 0x
-        while i < 40000000x
-            a[i] = c_call real rand_float()
-            i = i + 1x
-        end
+        int i = -89.0 . bitcast_to_int()
 
-        c_call start_timer()
-        simd i: 0x, 40000000x
-            a@ = ::exp(a@)
-        end
-        c_call stop_timer()
+        repeat
+            real r = i.bitcast_to_real()
+
+            real c_r = c_call real expf(r)
+            real s_r = ::exp(r)
+
+            if c_r.bitcast_to_int() != s_r.bitcast_to_int()
+                c_call print_int(i)
+                c_call print_float(r)
+                c_call print_hexfloat(c_r)
+                c_call print_hexfloat(s_r)
+                c_call println()
+            end
+
+            i = i + 1
+        until i.bitcast_to_real() == 89.0
 
         result = 0
     end

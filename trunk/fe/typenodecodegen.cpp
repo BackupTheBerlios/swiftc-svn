@@ -432,6 +432,17 @@ void TypeNodeCodeGen::visit(BinExpr* b)
             case '^': val = builder_.CreateXor(v1, v2); break;
 
             /*
+             * shifts
+             */
+            case TOK2VAL('<', '<'): val = builder_.CreateShl(v1, v2); break;
+            case TOK2VAL('>', '>'): 
+                if ( scalar->isSigned() )
+                    val = builder_.CreateAShr(v1, v2);
+                else
+                    val = builder_.CreateLShr(v1, v2);
+                break;
+
+            /*
              * power
              */
             case TOK2VAL('*', '*'):

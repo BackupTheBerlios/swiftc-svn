@@ -75,8 +75,10 @@ class Math
         end
 
         c_call start_timer()
-        simd i: 0x, 40000000x
-            a@ = ::exp(a@)
+        i = 0x
+        while i < 40000000x
+            a[i] = ::exp(a[i])
+            i = i + 1x
         end
         c_call stop_timer()
 
