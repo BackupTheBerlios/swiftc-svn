@@ -43,23 +43,28 @@ namespace swift {
 using namespace swift;
 
 #define YY_DECL int swift_lex (Parser::semantic_type* val, Parser::location_type* loc)
-#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = yylineno; loc->step()
+#define SET_LOC loc->initialize(g_lexer_filename); loc->end.line = swift_lineno; loc->step()
 #define SET_VAL val->expr_ = l
-#define SET_STR val->id_ = new std::string(yytext)
+#define SET_STR val->id_ = new std::string(swift_text)
+#define GET_BASE (swift_leng > 2 && tolower(swift_text[1]) == 'x') ? 16 : 10
 
 // not needed so omit warning
+//FLOAT    {D}+\.{D}*|{D}*\.{D}+
 
 %}
 
 VAR_ITEM [_a-zA-Z][_a-zA-Z0-9]
 VAR_ID   [_a-zA-Z][_a-zA-Z0-9]*
 
-OP_ITEM  [*/%+\-!=<>&^|]
+OP_ITEM  [*/%+\-!=<>&^|~]
 OP       {OP_ITEM}*
-DIGIT    [0-9]
 
-FLOAT    {DIGIT}+\.{DIGIT}*|{DIGIT}*\.{DIGIT}+
-INTEGER  {DIGIT}+
+D        [0-9]
+H        [0-9a-fA-F]
+E        [Ee][+-]?{D}+
+
+FLOAT    {D}+{E}|{D}*\.{D}+({E})?|{D}+\.{D}*({E})?
+INTEGER  {D}+|0[xX]{H}+
 
 /*
 %x CHAR_STATE
@@ -83,7 +88,7 @@ INTEGER  {DIGIT}+
 <NESTED_COMMENT>.    { /*skip*/ }
 
 [@()\[\]{},.:] { // single character tokens
-    SET_LOC; return yytext[0];
+    SET_LOC; return swift_text[0];
 }
 
 ->      { SET_LOC; return Token::ARROW; }
@@ -102,7 +107,7 @@ INTEGER  {DIGIT}+
 [*/%]{OP}   { SET_LOC; SET_STR; return Token::MUL; }
 [+\-]{OP}   { SET_LOC; SET_STR; return Token::ADD; }
 [<>]{OP}    { SET_LOC; SET_STR; return Token::REL; }
-[=!]{OP}    { SET_LOC; SET_STR; return Token::EQ; }
+[=!~]{OP}   { SET_LOC; SET_STR; return Token::EQ; }
 &{OP}       { SET_LOC; SET_STR; return Token::AND; }
 \^{OP}      { SET_LOC; SET_STR; return Token::XOR; }
 \|{OP}      { SET_LOC; SET_STR; return Token::OR; }
@@ -150,27 +155,27 @@ private     { SET_LOC; return Token::PRIVATE; }
 nil   { SET_LOC; return Token::NIL; }
 self  { SET_LOC; return Token::SELF; }
 
-{INTEGER}x      { SET_LOC; Box b; b.size_   = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INDEX ); return Token::L_INDEX; }
+{INTEGER}x      { SET_LOC; Box b; b.size_   = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INDEX ); return Token::L_INDEX; }
                                                                                   
-{INTEGER}       { SET_LOC; Box b; b.int_    = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INT   ); return Token::L_INT; }
-{INTEGER}b      { SET_LOC; Box b; b.int8_   = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INT8  ); return Token::L_INT8; }
-{INTEGER}w      { SET_LOC; Box b; b.int16_  = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INT16 ); return Token::L_INT16; }
-{INTEGER}d      { SET_LOC; Box b; b.int32_  = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INT32 ); return Token::L_INT32; }
-{INTEGER}q      { SET_LOC; Box b; b.int64_  = strtoll (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_INT64 ); return Token::L_INT64; }
-{INTEGER}sb     { SET_LOC; Box b; b.sat8_   = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_SAT8  ); return Token::L_SAT8; }
-{INTEGER}sw     { SET_LOC; Box b; b.sat16_  = strtol  (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_SAT16 ); return Token::L_SAT16; }
+{INTEGER}       { SET_LOC; Box b; b.int_    = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INT   ); return Token::L_INT; }
+{INTEGER}b      { SET_LOC; Box b; b.int8_   = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INT8  ); return Token::L_INT8; }
+{INTEGER}w      { SET_LOC; Box b; b.int16_  = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INT16 ); return Token::L_INT16; }
+{INTEGER}d      { SET_LOC; Box b; b.int32_  = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INT32 ); return Token::L_INT32; }
+{INTEGER}q      { SET_LOC; Box b; b.int64_  = strtoll (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_INT64 ); return Token::L_INT64; }
+{INTEGER}sb     { SET_LOC; Box b; b.sat8_   = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_SAT8  ); return Token::L_SAT8; }
+{INTEGER}sw     { SET_LOC; Box b; b.sat16_  = strtol  (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_SAT16 ); return Token::L_SAT16; }
                                                                                   
-{INTEGER}u      { SET_LOC; Box b; b.uint_   = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_UINT  ); return Token::L_UINT; }
-{INTEGER}ub     { SET_LOC; Box b; b.uint8_  = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_UINT8 ); return Token::L_UINT8; }
-{INTEGER}uw     { SET_LOC; Box b; b.uint16_ = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_UINT16); return Token::L_UINT16; }
-{INTEGER}ud     { SET_LOC; Box b; b.uint32_ = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_UINT32); return Token::L_UINT32; }
-{INTEGER}uq     { SET_LOC; Box b; b.uint64_ = strtoull(yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_UINT64); return Token::L_UINT64; }
-{INTEGER}usb    { SET_LOC; Box b; b.usat8_  = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_USAT8 ); return Token::L_USAT8; }
-{INTEGER}usw    { SET_LOC; Box b; b.usat16_ = strtoul (yytext, 0, 10); val->expr_ = new Literal(*loc, b, Token::L_USAT16); return Token::L_USAT16; }
+{INTEGER}u      { SET_LOC; Box b; b.uint_   = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_UINT  ); return Token::L_UINT; }
+{INTEGER}ub     { SET_LOC; Box b; b.uint8_  = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_UINT8 ); return Token::L_UINT8; }
+{INTEGER}uw     { SET_LOC; Box b; b.uint16_ = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_UINT16); return Token::L_UINT16; }
+{INTEGER}ud     { SET_LOC; Box b; b.uint32_ = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_UINT32); return Token::L_UINT32; }
+{INTEGER}uq     { SET_LOC; Box b; b.uint64_ = strtoull(swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_UINT64); return Token::L_UINT64; }
+{INTEGER}usb    { SET_LOC; Box b; b.usat8_  = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_USAT8 ); return Token::L_USAT8; }
+{INTEGER}usw    { SET_LOC; Box b; b.usat16_ = strtoul (swift_text, 0, GET_BASE); val->expr_ = new Literal(*loc, b, Token::L_USAT16); return Token::L_USAT16; }
                                                                                   
-{FLOAT}         { SET_LOC; Box b; b.float_  = strtod(yytext, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL  ); return Token::L_REAL; }
-{FLOAT}d        { SET_LOC; Box b; b.float_  = strtod(yytext, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL32); return Token::L_REAL32; }
-{FLOAT}q        { SET_LOC; Box b; b.double_ = strtod(yytext, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL64); return Token::L_REAL64; }
+{FLOAT}         { SET_LOC; Box b; b.float_  = strtof(swift_text, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL  ); return Token::L_REAL; }
+{FLOAT}d        { SET_LOC; Box b; b.float_  = strtof(swift_text, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL32); return Token::L_REAL32; }
+{FLOAT}q        { SET_LOC; Box b; b.double_ = strtod(swift_text, 0);       val->expr_ = new Literal(*loc, b, Token::L_REAL64); return Token::L_REAL64; }
                                                                                   
 true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
@@ -184,9 +189,14 @@ false           { SET_LOC; Box b; b.bool_   = false;                   val->expr
 
 [ \t]   { /* skip whitespaces */ }
 
-. { printf("%i: error: invalid input character '%c'\n", yylineno, yytext[0]); }
+. { printf("%i: error: invalid input character '%c'\n", swift_lineno, swift_text[0]); }
 
 %%
+
+#undef SET_LOC
+#undef SET_VAL
+#undef SET_STR
+#undef GET_BASE
 
 namespace swift {
 
@@ -194,9 +204,9 @@ FILE* lexer_init(const char* filename)
 {
     delete g_lexer_filename;
     g_lexer_filename = new std::string(filename);
-    yylineno = 1;
-    yyin = fopen(filename, "r");
-    return yyin;
+    swift_lineno = 1;
+    swift_in = fopen(filename, "r");
+    return swift_in;
 
     // HACK: omit warning
     if (false)

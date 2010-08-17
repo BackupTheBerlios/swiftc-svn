@@ -217,6 +217,17 @@ static void readBuiltinTypes(swift::Context* ctxt)
     g_type_id_set.insert("real64");
     g_type_id_set.insert("bool");
 
+    // library HACK
+    builtin.push_back("lib/math.swift");
+    builtin.push_back("lib/vec.swift");
+    builtin.push_back("lib/mat.swift");
+    g_type_id_set.insert("math");
+    g_type_id_set.insert("mat4x4");
+    g_type_id_set.insert("vec2");
+    g_type_id_set.insert("vec3");
+    g_type_id_set.insert("ivec3");
+    g_type_id_set.insert("complex");
+
     FILE* file;
 
     for (size_t i = 0; i < builtin.size(); ++i)

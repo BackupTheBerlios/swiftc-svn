@@ -28,7 +28,10 @@ simd class INT
     simd reader | (INT i) -> INT res; end
     simd reader ^ (INT i) -> INT res; end
 
-    simd reader ^ (INT i) -> INT res; end
+    simd reader << (INT i) -> INT res; end
+    simd reader >> (INT i) -> INT res; end
+
+    simd reader ~ () -> INT res; end # unary bitwise not
 
     # operators for comparisons
 
@@ -38,9 +41,6 @@ simd class INT
     simd reader >  (INT i) -> bool res; end
     simd reader <= (INT i) -> bool res; end
     simd reader >= (INT i) -> bool res; end
-
-    simd reader << (INT i) -> INT res; end
-    simd reader >> (INT i) -> INT res; end
 
     # unary minus
     reader - () -> INT res; end

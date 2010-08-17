@@ -458,8 +458,8 @@ postfix_expr
     /* 
         routines 
     */
-    |    DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->popExprList()); }
-    | VAR_ID DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->popExprList()); }
+    |         DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$, new std::string( ctxt_->class_->cid() ), $2, ctxt_->popExprList()); }
+    | TYPE_ID DOUBLE_COLON fct_id { ctxt_->pushExprList(); } '(' expr_list ')' { $$ = new RoutineCall(@$,                                      $1, $3, ctxt_->popExprList()); }
 
     /* 
         methods 

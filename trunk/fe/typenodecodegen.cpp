@@ -296,13 +296,14 @@ void TypeNodeCodeGen::visit(MethodCall* m)
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
         if ( m->id()->find("bitcast") != std::string::npos )
-        {
             val = builder_.CreateBitCast(val, llvmTo);
-        }
         else // -> assumes that r is a normal cast
         {
             if ( llvmTo == llvmFrom )
-                return; // value_ and isAddr_ are still correct, so nothing to do
+            { 
+                setResult(m, new Scalar(val));
+                return;
+            }
 
             llvm::StringRef name = val->getName();
 
@@ -368,6 +369,7 @@ void TypeNodeCodeGen::visit(UnExpr* u)
             case '+': break; // nothing to do
             case '-': val = builder_.CreateNeg(val); break;
             case '!': val = builder_.CreateNot(val); break;
+            case '~': val = builder_.CreateNot(val); break;
             default:         swiftAssert(false, "TODO");
         }
 
