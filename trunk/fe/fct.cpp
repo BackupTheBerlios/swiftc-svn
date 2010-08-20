@@ -188,8 +188,8 @@ void AssignCreate::genCode()
             MemberFct* memFct = info_.fct_;
 
             llvm::Function* llvmFct = lType_->isSimd() 
-                                    ? memFct->simdFct_ 
-                                    : memFct->llvmFct_; 
+                                    ? memFct->simdFct() 
+                                    : memFct->llvmFct();
 
             swiftAssert(llvmFct, "must be valid");
 

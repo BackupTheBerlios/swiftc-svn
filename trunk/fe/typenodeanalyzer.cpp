@@ -538,7 +538,7 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
         return;
     }
 
-    const TypeList& out = m->memberFct_->sig_.outTypes_;
+    const TypeList& out = m->memberFct_->sig().outTypes_;
 
     m->results_.clear();
 

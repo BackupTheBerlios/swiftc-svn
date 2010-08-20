@@ -81,6 +81,7 @@ ADD_EXECUTABLE (swift
     utils/assert.cpp
     utils/disjointsets.cpp
     utils/memmgr.cpp
+    #utils/simdloopextractionpass.cpp
     utils/stringhelper.cpp
     utils/llvmhelper.cpp
     utils/llvmplace.cpp

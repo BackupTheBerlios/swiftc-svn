@@ -42,10 +42,10 @@ void StmntCodeGen::visit(CFStmnt* s)
     {
         case Token::RETURN:
         {
-            if ( memberFct->sig_.out_.empty() )
+            if ( memberFct->sig().out_.empty() )
                 builder_.CreateRetVoid();
             else
-                builder_.CreateBr(ctxt_->memberFct_->returnBB_);
+                builder_.CreateBr(ctxt_->memberFct_->returnBB());
             break;
 
             return;
@@ -169,22 +169,22 @@ void StmntCodeGen::visit(WhileLoop* l)
      * create new basic blocks
      */
 
-    llvm::BasicBlock* headerBB = llvm::BasicBlock::Create(lctxt_, "while-header");
-    l->loopBB_ = llvm::BasicBlock::Create(lctxt_, "while");
-    l->outBB_  = llvm::BasicBlock::Create(lctxt_, "while-out");
+    l->headerBB_ = llvm::BasicBlock::Create(lctxt_, "while-header");
+    l->loopBB_   = llvm::BasicBlock::Create(lctxt_, "while");
+    l->outBB_    = llvm::BasicBlock::Create(lctxt_, "while-out");
 
     /*
      * close current bb
      */
 
-    builder_.CreateBr(headerBB);
+    builder_.CreateBr(l->headerBB_);
 
     /*
-     * emit code for headerBB
+     * emit code for l->headerBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(headerBB);
-    builder_.SetInsertPoint(headerBB);
+    llvmFct->getBasicBlockList().push_back(l->headerBB_);
+    builder_.SetInsertPoint(l->headerBB_);
     l->expr_->accept(tncg_);
     Value* cond = l->expr_->get().place_->getScalar(builder_);
     builder_.CreateCondBr(cond, l->loopBB_, l->outBB_);
@@ -197,7 +197,7 @@ void StmntCodeGen::visit(WhileLoop* l)
     builder_.SetInsertPoint(l->loopBB_);
     //l->scope_->accept(this);
     SWIFT_ENTER_LOOP;
-    builder_.CreateBr(headerBB);
+    builder_.CreateBr(l->headerBB_);
 
     /*
      * emit code for l->outBB_
@@ -215,9 +215,12 @@ void StmntCodeGen::visit(SimdLoop* l)
      * create new basic blocks
      */
 
-    llvm::BasicBlock* headerBB = llvm::BasicBlock::Create(lctxt_, "simd-header");
-    l->loopBB_ = llvm::BasicBlock::Create(lctxt_, "simd");
-    l->outBB_  = llvm::BasicBlock::Create(lctxt_, "simd-out");
+    l->headerBB_ = llvm::BasicBlock::Create(lctxt_, "simd-header");
+    l->loopBB_   = llvm::BasicBlock::Create(lctxt_, "simd");
+    l->outBB_    = llvm::BasicBlock::Create(lctxt_, "simd-out");
+
+    //ctxt_->memberFct_->
+
 
     /*
      * close current bb
@@ -237,14 +240,14 @@ void StmntCodeGen::visit(SimdLoop* l)
     Value* upper = l->rExpr_->get().place_->getScalar(builder_);
 
 
-    builder_.CreateBr(headerBB);
+    builder_.CreateBr(l->headerBB_);
 
     /*
-     * emit code for headerBB
+     * emit code for l->headerBB_
      */
 
-    llvmFct->getBasicBlockList().push_back(headerBB);
-    builder_.SetInsertPoint(headerBB);
+    llvmFct->getBasicBlockList().push_back(l->headerBB_);
+    builder_.SetInsertPoint(l->headerBB_);
 
     Value* lower = builder_.CreateLoad(ctxt_->simdIndex_);
 
@@ -262,7 +265,7 @@ void StmntCodeGen::visit(SimdLoop* l)
     builder_.CreateStore( 
             builder_.CreateAdd( builder_.CreateLoad(ctxt_->simdIndex_), 
             ::createInt64(lctxt_, 4) ), ctxt_->simdIndex_ ); // HACK
-    builder_.CreateBr(headerBB);
+    builder_.CreateBr(l->headerBB_);
 
     /*
      * emit code for l->outBB_

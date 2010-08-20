@@ -223,7 +223,7 @@ member_function
         '(' param_list ')' ret_list stmnt_list END eol
         {
             $$ = $<memberFct_>4;
-            $$->sig_.buildTypeLists();
+            $$->sig().buildTypeLists();
             ctxt_->leaveScope();
         }
     | simd_modifier CREATE
@@ -235,7 +235,7 @@ member_function
         '(' param_list')' eol stmnt_list END eol
         {
             $$ = $<memberFct_>3;
-            $$->sig_.buildTypeLists();
+            $$->sig().buildTypeLists();
             ctxt_->leaveScope();
         }
     ;
@@ -251,7 +251,7 @@ param_list_not_empty
     ;
 
 param
-    : const_type VAR_ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
+    : const_type VAR_ID { ctxt_->memberFct_->sig().in_.push_back( new Param(@$, $1, $2) ); }
     ;
 
 ret_list
@@ -265,7 +265,7 @@ retval_list_not_empty
     ;
 
 retval
-    : var_type VAR_ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
+    : var_type VAR_ID { ctxt_->memberFct_->sig().out_.push_back( new RetVal(@$, $1, $2) ); }
     ;
 
 /*

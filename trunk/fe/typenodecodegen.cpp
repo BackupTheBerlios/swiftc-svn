@@ -291,7 +291,7 @@ void TypeNodeCodeGen::visit(MethodCall* m)
     if ( const ScalarType* from = m->expr_->get().type_->cast<ScalarType>() )
     {
         Value* val = self->getScalar(builder_);
-        const ScalarType* to = cast<ScalarType>( m->memberFct_->sig_.out_[0]->getType() );
+        const ScalarType* to = cast<ScalarType>( m->memberFct_->sig().out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
@@ -536,7 +536,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     MemberFct* fct = call->getMemberFct();
 
     call->exprList_->accept(this);
-    TypeList& out = fct->sig_.outTypes_;
+    TypeList& out = fct->sig().outTypes_;
 
     /* 
      * prepare arguments
@@ -575,7 +575,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     // append regular arguments
     call->exprList_->getArgs(builder_, args);
 
-    llvm::Function* llvmFct = call->simd_ ? fct->simdFct_ : fct->llvmFct_;
+    llvm::Function* llvmFct = call->simd_ ? fct->simdFct() : fct->llvmFct();
     swiftAssert(llvmFct, "must exist");
 
     // create actual call

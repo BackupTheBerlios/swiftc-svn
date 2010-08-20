@@ -22,12 +22,13 @@ class Phong
         if rv > 0.0
             real sn = s
             int i = 0
+            int N = sh.to_int()
 
-            #while i < sh.to_int()
-            #    sn = sn * rv
-            #    intensity = intensity + sn
-            #    i = i + 1
-            #end
+            while i < N
+                sn = sn * rv
+                intensity = intensity + sn
+                i = i + 1
+            end
         end
 
         rgb = intensity * 255.0 + 0.5
