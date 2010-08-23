@@ -16,11 +16,9 @@ public:
     virtual void visit(Decl* d);
 
     // TypeNode -> Expr 
-    virtual void visit(Broadcast* u);
     virtual void visit(Id* id);
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
-    virtual void visit(Range* n);
     virtual void visit(Self* n);
 
     // TypeNode -> Expr -> Access

@@ -72,11 +72,10 @@ class Type : public Node
 {
 public:
 
-    Type(location loc, TokenType modifier, bool isRef, bool isSimd);
+    Type(location loc, TokenType modifier, bool isRef);
     virtual ~Type() {}
 
     virtual Type* clone() const = 0;
-    Type* simdClone() const;
     virtual bool check(const Type* t, Module* m) const = 0;
     virtual const Type* derefPtr() const { return this; };
     virtual bool isBool() const { return false; }
@@ -107,8 +106,6 @@ public:
         return dynamic_cast<const T*>(this);
     }
 
-    bool isSimd() const { return simd_; }
-
     virtual MemberFctInfo hasMemberFct(const std::string* id, const TypeList& in, Module* m) const = 0;
     MemberFctInfo hasMemberFct(const std::string& id, const TypeList& in, Module* m) const;
 
@@ -116,7 +113,6 @@ protected:
 
     TokenType modifier_;
     bool isRef_;
-    bool simd_;
 };
 
 //------------------------------------------------------------------------------
@@ -125,7 +121,7 @@ class ErrorType : public Type
 {
 public:
 
-    ErrorType(bool isSimd = false);
+    ErrorType();
 
     virtual Type* clone() const;
     virtual bool check(const Type* t, Module* m) const;
@@ -151,7 +147,7 @@ class BaseType : public Type
 {
 public:
 
-    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd);
+    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut);
     virtual ~BaseType();
 
     static BaseType* create(
@@ -189,7 +185,7 @@ class ScalarType : public BaseType
 {
 public:
 
-    ScalarType(location loc, TokenType modifier, std::string* id, bool isSimd = false);
+    ScalarType(location loc, TokenType modifier, std::string* id);
 
     virtual ScalarType* clone() const;
     virtual bool isBool() const;
@@ -219,7 +215,7 @@ class UserType : public BaseType
 {
 public:
 
-    UserType(location loc, TokenType modifier, std::string* id, bool isInOut = false, bool isSimd = false);
+    UserType(location loc, TokenType modifier, std::string* id, bool isInOut = false);
 
     virtual UserType* clone() const;
     virtual bool perRef() const;

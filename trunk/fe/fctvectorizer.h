@@ -19,8 +19,7 @@ template <>
 class StmntVisitor<class SimdLoopProcessor> : public StmntVisitorBase
 {
 public:
-    StmntVisitor(Context* ctxt);
-    //virtual ~StmntVisitor();
+    StmntVisitor(Context* ctxt, Packetizer::Packetizer* packetizer);
 
     virtual void visit(ErrorStmnt* s) {}
     virtual void visit(CFStmnt* s) {}
@@ -36,6 +35,8 @@ public:
     virtual void visit(ExprStmnt* s) {}
 
 private:
+
+    Packetizer::Packetizer* packetizer_;
 
     static void enumBBs(SimdLoop* l, llvm::BasicBlock* bb, std::vector<llvm::BasicBlock*>& bbs);
 };

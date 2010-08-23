@@ -37,8 +37,8 @@ TypeNode::~TypeNode()
 
 //------------------------------------------------------------------------------
 
-Decl::Decl(location loc, bool simd, Type* type, std::string* id)
-    : TypeNode( loc, simd ? type->simdClone() : type->clone() )
+Decl::Decl(location loc, Type* type, std::string* id)
+    : TypeNode( loc, type->clone() )
     , id_(id)
     , local_(0)
     , alloca_(0)
@@ -86,24 +86,6 @@ void ErrorExpr::accept(TypeNodeVisitorBase* t)
 }
 
 //------------------------------------------------------------------------------
-
-Broadcast::Broadcast(location loc, Expr* expr)
-    : Expr(loc)
-    , expr_(expr)
-{}
-
-Broadcast::~Broadcast()
-{
-    delete expr_;
-}
-
-void Broadcast::accept(TypeNodeVisitorBase* t)
-{
-    t->visit(this);
-}
-
-
-//----------------------------------------------------------------------
 
 Id::Id(location loc, std::string* id)
     : Expr(loc)
@@ -163,9 +145,15 @@ void IndexExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-SimdIndexExpr::SimdIndexExpr(location loc, Expr* prefixExpr)
+SimdIndexExpr::SimdIndexExpr(location loc, Expr* prefixExpr, std::string* id)
     : Access(loc, prefixExpr)
+    , id_(id)
 {}
+
+SimdIndexExpr::~SimdIndexExpr()
+{
+    delete id_;
+}
 
 void SimdIndexExpr::accept(TypeNodeVisitorBase* t)
 {
@@ -421,23 +409,6 @@ void Nil::accept(TypeNodeVisitorBase* t)
 }
 
 //------------------------------------------------------------------------------
-
-Range::Range(location loc, Type* type)
-    : Expr(loc)
-    , type_(type)
-{}
-
-Range::~Range()
-{
-    delete type_;
-}
-
-void Range::accept(TypeNodeVisitorBase* t)
-{
-    t->visit(this);
-}
-
-//----------------------------------------------------------------------
 
 Self::Self(location loc)
     : Expr(loc)

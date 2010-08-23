@@ -38,19 +38,6 @@ void TypeNodeCodeGen::visit(ErrorExpr* d)
     swiftAssert(false, "unreachable");
 }
 
-void TypeNodeCodeGen::visit(Broadcast* b)
-{
-    b->expr_->accept(this);
-
-    int simdLength;
-    const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
-
-    Value* sVal = b->expr_->get().place_->getScalar(builder_);
-    Value* vVal = simdBroadcast(sVal, vType, builder_);
-
-    setResult( b, new Scalar(vVal) );
-}
-
 void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );
@@ -110,6 +97,7 @@ void TypeNodeCodeGen::visit(Nil* n)
     // TODO
 }
 
+#if 0
 void TypeNodeCodeGen::visit(Range* r)
 {
     int simdLength;
@@ -146,6 +134,7 @@ void TypeNodeCodeGen::visit(Range* r)
 
     setResult( r, new Scalar(llvm::ConstantVector::get(vType, constants)) );
 }
+#endif
 
 void TypeNodeCodeGen::visit(Self* n)
 {

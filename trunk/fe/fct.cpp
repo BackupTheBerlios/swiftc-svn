@@ -88,55 +88,6 @@ void AssignCreate::check()
 
     if (isPairwise() && rhs_->getResult(rBegin_).inits_ && isDecl_)
         initsRhs_ = true;
-
-    if ( lType_->isSimd() )
-    {
-        bool allSimd = lType_->isSimd();
-        bool noneSimd = !allSimd;
-
-        for (size_t i = 0; i < rTypes_.size(); ++i)
-        {
-            bool simd = rTypes_[i]->isSimd();
-            allSimd  &=  simd;
-            noneSimd &= !simd;
-        }
-
-        bool error = false;
-
-        if (!info_.simd_)
-        {
-            errorf( loc_,
-                    "%s '%s(%s)' in class '%s' is not declared as "
-                    "simd function but is used within a simd loop",
-                    kind.c_str(), 
-                    name.c_str(), 
-                    rTypes_.toString().c_str(),  
-                    lType_->toString().c_str() );
-
-            error = true;
-        }
-
-        if ( !lType_->isSimd() )
-        {
-            errorf(loc_, "left hand value of assignment is not a simd value" );
-            error = true;
-        }
-
-        for (size_t i = 0; i < rTypes_.size(); ++i)
-        {
-            if ( !rTypes_[i]->isSimd() )
-            {
-                errorf(loc_, "argument number %i in simd assignment is not a simd value", i);
-                error = true;
-            }
-        }
-
-        if (error)
-        {
-            ctxt_->result_ = false;
-            return;
-        }
-    }
 }
 
 void AssignCreate::genCode()
@@ -187,9 +138,7 @@ void AssignCreate::genCode()
         {
             MemberFct* memFct = info_.fct_;
 
-            llvm::Function* llvmFct = lType_->isSimd() 
-                                    ? memFct->simdFct() 
-                                    : memFct->llvmFct();
+            llvm::Function* llvmFct = memFct->llvmFct();
 
             swiftAssert(llvmFct, "must be valid");
 

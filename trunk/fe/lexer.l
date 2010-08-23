@@ -87,7 +87,7 @@ INTEGER  {D}+|0[xX]{H}+
 <NESTED_COMMENT>\n   { /*skip*/  }
 <NESTED_COMMENT>.    { /*skip*/ }
 
-[@()\[\]{},.:] { // single character tokens
+[()\[\]{},.:] { // single character tokens
     SET_LOC; return swift_text[0];
 }
 
@@ -144,9 +144,6 @@ ptr       { SET_LOC; return Token::PTR; }
 array     { SET_LOC; return Token::ARRAY; }
 simd      { SET_LOC; return Token::SIMD; }
 
-broadcast  { SET_LOC; return Token::BROADCAST; }
-simd_range { SET_LOC; return Token::SIMD_RANGE; }
-
 public      { SET_LOC; return Token::PUBLIC; }
 protected   { SET_LOC; return Token::PROTECTED; }
 package     { SET_LOC; return Token::PACKAGE; }
@@ -180,7 +177,8 @@ self  { SET_LOC; return Token::SELF; }
 true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 
-{VAR_ID} { SET_LOC; SET_STR; return Token::VAR_ID; }
+{VAR_ID}  { SET_LOC; SET_STR; return Token::VAR_ID; }
+@{VAR_ID} { SET_LOC; val->id_ = new std::string(swift_text+1); return Token::SIMD_INDEX; }
 
 \\\n {}
 

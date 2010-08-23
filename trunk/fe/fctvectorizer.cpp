@@ -22,8 +22,9 @@
 
 namespace swift {
 
-StmntSimdLoopProcessor::StmntVisitor(Context* ctxt)
+StmntSimdLoopProcessor::StmntVisitor(Context* ctxt, Packetizer::Packetizer* packetizer)
     : StmntVisitorBase(ctxt)
+    , packetizer_(packetizer)
 {}
 
 void StmntSimdLoopProcessor::visit(IfElStmnt* s)
@@ -62,19 +63,30 @@ void StmntSimdLoopProcessor::visit(SimdLoop* l)
     swiftAssert( outBB == l-> outBB_, "must be the same BBs");
     swiftAssert(loopBB == l->loopBB_, "must be the same BBs");
 
+    // get all BBs belonging to l
     std::vector<llvm::BasicBlock*> bbs;
-    bbs.push_back(l->headerBB_);
     enumBBs(l, loopBB, bbs);
 
+    // calc dom-tree
     llvm::DominatorTree dt;
     dt.runOnFunction(*ctxt_->llvmFct_);
+
+    // extract l's body to newFct
     llvm::Function* newFct = llvm::ExtractCodeRegion(dt, bbs);
     newFct->addAttribute(~0, llvm::Attribute::AlwaysInline);
+
+    // packetize newFct
+    std::string scalarName = newFct->getNameStr();
+    std::string simdName = scalarName + "_simd";
+
+    newFct->getType(); // TODO simdify
+
+    Packetizer::addFunctionToPacketizer( packetizer_, 4, scalarName, simdName); 
 }
 
 void StmntSimdLoopProcessor::enumBBs(SimdLoop* l, llvm::BasicBlock* bb, std::vector<llvm::BasicBlock*>& bbs)
 {
-    if (bb == l->outBB_)
+    if (bb == l->epilogueBB_)
         return;
 
     if ( std::find(bbs.begin(), bbs.end(), bb) != bbs.end() )
@@ -124,7 +136,6 @@ FctVectorizer::FctVectorizer(Context* ctxt)
         }
     }
 
-
     using namespace llvm::Intrinsic;
     const llvm::Type* llvmTypes[1];
     llvmTypes[0] = llvm::VectorType::get(
@@ -147,7 +158,7 @@ void FctVectorizer::processSimd(Class* c, MemberFct* m)
 
 void FctVectorizer::processScalar(Class* c, MemberFct* m)
 {
-    StmntSimdLoopProcessor sslp(ctxt_);
+    StmntSimdLoopProcessor sslp(ctxt_, packetizer_);
     m->scope()->accept(&sslp);
 }
 

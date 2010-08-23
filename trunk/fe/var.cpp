@@ -63,12 +63,8 @@ const char* Var::cid() const
 
 llvm::AllocaInst* Var::createEntryAlloca(Context* ctxt)
 {
-    int simdLength = 0;
-    if ( type_->isSimd() ) // HACK
-        simdLength = 4;
-    const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_, simdLength);
+    const llvm::Type* llvmType = type_->getLLVMType(ctxt->module_);
     alloca_ = ::createEntryAlloca( ctxt->builder_, llvmType, cid() );
-
     return alloca_;
 }
 

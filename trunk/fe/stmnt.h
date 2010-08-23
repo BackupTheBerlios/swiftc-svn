@@ -224,6 +224,7 @@ protected:
     Expr* lExpr_;
     Expr* rExpr_;
     Local* index_;
+    llvm::BasicBlock* epilogueBB_;
 
     template<class T> friend class StmntVisitor;
 };
