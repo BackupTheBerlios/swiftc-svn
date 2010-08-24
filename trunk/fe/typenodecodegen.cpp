@@ -201,6 +201,7 @@ void TypeNodeCodeGen::visit(SimdIndexExpr* s)
         Value* index = builder_.CreateUDiv( 
                 builder_.CreateLoad(ctxt_->simdIndex_),
                 createInt64(lctxt_, 4) ); // HACK
+        //index = builder_.CreateTruncOrBitCast( index, llvm::IntegerType::getInt32PtrTy() ); // HACK
         setResult( s, new Addr(builder_.CreateInBoundsGEP(ptr, index)) );
         //Value* val = createInt64(lctxt_, 7);
         //setResult( s, new Addr( abuilder_.CreateInBoundsGEP(ptr, val)) );

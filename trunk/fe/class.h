@@ -309,11 +309,11 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m) = 0;
 
-    friend void Class   ::accept(ClassVisitorBase* m);
-    friend void Create  ::accept(ClassVisitorBase* m);
-    friend void Reader  ::accept(ClassVisitorBase* m);
-    friend void Writer  ::accept(ClassVisitorBase* m);
-    friend void Routine ::accept(ClassVisitorBase* m);
+    friend void Class  ::accept(ClassVisitorBase* m);
+    friend void Create ::accept(ClassVisitorBase* m);
+    friend void Reader ::accept(ClassVisitorBase* m);
+    friend void Writer ::accept(ClassVisitorBase* m);
+    friend void Routine::accept(ClassVisitorBase* m);
 
 protected:
 

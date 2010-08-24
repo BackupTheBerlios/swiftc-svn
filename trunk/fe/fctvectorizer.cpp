@@ -5,10 +5,15 @@
 #include <llvm/Function.h>
 #include <llvm/Intrinsics.h>
 #include <llvm/Instructions.h>
+#include <llvm/Module.h>
 #include <llvm/PassManagers.h>
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Support/TypeBuilder.h>
 #include <llvm/Transforms/Utils/FunctionUtils.h>
+
+#include "Packetizer/api.h"
+
+#include "vec/typevectorizer.h"
 
 #include "utils/cast.h"
 
@@ -18,7 +23,6 @@
 #include "fe/scope.h"
 #include "fe/type.h"
 
-#include "Packetizer/api.h"
 
 namespace swift {
 
@@ -49,19 +53,7 @@ void StmntSimdLoopProcessor::visit(SimdLoop* l)
 {
     l->scope_->accept(this);
 
-    //std::cout << l->headerBB_->getNameStr() << std::endl;
-
-    llvm::BranchInst* branch = cast<llvm::BranchInst>( l->headerBB_->getTerminator() );
-    swiftAssert(branch->getNumSuccessors() == 2, "must exactly return 2 succs");
-    llvm::BasicBlock* outBB = branch->getSuccessor(0);
-    llvm::BasicBlock* loopBB = branch->getSuccessor(1);
-
-    // was this correct?
-    if (outBB != l->outBB_)
-        std::swap(outBB, loopBB);
-
-    swiftAssert( outBB == l-> outBB_, "must be the same BBs");
-    swiftAssert(loopBB == l->loopBB_, "must be the same BBs");
+    llvm::BasicBlock* loopBB = l->loopBB_;
 
     // get all BBs belonging to l
     std::vector<llvm::BasicBlock*> bbs;
@@ -72,16 +64,69 @@ void StmntSimdLoopProcessor::visit(SimdLoop* l)
     dt.runOnFunction(*ctxt_->llvmFct_);
 
     // extract l's body to newFct
-    llvm::Function* newFct = llvm::ExtractCodeRegion(dt, bbs);
-    newFct->addAttribute(~0, llvm::Attribute::AlwaysInline);
+    llvm::Function* sFct = llvm::ExtractCodeRegion(dt, bbs);
+    sFct->addAttribute(~0, llvm::Attribute::AlwaysInline);
 
-    // packetize newFct
-    std::string scalarName = newFct->getNameStr();
+    /*
+     * get once a again the current loopBB since we now have a new one
+     */
+    llvm::BranchInst* branch = cast<llvm::BranchInst>( l->headerBB_->getTerminator() );
+    swiftAssert(branch->getNumSuccessors() == 2, "must exactly return 2 succs");
+
+    llvm::BasicBlock* outBB  = branch->getSuccessor(0);
+    loopBB = branch->getSuccessor(1);
+
+    // was this correct?
+    if (outBB != l->outBB_)
+        std::swap(outBB, loopBB);
+
+    swiftAssert( outBB == l->outBB_, "must be the same BBs");
+    l->loopBB_ = loopBB; // update new block
+
+    /* 
+     * find the index of the simd index
+     */
+    size_t index = 0;
+    for (llvm::BasicBlock::iterator i = loopBB->begin(), e = loopBB->end(); i != e; ++i)
+    {
+        if ( llvm::CallInst* call = dynamic<llvm::CallInst>(&*i) )
+        {
+            size_t j = 0;
+            for (llvm::CallInst::op_iterator i = call->op_begin(), e = call->op_end(); i != e; ++i)
+            {
+                if ( i->get() == static_cast<llvm::Value*>(l->index_->getAlloca()) )
+                    index = j; // here we are
+
+                ++j;
+            }
+        }
+    }
+
+    swiftAssert(index != 0, "must be found"); 
+    // index = index - 1 + 1 (label vs return type)
+
+    /*
+     * packetize sFct
+     */
+    std::string scalarName = sFct->getNameStr();
     std::string simdName = scalarName + "_simd";
 
-    newFct->getType(); // TODO simdify
+    int simdLength;
+    const llvm::FunctionType* sFctType = sFct->getFunctionType();
 
-    Packetizer::addFunctionToPacketizer( packetizer_, 4, scalarName, simdName); 
+    // set just the simdIndex param as uniform
+    std::vector<bool> uniforms;
+    uniforms.assign(sFctType->getNumParams()+1, false); // one for return type
+    uniforms[index] = true;
+
+    const llvm::FunctionType* vFctType = cast<llvm::FunctionType>(
+            vec::vecFunctionType(ctxt_->lmodule(), Context::SIMD_WIDTH, sFctType, uniforms, simdLength) );
+
+    std::cout << sFctType->getDescription() << std::endl;
+    std::cout << vFctType->getDescription() << std::endl;
+
+    ctxt_->lmodule()->getOrInsertFunction(simdName, vFctType);
+    Packetizer::addFunctionToPacketizer(packetizer_, 4, scalarName, simdName); 
 }
 
 void StmntSimdLoopProcessor::enumBBs(SimdLoop* l, llvm::BasicBlock* bb, std::vector<llvm::BasicBlock*>& bbs)

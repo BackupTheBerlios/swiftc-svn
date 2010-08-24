@@ -362,8 +362,7 @@ const llvm::Type* ScalarType::defineLLVMType(
 const llvm::Type* ScalarType::getRawVecLLVMType(Module* m, int& simdLength) const 
 {
     const llvm::Type* llvmType = getLLVMType(m);
-    simdLength = vec::TypeVectorizer::lengthOfScalar(llvmType, Context::SIMD_WIDTH);
-    return vec::TypeVectorizer::vecScalar(llvmType, simdLength, Context::SIMD_WIDTH);
+    return vec::vecType(m->getLLVMModule(), Context::SIMD_WIDTH, llvmType, simdLength);
 }
 
 bool ScalarType::isFloat() const

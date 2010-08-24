@@ -228,7 +228,6 @@ void StmntCodeGen::visit(SimdLoop* l)
     l->rExpr_->accept(tncg_);
     Value* upper = l->rExpr_->get().place_->getScalar(builder_);
 
-
     builder_.CreateBr(l->headerBB_);
 
     /*

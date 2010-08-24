@@ -87,7 +87,7 @@ INTEGER  {D}+|0[xX]{H}+
 <NESTED_COMMENT>\n   { /*skip*/  }
 <NESTED_COMMENT>.    { /*skip*/ }
 
-[()\[\]{},.:] { // single character tokens
+[@()\[\]{},.:] { // single character tokens
     SET_LOC; return swift_text[0];
 }
 

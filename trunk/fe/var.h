@@ -53,6 +53,7 @@ public:
     const char* cid() const;
     llvm::AllocaInst* createEntryAlloca(Context* ctxt);
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
+    llvm::AllocaInst* getAlloca() { return alloca_; }
 
 protected:
 

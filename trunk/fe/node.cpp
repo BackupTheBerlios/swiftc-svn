@@ -123,7 +123,6 @@ void Module::analyze()
 void Module::buildLLVMTypes()
 {
     LLVMTypebuilder llvmTypeBuilder(ctxt_);
-    ctxt_->result_ = llvmTypeBuilder.getResult();
 }
 
 void Module::declareFcts()

@@ -78,6 +78,8 @@ ENDIF (BUILD_RELEASE)
 
 # sources
 ADD_EXECUTABLE (swift
+    vec/typevectorizer.cpp
+
     utils/assert.cpp
     utils/disjointsets.cpp
     utils/memmgr.cpp
@@ -116,7 +118,6 @@ ADD_EXECUTABLE (swift
     fe/cmdlineparser.cpp
     fe/main.cpp
 
-    vec/typevectorizer.cpp
     )
 
 #-------------------------------------------------------------------------------

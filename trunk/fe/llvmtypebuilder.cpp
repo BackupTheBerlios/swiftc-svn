@@ -15,16 +15,14 @@ using llvm::StructType;
 
 namespace swift {
 
-vec::StructMap LLVMTypebuilder::scalar2vec_ = vec::StructMap();
-vec::StructMap LLVMTypebuilder::vec2scalar_ = vec::StructMap();
-
 typedef Module::ClassMap::const_iterator CIter;
 
 LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
     : ctxt_(ctxt)
-    , result_(true)
 {
     const Module::ClassMap& classes = ctxt_->module_->classes();
+    Module* m = ctxt_->module_;
+    llvm::Module* lm = ctxt_->lmodule();
 
     for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
     {
@@ -34,7 +32,7 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
         if ( ScalarType::isScalar(c->id()) )
             continue;
 
-        if ( process(c) )
+        if ( buildTypeFromClass(c) )
             continue;
         else
         {
@@ -48,7 +46,8 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
             for (++iter; iter != cycle_.end(); ++iter)
                 errorf( (*iter)->loc(), "and class '%s'", (*iter)->cid() );
 
-            result_ = false;
+            ctxt_->result_ = false;
+
             return;
         }
     }
@@ -57,12 +56,11 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
     for (size_t i = 0; i < refinements.size(); ++i)
     {
         Refine& refine = refinements[i];
-        refine.opaque_->refineAbstractTypeTo( refine.type_->getLLVMType(ctxt_->module_) );
+        refine.opaque_->refineAbstractTypeTo( refine.type_->getLLVMType(m) );
     }
 
     /*
-     * collect structs which should be vectorized
-     * and build up reverse map
+     * now vectorize types
      */
 
     for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
@@ -73,46 +71,27 @@ LLVMTypebuilder::LLVMTypebuilder(Context* ctxt)
         if ( ScalarType::isScalar(c->id()) )
             continue;
 
-        struct2Class_[ c->llvmType_ ] = c;
-
-        if ( c->isSimd() )
-            scalar2vec_[ c->llvmType_ ] = vec::StructAndLength();
-    }
-
-    // vec types
-    vec::TypeVectorizer typeVec( this, scalar2vec_, vec2scalar_, ctxt_->lmodule() );
-
-    /*
-     * fill entries in class
-     */
-
-    for (CIter iter = classes.begin(); iter != classes.end(); ++iter)
-    {
-        Class* c = iter->second;
-
-        // skip builtin types
-        if ( ScalarType::isScalar(c->id()) )
+        if ( !c->isSimd() )
             continue;
 
-        if ( c->isSimd() )
+        const llvm::Type* vType = vec::vecType(
+                lm, Context::SIMD_WIDTH, c->llvmType_, c->simdLength_);
+
+        if (vType)
+            c->vecType_ = cast<llvm::StructType>(vType);
+        else
         {
-            struct2Class_[ c->llvmType_ ] = c;
-            vec::StructAndLength& vec = scalar2vec_[c->llvmType_];
-
-            c->vecType_ = vec.struct_;
-            c->simdLength_ = vec.simdLength_;
+            swiftAssert(c->simdLength_ == vec::ERROR, "must be an error");
+            errorf( c->loc(), "class '%s' is not vectorizable", c->cid() );
+            ctxt_->result_ = false;
         }
     }
 }
 
-bool LLVMTypebuilder::getResult() const
-{
-    return result_;
-}
-
-bool LLVMTypebuilder::process(Class* c)
+bool LLVMTypebuilder::buildTypeFromClass(Class* c)
 {
     Module* m = ctxt_->module_;
+    bool simd = c->isSimd();
 
     // already processed?
     if ( c->llvmType_ )
@@ -128,6 +107,8 @@ bool LLVMTypebuilder::process(Class* c)
     LLVMTypes llvmTypes;
     for (size_t i = 0; i < c->memberVars().size(); ++i)
     {
+        MemberVar* mv = c->memberVars()[i];
+        //mv->type
         c->memberVars()[i]->index_ = i;
         const Type* type = c->memberVars()[i]->getType();
 
@@ -135,17 +116,31 @@ bool LLVMTypebuilder::process(Class* c)
         const UserType* missing;
         const llvm::Type* llvmType = type->defineLLVMType(opaque, missing, m);
 
+        if (simd)
+        {
+            Class* inner = mv->getType()->cast<BaseType>()->lookupClass(m);
+
+            if ( !inner->isSimd() )
+            {
+                errorf( c->loc(), "class '%s' is not declared as simd class", inner->cid() );
+                errorf( c->loc(), "needed by class '%s'", c->cid() );
+
+                ctxt_->result_ = false;
+            }
+        }
+
         if (opaque)
         {
             swiftAssert(missing, "must be set");
             swiftAssert(llvmType, "must be set");
+
             refinements.push_back( Refine(opaque, missing) );
         }
         else if (!llvmType)
         {
             swiftAssert(missing, "must be set");
 
-            if ( !process(missing->lookupClass(ctxt_->module_)) )
+            if ( !buildTypeFromClass(missing->lookupClass(m)) )
                 return false;
 
             llvmType = type->getLLVMType(m);
@@ -163,61 +158,6 @@ bool LLVMTypebuilder::process(Class* c)
     m->getLLVMModule()->addTypeName( c->cid(), c->llvmType_ );
 
     return true;
-}
-
-void LLVMTypebuilder::notInMap(const StructType* st, const StructType* parent) const
-{
-    {
-        Class* c = struct2Class_.find(st)->second;
-        errorf( c->loc(), "class '%s' is not declared as simd class", c->cid() );
-    }
-
-    {
-        Class* c = struct2Class_.find(parent)->second;
-        errorf( c->loc(), "needed by class '%s'", c->cid() );
-    }
-
-    ctxt_->result_ = false;
-}
-
-void LLVMTypebuilder::notVectorizable(const StructType* st) const
-{
-    Class* c = struct2Class_.find(st)->second;
-    errorf( c->loc(), "class '%s' is not vectorizable", c->cid() );
-
-    ctxt_->result_ = false;
-}
-
-const llvm::Type* LLVMTypebuilder::scalar2vec(const llvm::Type* scalar, int& simdLength)
-{
-    if ( const StructType* st = dynamic<StructType>(scalar) )
-    {
-        vec::StructAndLength& vt = scalar2vec_[st];
-        simdLength = vt.simdLength_;
-
-        return vt.struct_;
-    }
-    else
-    {
-        simdLength = vec::TypeVectorizer::lengthOfScalar(scalar, Context::SIMD_WIDTH);
-        return vec::TypeVectorizer::vecScalar(scalar, simdLength, Context::SIMD_WIDTH);
-    }
-}
-
-const llvm::Type* LLVMTypebuilder::vec2scalar(const llvm::Type* vec, int& simdLength)
-{
-    if ( const StructType* st = dynamic<StructType>(vec) )
-    {
-        vec::StructAndLength& vec = vec2scalar_[st];
-        simdLength = vec.simdLength_;
-        return vec.struct_;
-    }
-    else
-    {
-        const llvm::VectorType* vt = cast<llvm::VectorType>(vec);
-        simdLength = vt->getNumElements();
-        return vt->getContainedType(0);
-    }
 }
 
 } // namespace swift

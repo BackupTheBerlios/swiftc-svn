@@ -15,7 +15,7 @@
 # the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301, USA.
 
-class bool
+simd class bool
 
 #    operator bool and or xor (bool b1, bool b2)
 #    end

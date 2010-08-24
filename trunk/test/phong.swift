@@ -70,7 +70,7 @@ class Phong
         # start phong
         c_call start_timer()
         simd i: 0x, 10000000x
-            res@ = ::illuminate(n@, l@, v@, a@, d@, s@, simd 3.0)
+            res@ = ::illuminate(n@, l@, v@, a@, d@, s@, 3.0)
         end
         c_call stop_timer()
 

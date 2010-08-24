@@ -10,183 +10,174 @@
 #include "utils/assert.h"
 #include "utils/cast.h"
 
+#include "utils/llvmhelper.h"
+
 using namespace llvm;
 
-namespace vec {
+typedef std::vector<const Type*> LLVMTypes;
+typedef std::vector<bool> bvector;
 
-TypeVectorizer::TypeVectorizer(const ErrorHandler* errorHandler, 
-                               StructMap& scalar2vec,
-                               StructMap& vec2scalar,
-                               llvm::Module* module)
-    : errorHandler_(errorHandler)
-    , scalar2vec_(scalar2vec)
-    , vec2scalar_(vec2scalar)
-    , module_(module)
-    , simdWidth_(16)
+namespace {
+
+LLVMTypes getSubTypes(const Type* type)
 {
-    for (StructMap::const_iterator iter = scalar2vec.begin(); iter != scalar2vec.end(); ++iter)
-    {
-        const Struct* st = iter->first;
+    LLVMTypes result;
 
-        int n = lengthOfType(st);
+    typedef Type::subtype_iterator Iter;
+    for (Iter i = type->subtype_begin(), e = type->subtype_end(); i != e; ++i)
+        result.push_back(*i);
 
-        if (n == -1)
-            errorHandler_->notVectorizable(st);
-        else
-            vecStruct(st, n);
-    }
+    return result;
 }
 
-int TypeVectorizer::lengthOfScalar(const Type* type, int simdWidth)
+const Type* vecTypeRec(Module* module, int simdWidth, const Type* type, int& simdLength);
+
+const Type* vecTypeRec(Module* module, int simdWidth, const Type* type, const bvector& uniforms, int& simdLength)
 {
-    swiftAssert( type->isSized(), "must be a sized type" );
-
-    int size;
-
-    if ( type->isIntegerTy() )
-    {
-        size = type->getPrimitiveSizeInBits();
-        if (size == 1) // this is a bool
-            return 0;
-        else
-            return  simdWidth / (type->getPrimitiveSizeInBits() / 8);
-    }
-    else if ( type->isFloatTy() || type->isDoubleTy() || type->isVectorTy() )
-        return  simdWidth / (type->getPrimitiveSizeInBits() / 8);
-    else if ( type->isPointerTy() )
-    {
-        swiftAssert(false, "ignore atm");
-        return simdWidth / 8;
-    }
-
-    // else
-    swiftAssert(false, "unreachable");
-    return -1;
-}
-
-int TypeVectorizer::lengthOfScalar(const Type* type)
-{
-    return lengthOfScalar(type, simdWidth_);
-}
-    
-int TypeVectorizer::lengthOfStruct(const Struct* st)
-{
-    if ( !scalar2vec_.contains(st) )
-    {
-        errorHandler_->notInMap(st, parent_);
-        return -1;
-    }
-
-    int simdLength = 0;
-    typedef Struct::element_iterator EIter;
-    for (EIter iter = st->element_begin(); iter != st->element_end(); ++iter)
-    {
-        const Type* attr = iter->get();
-        parent_ = st;
-        int tmp = lengthOfType(attr);
-
-        if (tmp == -1)
-            return -1;
-        else if (simdLength == 0)
-            simdLength = tmp;
-        else if (tmp != 0 && tmp != simdLength)
-            return -1;
-    }
-
-    return simdLength;
-}
-
-int TypeVectorizer::lengthOfType(const Type* type)
-{
-    Lengths::iterator iter = lengths_.find(type);
-    if ( iter != lengths_.end() )
-        return iter->second; // already calculated
-
-    int simdLength;
-    if ( const Struct* st = dynamic<Struct>(type) )
-        simdLength = lengthOfStruct(st);
-    else
-        simdLength = lengthOfScalar(type, simdWidth_);
-
-    lengths_[type] = simdLength;
-
-    return simdLength;
-}
-
-const Type* TypeVectorizer::vecScalar(const Type* type, int& n, int simdWidth)
-{
-    n = n == 0 ? simdWidth : n;
+    // calculate the actual simd length
+    simdLength = (simdLength == vec::CONTAINS_BOOL) ? simdWidth : simdLength;
 
     if ( type->isIntegerTy() && type->getPrimitiveSizeInBits() == 1 )
     {
         // -> this is a bool
-        int numBits = (simdWidth / n) * 8;
+        int numBits = (simdWidth / simdLength) * 8;
         const IntegerType* intType = IntegerType::get(type->getContext(), numBits);
 
-        return VectorType::get(intType, n);
+        return VectorType::get(intType, simdLength);
     }
     else if ( type->isIntegerTy() || type->isFloatTy() || type->isDoubleTy() )
-        return VectorType::get(type, n);
-    else if ( type->isPointerTy() )
+        return VectorType::get(type, simdLength);
+    else if ( type->isVoidTy() )
+        return createVoid( type->getContext() );
+
+    // vectorize all sub types which are not uniforms
+    LLVMTypes sSubTypes = getSubTypes(type);
+    size_t numSubTypes = sSubTypes.size();
+    swiftAssert(uniforms.size() == numSubTypes, "sizes must match");
+
+    LLVMTypes vSubTypes(numSubTypes);
+    for (size_t i = 0; i < numSubTypes; ++i)
     {
-        swiftAssert(false, "ignore atm");
-        return 0;
+        const llvm::Type* subType_i = sSubTypes[i];
+        vSubTypes[i] = uniforms[i] 
+                     ? subType_i
+                     : vecTypeRec(module, simdWidth, subType_i, simdLength);
     }
-    else if ( type->isVectorTy() )
+
+    if ( const StructType* st = dynamic<StructType>(type) )
     {
-        swiftAssert(false, "TODO");
-        return 0;
+        const StructType* vt = StructType::get( st->getContext(), vSubTypes );
+
+        std::ostringstream oss; 
+        oss << "simd_" << module->getTypeName(st);
+        module->addTypeName( oss.str().c_str(), vt );
+
+        return vt;
+    }
+    else if ( const FunctionType* ft = dynamic<FunctionType>(type) )
+    {
+        // vec return type
+        const Type* vRetType = vSubTypes.front();
+
+        // vec params
+        LLVMTypes vParams( vSubTypes.begin()+1, vSubTypes.end() );
+        const FunctionType* vt = FunctionType::get( vRetType, vParams, ft->isVarArg() );
+
+        return vt;
+    }
+
+    swiftAssert(numSubTypes == 1, "must exactly have one sub type");
+    const Type* vSubType = vSubTypes[0];
+
+    if ( type->isPointerTy() )
+        return PointerType::getUnqual(vSubType);
+    else if ( const ArrayType* at = dynamic<ArrayType>(type) )
+        return ArrayType::get( vSubType, at->getNumElements() );
+    else if ( const VectorType* vt = dynamic<VectorType>(type) )
+    {
+        // merge if vSubType is also a vector type
+        if ( const VectorType* vec = dynamic<VectorType>(vSubType) )
+        {
+            size_t numElems = vec->getNumElements() * simdLength;
+            return VectorType::get( vec->getElementType(), numElems );
+        }
+        else
+            return VectorType::get( vSubType, vt->getNumElements() );
     }
 
     swiftAssert(false, "unreachable");
     return 0;
 }
 
-const Type* TypeVectorizer::vecScalar(const Type* type, int& n)
+const Type* vecTypeRec(Module* module, int simdWidth, const Type* type, int& simdLength)
 {
-    return vecScalar(type, n, simdWidth_);
+    // build dummy uniform vector
+    bvector uniforms; 
+    uniforms.assign( type->getNumContainedTypes(), false );
+
+    return vecTypeRec(module, simdWidth, type, uniforms, simdLength);
 }
 
-const Struct* TypeVectorizer::vecStruct(const Struct* st, int& n)
-{
-    StructMap::iterator iter = scalar2vec_.find(st);
-    swiftAssert( iter != scalar2vec_.end(), "must contain st" );
+} // anonymous namespace
 
-    // has this struct already been processed?
-    if ( iter->second.struct_ != 0 )
+namespace vec {
+
+int lengthOf(int simdWidth, const Type* type)
+{
+    if ( type->isIntegerTy() )
     {
-        n = iter->second.simdLength_;
-        return iter->second.struct_;
+        int size = type->getPrimitiveSizeInBits();
+        if (size == 1) // this is a bool
+            return 0;
+        else
+            return  simdWidth / (type->getPrimitiveSizeInBits() / 8);
+    }
+    else if ( type->isFloatTy() || type->isDoubleTy() )
+        return  simdWidth / (type->getPrimitiveSizeInBits() / 8);
+    else if (type->isVoidTy() )
+        return 0; // let other types decide
+
+    int n = 0;
+
+    LLVMTypes subTypes = getSubTypes(type);
+    for (size_t i = 0; i < subTypes.size(); ++i)
+    {
+        const Type* attr = subTypes[i];
+        int tmp = vec::lengthOf(simdWidth, attr);
+
+        if (tmp == -1)
+            return -1;
+        else if (n == 0)
+            n = tmp;
+        else if (tmp != 0 && tmp != n)
+            return -1;
     }
 
-    // calculate the actual simd length
-    n = n == 0 ? simdWidth_ : n;
-
-    typedef std::vector<const Type*> LLVMTypes;
-    LLVMTypes vecTypes;
-
-    typedef Struct::element_iterator EIter;
-    for (EIter iter = st->element_begin(); iter != st->element_end(); ++iter)
-        vecTypes.push_back( vecType(iter->get(), n) );
-
-    const Struct* vt = Struct::get( st->getContext(), vecTypes );
-    scalar2vec_[st] = StructAndLength(vt, n);
-    vec2scalar_[vt] = StructAndLength(st, n);
-
-    std::ostringstream oss; 
-    oss << "simd." << module_->getTypeName(st);
-    module_->addTypeName( oss.str().c_str(), vt );
-
-
-    return vt;
+    return n;
 }
 
-const Type* TypeVectorizer::vecType(const Type* type, int& n)
+const Type* vecType(Module* module, int simdWidth, const Type* type, int& simdLength)
 {
-    if ( const Struct* st = dynamic<Struct>(type) )
-        return vecStruct(st, n);
-    else
-        return vecScalar(type, n);
+    simdLength = lengthOf(simdWidth, type);
+
+    if (simdLength == ERROR)
+        return 0;
+
+    return vecTypeRec(module, simdWidth, type, simdLength);
+}
+
+const FunctionType* vecFunctionType(Module* module, 
+                                    int simdWidth, 
+                                    const FunctionType* type, 
+                                    const bvector& uniforms, 
+                                    int& simdLength)
+{
+    simdLength = lengthOf(simdWidth, type);
+
+    if (simdLength == ERROR)
+        return 0;
+
+    return cast<FunctionType>( vecTypeRec(module, simdWidth, type, uniforms, simdLength) );
 }
 
 } // namespace vec
