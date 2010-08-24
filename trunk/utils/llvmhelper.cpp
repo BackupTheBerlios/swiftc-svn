@@ -227,9 +227,3 @@ Value* simdBroadcast(Value* sVal, const Type* vType, LLVMBuilder& builder)
         return vVal;
     }
 }
-
-void connectBB(LLVMBuilder& builder, Function* fct, BasicBlock* bb)
-{
-    fct->getBasicBlockList().push_back(bb);
-    builder.SetInsertPoint(bb);
-}

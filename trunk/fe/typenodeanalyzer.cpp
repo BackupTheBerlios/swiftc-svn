@@ -77,6 +77,12 @@ error_out:
 
 ok_out:
 
+    if ( !ctxt_->simdIndex_ && d->get().type_->isSimd() )
+    {
+        errorf(d->loc(), "simd type declarations only allowed within simd loops");
+        goto error_out;
+    }
+
     // everything fine - so register the local
     d->local_ = new Local( 
             d->loc(), d->get().type_->clone(), new std::string(*d->id()) );
@@ -90,6 +96,28 @@ ok_out:
 void TypeNodeAnalyzer::visit(ErrorExpr* e)
 {
     setError(e, false);
+}
+
+void TypeNodeAnalyzer::visit(Broadcast* b)
+{
+    b->expr_->accept(this);
+
+    if ( b->expr_->get().type_->isSimd() )
+    {
+        errorf( b->loc(), "broadcast used on a simd expresion" );
+        setError(b, false);
+        return;
+    }
+
+    if (!ctxt_->simdIndex_)
+    {
+        SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS( b->loc() );
+        setError(b, false);
+        return;
+    }
+
+    // this expresion is valid
+    setResult(b, b->expr_->get().type_->simdClone(), false);
 }
 
 void TypeNodeAnalyzer::visit(Id* id)
@@ -154,6 +182,19 @@ void TypeNodeAnalyzer::visit(Nil* n)
         setError(n, false);
     else
         setResult(n, new Ptr(n->loc(), Token::CONST, n->type_->clone() ), false);
+}
+
+void TypeNodeAnalyzer::visit(Range* r)
+{
+    if (!ctxt_->simdIndex_)
+    {
+        SWIFT_ERROR_ONLY_WITHIN_SIMD_LOOPS( r->loc() );
+        setError(r, false);
+        return;
+    }
+
+    // this expresion is valid
+    setResult(r, r->type_->simdClone(), false);
 }
 
 void TypeNodeAnalyzer::visit(Self* s)
@@ -249,7 +290,7 @@ void TypeNodeAnalyzer::visit(SimdIndexExpr* s)
 
     const Type* prefixType = s->prefixExpr_->get().type_->derefPtr();
     if ( const Container* container = prefixType->derefPtr()->cast<Container>() )
-        setResult(s, container->getInnerType()->clone(), true);
+        setResult(s, container->getInnerType()->simdClone(), true);
     else
     {
         errorf( s->loc(), 
@@ -290,7 +331,11 @@ void TypeNodeAnalyzer::visit(MemberAccess* m)
         else
         {
             const Type* memType = m->memberVar_->getType();
-            Type* resType = memType->clone();
+
+            Type* resType = prefixType->isSimd() 
+                ? memType->simdClone() 
+                : memType->clone();
+
             setResult(m, resType, true);
             return;
         }
@@ -312,6 +357,16 @@ void TypeNodeAnalyzer::visit(CCall* c)
     if (ctxt_->simdIndex_)
     {
         bool error = false;
+
+        for (size_t i = 0; i < args.numResults(); ++i)
+        {
+            if ( args.getResult(i).type_->isSimd() )
+            {
+                errorf( c->loc(), "argument number %i is a simd value "
+                        "but only scalar values are allowed for c_calls" );
+                error = true;
+            }
+        }
 
         if (error)
         {
@@ -437,7 +492,53 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
         return;
     }
 
-    const TypeList& out = m->memberFct_->sig().outTypes_;
+    bool allSimd = true;
+    bool noneSimd = true;
+
+    for (size_t i = 0; i < in.size(); ++i)
+    {
+        allSimd  &=  in[i]->isSimd();
+        noneSimd &= !in[i]->isSimd();
+    }
+
+    if ( MethodCall* methodCall = dynamic<MethodCall>(m) )
+    {
+        bool simdExpr = methodCall->expr_->get().type_->isSimd();
+        allSimd  &=  simdExpr;
+        noneSimd &= !simdExpr;
+    }
+
+    m->simd_ = false;
+
+    if (ctxt_->simdIndex_)
+    {
+        if (!allSimd && !noneSimd)
+        {
+            errorf( m->loc(), "either all or no arguments must be simd values" );
+            setError(m, false);
+            return;
+        }
+
+        if (allSimd)
+            m->simd_ = true;
+    }
+
+    if ( m->simd_ && !m->memberFct_->isSimd() )
+    {
+        errorf( m->loc(), 
+                "%s '%s(%s)' in class '%s' is not declared as "
+                "simd function but is used within a simd loop",
+                m->qualifierStr(), 
+                m->cid(), 
+                in.toString().c_str(), 
+                m->class_->cid() );
+        setError(m, false);
+
+        setError(m, false);
+        return;
+    }
+
+    const TypeList& out = m->memberFct_->sig_.outTypes_;
 
     m->results_.clear();
 
@@ -449,7 +550,9 @@ void TypeNodeAnalyzer::analyzeMemberFctCall(MemberFctCall* m)
 
         m->set(i).lvalue_ = false;
         m->set(i).inits_  = outType->perRef();
-        m->set(i).type_   = outType->clone();
+        m->set(i).type_   = m->simd_
+                          ? outType->simdClone() 
+                          : outType->clone();
     }
 }
 

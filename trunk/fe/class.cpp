@@ -134,7 +134,7 @@ MemberFct* Class::lookupMemberFct(Module* module, const std::string* id, const T
     {
         MemberFct* m = iter->second;
 
-        if ( m->sig().checkIn(module, inTypes) )
+        if ( m->sig_.checkIn(module, inTypes) )
             return m;
     }
 
@@ -163,14 +163,14 @@ void Class::addAssignCreate(Context* ctxt)
         {
             MemberFct* m = iter->second;
 
-            if ( m->sig().checkIn(ctxt->module_, in) )
+            if ( m->sig_.checkIn(ctxt->module_, in) )
             {
                 copyCreate_ = USER;
 
                 if (defaultCreate_ != NOT_ANALYZED)
                     break;
             }
-            else if ( m->sig().checkIn(ctxt->module_, empty) )
+            else if ( m->sig_.checkIn(ctxt->module_, empty) )
             {
                 defaultCreate_ = USER;
 
@@ -189,7 +189,7 @@ void Class::addAssignCreate(Context* ctxt)
         {
             MemberFct* m = iter->second;
 
-            if ( m->sig().checkIn(ctxt->module_, in) )
+            if ( m->sig_.checkIn(ctxt->module_, in) )
             {
                 copyAssign_ = USER;
                 break;

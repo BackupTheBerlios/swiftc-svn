@@ -38,6 +38,19 @@ void TypeNodeCodeGen::visit(ErrorExpr* d)
     swiftAssert(false, "unreachable");
 }
 
+void TypeNodeCodeGen::visit(Broadcast* b)
+{
+    b->expr_->accept(this);
+
+    int simdLength;
+    const llvm::Type* vType = b->get().type_->getVecLLVMType(ctxt_->module_, simdLength);
+
+    Value* sVal = b->expr_->get().place_->getScalar(builder_);
+    Value* vVal = simdBroadcast(sVal, vType, builder_);
+
+    setResult( b, new Scalar(vVal) );
+}
+
 void TypeNodeCodeGen::visit(Id* id)
 {
     Var* var = ctxt_->scope()->lookupVar( id->id() );
@@ -97,7 +110,6 @@ void TypeNodeCodeGen::visit(Nil* n)
     // TODO
 }
 
-#if 0
 void TypeNodeCodeGen::visit(Range* r)
 {
     int simdLength;
@@ -134,7 +146,6 @@ void TypeNodeCodeGen::visit(Range* r)
 
     setResult( r, new Scalar(llvm::ConstantVector::get(vType, constants)) );
 }
-#endif
 
 void TypeNodeCodeGen::visit(Self* n)
 {
@@ -201,7 +212,6 @@ void TypeNodeCodeGen::visit(SimdIndexExpr* s)
         Value* index = builder_.CreateUDiv( 
                 builder_.CreateLoad(ctxt_->simdIndex_),
                 createInt64(lctxt_, 4) ); // HACK
-        //index = builder_.CreateTruncOrBitCast( index, llvm::IntegerType::getInt32PtrTy() ); // HACK
         setResult( s, new Addr(builder_.CreateInBoundsGEP(ptr, index)) );
         //Value* val = createInt64(lctxt_, 7);
         //setResult( s, new Addr( abuilder_.CreateInBoundsGEP(ptr, val)) );
@@ -281,7 +291,7 @@ void TypeNodeCodeGen::visit(MethodCall* m)
     if ( const ScalarType* from = m->expr_->get().type_->cast<ScalarType>() )
     {
         Value* val = self->getScalar(builder_);
-        const ScalarType* to = cast<ScalarType>( m->memberFct_->sig().out_[0]->getType() );
+        const ScalarType* to = cast<ScalarType>( m->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
 
@@ -526,7 +536,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     MemberFct* fct = call->getMemberFct();
 
     call->exprList_->accept(this);
-    TypeList& out = fct->sig().outTypes_;
+    TypeList& out = fct->sig_.outTypes_;
 
     /* 
      * prepare arguments
@@ -565,7 +575,7 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
     // append regular arguments
     call->exprList_->getArgs(builder_, args);
 
-    llvm::Function* llvmFct = call->simd_ ? fct->simdFct() : fct->llvmFct();
+    llvm::Function* llvmFct = call->simd_ ? fct->simdFct_ : fct->llvmFct_;
     swiftAssert(llvmFct, "must exist");
 
     // create actual call

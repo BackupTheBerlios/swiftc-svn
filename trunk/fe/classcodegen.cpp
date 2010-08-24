@@ -115,7 +115,8 @@ void ClassCodeGen::codeGen(MemberFct* m)
 
     // connect last bb with return bb
     builder_.CreateBr(m->returnBB_);
-    connectBB(builder_, fct, m->returnBB_);
+    fct->getBasicBlockList().push_back(m->returnBB_);
+    builder_.SetInsertPoint(m->returnBB_);
 
     if ( m->realOut_.empty() )
         builder_.CreateRetVoid();

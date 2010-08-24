@@ -153,20 +153,18 @@ public:
     bool isEmpty() const;
     bool isSimd() const;
 
-    Sig& sig() { return sig_; }
-    llvm::Function* llvmFct() { return llvmFct_; }
-    llvm::Function* simdFct() { return simdFct_; }
-    llvm::BasicBlock* returnBB() { return returnBB_; }
-    Scope* scope() { return scope_; }
-
 protected:
 
     bool simd_;
     Scope* scope_;
+
     std::vector<const llvm::Type*> params_;
     std::vector<InOut*> realIn_;
     std::vector<RetVal*> realOut_;
     bool main_;
+
+public:
+
     Sig sig_;
     llvm::Function* llvmFct_;
     llvm::Function* simdFct_;
@@ -309,11 +307,11 @@ public:
     // ClassMember -> MemberVar
     virtual void visit(MemberVar* m) = 0;
 
-    friend void Class  ::accept(ClassVisitorBase* m);
-    friend void Create ::accept(ClassVisitorBase* m);
-    friend void Reader ::accept(ClassVisitorBase* m);
-    friend void Writer ::accept(ClassVisitorBase* m);
-    friend void Routine::accept(ClassVisitorBase* m);
+    friend void Class   ::accept(ClassVisitorBase* m);
+    friend void Create  ::accept(ClassVisitorBase* m);
+    friend void Reader  ::accept(ClassVisitorBase* m);
+    friend void Writer  ::accept(ClassVisitorBase* m);
+    friend void Routine ::accept(ClassVisitorBase* m);
 
 protected:
 

@@ -22,13 +22,12 @@ class Phong
         if rv > 0.0
             real sn = s
             int i = 0
-            int N = sh.to_int()
 
-            while i < N
-                sn = sn * rv
-                intensity = intensity + sn
-                i = i + 1
-            end
+            #while i < sh.to_int()
+            #    sn = sn * rv
+            #    intensity = intensity + sn
+            #    i = i + 1
+            #end
         end
 
         rgb = intensity * 255.0 + 0.5
@@ -70,7 +69,7 @@ class Phong
         # start phong
         c_call start_timer()
         simd i: 0x, 10000000x
-            res@ = ::illuminate(n@, l@, v@, a@, d@, s@, 3.0)
+            res@ = ::illuminate(n@, l@, v@, a@, d@, s@, simd 3.0)
         end
         c_call stop_timer()
 

@@ -4,7 +4,7 @@
 #include "utils/map.h"
 #include "utils/set.h"
 
-#include "vec/typevectorizer.h"
+#include "vec/vectype.h"
 
 namespace llvm {
     class OpaqueType;

@@ -1,3 +1,111 @@
+simd class vec3
+    real x
+    real y
+    real z
+
+    simd create (real x, real y, real z)
+        .x = x
+        .y = y
+        .z = z
+    end
+
+    simd writer = (real x, real y, real z)
+        .x = x
+        .y = y
+        .z = z
+    end
+
+    simd reader + (vec3 v) -> vec3 result
+        result.x = .x + v.x
+        result.y = .y + v.y
+        result.z = .z + v.z
+    end
+
+    simd reader - (vec3 v) -> vec3 result
+        result.x = .x - v.x
+        result.y = .y - v.y
+        result.z = .z - v.z
+    end
+
+    simd reader * (vec3 v) -> vec3 result
+        result.x = .x * v.x
+        result.y = .y * v.y
+        result.z = .z * v.z
+    end
+
+    simd reader / (vec3 v) -> vec3 result
+        result.x = .x / v.x
+        result.y = .y / v.y
+        result.z = .z / v.z
+    end
+
+    simd reader + (real r) -> vec3 result
+        result.x = .x + r
+        result.y = .y + r
+        result.z = .z + r
+    end
+
+    simd reader - (real r) -> vec3 result
+        result.x = .x - r
+        result.y = .y - r
+        result.z = .z - r
+    end
+
+    simd reader * (real r) -> vec3 result
+        result.x = .x * r
+        result.y = .y * r
+        result.z = .z * r
+    end
+
+    simd reader / (real r) -> vec3 result
+        result.x = .x / r
+        result.y = .y / r
+        result.z = .z / r
+    end
+
+    # cross product
+    simd reader x (vec3 v) -> vec3 result
+        real x = .y*v.z - .z*v.y 
+        real y = .z*v.x - .x*v.z 
+        real z = .x*v.y - .y*v.x 
+    end
+
+    # dot product
+    simd reader o (vec3 v) -> real result
+        result = .x*v.x + .y*v.y + .z*v.z
+    end
+
+    writer rand()
+        .x = c_call real rand_float()
+        .y = c_call real rand_float()
+        .z = c_call real rand_float()
+    end
+
+    reader print()
+        c_call print_float(.x)
+        c_call print_float(.y)
+        c_call print_float(.z)
+    end
+end
+
+simd class ivec3
+    int x
+    int y
+    int z
+
+    writer = (vec3 v)
+        .x = v.x.to_int()
+        .y = v.y.to_int()
+        .z = v.z.to_int()
+    end
+
+    reader print()
+        c_call print_int(.x)
+        c_call print_int(.y)
+        c_call print_int(.z)
+    end
+end
+
 class Phong
 
     # n -> normal
@@ -22,8 +130,7 @@ class Phong
         if rv > 0.0
             real sn = s
             int i = 0
-            int N = sh.to_int()
-            while i < N
+            while i < sh.to_int()
                 sn = sn * rv
                 intensity = intensity + sn
                 i = i + 1

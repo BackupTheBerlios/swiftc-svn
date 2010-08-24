@@ -158,40 +158,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class RepeatUntilLoop : public LoopStmnt
-{
-public:
-
-    RepeatUntilLoop(location loc, Scope* scope, Expr* expr);
-    virtual ~RepeatUntilLoop();
-
-    virtual void accept(StmntVisitorBase* s);
-
-protected:
-
-    Expr* expr_;
-
-    template<class T> friend class StmntVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class LoopWithHeader : public LoopStmnt
-{
-public:
-
-    LoopWithHeader(location loc, Scope* scope);
-
-protected:
-
-    llvm::BasicBlock* headerBB_;
-
-    template<class T> friend class StmntVisitor;
-};
-
-//------------------------------------------------------------------------------
-
-class WhileLoop : public LoopWithHeader
+class WhileLoop : public LoopStmnt
 {
 public:
 
@@ -209,7 +176,25 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class SimdLoop : public LoopWithHeader
+class RepeatUntilLoop : public LoopStmnt
+{
+public:
+
+    RepeatUntilLoop(location loc, Scope* scope, Expr* expr);
+    virtual ~RepeatUntilLoop();
+
+    virtual void accept(StmntVisitorBase* s);
+
+protected:
+
+    Expr* expr_;
+
+    template<class T> friend class StmntVisitor;
+};
+
+//----------------------------------------------------------------------
+
+class SimdLoop : public LoopStmnt
 {
 public:
 
@@ -224,7 +209,6 @@ protected:
     Expr* lExpr_;
     Expr* rExpr_;
     Local* index_;
-    llvm::BasicBlock* epilogueBB_;
 
     template<class T> friend class StmntVisitor;
 };

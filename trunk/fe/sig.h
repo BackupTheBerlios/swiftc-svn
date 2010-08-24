@@ -56,7 +56,6 @@ public:
 
     Params in_;
     RetVals out_;
-
     TypeList inTypes_;
     TypeList outTypes_;
 };

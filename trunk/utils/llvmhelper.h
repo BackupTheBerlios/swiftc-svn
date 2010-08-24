@@ -67,8 +67,4 @@ llvm::Value* simdBroadcast(llvm::Value* sVal, const llvm::Type* vType, LLVMBuild
 
 //----------------------------------------------------------------------
 
-void connectBB(LLVMBuilder& builder, llvm::Function* fct, llvm::BasicBlock* bb);
-
-//----------------------------------------------------------------------
-
 #endif // UTILS_LLVM_HELPER_H

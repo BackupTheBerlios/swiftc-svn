@@ -68,7 +68,7 @@ class Decl : public TypeNode
 {
 public:
 
-    Decl(location loc, Type* type, std::string* id);
+    Decl(location loc, bool simd, Type* type, std::string* id);
     virtual ~Decl();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -154,14 +154,11 @@ class SimdIndexExpr : public Access
 {
 public:
 
-    SimdIndexExpr(location loc, Expr* prefixExpr, std::string* id);
-    ~SimdIndexExpr();
+    SimdIndexExpr(location loc, Expr* prefixExpr);
 
     virtual void accept(TypeNodeVisitorBase* t);
 
 protected:
-
-    std::string* id_;
 
     template<class T> friend class TypeNodeVisitor;
 };
@@ -387,6 +384,24 @@ protected:
 
 //------------------------------------------------------------------------------
 
+class Broadcast : public Expr
+{
+public:
+
+    Broadcast(location loc, Expr* expr);
+    ~Broadcast();
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
+
+    Expr* expr_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
 class Id : public Expr
 {
 public:
@@ -427,6 +442,24 @@ protected:
 
 //------------------------------------------------------------------------------
 
+class Range : public Expr
+{
+public:
+
+    Range(location loc, Type* type);
+    ~Range();
+
+    virtual void accept(TypeNodeVisitorBase* t);
+
+protected:
+
+    Type* type_;
+
+    template<class T> friend class TypeNodeVisitor;
+};
+
+//------------------------------------------------------------------------------
+
 class Self : public Expr
 {
 public:
@@ -449,9 +482,11 @@ public:
     virtual void visit(Decl* d) = 0;
 
     // TypeNode -> Expr 
+    virtual void visit(Broadcast* u) = 0;
     virtual void visit(Id* id) = 0;
     virtual void visit(Literal* l) = 0;
     virtual void visit(Nil* n) = 0;
+    virtual void visit(Range* r) = 0;
     virtual void visit(Self* n) = 0;
 
     // TypeNode -> Expr -> Access

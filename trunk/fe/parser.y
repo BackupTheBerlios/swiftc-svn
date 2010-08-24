@@ -74,7 +74,7 @@ using namespace swift;
 %token NIL
 
 // types
-%token PTR ARRAY SIMD
+%token PTR ARRAY SIMD SIMD_RANGE BROADCAST
 
 // type modifiers
 %token VAR CONST REF CONST_REF
@@ -112,7 +112,7 @@ using namespace swift;
 // miscellaneous
 %token SCOPE CLASS END EOL
 
-%token <id_> VAR_ID TYPE_ID SIMD_INDEX
+%token <id_> VAR_ID TYPE_ID
 
 /*
     types
@@ -223,7 +223,7 @@ member_function
         '(' param_list ')' ret_list stmnt_list END eol
         {
             $$ = $<memberFct_>4;
-            $$->sig().buildTypeLists();
+            $$->sig_.buildTypeLists();
             ctxt_->leaveScope();
         }
     | simd_modifier CREATE
@@ -235,7 +235,7 @@ member_function
         '(' param_list')' eol stmnt_list END eol
         {
             $$ = $<memberFct_>3;
-            $$->sig().buildTypeLists();
+            $$->sig_.buildTypeLists();
             ctxt_->leaveScope();
         }
     ;
@@ -251,7 +251,7 @@ param_list_not_empty
     ;
 
 param
-    : const_type VAR_ID { ctxt_->memberFct_->sig().in_.push_back( new Param(@$, $1, $2) ); }
+    : const_type VAR_ID { ctxt_->memberFct_->sig_.in_.push_back( new Param(@$, $1, $2) ); }
     ;
 
 ret_list
@@ -265,7 +265,7 @@ retval_list_not_empty
     ;
 
 retval
-    : var_type VAR_ID { ctxt_->memberFct_->sig().out_.push_back( new RetVal(@$, $1, $2) ); }
+    : var_type VAR_ID { ctxt_->memberFct_->sig_.out_.push_back( new RetVal(@$, $1, $2) ); }
     ;
 
 /*
@@ -433,6 +433,7 @@ un_expr
     : postfix_expr { $$ = $1; }
     | ADD un_expr  { $$ = new UnExpr(@$, $1, $2); }
     | EQ  un_expr  { $$ = new UnExpr(@$, $1, $2); }
+    | SIMD un_expr { $$ = new Broadcast(@$, $2); }
     ;
 
 postfix_expr
@@ -444,8 +445,7 @@ postfix_expr
     | postfix_expr '.' VAR_ID   { $$ = new MemberAccess(@$,           $1, $3); }
     | '.' VAR_ID                { $$ = new MemberAccess(@$, new Self(@$), $2); }
     | postfix_expr '[' expr ']' { $$ = new IndexExpr(@$, $1, $3); }
-    | postfix_expr '@'          { $$ = new SimdIndexExpr(@$, $1,  0); }
-    | postfix_expr SIMD_INDEX   { $$ = new SimdIndexExpr(@$, $1, $2); }
+    | postfix_expr '@'          { $$ = new SimdIndexExpr(@$, $1); }
 
     /* 
         c_call 
@@ -497,6 +497,7 @@ primary_expr
     | L_REAL64                { $$ = $1; }
     | L_BOOL                  { $$ = $1; }
     | NIL        '{' type '}' { $$ = new Nil(@$, $3); }
+    | SIMD_RANGE '{' type '}' { $$ = new Range(@$, $3); }
     | '(' expr ')'            { $$ = $2; }
     | '(' error ')'           { $$ = new ErrorExpr(@$); }
     ;
@@ -529,7 +530,8 @@ expr_list_not_empty
     ;
 
 decl
-    : type VAR_ID { $$ = new Decl(@$, $1, $2); }
+    :      type VAR_ID { $$ = new Decl(@$, false, $1, $2); }
+    | SIMD type VAR_ID { $$ = new Decl(@$, true,  $2, $3); }
     ;
 
 tuple

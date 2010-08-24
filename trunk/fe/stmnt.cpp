@@ -135,6 +135,23 @@ LoopStmnt::~LoopStmnt()
 
 //------------------------------------------------------------------------------
 
+WhileLoop::WhileLoop(location loc, Scope* scope, Expr* expr)
+    : LoopStmnt(loc, scope)
+    , expr_(expr)
+{}
+
+WhileLoop::~WhileLoop()
+{
+    delete expr_;
+}
+
+void WhileLoop::accept(StmntVisitorBase* s)
+{
+    s->visit(this);
+}
+
+//------------------------------------------------------------------------------
+
 RepeatUntilLoop::RepeatUntilLoop(location loc, Scope* scope, Expr* expr)
     : LoopStmnt(loc, scope)
     , expr_(expr)
@@ -152,31 +169,8 @@ void RepeatUntilLoop::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-LoopWithHeader::LoopWithHeader(location loc, Scope* scope)
-    : LoopStmnt(loc, scope)
-{}
-
-//------------------------------------------------------------------------------
-
-WhileLoop::WhileLoop(location loc, Scope* scope, Expr* expr)
-    : LoopWithHeader(loc, scope)
-    , expr_(expr)
-{}
-
-WhileLoop::~WhileLoop()
-{
-    delete expr_;
-}
-
-void WhileLoop::accept(StmntVisitorBase* s)
-{
-    s->visit(this);
-}
-
-//------------------------------------------------------------------------------
-
 SimdLoop::SimdLoop(location loc, Scope* scope, std::string* id, Expr* lExpr, Expr* rExpr)
-    : LoopWithHeader(loc, scope)
+    : LoopStmnt(loc, scope)
     , id_(id)
     , lExpr_(lExpr)
     , rExpr_(rExpr)
