@@ -313,6 +313,15 @@ stmnt
             $$ = new WhileLoop(@$, $<scope_>2, $3);
             ctxt_->leaveScope();
         }
+    /*| FOR decl '=' VAR_ID */
+        /*{ */
+            /*$<scope_>$ = ctxt_->enterScope(); */
+        /*} */
+        /*expr eol stmnt_list END eol */
+        /*{ */
+            /*$$ = new WhileLoop(@$, $<scope_>2, $3);*/
+            /*ctxt_->leaveScope();*/
+        /*}*/
     | REPEAT eol 
         { 
             $<scope_>$ = ctxt_->enterScope(); 

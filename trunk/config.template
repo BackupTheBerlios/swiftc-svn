@@ -1,0 +1,8 @@
+# packetizer
+CXXFLAGS += -I../packetizer/build/include
+LDFLAGS  += -L../packetizer/build/lib -lPacketizer
+
+# llvm stuff
+CXXFLAGS += `llvm-config --cxxflags` 
+LDFLAGS  += `llvm-config --libs core support bitwriter ipo scalaropts jit linker instrumentation x86`
+LDFLAGS  += `llvm-config --ldflags`

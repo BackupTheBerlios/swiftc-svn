@@ -45,7 +45,7 @@ class Type;
 }
 
 // include auto generated parser header before tokens
-#include "parser.inner.h"
+#include "fe/parser.inner.h"
 
 namespace swift {
 

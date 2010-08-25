@@ -20,7 +20,7 @@ public:
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const = 0;
     virtual void writeBack(LLVMBuilder& builder) const = 0;
 
-//protected:
+protected:
 
     llvm::Value* val_;
 };
