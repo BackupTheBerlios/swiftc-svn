@@ -11,6 +11,12 @@ BISON ?= bison
 FLEX  ?= flex
 
 CXXFLAGS += -I.
+ifeq (BUILD, debug)
+	CXXFLAGS := -DSWIFT_DEBUG
+endif
+ifeq (BUILD, release)
+	CXXFLAGS := -DNDEBUG
+endif
 
 # 
 # bison stuff
@@ -23,8 +29,12 @@ BISON_HDR_OUT := $(BISON_DEFINES) fe/position.hh fe/stack.hh fe/location.hh
 BISON_ALL_OUT := $(BISON_HDR_OUT) $(BISON_CPP_OUT)
 BISONFLAGS := -Wall --language=C++ --locations -p swift_stream_ --defines=$(BISON_DEFINES) -o $(BISON_CPP_OUT) $(BISON_IN)
 ifeq (BUILD, debug)
-BISONFLAGS += -t -v
+	BISONFLAGS += -t -v
 endif
+
+# 
+# bison stuff
+#
 
 FLEX_IN   := fe/lexer.l
 FLEX_OUT  := fe/lexer.cpp
@@ -77,7 +87,7 @@ Q ?= @
 
 .SUFFIXES: .c .o .d .y .l
 .PHONY: clean all
-.SECONDARY: fe/parser.cpp fe/parser.inner.h fe/position.hh fe/stack.hh
+.SECONDARY: $(BISON_ALL_OUT) $(FLEX_OUT)
 
 all: $(BINARY)
 
