@@ -75,6 +75,7 @@ SRCS += utils/memmgr.cpp
 SRCS += utils/stringhelper.cpp
 
 SRCS += vec/vectype.cpp
+SRCS += vec/instrvectorizer.cpp
 
 BUILD_BUILDDIR_TREE := $(shell mkdir -p $(addprefix $(BUILDDIR)/,$(sort $(dir $(SRCS)))))
 
