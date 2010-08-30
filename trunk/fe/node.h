@@ -1,6 +1,7 @@
 #ifndef SWIFT_NODE_H
 #define SWIFT_NODE_H
 
+#include "utils/cast.h"
 #include "utils/map.h"
 #include "utils/stringhelper.h"
 
@@ -32,10 +33,15 @@ public:
     virtual ~Node() {}
 
     const location& loc() const;
+    void setParent(Node* parent) { parent_ = parent; }
+
+    template <class T> T* parent() { return cast<T>(parent_); }
+    template <class T> const T* parent() const { return cast<T>(parent_); }
 
 protected:
 
     location loc_;
+    Node* parent_;
 };
 
 //------------------------------------------------------------------------------

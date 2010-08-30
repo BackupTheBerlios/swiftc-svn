@@ -21,6 +21,7 @@ namespace swift {
 
 Node::Node(location loc)
     : loc_(loc)
+    , parent_(0)
 {}
 
 const location& Node::loc() const

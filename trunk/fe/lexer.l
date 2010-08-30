@@ -53,18 +53,14 @@ using namespace swift;
 
 %}
 
-VAR_ITEM [_a-zA-Z][_a-zA-Z0-9]
-VAR_ID   [_a-zA-Z][_a-zA-Z0-9]*
+ID      [_a-zA-Z][_a-zA-Z0-9]*
 
-OP_ITEM  [*/%+\-!=<>&^|~]
-OP       {OP_ITEM}*
+D       [0-9]
+H       [0-9a-fA-F]
+E       [Ee][+-]?{D}+
 
-D        [0-9]
-H        [0-9a-fA-F]
-E        [Ee][+-]?{D}+
-
-FLOAT    {D}+{E}|{D}*\.{D}+({E})?|{D}+\.{D}*({E})?
-INTEGER  {D}+|0[xX]{H}+
+FLOAT   {D}+{E}|{D}*\.{D}+({E})?|{D}+\.{D}*({E})?
+INTEGER {D}+|0[xX]{H}+
 
 /*
 %x CHAR_STATE
@@ -91,26 +87,18 @@ INTEGER  {D}+|0[xX]{H}+
     SET_LOC; return swift_text[0];
 }
 
-->      { SET_LOC; return Token::ARROW; }
-\<-     { SET_LOC; return Token::MOVE; }
-\<->    { SET_LOC; return Token::SWAP; }
+->   { SET_LOC; return Token::ARROW; }
+\<-  { SET_LOC; return Token::MOVE; }
+\<-> { SET_LOC; return Token::SWAP; }
 
-
-\<=         { SET_LOC; SET_STR; return Token::REL; }
-\>=         { SET_LOC; SET_STR; return Token::REL; }
-
-\==         { SET_LOC; SET_STR; return Token::EQ; }
-!=          { SET_LOC; SET_STR; return Token::EQ; }
-
-{OP}=       { SET_LOC; SET_STR; return Token::ASGN; }
-
-[*/%]{OP}   { SET_LOC; SET_STR; return Token::MUL; }
-[+\-]{OP}   { SET_LOC; SET_STR; return Token::ADD; }
-[<>]{OP}    { SET_LOC; SET_STR; return Token::REL; }
-[=!~]{OP}   { SET_LOC; SET_STR; return Token::EQ; }
-&{OP}       { SET_LOC; SET_STR; return Token::AND; }
-\^{OP}      { SET_LOC; SET_STR; return Token::XOR; }
-\|{OP}      { SET_LOC; SET_STR; return Token::OR; }
+[~!]                     { SET_LOC; SET_STR; return Token::NOT; }
+`{ID}                    { SET_LOC; SET_STR; return Token::BACKTICK_ID; }
+[*/%&]|\<\<|>>           { SET_LOC; SET_STR; return Token::MUL; }
+[+\-]                    { SET_LOC; SET_STR; return Token::ADD_SUB; }
+[|\^]                    { SET_LOC; SET_STR; return Token::OR_XOR;  }
+@{ID}                    { SET_LOC; SET_STR; return Token::AT_ID; }
+\<=|>=|\==|!=|\<|>       { SET_LOC; SET_STR; return Token::REL; }
+=|\<\<=|>>=|[+\-*/%|^&]= { SET_LOC; SET_STR; return Token::ASGN; }
 
 ::  { SET_LOC; return Token::DOUBLE_COLON; }
 
@@ -180,7 +168,7 @@ self  { SET_LOC; return Token::SELF; }
 true            { SET_LOC; Box b; b.bool_   = true;                    val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 false           { SET_LOC; Box b; b.bool_   = false;                   val->expr_ = new Literal(*loc, b, Token::L_BOOL  ); return Token::L_BOOL; }
 
-{VAR_ID} { SET_LOC; SET_STR; return Token::VAR_ID; }
+{ID} { SET_LOC; SET_STR; return Token::ID; }
 
 \\\n {}
 

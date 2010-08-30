@@ -139,14 +139,14 @@ simd class vec3
     end
 
     # cross product
-    simd reader x (vec3 v) -> vec3 result
+    simd reader `cross (vec3 v) -> vec3 result
         real x = .y*v.z - .z*v.y 
         real y = .z*v.x - .x*v.z 
         real z = .x*v.y - .y*v.x 
     end
 
     # dot product
-    simd reader o (vec3 v) -> real result
+    simd reader `dot (vec3 v) -> real result
         result = .x*v.x + .y*v.y + .z*v.z
     end
 

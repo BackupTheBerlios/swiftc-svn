@@ -9,9 +9,9 @@ class Phong
     # sh -> shininess
     simd routine illuminate(vec3 n, vec3 l, vec3 v,\
                             vec3 a, vec3 d, real s, real sh) -> ivec3 rgb
-        real nl = n o l           # cache dot product
+        real nl = n `dot l          # cache dot product
         vec3 r = n * nl * 2.0 - l # reflection vector
-        real rv = r o v           # cache dot product
+        real rv = r `dot v           # cache dot product
         
         if nl < 0.0
             nl = -0.0

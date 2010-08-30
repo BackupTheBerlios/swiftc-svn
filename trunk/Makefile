@@ -27,7 +27,7 @@ BISON_CPP_OUT := fe/parser.cpp
 BISON_DEFINES := fe/parser.inner.h
 BISON_HDR_OUT := $(BISON_DEFINES) fe/position.hh fe/stack.hh fe/location.hh
 BISON_ALL_OUT := $(BISON_HDR_OUT) $(BISON_CPP_OUT)
-BISONFLAGS := -Wall --language=C++ --locations -p swift_stream_ --defines=$(BISON_DEFINES) -o $(BISON_CPP_OUT) $(BISON_IN)
+BISONFLAGS := -Wall --language=C++ --locations -p swift_ --defines=$(BISON_DEFINES) -o $(BISON_CPP_OUT) $(BISON_IN)
 ifeq (BUILD, debug)
 	BISONFLAGS += -t -v
 endif

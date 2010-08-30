@@ -50,7 +50,6 @@
 static void readBuiltinTypes(swift::Context* ctxt);
 static int start(int argc, char** argv);
 static void writeBCFile(const llvm::Module* m, const char* filename);
-static void build_token_stream();
 
 //------------------------------------------------------------------------------
 
@@ -100,7 +99,7 @@ static int start(int argc, char** argv)
         std::cerr << "error: failed to open input file" << std::endl;
         return EXIT_FAILURE;
     }
-    build_token_stream();
+    //build_token_stream();
 
     swift::Parser parser(module->ctxt_);
 #if 0
@@ -168,9 +167,6 @@ static int start(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
-typedef Set<std::string> TypeIdSet;
-TypeIdSet g_type_id_set;
-
 static void readBuiltinTypes(swift::Context* ctxt)
 {
     std::vector<const char*> builtin;
@@ -201,39 +197,17 @@ static void readBuiltinTypes(swift::Context* ctxt)
 
     builtin.push_back("fe/builtin/bool.swift");
 
-    g_type_id_set.insert("int" );  g_type_id_set.insert("uint"); 
-    g_type_id_set.insert("int8");  g_type_id_set.insert("uint8");
-    g_type_id_set.insert("int16"); g_type_id_set.insert("uint16");
-    g_type_id_set.insert("int32"); g_type_id_set.insert("uint32");
-    g_type_id_set.insert("int64"); g_type_id_set.insert("uint64");
-    g_type_id_set.insert("sat8");  g_type_id_set.insert("sat8");
-    g_type_id_set.insert("sat16"); g_type_id_set.insert("sat16");
-    g_type_id_set.insert("usat8");  g_type_id_set.insert("usat8");
-    g_type_id_set.insert("usat16"); g_type_id_set.insert("usat16");
-
-    g_type_id_set.insert("index"); 
-    g_type_id_set.insert("real");
-    g_type_id_set.insert("real32"); 
-    g_type_id_set.insert("real64");
-    g_type_id_set.insert("bool");
-
     // library HACK
     builtin.push_back("lib/math.swift");
     builtin.push_back("lib/vec.swift");
     builtin.push_back("lib/mat.swift");
-    g_type_id_set.insert("math");
-    g_type_id_set.insert("mat4x4");
-    g_type_id_set.insert("vec2");
-    g_type_id_set.insert("vec3");
-    g_type_id_set.insert("ivec3");
-    g_type_id_set.insert("complex");
 
     FILE* file;
 
     for (size_t i = 0; i < builtin.size(); ++i)
     {
         file = swift::lexer_init(builtin[i]);
-        build_token_stream();
+        //build_token_stream();
 
         swift::Parser parser(ctxt);
 #if 0
@@ -271,54 +245,4 @@ static void writeBCFile(const llvm::Module* m, const char* filename)
     }
 
     llvm::WriteBitcodeToFile(m, *outStream);
-}
-
-struct TokenValue
-{
-    int token_;
-    swift::Parser::semantic_type val_;
-    swift::Parser::location_type loc_;
-};
-
-typedef std::vector<TokenValue> TokenStream;
-TokenStream g_stream;
-size_t g_cursor;
-
-static void build_token_stream()
-{
-    g_stream.resize(1);
-    size_t cur = 0;
-
-    while ( int token = swift_lex(&g_stream[cur].val_, &g_stream[cur].loc_) )
-    {
-        g_stream[cur].token_ = token;
-        g_stream.push_back( TokenValue() );
-        ++cur;
-    }
-
-    g_cursor = 0;
-
-    for (size_t i = 0; i < g_stream.size(); ++i)
-    {
-        if (g_stream[i].token_ == swift::Token::CLASS)
-        {
-            size_t j = i+1;
-            if ( j < g_stream.size() && g_stream[j].token_ == swift::Token::VAR_ID)
-                g_type_id_set.insert(*g_stream[j].val_.id_);
-        }
-    }
-
-    for (size_t i = 0; i < g_stream.size(); ++i)
-    {
-        if (g_stream[i].token_ == swift::Token::VAR_ID && g_type_id_set.contains(*g_stream[i].val_.id_) )
-            g_stream[i].token_ = swift::Token::TYPE_ID;
-    }
-}
-
-int swift_stream_lex(swift::Parser::semantic_type* val, swift::Parser::location_type* loc)
-{
-    *val = g_stream[g_cursor].val_;
-    *loc = g_stream[g_cursor].loc_;
-
-    return g_stream[g_cursor++].token_;
 }
