@@ -24,9 +24,9 @@
 
 #include <llvm/Support/IRBuilder.h>
 
-#include "fe/auto.h"
-#include "fe/location.hh"
+#include "fe/location.h"
 #include "fe/node.h"
+#include "fe/token.h"
 #include "fe/typelist.h"
 
 namespace llvm {
@@ -72,7 +72,7 @@ class Type : public Node
 {
 public:
 
-    Type(location loc, TokenType modifier, bool isRef, bool isSimd);
+    Type(const Location& loc, TokenType modifier, bool isRef, bool isSimd);
     virtual ~Type() {}
 
     virtual Type* clone() const = 0;
@@ -151,11 +151,11 @@ class BaseType : public Type
 {
 public:
 
-    BaseType(location loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd);
+    BaseType(const Location& loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd);
     virtual ~BaseType();
 
     static BaseType* create(
-            location loc, 
+            const Location& loc, 
             TokenType modifier, 
             std::string* id, 
             bool isInOut = false);
@@ -189,7 +189,7 @@ class ScalarType : public BaseType
 {
 public:
 
-    ScalarType(location loc, TokenType modifier, std::string* id, bool isSimd = false);
+    ScalarType(const Location& loc, TokenType modifier, std::string* id, bool isSimd = false);
 
     virtual ScalarType* clone() const;
     virtual bool isBool() const;
@@ -219,7 +219,7 @@ class UserType : public BaseType
 {
 public:
 
-    UserType(location loc, TokenType modifier, std::string* id, bool isInOut = false, bool isSimd = false);
+    UserType(const Location& loc, TokenType modifier, std::string* id, bool isInOut = false, bool isSimd = false);
 
     virtual UserType* clone() const;
     virtual bool perRef() const;
@@ -238,7 +238,7 @@ class NestedType : public Type
 {
 public:
 
-    NestedType(location loc, TokenType modifier, bool isRef, Type* innerType);
+    NestedType(const Location& loc, TokenType modifier, bool isRef, Type* innerType);
     virtual ~NestedType();
 
     virtual bool validate(Module* m) const;
@@ -260,7 +260,7 @@ class Ptr : public NestedType
 {
 public:
 
-    Ptr(location loc, TokenType modifier, Type* innerType);
+    Ptr(const Location& loc, TokenType modifier, Type* innerType);
 
     virtual Ptr* clone() const;
     virtual std::string toString() const;
@@ -288,7 +288,7 @@ public:
         SIZE
     };
 
-    Container(location loc, TokenType modifier, Type* innerType);
+    Container(const Location& loc, TokenType modifier, Type* innerType);
 
     virtual std::string toString() const;
     virtual std::string containerStr() const = 0;
@@ -324,7 +324,7 @@ class Array : public Container
 {
 public:
 
-    Array(location loc, TokenType modifier, Type* innerType);
+    Array(const Location& loc, TokenType modifier, Type* innerType);
 
     virtual Array* clone() const;
     virtual std::string containerStr() const;
@@ -339,7 +339,7 @@ class Simd : public Container
 {
 public:
 
-    Simd(location loc, TokenType modifier, Type* innerType);
+    Simd(const Location& loc, TokenType modifier, Type* innerType);
 
     virtual Simd* clone() const;
     virtual std::string containerStr() const;

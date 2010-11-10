@@ -20,17 +20,18 @@ public:
     ClassVisitor(Context* ctxt);
     virtual ~ClassVisitor();
 
-    virtual void visit(Class* c);
+    //virtual void visit(Class* c);
 
     // ClassMember -> MemberFct -> Method
-    virtual void visit(Create* c);
-    virtual void visit(Reader* r);
-    virtual void visit(Writer* w);
+    //virtual void visit(Create* c);
+    //virtual void visit(Reader* r);
+    //virtual void visit(Writer* w);
 
-    // ClassMember -> MemberFct -> StaticMethod
-    virtual void visit(Routine* r);
+    //// ClassMember -> MemberFct -> StaticMethod
+    //virtual void visit(Routine* r);
 
     // ClassMember -> MemberVar
+    virtual void visit(MemberFct* m);
     virtual void visit(MemberVar* m);
 
 private:

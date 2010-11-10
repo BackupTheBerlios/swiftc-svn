@@ -23,14 +23,14 @@
 #ifdef SWIFT_DEBUG
 
 /**
-    * This is the assert function. It is used by the swiftAssert macro.
-    * @param line          line number
-    * @param filename      file name
-    * @param functionName  function name
-    * @param description   description of the assertion
-    * @param always        should this assertion be ignored always? This is a kind of a return value
-    * @return              true if a breakpoint should be thrown
-*/
+ * This is the assert function. It is used by the swiftAssert macro.
+ * @param line          line number
+ * @param filename      file name
+ * @param functionName  function name
+ * @param description   description of the assertion
+ * @param always        should this assertion be ignored always? This is a kind of a return value
+ * @return              true if a breakpoint should be thrown
+ */
 bool customAssert(int line, const char* filename, const char* functionName, const char* description, bool& always);
 
 /*
@@ -52,10 +52,10 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
 #endif
 
 /**
-    * the assertion macro
-    * @param e boolean expression. This one should be true
-    * @param description a c-string. The description for the assertion.
-*/
+ * the assertion macro
+ * @param e boolean expression. This one should be true
+ * @param description a c-string. The description for the assertion.
+ */
 #ifdef __GNUC__
     #define swiftAssert(e, description) \
         if ( !(bool(e)) ) { \
@@ -83,5 +83,7 @@ bool customAssert(int line, const char* filename, const char* functionName, cons
 
 #endif // SWIFT_DEBUG
 
+#define SWIFT_PANIC_DEFAULT default: swiftAssert(false, "illegal switch-case value");
+#define SWIFT_UNREACHABLE swiftAssert(false, "unreachable");
 
 #endif // SWIFT_ASSERT_H

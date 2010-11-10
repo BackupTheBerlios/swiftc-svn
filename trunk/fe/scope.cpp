@@ -27,8 +27,9 @@
 
 namespace swift {
 
-Scope::Scope(Scope* parent)
-    : parent_(parent)
+Scope::Scope(const Location& loc, Node* parent, Scope* pScope)
+    : Node(loc, parent)
+    , pScope_(pScope)
 {}
 
 Scope::~Scope()
@@ -50,8 +51,8 @@ Var* Scope::lookupVar(const std::string* id)
 {
     if ( Var* var = lookupVarOneLevelOnly(id) )
         return var;
-    else if (parent_) // try to find in parent scope
-        return parent_->lookupVar(id);
+    else if ( pScope_ ) // try to find in parent scope
+        return pScope_->lookupVar(id);
 
     // indicate "not found"
     return 0;

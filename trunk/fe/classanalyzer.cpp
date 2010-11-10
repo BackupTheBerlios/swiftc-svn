@@ -17,33 +17,36 @@ ClassAnalyzer::ClassVisitor(Context* ctxt)
 
 ClassAnalyzer::~ClassVisitor() {}
 
-void ClassAnalyzer::visit(Class* c) 
-{
-    ctxt_->class_ = c;
-}
+//void ClassAnalyzer::visit(Class* c) {}
 
-void ClassAnalyzer::visit(Create* c)
-{
-    checkSig(c);
-    checkStmnts(c);
-}
+//void ClassAnalyzer::visit(Create* c)
+//{
+    //checkSig(c);
+    //checkStmnts(c);
+//}
 
-void ClassAnalyzer::visit(Reader* r)
-{
-    checkSig(r);
-    checkStmnts(r);
-}
+//void ClassAnalyzer::visit(Reader* r)
+//{
+    //checkSig(r);
+    //checkStmnts(r);
+//}
 
-void ClassAnalyzer::visit(Writer* w)
-{
-    checkSig(w);
-    checkStmnts(w);
-}
+//void ClassAnalyzer::visit(Writer* w)
+//{
+    //checkSig(w);
+    //checkStmnts(w);
+//}
 
-void ClassAnalyzer::visit(Routine* r)
+//void ClassAnalyzer::visit(Routine* r)
+//{
+    //checkSig(r);
+    //checkStmnts(r);
+//}
+
+void ClassAnalyzer::visit(MemberFct* m)
 {
-    checkSig(r);
-    checkStmnts(r);
+    checkSig(m);
+    checkStmnts(m);
 }
 
 void ClassAnalyzer::visit(MemberVar* m)

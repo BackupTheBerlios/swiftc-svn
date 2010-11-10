@@ -37,14 +37,14 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Stmnt::Stmnt(location loc)
-    : Node(loc)
+Stmnt::Stmnt(const Location& loc, Scope* parent)
+    : Node(loc, parent)
 {}
 
 //------------------------------------------------------------------------------
 
-DeclStmnt::DeclStmnt(location loc, Decl* decl)
-    : Stmnt(loc)
+DeclStmnt::DeclStmnt(const Location& loc, Scope* parent, Decl* decl)
+    : Stmnt(loc, parent)
     , decl_(decl)
 {}
 
@@ -60,18 +60,8 @@ void DeclStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-ActionStmnt::ActionStmnt(location loc)
-    : Stmnt(loc)
-{}
-
-ActionStmnt::~ActionStmnt()
-{
-}
-
-//------------------------------------------------------------------------------
-
-ErrorStmnt::ErrorStmnt(location loc)
-    : Stmnt(loc)
+ErrorStmnt::ErrorStmnt(const Location& loc, Scope* parent)
+    : Stmnt(loc, parent)
 {}
 
 void ErrorStmnt::accept(StmntVisitorBase* s)
@@ -81,8 +71,8 @@ void ErrorStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-ExprStmnt::ExprStmnt(location loc, Expr* expr)
-    : ActionStmnt(loc)
+ExprStmnt::ExprStmnt(const Location& loc, Scope* parent, Expr* expr)
+    : Stmnt(loc, parent)
     , expr_(expr)
 {}
 
@@ -99,11 +89,12 @@ void ExprStmnt::accept(StmntVisitorBase* s)
 //------------------------------------------------------------------------------
 
 AssignStmnt::AssignStmnt(
-        location loc,
+        const Location& loc,
+        Scope* parent,
         std::string* id,
         TNList* tuple, 
         TNList* exprList)
-    : ActionStmnt(loc)
+    : Stmnt(loc, parent)
     , id_(id)
     , tuple_(tuple)
     , exprList_(exprList)
@@ -123,9 +114,9 @@ void AssignStmnt::accept(StmntVisitorBase* s)
 
 //----------------------------------------------------------------------
 
-LoopStmnt::LoopStmnt(location loc, Scope* scope)
-    : Stmnt(loc)
-    , scope_(scope)
+LoopStmnt::LoopStmnt(const Location& loc, Scope* parent)
+    : Stmnt(loc, parent)
+    , scope_( new Scope(loc, this, parent) )
 {}
 
 LoopStmnt::~LoopStmnt()
@@ -135,8 +126,8 @@ LoopStmnt::~LoopStmnt()
 
 //------------------------------------------------------------------------------
 
-WhileLoop::WhileLoop(location loc, Scope* scope, Expr* expr)
-    : LoopStmnt(loc, scope)
+WhileLoop::WhileLoop(const Location& loc, Scope* parent, Expr* expr)
+    : LoopStmnt(loc, parent)
     , expr_(expr)
 {}
 
@@ -152,8 +143,8 @@ void WhileLoop::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-RepeatUntilLoop::RepeatUntilLoop(location loc, Scope* scope, Expr* expr)
-    : LoopStmnt(loc, scope)
+RepeatUntilLoop::RepeatUntilLoop(const Location& loc, Scope* parent, Expr* expr)
+    : LoopStmnt(loc, parent)
     , expr_(expr)
 {}
 
@@ -169,8 +160,8 @@ void RepeatUntilLoop::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-SimdLoop::SimdLoop(location loc, Scope* scope, std::string* id, Expr* lExpr, Expr* rExpr)
-    : LoopStmnt(loc, scope)
+SimdLoop::SimdLoop(const Location& loc, Scope* parent, std::string* id, Expr* lExpr, Expr* rExpr)
+    : LoopStmnt(loc, parent)
     , id_(id)
     , lExpr_(lExpr)
     , rExpr_(rExpr)
@@ -190,9 +181,9 @@ void SimdLoop::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-ScopeStmnt::ScopeStmnt(location loc, Scope* scope)
-    : Stmnt(loc)
-    , scope_(scope)
+ScopeStmnt::ScopeStmnt(const Location& loc, Scope* parent)
+    : Stmnt(loc, parent)
+    , scope_( new Scope(loc, this, parent) )
 {}
 
 ScopeStmnt::~ScopeStmnt()
@@ -207,11 +198,11 @@ void ScopeStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-IfElStmnt::IfElStmnt(location loc, Expr* expr, Scope* ifScope, Scope* elScope)
-    : Stmnt(loc)
+IfElStmnt::IfElStmnt(const Location& loc, Scope* parent, Expr* expr)
+    : Stmnt(loc, parent)
     , expr_(expr)
-    , ifScope_(ifScope)
-    , elScope_(elScope)
+    , ifScope_( new Scope(loc, this, parent) )
+    , elScope_( new Scope(loc, this, parent) )
 {}
 
 IfElStmnt::~IfElStmnt()
@@ -228,8 +219,8 @@ void IfElStmnt::accept(StmntVisitorBase* s)
 
 //------------------------------------------------------------------------------
 
-CFStmnt::CFStmnt(location loc, TokenType token)
-    : Stmnt(loc)
+CFStmnt::CFStmnt(const Location& loc, Scope* parent, TokenType token)
+    : Stmnt(loc, parent)
     , token_(token)
 {}
 

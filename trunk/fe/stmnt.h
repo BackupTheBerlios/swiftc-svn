@@ -22,7 +22,6 @@
 
 #include "utils/assert.h"
 
-#include "fe/auto.h"
 #include "fe/fct.h"
 #include "fe/node.h"
 #include "fe/typelist.h"
@@ -39,8 +38,9 @@ namespace swift {
 class Decl;
 class Expr;
 class Local;
-class TNList;
+class Scope;
 class StmntVisitorBase;
+class TNList;
 
 //------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ class Stmnt : public Node
 {
 public:
 
-    Stmnt(location loc);
+    Stmnt(const Location& loc, Scope* parent);
 
     virtual void accept(StmntVisitorBase* s) = 0;
 };
@@ -59,7 +59,7 @@ class ErrorStmnt : public Stmnt
 {
 public:
 
-    ErrorStmnt(location loc);
+    ErrorStmnt(const Location& loc, Scope* parent);
 
     virtual void accept(StmntVisitorBase* s);
 };
@@ -70,7 +70,7 @@ class CFStmnt : public Stmnt
 {
 public:
 
-    CFStmnt(location loc, TokenType token);
+    CFStmnt(const Location& loc, Scope* parent, TokenType token);
 
     virtual void accept(StmntVisitorBase* s);
 
@@ -87,7 +87,7 @@ class DeclStmnt : public Stmnt
 {
 public:
 
-    DeclStmnt(location loc, Decl* decl);
+    DeclStmnt(const Location& loc, Scope* parent, Decl* decl);
     virtual ~DeclStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -105,7 +105,7 @@ class IfElStmnt : public Stmnt
 {
 public:
 
-    IfElStmnt(location loc, Expr* expr, Scope* ifScope, Scope* elScope);
+    IfElStmnt(const Location& loc, Scope* parent, Expr* expr);
     virtual ~IfElStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -116,6 +116,7 @@ protected:
     Scope* ifScope_;
     Scope* elScope_;
 
+    friend class Parser;
     template<class T> friend class StmntVisitor;
 };
 
@@ -125,7 +126,7 @@ class ScopeStmnt : public Stmnt
 {
 public:
 
-    ScopeStmnt(location loc, Scope* scope);
+    ScopeStmnt(const Location& loc, Scope* parent);
     virtual ~ScopeStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -134,6 +135,7 @@ protected:
 
     Scope* scope_;
 
+    friend class Parser;
     template<class T> friend class StmntVisitor;
 };
 
@@ -143,7 +145,7 @@ class LoopStmnt : public Stmnt
 {
 public:
 
-    LoopStmnt(location loc, Scope* scope);
+    LoopStmnt(const Location& loc, Scope* parent);
     virtual ~LoopStmnt();
 
     llvm::BasicBlock* getLoopBB() const { return loopBB_; }
@@ -162,7 +164,7 @@ class WhileLoop : public LoopStmnt
 {
 public:
 
-    WhileLoop(location loc, Scope* scope, Expr* expr);
+    WhileLoop(const Location& loc, Scope* parent, Expr* expr);
     virtual ~WhileLoop();
 
     virtual void accept(StmntVisitorBase* s);
@@ -171,6 +173,7 @@ protected:
 
     Expr* expr_;
 
+    friend class Parser;
     template<class T> friend class StmntVisitor;
 };
 
@@ -180,7 +183,7 @@ class RepeatUntilLoop : public LoopStmnt
 {
 public:
 
-    RepeatUntilLoop(location loc, Scope* scope, Expr* expr);
+    RepeatUntilLoop(const Location& loc, Scope* parent, Expr* expr);
     virtual ~RepeatUntilLoop();
 
     virtual void accept(StmntVisitorBase* s);
@@ -189,6 +192,7 @@ protected:
 
     Expr* expr_;
 
+    friend class Parser;
     template<class T> friend class StmntVisitor;
 };
 
@@ -198,7 +202,7 @@ class SimdLoop : public LoopStmnt
 {
 public:
 
-    SimdLoop(location loc, Scope* scope, std::string* id, Expr* lExpr, Expr* rExpr);
+    SimdLoop(const Location& loc, Scope* parent, std::string* id, Expr* lExpr, Expr* rExpr);
     virtual ~SimdLoop();
 
     virtual void accept(StmntVisitorBase* s);
@@ -210,26 +214,17 @@ protected:
     Expr* rExpr_;
     Local* index_;
 
+    friend class Parser;
     template<class T> friend class StmntVisitor;
 };
 
 //------------------------------------------------------------------------------
 
-class ActionStmnt : public Stmnt
+class ExprStmnt : public Stmnt
 {
 public:
 
-    ActionStmnt(location loc);
-    virtual ~ActionStmnt();
-};
-
-//------------------------------------------------------------------------------
-
-class ExprStmnt : public ActionStmnt
-{
-public:
-
-    ExprStmnt(location loc, Expr* expr);
+    ExprStmnt(const Location& loc, Scope* parent, Expr* expr);
     virtual ~ExprStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -243,11 +238,11 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class AssignStmnt : public ActionStmnt
+class AssignStmnt : public Stmnt
 {
 public:
 
-    AssignStmnt(location loc, std::string* id, TNList* tuple, TNList* exprList);
+    AssignStmnt(const Location& loc, Scope* parent, std::string* id, TNList* tuple, TNList* exprList);
     virtual ~AssignStmnt();
 
     virtual void accept(StmntVisitorBase* s);
@@ -289,8 +284,6 @@ public:
     virtual void visit(SimdLoop* l) = 0;
     virtual void visit(WhileLoop* l) = 0;
     virtual void visit(ScopeStmnt* s) = 0;
-
-    // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s) = 0;
     virtual void visit(ExprStmnt* s) = 0;
 

@@ -45,7 +45,7 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Type::Type(location loc, TokenType modifier, bool isRef, bool isSimd /*= false*/)
+Type::Type(const Location& loc, TokenType modifier, bool isRef, bool isSimd /*= false*/)
     : Node(loc) 
     , modifier_(modifier)
     , isRef_(isRef)
@@ -106,7 +106,7 @@ MemberFctInfo Type::hasMemberFct(const std::string& id, const TypeList& in, Modu
 //------------------------------------------------------------------------------
 
 ErrorType::ErrorType(bool isSimd /*= false*/)
-    : Type( location(), Token::VAR, false, isSimd )
+    : Type( Location(), Token::VAR, false, isSimd )
 {}
 
 Type* ErrorType::clone() const
@@ -170,13 +170,13 @@ MemberFctInfo ErrorType::hasMemberFct(const std::string* id, const TypeList& in,
 BaseType::TypeMap* BaseType::typeMap_ = 0;
 BaseType::SizeMap* BaseType::sizeMap_ = 0;
 
-BaseType::BaseType(location loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd /*= false*/)
+BaseType::BaseType(const Location& loc, TokenType modifier, std::string* id, bool isInOut, bool isSimd /*= false*/)
     : Type(loc, modifier, isInOut, isSimd)
     , id_(id)
 {}
 
 BaseType* BaseType::create(
-        location loc, 
+        const Location& loc, 
         TokenType modifier, 
         std::string* id, 
         bool isInOut)
@@ -312,7 +312,7 @@ MemberFctInfo BaseType::hasMemberFct(const std::string* id, const TypeList& in, 
 
 //------------------------------------------------------------------------------
 
-ScalarType::ScalarType(location loc, TokenType modifier, std::string* id, bool isSimd /*= false*/)
+ScalarType::ScalarType(const Location& loc, TokenType modifier, std::string* id, bool isSimd /*= false*/)
     : BaseType(loc, modifier, id, false, isSimd)
 {
     swiftAssert( typeMap_->find(*this->id()) != typeMap_->end(), "must be found" );
@@ -415,7 +415,7 @@ bool ScalarType::isScalar(const std::string* id)
 
 //------------------------------------------------------------------------------
 
-UserType::UserType(location loc, TokenType modifier, std::string* id, bool isInOut /*= false*/, bool isSimd /*= false*/)
+UserType::UserType(const Location& loc, TokenType modifier, std::string* id, bool isInOut /*= false*/, bool isSimd /*= false*/)
     : BaseType(loc, modifier, id, isInOut, isSimd)
 {}
 
@@ -485,7 +485,7 @@ const llvm::Type* UserType::getRawVecLLVMType(Module* m, int& simdLength) const
 
 //------------------------------------------------------------------------------
 
-NestedType::NestedType(location loc, TokenType modifier, bool isRef, Type* innerType)
+NestedType::NestedType(const Location& loc, TokenType modifier, bool isRef, Type* innerType)
     : Type(loc, modifier, isRef, false /*no simd type in all cases*/)
     , innerType_(innerType)
 {}
@@ -536,14 +536,14 @@ const llvm::Type* NestedType::getRawVecLLVMType(Module* m, int& simdLength) cons
 
 //------------------------------------------------------------------------------
 
-Ptr::Ptr(location loc, TokenType modifier, Type* innerType)
+Ptr::Ptr(const Location& loc, TokenType modifier, Type* innerType)
     : NestedType(loc, modifier, false, innerType)
 {}
 
 Ptr* Ptr::clone() const
 {
     swiftAssert( simd_ == false, "must not be a simd type" );
-    return new Ptr( location() , modifier_, innerType_->clone() );
+    return new Ptr( Location() , modifier_, innerType_->clone() );
 }
 
 std::string Ptr::toString() const
@@ -610,7 +610,7 @@ MemberFctInfo Ptr::hasMemberFct(const std::string* id, const TypeList& in, Modul
 
 //------------------------------------------------------------------------------
 
-Container::Container(location loc, TokenType modifier, Type* innerType)
+Container::Container(const Location& loc, TokenType modifier, Type* innerType)
     : NestedType(loc, modifier, false, innerType)
 {}
 
@@ -704,14 +704,14 @@ MemberFctInfo Container::hasMemberFct(const std::string* id, const TypeList& in,
 
 //------------------------------------------------------------------------------
 
-Array::Array(location loc, TokenType modifier, Type* innerType)
+Array::Array(const Location& loc, TokenType modifier, Type* innerType)
     : Container(loc, modifier, innerType)
 {}
 
 Array* Array::clone() const
 {
     swiftAssert( simd_ == false, "must not be a simd type" );
-    return new Array( location() , modifier_, innerType_->clone() );
+    return new Array( Location() , modifier_, innerType_->clone() );
 }
 
 std::string Array::containerStr() const
@@ -748,14 +748,14 @@ void Array::emitCopy(Context* ctxt, Value* dst, Value* src) const
 
 //------------------------------------------------------------------------------
 
-Simd::Simd(location loc, TokenType modifier, Type* innerType)
+Simd::Simd(const Location& loc, TokenType modifier, Type* innerType)
     : Container(loc, modifier, innerType)
 {}
 
 Simd* Simd::clone() const
 {
     swiftAssert( simd_ == false, "must not be a simd type" );
-    return new Simd( location(), modifier_, innerType_->clone() );
+    return new Simd( Location(), modifier_, innerType_->clone() );
 }
 
 std::string Simd::containerStr() const

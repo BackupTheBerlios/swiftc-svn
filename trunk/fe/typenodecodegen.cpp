@@ -147,10 +147,10 @@ void TypeNodeCodeGen::visit(Range* r)
     setResult( r, new Scalar(llvm::ConstantVector::get(vType, constants)) );
 }
 
-void TypeNodeCodeGen::visit(Self* n)
+void TypeNodeCodeGen::visit(This* t)
 {
-    Method* m = cast<Method>(ctxt_->memberFct_);
-    setResult( n, new Addr(builder_.CreateLoad( m->getSelfValue(), "self" )) );
+    MemberFct* m = t->mustFind<MemberFct>();
+    setResult( t, new Addr(builder_.CreateLoad( m->getThisValue(), "this" )) );
 }
 
 // TODO writeback?
@@ -286,11 +286,11 @@ void TypeNodeCodeGen::visit(CCall* c)
 
 void TypeNodeCodeGen::visit(MethodCall* m)
 {
-    Place* self = getSelf(m);
+    Place* _this = getThis(m);
 
     if ( const ScalarType* from = m->expr_->get().type_->cast<ScalarType>() )
     {
-        Value* val = self->getScalar(builder_);
+        Value* val = _this->getScalar(builder_);
         const ScalarType* to = cast<ScalarType>( m->memberFct_->sig_.out_[0]->getType() );
         const llvm::Type* llvmTo = to->getLLVMType(ctxt_->module_);
         const llvm::Type* llvmFrom = from->getLLVMType(ctxt_->module_);
@@ -342,7 +342,7 @@ void TypeNodeCodeGen::visit(MethodCall* m)
         setResult( m, new Scalar(val) );
     }
     else
-        emitCall(m, self);
+        emitCall(m, _this);
 }
 
 void TypeNodeCodeGen::visit(CreateCall* r)
@@ -388,7 +388,7 @@ static inline int tok2val(const char* str)
 
 void TypeNodeCodeGen::visit(BinExpr* b)
 {
-    // accept self value in all cases
+    // accept this value in all cases
     b->op1_->accept(this);
 
     if ( b->builtin_ )
@@ -511,26 +511,26 @@ void TypeNodeCodeGen::visit(BinExpr* b)
         emitCall(b, b->op1_->set().place_);
 }
 
-Place* TypeNodeCodeGen::getSelf(MethodCall* m)
+Place* TypeNodeCodeGen::getThis(MethodCall* m)
 {
     swiftAssert(m->expr_->numResults() == 1, "must exactly have one result" );
 
     m->expr_->accept(this);
-    Place*& self = m->expr_->set().place_;
+    Place*& _this = m->expr_->set().place_;
 
-    Value* addr = self->getAddr(builder_);
+    Value* addr = _this->getAddr(builder_);
 
     if ( const Ptr* ptr = m->expr_->get().type_->cast<Ptr>() )
         addr = ptr->recDerefAddr(ctxt_->builder_, addr);
 
     // replace result;
-    delete self;
-    self = new Addr(addr);
+    delete _this;
+    _this = new Addr(addr);
 
-    return self;
+    return _this;
 }
 
-void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
+void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* _this)
 {
     Values args;
     MemberFct* fct = call->getMemberFct();
@@ -542,8 +542,8 @@ void TypeNodeCodeGen::emitCall(MemberFctCall* call, Place* self)
      * prepare arguments
      */
 
-    if (self)
-        args.push_back( self->getAddr(builder_) );
+    if (_this)
+        args.push_back( _this->getAddr(builder_) );
 
     Values perRefRetValues;
 

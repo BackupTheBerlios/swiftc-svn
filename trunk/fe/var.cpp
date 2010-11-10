@@ -33,7 +33,7 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Var::Var(location loc, Type* type, std::string* id)
+Var::Var(const Location& loc, Type* type, std::string* id)
     : Node(loc) 
     , type_(type)
     , id_(id)
@@ -74,7 +74,7 @@ llvm::AllocaInst* Var::createEntryAlloca(Context* ctxt)
 
 //------------------------------------------------------------------------------
 
-Local::Local(location loc, Type* type, std::string* id)
+Local::Local(const Location& loc, Type* type, std::string* id)
     : Var(loc, type, id)
 {}
 
@@ -90,7 +90,7 @@ void Local::setAlloca(llvm::AllocaInst* alloca)
 
 //------------------------------------------------------------------------------
 
-InOut::InOut(location loc, Type* type, std::string* id)
+InOut::InOut(const Location& loc, Type* type, std::string* id)
     : Var(loc, type, id)
 {}
 
@@ -109,7 +109,7 @@ Value* InOut::getAddr(LLVMBuilder& builder) const
 
 //------------------------------------------------------------------------------
 
-Param::Param(location loc, Type* type, std::string* id)
+Param::Param(const Location& loc, Type* type, std::string* id)
     : InOut(loc, type, id)
 {}
 
@@ -120,7 +120,7 @@ const char* Param::kind() const
 
 //------------------------------------------------------------------------------
 
-RetVal::RetVal(location loc, Type* type, std::string* id)
+RetVal::RetVal(const Location& loc, Type* type, std::string* id)
     : InOut(loc, type, id)
 {}
 

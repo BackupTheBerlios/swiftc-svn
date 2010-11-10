@@ -15,7 +15,7 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-TypeNode::TypeNode(location loc, Type* type /*= 0*/)
+TypeNode::TypeNode(const Location& loc, Type* type /*= 0*/)
     : Node(loc)
 {
     if (type)
@@ -37,7 +37,7 @@ TypeNode::~TypeNode()
 
 //------------------------------------------------------------------------------
 
-Decl::Decl(location loc, bool simd, Type* type, std::string* id)
+Decl::Decl(const Location& loc, bool simd, Type* type, std::string* id)
     : TypeNode( loc, simd ? type->simdClone() : type->clone() )
     , id_(id)
     , local_(0)
@@ -70,13 +70,13 @@ const char* Decl::cid() const
 
 //------------------------------------------------------------------------------
 
-Expr::Expr(location loc)
+Expr::Expr(const Location& loc)
     : TypeNode(loc, 0)
 {}
 
 //------------------------------------------------------------------------------
 
-ErrorExpr::ErrorExpr(location loc)
+ErrorExpr::ErrorExpr(const Location& loc)
     : Expr(loc)
 {}
 
@@ -87,7 +87,7 @@ void ErrorExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-Broadcast::Broadcast(location loc, Expr* expr)
+Broadcast::Broadcast(const Location& loc, Expr* expr)
     : Expr(loc)
     , expr_(expr)
 {}
@@ -105,7 +105,7 @@ void Broadcast::accept(TypeNodeVisitorBase* t)
 
 //----------------------------------------------------------------------
 
-Id::Id(location loc, std::string* id)
+Id::Id(const Location& loc, std::string* id)
     : Expr(loc)
     , id_(id)
 {}
@@ -132,7 +132,7 @@ const char* Id::cid() const
 
 //------------------------------------------------------------------------------
 
-Access::Access(location loc, Expr* prefixExpr)
+Access::Access(const Location& loc, Expr* prefixExpr)
     : Expr(loc)
     , prefixExpr_(prefixExpr)
     , class_(0)
@@ -146,7 +146,7 @@ Access::~Access()
 
 //------------------------------------------------------------------------------
 
-IndexExpr::IndexExpr(location loc, Expr* prefixExpr, Expr* indexExpr)
+IndexExpr::IndexExpr(const Location& loc, Expr* prefixExpr, Expr* indexExpr)
     : Access(loc, prefixExpr)
     , indexExpr_(indexExpr)
 {}
@@ -163,7 +163,7 @@ void IndexExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-SimdIndexExpr::SimdIndexExpr(location loc, Expr* prefixExpr)
+SimdIndexExpr::SimdIndexExpr(const Location& loc, Expr* prefixExpr)
     : Access(loc, prefixExpr)
 {}
 
@@ -174,7 +174,7 @@ void SimdIndexExpr::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-MemberAccess::MemberAccess(location loc, Expr* prefixExpr, std::string* id)
+MemberAccess::MemberAccess(const Location& loc, Expr* prefixExpr, std::string* id)
     : Access(loc, prefixExpr)
     , id_(id)
 {}
@@ -201,7 +201,7 @@ const char* MemberAccess::cid() const
 
 //------------------------------------------------------------------------------
 
-FctCall::FctCall(location loc, std::string* id, TNList* exprList)
+FctCall::FctCall(const Location& loc, std::string* id, TNList* exprList)
     : Expr(loc)
     , id_(id)
     , exprList_(exprList)
@@ -225,7 +225,7 @@ const char* FctCall::cid() const
 
 //------------------------------------------------------------------------------
 
-CCall::CCall(location loc, Type* retType, TokenType token, std::string* id, TNList* exprList)
+CCall::CCall(const Location& loc, Type* retType, TokenType token, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , retType_(retType)
     , token_(token)
@@ -250,7 +250,7 @@ const char* CCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-MemberFctCall::MemberFctCall(location loc, std::string* id, TNList* exprList)
+MemberFctCall::MemberFctCall(const Location& loc, std::string* id, TNList* exprList)
     : FctCall(loc, id, exprList)
     , class_(0)
     , memberFct_(0)
@@ -265,13 +265,13 @@ MemberFct* MemberFctCall::getMemberFct() const
 
 //------------------------------------------------------------------------------
 
-StaticMethodCall::StaticMethodCall(location loc, std::string* id, TNList* exprList)
+StaticMethodCall::StaticMethodCall(const Location& loc, std::string* id, TNList* exprList)
     : MemberFctCall(loc, id, exprList)
 {}
 
 //------------------------------------------------------------------------------
 
-CreateCall::CreateCall(location loc, std::string* classId, TNList* exprList)
+CreateCall::CreateCall(const Location& loc, std::string* classId, TNList* exprList)
     : StaticMethodCall( loc, new std::string("create"), exprList )
     , classId_(classId)
 {}
@@ -294,7 +294,7 @@ const char* CreateCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-RoutineCall::RoutineCall(location loc, std::string* classId, std::string* id, TNList* exprList)
+RoutineCall::RoutineCall(const Location& loc, std::string* classId, std::string* id, TNList* exprList)
     : StaticMethodCall(loc, id, exprList)
     , classId_(classId)
 {}
@@ -317,7 +317,7 @@ const char* RoutineCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-OperatorCall::OperatorCall(location loc, std::string* id, Expr* op1)
+OperatorCall::OperatorCall(const Location& loc, std::string* id, Expr* op1)
     : MethodCall(loc, op1, id, new TNList() ) 
     , op1_(op1) // alias
     , builtin_(true)
@@ -327,7 +327,7 @@ OperatorCall::OperatorCall(location loc, std::string* id, Expr* op1)
 
 //------------------------------------------------------------------------------
 
-BinExpr::BinExpr(location loc, std::string* id, Expr* op1, Expr* op2)
+BinExpr::BinExpr(const Location& loc, std::string* id, Expr* op1, Expr* op2)
     : OperatorCall(loc, id, op1)
     , op2_(op2)
 {
@@ -347,7 +347,7 @@ const char* BinExpr::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-UnExpr::UnExpr(location loc, std::string* id, Expr* op)
+UnExpr::UnExpr(const Location& loc, std::string* id, Expr* op)
     : OperatorCall(loc, id, op)
 {}
 
@@ -364,7 +364,7 @@ const char* UnExpr::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-MethodCall::MethodCall(location loc, Expr* expr, std::string* id, TNList* exprList)
+MethodCall::MethodCall(const Location& loc, Expr* expr, std::string* id, TNList* exprList)
     : MemberFctCall(loc, id, exprList)
     , expr_(expr)
 {}
@@ -387,7 +387,7 @@ const char* MethodCall::qualifierStr() const
 
 //------------------------------------------------------------------------------
 
-Literal::Literal(location loc, Box box, TokenType token)
+Literal::Literal(const Location& loc, Box box, TokenType token)
     : Expr(loc)
     , box_(box)
     , token_(token)
@@ -405,7 +405,7 @@ TokenType Literal::getToken() const
 
 //------------------------------------------------------------------------------
 
-Nil::Nil(location loc, Type* type)
+Nil::Nil(const Location& loc, Type* type)
     : Expr(loc)
     , type_(type)
 {}
@@ -422,7 +422,7 @@ void Nil::accept(TypeNodeVisitorBase* t)
 
 //------------------------------------------------------------------------------
 
-Range::Range(location loc, Type* type)
+Range::Range(const Location& loc, Type* type)
     : Expr(loc)
     , type_(type)
 {}
@@ -439,11 +439,11 @@ void Range::accept(TypeNodeVisitorBase* t)
 
 //----------------------------------------------------------------------
 
-Self::Self(location loc)
+This::This(const Location& loc)
     : Expr(loc)
 {}
 
-void Self::accept(TypeNodeVisitorBase* t)
+void This::accept(TypeNodeVisitorBase* t)
 {
     t->visit(this);
 }

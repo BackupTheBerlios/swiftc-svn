@@ -32,11 +32,12 @@ Context::~Context()
 
 Scope* Context::enterScope()
 {
-    Scope* parent = scopes_.empty() ? 0 : scopes_.top();
-    Scope* newScope = new Scope(parent);
-    scopes_.push(newScope);
+    //Scope* parent = scopes_.empty() ? 0 : scopes_.top();
+    //Scope* newScope = new Scope(parent);
+    //scopes_.push(newScope);
 
-    return newScope;
+    //return newScope;
+    return 0;
 }
 
 void Context::enterScope(Scope* scope)

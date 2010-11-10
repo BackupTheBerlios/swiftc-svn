@@ -23,12 +23,12 @@
 #include <cstdarg>
 #include <cstring>
 
-#include "fe/location.hh"
+#include "fe/location.h"
 
 namespace swift {
 
-void   errorf(const location& loc, const char* fs, ...);
-void warningf(const location& loc, const char* fs, ...);
+void   errorf(const Location& loc, const char* fs, ...);
+void warningf(const Location& loc, const char* fs, ...);
 
 #define SWIFT_PREV_ERROR(loc) errorf((loc), "previous location here")
 

@@ -104,7 +104,7 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
             && m->sig_.in_.empty() 
             && !m->sig_.out_.empty() 
             && m->sig_.out_[0]->getType()->isInt()
-            && dynamic_cast<Routine*>(m) )
+            && m->isStatic() )
     {
         m->main_ = true;
     }
@@ -116,8 +116,8 @@ void LLVMFctDeclarer::process(Class* c, MemberFct* m)
      * create llvm function type
      */
 
-    // push hidden 'self' param first if necessary
-    if ( dynamic<Method>(m) )
+    // push hidden 'this' param first if necessary
+    if ( m->hasThisArg() )
     {
         m->params_.push_back( llvm::PointerType::getUnqual(c->getLLVMType()) );
 

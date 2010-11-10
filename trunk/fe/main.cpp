@@ -36,10 +36,11 @@
 #include "utils/set.h"
 #include "utils/stringhelper.h"
 
-#include "fe/auto.h"
 #include "fe/cmdlineparser.h"
 #include "fe/context.h"
 #include "fe/error.h"
+#include "fe/location.h"
+#include "fe/parser.h"
 #include "fe/type.h"
 #include "fe/typenode.h"
 
@@ -50,6 +51,11 @@
 static void readBuiltinTypes(swift::Context* ctxt);
 static int start(int argc, char** argv);
 static void writeBCFile(const llvm::Module* m, const char* filename);
+
+namespace swift {
+FILE* lexer_init(const char* filename);
+extern std::string* g_lexer_filename;
+}
 
 //------------------------------------------------------------------------------
 
@@ -86,7 +92,7 @@ static int start(int argc, char** argv)
      */
     //swift::Literal::initTypeMap();
 
-    swift::Module* module = new swift::Module( swift::location(), new std::string("default") );
+    swift::Module* module = new swift::Module( swift::Location(), new std::string("default") );
     swift::BaseType::initTypeMap(module->lctxt_);
 
     // populate data structures with builtin types
@@ -101,7 +107,7 @@ static int start(int argc, char** argv)
     }
     //build_token_stream();
 
-    swift::Parser parser(module->ctxt_);
+    swift::Parser parser(module);
 #if 0
     parser.set_debug_level(1);
     parser.set_debug_stream(std::cerr);
@@ -171,36 +177,36 @@ static void readBuiltinTypes(swift::Context* ctxt)
 {
     std::vector<const char*> builtin;
 
-    builtin.push_back("fe/builtin/int.swift");
-    builtin.push_back("fe/builtin/int8.swift");
-    builtin.push_back("fe/builtin/int16.swift");
-    builtin.push_back("fe/builtin/int32.swift");
-    builtin.push_back("fe/builtin/int64.swift");
+    //builtin.push_back("fe/builtin/int.swift");
+    //builtin.push_back("fe/builtin/int8.swift");
+    //builtin.push_back("fe/builtin/int16.swift");
+    //builtin.push_back("fe/builtin/int32.swift");
+    //builtin.push_back("fe/builtin/int64.swift");
 
-    builtin.push_back("fe/builtin/uint.swift");
-    builtin.push_back("fe/builtin/uint8.swift");
-    builtin.push_back("fe/builtin/uint16.swift");
-    builtin.push_back("fe/builtin/uint32.swift");
-    builtin.push_back("fe/builtin/uint64.swift");
+    //builtin.push_back("fe/builtin/uint.swift");
+    //builtin.push_back("fe/builtin/uint8.swift");
+    //builtin.push_back("fe/builtin/uint16.swift");
+    //builtin.push_back("fe/builtin/uint32.swift");
+    //builtin.push_back("fe/builtin/uint64.swift");
 
-    builtin.push_back("fe/builtin/sat8.swift");
-    builtin.push_back("fe/builtin/sat16.swift");
+    //builtin.push_back("fe/builtin/sat8.swift");
+    //builtin.push_back("fe/builtin/sat16.swift");
 
-    builtin.push_back("fe/builtin/usat8.swift");
-    builtin.push_back("fe/builtin/usat16.swift");
+    //builtin.push_back("fe/builtin/usat8.swift");
+    //builtin.push_back("fe/builtin/usat16.swift");
 
-    builtin.push_back("fe/builtin/index.swift");
+    //builtin.push_back("fe/builtin/index.swift");
 
-    builtin.push_back("fe/builtin/real.swift");
-    builtin.push_back("fe/builtin/real32.swift");
-    builtin.push_back("fe/builtin/real64.swift");
+    //builtin.push_back("fe/builtin/real.swift");
+    //builtin.push_back("fe/builtin/real32.swift");
+    //builtin.push_back("fe/builtin/real64.swift");
 
-    builtin.push_back("fe/builtin/bool.swift");
+    //builtin.push_back("fe/builtin/bool.swift");
 
     // library HACK
-    builtin.push_back("lib/math.swift");
-    builtin.push_back("lib/vec.swift");
-    builtin.push_back("lib/mat.swift");
+    //builtin.push_back("lib/math.swift");
+    //builtin.push_back("lib/vec.swift");
+    //builtin.push_back("lib/mat.swift");
 
     FILE* file;
 
@@ -209,7 +215,7 @@ static void readBuiltinTypes(swift::Context* ctxt)
         file = swift::lexer_init(builtin[i]);
         //build_token_stream();
 
-        swift::Parser parser(ctxt);
+        swift::Parser parser(ctxt->module_);
 #if 0
         parser.set_debug_level(1);
         parser.set_debug_stream(std::cerr);

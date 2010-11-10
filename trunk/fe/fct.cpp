@@ -31,13 +31,13 @@ static void appendCall(LLVMBuilder& builder, llvm::Function* fct, Values::iterat
     builder.Insert(call);
 }
 
-static void missingMemberFctError(const swift::location& loc,
+static void missingMemberFctError(const swift::Location& loc,
                                   const std::string& kind, 
                                   const std::string& name,
                                   const swift::TypeList& types,
                                   const char* classId)
 {
-    errorf(loc, "there is no %s '%s(%s)' defined in class '%s'",
+    swift::errorf(loc, "there is no %s '%s(%s)' defined in class '%s'",
             kind.c_str(), 
             name.c_str(), 
             types.toString().c_str(), 
@@ -47,7 +47,7 @@ static void missingMemberFctError(const swift::location& loc,
 namespace swift {
 
 AssignCreate::AssignCreate(Context* ctxt,
-                           const location& loc, const std::string* id,
+                           const Location& loc, const std::string* id,
                            TypeNode* lhs, TNList* rhs,
                            size_t rBegin /*= 0*/, size_t rEnd /*= INTPTR_MAX*/)
     : ctxt_(ctxt)

@@ -5,7 +5,7 @@
 #include "utils/map.h"
 #include "utils/stringhelper.h"
 
-#include "fe/location.hh"
+#include "fe/location.h"
 
 namespace llvm {
     class LLVMContext;
@@ -29,33 +29,38 @@ class Node
 {
 public:
 
-    Node(location loc);
+    Node(const Location& loc, Node* parent = 0);
     virtual ~Node() {}
 
-    const location& loc() const;
+    const Location& loc() const;
     void setParent(Node* parent) { parent_ = parent; }
 
     template <class T> T* parent() { return cast<T>(parent_); }
     template <class T> const T* parent() const { return cast<T>(parent_); }
 
+    template <class T> T* mustFind() 
+    { 
+        if ( T* t = dynamic<T>(parent_) )
+            return t;
+        if (parent_)
+            return parent_->find<T>();
+        else
+            SWIFT_UNREACHABLE;
+    }
+
+    template <class T> T* find() 
+    { 
+        if ( T* t = dynamic<T>(parent_) )
+            return t;
+        if (parent_)
+            return parent_->find<T>();
+        return 0;
+    }
+
 protected:
 
-    location loc_;
+    Location loc_;
     Node* parent_;
-};
-
-//------------------------------------------------------------------------------
-
-class Def : public Node
-{
-public:
-
-    Def(location loc, std::string* id);
-    virtual ~Def();
-
-protected:
-
-    std::string* id_;
 };
 
 //------------------------------------------------------------------------------
@@ -64,7 +69,7 @@ class Module : public Node
 {
 public:
 
-    Module(location loc, std::string* id);
+    Module(const Location& loc, std::string* id);
     virtual ~Module();
 
     void insert(Class* c); 

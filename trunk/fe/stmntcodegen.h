@@ -31,8 +31,6 @@ public:
     virtual void visit(WhileLoop* l);
     virtual void visit(SimdLoop* l);
     virtual void visit(ScopeStmnt* s);
-
-    // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
 

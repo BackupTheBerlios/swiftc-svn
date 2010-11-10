@@ -5,12 +5,12 @@
 
 #include <string>
 
+#include "fe/location.h"
 #include "fe/type.h"
 
 namespace swift {
 
 class Context;
-class location;
 class TNList;
 class TypeList;
 class TypeNode;
@@ -22,7 +22,7 @@ public:
 
     AssignCreate() {}
     AssignCreate(Context* ctxt,
-                 const location& loc, const std::string* id,
+                 const Location& loc, const std::string* id,
                  TypeNode* lhs, TNList* rhs,
                  size_t rBegin = 0, size_t rEnd = INTPTR_MAX);
          
@@ -38,7 +38,7 @@ private:
     bool isPairwise() const;
 
     Context* ctxt_;
-    location loc_;
+    Location loc_;
     const std::string* id_;
     TypeNode* lhs_;
     TNList* rhs_;

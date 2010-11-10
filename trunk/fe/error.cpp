@@ -25,9 +25,10 @@
 
 namespace swift {
 
-void errorf(const location& loc, const char* fs, ...)
+void errorf(const Location& loc, const char* fs, ...)
 {
-    fprintf(stderr, "%s:%i: error: ", loc.begin.filename->c_str(), loc.begin.line);
+    const char* filename = loc.begin_.filename_ ? loc.begin_.filename_->c_str() : "unknown";
+    fprintf(stderr, "%s:%i: error: ", filename, loc.begin_.line_);
 
     va_list argptr;
     va_start(argptr, fs);
@@ -37,9 +38,10 @@ void errorf(const location& loc, const char* fs, ...)
     fprintf(stderr, "\n");
 }
 
-void warningf(const location& loc, const char* fs, ...)
+void warningf(const Location& loc, const char* fs, ...)
 {
-    fprintf(stderr, "%s:%i: warning: ", loc.begin.filename->c_str(), loc.begin.line);
+    const char* filename = loc.begin_.filename_ ? loc.begin_.filename_->c_str() : "unknown";
+    fprintf(stderr, "%s:%i: warning: ", filename, loc.begin_.line_);
 
     va_list argptr;
     va_start(argptr, fs);

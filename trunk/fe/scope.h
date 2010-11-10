@@ -26,6 +26,8 @@
 
 #include "utils/stringhelper.h"
 
+#include "fe/node.h"
+
 namespace swift {
 
 class Context;
@@ -36,11 +38,11 @@ class StmntVisitorBase;
 
 //------------------------------------------------------------------------------
 
-class Scope
+class Scope : public Node
 {
 public:
 
-    Scope(Scope* parent);
+    Scope(const Location& loc, Node* parent, Scope* pScope);
     ~Scope();
 
     Var* lookupVarOneLevelOnly(const std::string* id);
@@ -51,9 +53,11 @@ public:
     void accept(StmntVisitorBase* s);
     bool isEmpty() const;
 
+    void setParentNode(Node* parent) { parent_ = parent; }
+
 private:
 
-    Scope* parent_;
+    Scope* pScope_;
 
     typedef std::map<const std::string*, Var*, StringPtrCmp> VarMap;
     VarMap vars_;

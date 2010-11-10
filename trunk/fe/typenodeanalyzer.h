@@ -21,7 +21,7 @@ public:
     virtual void visit(Literal* l);
     virtual void visit(Nil* n);
     virtual void visit(Range* n);
-    virtual void visit(Self* n);
+    virtual void visit(This* n);
 
     // TypeNode -> Expr -> Access
     bool examinePrefixExpr(Access* a);

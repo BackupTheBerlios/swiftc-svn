@@ -28,14 +28,12 @@ public:
     virtual void visit(RepeatUntilLoop* l);
     virtual void visit(SimdLoop* l);
     virtual void visit(ScopeStmnt* s);
-
-    // Stmnt -> ActionStmnt
     virtual void visit(AssignStmnt* s);
     virtual void visit(ExprStmnt* s);
 
 private:
 
-    void checkAssignCreate(const location& loc, 
+    void checkAssignCreate(const Location& loc, 
                            TypeNode* left, 
                            TNList& right, 
                            const std::string* id, 

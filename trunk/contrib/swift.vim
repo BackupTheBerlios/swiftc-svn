@@ -3,13 +3,13 @@ syn sync lines=250
 
 syn keyword swiftBoolean        true false
 syn keyword swiftConditional	if else elseif
-syn keyword swiftConstant	nil self
+syn keyword swiftConstant	nil this
 syn keyword swiftLabel		case goto label return break continue yield
 syn keyword swiftOperator	and div downto in mod not of or packed with
 syn keyword swiftRepeat	        for while repeat until
-syn keyword swiftStatement	routine function reader writer operator create assign scope c_call vc_call stream def
+syn keyword swiftStatement	routine function scope c_call vc_call stream def
 syn keyword swiftStruct	        class end inherits
-syn keyword swiftType		ptr array simd bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 real real32 real64 sat8 sat16 usat8 usat16 const index simd_range
+syn keyword swiftType		ptr array static simd bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 f32 f64 i8 i16 i32 i64 u8 u16 u32 u64 real real32 real64 sat8 sat16 usat8 usat16 var const index simd_range
 "syn keyword swiftType		string text variant
 
 syn keyword swiftTodo contained	TODO FIXME XXX DEBUG NOTE

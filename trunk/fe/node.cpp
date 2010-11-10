@@ -1,5 +1,7 @@
 #include "fe/node.h"
 
+#include <iostream>
+
 #include <llvm/LLVMContext.h>
 #include <llvm/Module.h>
 #include <llvm/Analysis/Verifier.h>
@@ -19,31 +21,19 @@ namespace swift {
 
 //------------------------------------------------------------------------------
 
-Node::Node(location loc)
+Node::Node(const Location& loc, Node* parent /*= 0*/)
     : loc_(loc)
-    , parent_(0)
+    , parent_(parent)
 {}
 
-const location& Node::loc() const
+const Location& Node::loc() const
 {
     return loc_;
 }
 
 //------------------------------------------------------------------------------
 
-Def::Def(location loc, std::string* id)
-    : Node(loc)
-    , id_(id)
-{}
-
-Def::~Def()
-{
-    delete id_;
-}
-
-//------------------------------------------------------------------------------
-
-Module::Module(location loc, std::string* id)
+Module::Module(const Location& loc, std::string* id)
     : Node(loc)
     , id_(id)
     //, lctxt_( new llvm::LLVMContext() )

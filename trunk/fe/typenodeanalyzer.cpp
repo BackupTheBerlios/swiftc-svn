@@ -197,21 +197,23 @@ void TypeNodeAnalyzer::visit(Range* r)
     setResult(r, r->type_->simdClone(), false);
 }
 
-void TypeNodeAnalyzer::visit(Self* s)
+void TypeNodeAnalyzer::visit(This* t)
 {
-    if ( Method* m = dynamic<Method>(ctxt_->memberFct_) )
+    MemberFct* m = t->mustFind<MemberFct>();
+
+    if ( m->hasThisArg() )
     {
          Type* type = new UserType( 
-                 s->loc(), 
-                 m->getModifier(), 
+                 t->loc(), 
+                 m->getVarOrConst(), 
                  new std::string(*ctxt_->class_->id()) );
-         setResult(s, type, false);
+         setResult(t, type, false);
     }
     else
     {
-        errorf( s->loc(), 
-                "the 'self' keyword may only be used within non-static methods" );
-        setError(s, false);
+        errorf( t->loc(), 
+                "the 'this' keyword may only be used within non-static methods" );
+        setError(t, false);
     }
 }
 

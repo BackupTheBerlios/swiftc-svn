@@ -5,7 +5,7 @@
 
 #include "utils/box.h"
 
-#include "fe/auto.h"
+#include "fe/token.h"
 #include "fe/node.h"
 #include "fe/typelist.h"
 
@@ -43,7 +43,7 @@ class TypeNode : public Node
 {
 public:
 
-    TypeNode(location loc_, Type* type = 0);
+    TypeNode(const Location& loc, Type* type = 0);
     virtual ~TypeNode();
 
     virtual void accept(TypeNodeVisitorBase* t) = 0;
@@ -68,7 +68,7 @@ class Decl : public TypeNode
 {
 public:
 
-    Decl(location loc, bool simd, Type* type, std::string* id);
+    Decl(const Location& loc, bool simd, Type* type, std::string* id);
     virtual ~Decl();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -90,7 +90,7 @@ class Expr : public TypeNode
 {
 public:
 
-    Expr(location loc);
+    Expr(const Location& loc);
 
 protected:
 
@@ -103,7 +103,7 @@ class ErrorExpr : public Expr
 {
 public:
 
-    ErrorExpr(location loc);
+    ErrorExpr(const Location& loc);
 
     virtual void accept(TypeNodeVisitorBase* t);
 
@@ -118,7 +118,7 @@ class Access : public Expr
 {
 public:
 
-    Access(location loc, Expr* prefixExpr);
+    Access(const Location& loc, Expr* prefixExpr);
     virtual ~Access();
 
 protected:
@@ -136,7 +136,7 @@ class IndexExpr : public Access
 {
 public:
 
-    IndexExpr(location loc, Expr* prefixExpr, Expr* indexExpr);
+    IndexExpr(const Location& loc, Expr* prefixExpr, Expr* indexExpr);
     virtual ~IndexExpr();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -154,7 +154,7 @@ class SimdIndexExpr : public Access
 {
 public:
 
-    SimdIndexExpr(location loc, Expr* prefixExpr);
+    SimdIndexExpr(const Location& loc, Expr* prefixExpr);
 
     virtual void accept(TypeNodeVisitorBase* t);
 
@@ -169,7 +169,7 @@ class MemberAccess : public Access
 {
 public:
 
-    MemberAccess(location loc, Expr* expr_, std::string* id);
+    MemberAccess(const Location& loc, Expr* expr_, std::string* id);
     virtual ~MemberAccess();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -191,7 +191,7 @@ class FctCall : public Expr
 {
 public:
 
-    FctCall(location loc, std::string* id, TNList* exprList);
+    FctCall(const Location& loc, std::string* id, TNList* exprList);
     virtual ~FctCall();
 
     virtual const char* qualifierStr() const = 0;
@@ -213,7 +213,7 @@ class CCall : public FctCall
 {
 public:
 
-    CCall(location loc, Type* retType, TokenType token, std::string* id, TNList* exprList);
+    CCall(const Location& loc, Type* retType, TokenType token, std::string* id, TNList* exprList);
     virtual ~CCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -233,7 +233,7 @@ class MemberFctCall : public FctCall
 {
 public:
 
-    MemberFctCall(location loc, std::string* id, TNList* exprList);
+    MemberFctCall(const Location& loc, std::string* id, TNList* exprList);
 
     MemberFct* getMemberFct() const;
 
@@ -254,7 +254,7 @@ class MethodCall : public MemberFctCall
 {
 public:
 
-    MethodCall(location loc, Expr* expr, std::string* id, TNList* exprList);
+    MethodCall(const Location& loc, Expr* expr, std::string* id, TNList* exprList);
     virtual ~MethodCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -273,7 +273,7 @@ class OperatorCall : public MethodCall
 {
 public:
 
-    OperatorCall(location loc, std::string* id, Expr* op1);
+    OperatorCall(const Location& loc, std::string* id, Expr* op1);
 
 protected:
 
@@ -289,7 +289,7 @@ class BinExpr : public OperatorCall
 {
 public:
 
-    BinExpr(location loc, std::string* id, Expr* op1, Expr* op2);
+    BinExpr(const Location& loc, std::string* id, Expr* op1, Expr* op2);
 
     virtual void accept(TypeNodeVisitorBase* t);
     virtual const char* qualifierStr() const;
@@ -307,7 +307,7 @@ class UnExpr : public OperatorCall
 {
 public:
 
-    UnExpr(location loc, std::string* id, Expr* op);
+    UnExpr(const Location& loc, std::string* id, Expr* op);
 
     virtual void accept(TypeNodeVisitorBase* t);
     virtual const char* qualifierStr() const;
@@ -319,7 +319,7 @@ class StaticMethodCall : public MemberFctCall
 {
 public:
 
-    StaticMethodCall(location loc, std::string* id, TNList* exprList);
+    StaticMethodCall(const Location& loc, std::string* id, TNList* exprList);
 };
 
 //------------------------------------------------------------------------------
@@ -328,7 +328,7 @@ class CreateCall : public StaticMethodCall
 {
 public:
 
-    CreateCall(location loc, std::string* classId, TNList* exprList);
+    CreateCall(const Location& loc, std::string* classId, TNList* exprList);
     virtual ~CreateCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -347,7 +347,7 @@ class RoutineCall : public StaticMethodCall
 {
 public:
 
-    RoutineCall(location loc, std::string* classId, std::string* id, TNList* exprList);
+    RoutineCall(const Location& loc, std::string* classId, std::string* id, TNList* exprList);
     virtual ~RoutineCall();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -366,7 +366,7 @@ class Literal : public Expr
 {
 public:
 
-    Literal(location loc, Box box, TokenType kind);
+    Literal(const Location& loc, Box box, TokenType kind);
 
     virtual void accept(TypeNodeVisitorBase* t);
     TokenType getToken() const;
@@ -388,7 +388,7 @@ class Broadcast : public Expr
 {
 public:
 
-    Broadcast(location loc, Expr* expr);
+    Broadcast(const Location& loc, Expr* expr);
     ~Broadcast();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -406,7 +406,7 @@ class Id : public Expr
 {
 public:
 
-    Id(location loc, std::string* id);
+    Id(const Location& loc, std::string* id);
     virtual ~Id();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -428,7 +428,7 @@ class Nil : public Expr
 {
 public:
 
-    Nil(location loc, Type* type);
+    Nil(const Location& loc, Type* type);
     virtual ~Nil();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -446,7 +446,7 @@ class Range : public Expr
 {
 public:
 
-    Range(location loc, Type* type);
+    Range(const Location& loc, Type* type);
     ~Range();
 
     virtual void accept(TypeNodeVisitorBase* t);
@@ -460,11 +460,11 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class Self : public Expr
+class This : public Expr
 {
 public:
 
-    Self(location loc);
+    This(const Location& loc);
 
     virtual void accept(TypeNodeVisitorBase* t);
 };
@@ -487,7 +487,7 @@ public:
     virtual void visit(Literal* l) = 0;
     virtual void visit(Nil* n) = 0;
     virtual void visit(Range* r) = 0;
-    virtual void visit(Self* n) = 0;
+    virtual void visit(This* n) = 0;
 
     // TypeNode -> Expr -> Access
     virtual void visit(IndexExpr* i) = 0;

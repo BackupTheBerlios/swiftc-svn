@@ -49,20 +49,20 @@ echo -e '\E[32mAuto-generating built-in types \E[37m'
 
 # build appropriate array for bitcasts
 int_to_real[ 0]=""                                               #index
-int_to_real[ 1]="simd reader bitcast_to_real() -> real result; end"     #int
-int_to_real[ 2]="simd reader bitcast_to_real() -> real result; end"     #uint
+int_to_real[ 1]="def simd bitcast_to_real() -> real result; end"     #int
+int_to_real[ 2]="def simd bitcast_to_real() -> real result; end"     #uint
 
 int_to_real[ 3]=""                                               #int8
 int_to_real[ 4]=""                                               #int16
-int_to_real[ 5]="simd reader bitcast_to_real32() -> real32 result; end" #int32
-int_to_real[ 6]="simd reader bitcast_to_real64() -> real64 result; end" #int64
+int_to_real[ 5]="def simd bitcast_to_real32() -> real32 result; end" #int32
+int_to_real[ 6]="def simd bitcast_to_real64() -> real64 result; end" #int64
 int_to_real[ 7]=""                                               #sat8
 int_to_real[ 8]=""                                               #sat16
 
 int_to_real[ 9]=""                                               #uint8
 int_to_real[10]=""                                               #uint16
-int_to_real[11]="simd reader bitcast_to_real32() -> real32 result; end" #uint32
-int_to_real[12]="simd reader bitcast_to_real64() -> real64 result; end" #uint64
+int_to_real[11]="def simd bitcast_to_real32() -> real32 result; end" #uint32
+int_to_real[12]="def simd bitcast_to_real64() -> real64 result; end" #uint64
 int_to_real[13]=""                                               #usat8
 int_to_real[14]=""                                               #usat16
 

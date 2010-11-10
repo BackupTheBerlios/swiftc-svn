@@ -43,7 +43,7 @@ class Var : public Node
 {
 protected:
 
-    Var(location loc, Type* type, std::string* id);
+    Var(const Location& loc, Type* type, std::string* id);
     virtual ~Var();
 
 public:
@@ -67,7 +67,7 @@ class Local : public Var
 {
 public:
 
-    Local(location loc, Type* type, std::string* id);
+    Local(const Location& loc, Type* type, std::string* id);
     virtual llvm::Value* getAddr(LLVMBuilder& builder) const;
 
     void setAlloca(llvm::AllocaInst* alloca);
@@ -79,7 +79,7 @@ class InOut : public Var
 {
 protected:
 
-    InOut(location loc, Type* type, std::string* id);
+    InOut(const Location& loc, Type* type, std::string* id);
 
 public:
 
@@ -98,7 +98,7 @@ class Param : public InOut
 {
 public:
 
-    Param(location loc, Type* type, std::string* id);
+    Param(const Location& loc, Type* type, std::string* id);
 
     virtual const char* kind() const;
 };
@@ -109,7 +109,7 @@ class RetVal : public InOut
 {
 public:
 
-    RetVal(location loc, Type* type, std::string* id);
+    RetVal(const Location& loc, Type* type, std::string* id);
 
     virtual const char* kind() const;
 

@@ -23,7 +23,6 @@
 
 #include "utils/assert.h"
 
-#include "fe/auto.h"
 #include "fe/context.h"
 #include "fe/class.h"
 #include "fe/stmnt.h"

@@ -9,13 +9,13 @@
 #include "fe/node.h"
 #include "fe/type.h"
 
-#include "Packetizer/api.h"
+//#include "Packetizer/api.h"
 
 namespace swift {
 
 FctVectorizer::FctVectorizer(Context* ctxt)
     : ctxt_(ctxt)
-    , packetizer_( Packetizer::getPacketizer(true, false) ) // TODO use cmdline switch for sse 4.1 selection
+    //, packetizer_( Packetizer::getPacketizer(true, false) ) // TODO use cmdline switch for sse 4.1 selection
 {
     typedef Module::ClassMap::const_iterator CIter;
     const Module::ClassMap& classes = ctxt_->module_->classes();
@@ -48,16 +48,16 @@ FctVectorizer::FctVectorizer(Context* ctxt)
     llvm::Function* powFct = getDeclaration(
             ctxt_->lmodule(), llvm::Intrinsic::pow, llvmTypes, 1);
 
-    Packetizer::addNativeFunctionToPacketizer(
-            packetizer_, "llvm.pow.f32", -1, powFct, false);
+    //Packetizer::addNativeFunctionToPacketizer(
+            //packetizer_, "llvm.pow.f32", -1, powFct, false);
 
-    Packetizer::runPacketizer( packetizer_, ctxt_->lmodule() );
+    //Packetizer::runPacketizer( packetizer_, ctxt_->lmodule() );
 }
 
 void FctVectorizer::process(Class* c, MemberFct* m)
 {
     //std::cout << "--- simd: " << m->simdFct_->getType()->getDescription() << std::endl;
-    Packetizer::addFunctionToPacketizer(packetizer_, 4, m->llvmFct_->getNameStr(), m->simdFct_->getNameStr());
+    //Packetizer::addFunctionToPacketizer(packetizer_, 4, m->llvmFct_->getNameStr(), m->simdFct_->getNameStr());
 }
 
 } // namespace swift
