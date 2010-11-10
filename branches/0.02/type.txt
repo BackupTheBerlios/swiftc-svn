@@ -1,0 +1,49 @@
+* -> Pointer
+^ -> Proxy
+block<Vec3> = xxxx yyyy zzzz; always aligned
+
+note:
+    block<float> = aligend float[4]
+
+----------------------------------------------------------------------------------------
+
+Highlevel
+
+            int i   simd int i
+                                       
+AoS <Vec3>  Vec3^   block<Vec3>^
+                                   
+SoA <Vec3>  Vec3^   block<Vec3>^
+                                   
+HSoA<Vec3>  Vec3^   block<Vec3>^
+
+----------------------------------------------------------------------------------------
+
+            int i       algn seq simd int   unalgn seq simd int     rnd simd int
+                                                               
+AoS <Vec3>  Vec3*       algn AoS-seq        unalgn AoS-seq          Vec3*[4]
+                                                           
+SoA <Vec3>  float*[3]   block<float>*[3]    float[4]*[3]            float*[3][4]
+                                                           
+HSoA<Vec3>  HSoA-slice  block<Vec3>*        HSoA-seq                HSoA-rnd
+
+----------------------------------------------------------------------------------------
+
+AoS-seq
+    Vec3[4]* = gep a, i[0]
+    aligned = true, false; importat for code generation
+
+SoA-block
+    float*[3] = [gep a.x, i] [gep a.y, i] [gep a.z, i]
+
+HSoA-slice
+    block<Vec3>* = gep a, (i udiv 4)
+    rem   = i urem 4
+
+HSoA-seq
+    block<Vec3>* = gep a, (i[0] udiv 4)
+    rem   = i urem 4
+
+HSoA-rnd
+    block<Vec3>*[4] = [gep a, (i[0] udiv 4)] [gep a, (i[1] udiv 4)] [gep a, (i[3] udiv 4)] [gep a, (i[3] udiv 4)]
+    rem[4] = [i[0] urem 4] [i[1] urem 4] [i[2] urem 4] [i[3] urem 4] 

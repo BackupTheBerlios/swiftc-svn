@@ -1,0 +1,63 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "error: no input file given"
+    exit -1
+fi
+
+#
+# check options and shift parameters accordingly
+#
+
+swift_opts=""
+
+while [ $# -ge 1 ]  && [ $1 != "--" ]; do
+    swift_opts="$swift_opts $1"
+
+    if [ -e $1 ]; then
+        in=$1
+    fi
+
+    shift 1
+done
+
+# let $1 point to the first option after "--"
+shift 1
+
+if [ ! -e $in ]; then
+    echo "error: no input file given"
+    exit -1
+fi
+
+bc=$in.bc
+out=$in.out
+
+# compile
+./swift $swift_opts
+
+if [ $? -ne 0 ]; then 
+    exit -1 # something went wrong
+fi
+
+# compile lib.c if necessary
+if [ ! -e 'test/lib.o' ]; then
+    gcc -c test/lib.c -o test/lib.o
+fi
+
+if [ $? -ne 0 ]; then 
+    echo "error: compilation of support lib failed"
+    exit -1 # something went wrong
+fi
+
+# and link everything
+llvm-ld -native test/lib.o $bc $* -o $out
+
+if [ $? -ne 0 ]; then 
+    echo "error: linker error"
+    exit -1 # something went wrong
+fi
+
+# generate native assembly file
+llc $bc
+# generate llvm file
+llvm-dis $bc

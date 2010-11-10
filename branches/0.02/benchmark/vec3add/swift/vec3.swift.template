@@ -1,0 +1,49 @@
+# Swift compiler framework
+# Copyright (C) 2007-2009 Roland Leißa <r_leis01@math.uni-muenster.de>
+#
+# This framework is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+#
+# This framework is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this framework; see the file LICENSE. If not, write to
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301, USA.
+
+simd class Vec3
+    TYPE x
+    TYPE y
+    TYPE z
+
+    simd operator + (Vec3 v1, Vec3 v2) -> Vec3 result
+        TYPE v1x = v1.x
+        TYPE v1y = v1.y
+        TYPE v1z = v1.z
+        TYPE v2x = v2.x
+        TYPE v2y = v2.y
+        TYPE v2z = v2.z
+
+        TYPE resultx = v1x + v2x
+        TYPE resulty = v1y + v2y
+        TYPE resultz = v1z + v2z
+
+        result.x = resultx
+        result.y = resulty
+        result.z = resultz
+    end
+
+    routine main() -> int result
+        simd{Vec3} vecs1 = 80000000x
+        simd{Vec3} vecs2 = 80000000x
+        simd{Vec3} vecs3 = 80000000x
+
+        simd[0x, 80000000x]: vecs1 = vecs2 + vecs3
+
+        result = 0
+    end
+end
