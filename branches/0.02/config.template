@@ -17,8 +17,8 @@ endif
 # packetizer
 #
 
-CXXFLAGS += -I../packetizer/build/include
-LDFLAGS  += -L../packetizer/build/lib -lPacketizer
+CXXFLAGS += -I../../packetizer/build/include
+LDFLAGS  += -L../../packetizer/build/lib -lPacketizer
 
 #
 # llvm stuff
